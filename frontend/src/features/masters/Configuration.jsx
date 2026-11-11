@@ -14,6 +14,7 @@ import SearchableSelect from "@/shared/components/SearchableSelect";
 import PageHeader from "@/shared/components/PageHeader";
 import Breadcrumbs from "@/shared/components/Breadcrumbs";
 import useStoreNameMap from "@/shared/hooks/useStoreNameMap";
+import { createGroupFetchers } from "@/shared/utils/serverGrouping";
 
 const typeOptions = [
   { label: "LOCATION",              value: "LOCATION" },
@@ -198,6 +199,7 @@ const Configuration = () => {
             showExport={false}
             tablePreferenceKey="masters.configuration.list"
             paginationMode="server"
+            {...createGroupFetchers(`/configurations/${configType.toLowerCase()}`, { name: "value" }, undefined, { inline: true, baseParams: { paginate: true } })}
               enableServerSearch
               onServerSearch={grid.onServerSearch}
               pagination={grid.rawPagination}

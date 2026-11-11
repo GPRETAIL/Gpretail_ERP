@@ -24,7 +24,7 @@ import { createGroupFetchers } from "@/shared/utils/serverGrouping";
 
 // Matches config('pagination.resources.taxes.groupable_columns') on the backend.
 const { onFetchGroupSummaries: fetchTaxGroupSummaries, onFetchGroupRows: fetchTaxGroupRows } =
-  createGroupFetchers("/taxes", { taxType: "type" });
+  createGroupFetchers("/taxes", { taxType: "type" }, undefined, { mapRow: (row) => mapTaxRows([row])[0] });
 
 const TAX_IMPORT_CONFIG = {
   aliases: {

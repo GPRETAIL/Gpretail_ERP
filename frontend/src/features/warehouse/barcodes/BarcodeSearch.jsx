@@ -17,6 +17,7 @@ import {
 } from "./utils/barcodeCustomisation";
 import { buildLabelQrSources, buildStickerLabels, printWarehouseBarcodeLabels } from "./BarcodeGeneration";
 import { Box, Button, Chip, IconButton, Stack } from "@mui/material";
+import { createGroupFetchers } from "@/shared/utils/serverGrouping";
 
 const formatDate = (value) => {
   if (!value) return "-";
@@ -261,6 +262,7 @@ const BarcodeSearch = () => {
               setPage(1);
             }}
             paginationMode="server"
+            {...createGroupFetchers("/barcodes", { product: "product_name" }, undefined, { inline: true, baseParams: sourceFilter })}
             fillHeight
             enableSelection
             selectedRows={selectedRows}

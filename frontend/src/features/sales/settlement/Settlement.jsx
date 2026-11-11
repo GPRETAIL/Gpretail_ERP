@@ -20,6 +20,7 @@ import { loadSalesReceiptCustomization } from "@/features/sales/customisation/ut
 import { openNativeSelect } from "@/shared/utils/enterToNextField";
 import { Box, Stack, Typography, TextField, MenuItem, IconButton, Button, Table, TableHead, TableBody, TableRow, TableCell, alpha } from "@mui/material";
 import { FIELD_FONT_SIZE, FIELD_HEIGHT, fieldBaseSx, muiFieldSx } from "@/shared/theme/formControlSizes";
+import { createGroupFetchers } from "@/shared/utils/serverGrouping";
 
 const SETTLEMENT_IMPORT_CONFIG = {
   aliases: {
@@ -965,6 +966,7 @@ const Settlement = () => {
           setSearchPage(1);
         }}
         paginationMode="server"
+        {...createGroupFetchers("/settlements/unpaid-bills", { user_name: "user_id" }, undefined, { inline: true, baseParams: { paginate: true, status: invoiceStatus } })}
         pagination={searchGrid.rawPagination}
         onNextCursor={searchGrid.navigateCursor}
         onPreviousCursor={searchGrid.navigateCursor}

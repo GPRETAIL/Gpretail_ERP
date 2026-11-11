@@ -138,12 +138,37 @@ return [
                 'contact_person' => ['column' => 'contact_person'],
             ],
         ],
+        // Lists with no pagination settings of their own -- these entries exist only for Group By.
+        'configurations' => [
+            'groupable_columns' => [
+                'name' => ['column' => 'value'],
+                'code' => ['column' => 'code'],
+                'is_active' => ['column' => 'is_active'],
+            ],
+        ],
+        'size_groups' => [
+            'groupable_columns' => [
+                'name' => ['column' => 'name'],
+                'code' => ['column' => 'code'],
+            ],
+        ],
+        'hr_configurations' => [
+            'groupable_columns' => [
+                'name' => ['column' => 'name'],
+                'code' => ['column' => 'code'],
+                'is_active' => ['column' => 'is_active'],
+            ],
+        ],
         'sizes' => [
             'mode' => 'auto',
             'default_sort' => 'sort_order',
             'default_order' => 'asc',
             'tie_breaker' => 'id',
             'allowed_sorts' => ['id', 'name', 'code', 'sort_order', 'created_at'],
+            'groupable_columns' => [
+                'name' => ['column' => 'name'],
+                'code' => ['column' => 'code'],
+            ],
         ],
         'attribute_values' => [
             'mode' => 'auto',
@@ -151,6 +176,10 @@ return [
             'default_order' => 'asc',
             'tie_breaker' => 'id',
             'allowed_sorts' => ['id', 'name', 'value', 'code', 'sort_order', 'created_at'],
+            'groupable_columns' => [
+                'name' => ['column' => 'name'],
+                'code' => ['column' => 'code'],
+            ],
         ],
         'users' => [
             'mode' => 'auto',
@@ -158,6 +187,11 @@ return [
             'default_order' => 'desc',
             'tie_breaker' => 'id',
             'allowed_sorts' => ['id', 'name', 'username', 'email', 'created_at'],
+            'groupable_columns' => [
+                'name' => ['column' => 'name'],
+                'mobile_access' => ['column' => 'mobile_access'],
+                'company' => ['column' => 'store_id', 'join' => ['table' => 'stores', 'foreign' => 'store_id', 'local' => 'id'], 'label_from' => 'stores.name'],
+            ],
         ],
         // offset, not cursor: the controller's fixed "unread first, then newest" sort uses
         // orderByRaw('read_at IS NOT NULL'), which cursorPaginate() can't encode into a keyset
@@ -181,6 +215,9 @@ return [
             'groupable_columns' => [
                 'customer_name' => ['column' => 'customer_id', 'join' => ['table' => 'customers', 'foreign' => 'customer_id', 'local' => 'id'], 'label_from' => 'customers.name'],
                 'user_name' => ['column' => 'user_id', 'join' => ['table' => 'users', 'foreign' => 'user_id', 'local' => 'id'], 'label_from' => 'users.name'],
+                'counter_name' => ['column' => 'counter_name'],
+                'status' => ['column' => 'status'],
+                'payment_mode' => ['column' => 'payment_mode'],
             ],
             // Used by GroupAggregationService::crossTab() -- see that file for why
             // measures/pivotable_columns are separate, smaller-cardinality config
@@ -339,6 +376,11 @@ return [
             'default_order' => 'desc',
             'tie_breaker' => 'id',
             'allowed_sorts' => ['id', 'entry_date', 'entry_no', 'created_at'],
+            'groupable_columns' => [
+                'supplier' => ['column' => 'supplier_id', 'join' => ['table' => 'suppliers', 'foreign' => 'supplier_id', 'local' => 'id'], 'label_from' => 'suppliers.name'],
+                'product' => ['column' => 'product_id', 'join' => ['table' => 'products', 'foreign' => 'product_id', 'local' => 'id'], 'label_from' => 'products.name'],
+                'brand' => ['column' => 'brand_id', 'join' => ['table' => 'brands', 'foreign' => 'brand_id', 'local' => 'id'], 'label_from' => 'brands.name'],
+            ],
         ],
         'cash_register_sessions' => [
             'mode' => 'cursor',
@@ -346,6 +388,10 @@ return [
             'default_order' => 'desc',
             'tie_breaker' => 'id',
             'allowed_sorts' => ['id', 'opened_at', 'closed_at', 'status', 'created_at'],
+            'groupable_columns' => [
+                'cashier' => ['column' => 'user_id', 'join' => ['table' => 'users', 'foreign' => 'user_id', 'local' => 'id'], 'label_from' => 'users.name'],
+                'status' => ['column' => 'status'],
+            ],
         ],
         'transport_entries' => [
             'mode' => 'cursor',
@@ -363,6 +409,18 @@ return [
             'default_order' => 'desc',
             'tie_breaker' => 'id',
             'allowed_sorts' => ['id', 'barcode', 'batch_no', 'created_at'],
+            // Keys cover both Barcode Search and Physical Stock (the same /barcodes list underneath).
+            'groupable_columns' => [
+                'product' => ['column' => 'product_name'],
+                'size' => ['column' => 'size'],
+                'design_no' => ['column' => 'design_no'],
+                'design' => ['column' => 'design_no'],
+                'batch_no' => ['column' => 'batch_no'],
+                'batch' => ['column' => 'batch_no'],
+                'colour' => ['column' => 'color_name'],
+                'mrp' => ['column' => 'mrp'],
+                'final_price' => ['column' => 'final_price'],
+            ],
         ],
         'physical_stocks' => [
             'mode' => 'cursor',

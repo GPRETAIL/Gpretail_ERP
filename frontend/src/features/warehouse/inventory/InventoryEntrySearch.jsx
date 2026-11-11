@@ -13,6 +13,7 @@ import Breadcrumbs from "@/shared/components/Breadcrumbs";
 import ExportBottomSheet from "@/shared/components/ExportBottomSheet";
 import UploadImportButton from "@/shared/components/UploadImportButton";
 import { Box, Stack, IconButton, Button } from "@mui/material";
+import { createGroupFetchers } from "@/shared/utils/serverGrouping";
 
 const INVENTORY_ENTRY_IMPORT_CONFIG = {
   aliases: {
@@ -230,6 +231,7 @@ const InventoryEntrySearch = () => {
               setPage(1);
             }}
             paginationMode="server"
+            {...createGroupFetchers("/inventory-entries", { supplier: "supplier_id", product: "product_id", brand: "brand_id" })}
             enableSelection
             enableKeyboardNav
             selectedRows={selectedRows}

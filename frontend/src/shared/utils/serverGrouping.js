@@ -16,17 +16,28 @@ const defaultBuildActiveColumnFilters = (filters = {}) =>
  * own buildActiveColumnFilters helper (every master page already has one, for the
  * Filter Out/Show Matching features -- reused here rather than reimplemented).
  *
+ * By default the summary comes from the resource's own `${resourcePath}/grouped` endpoint. With
+ * `inline: true` it comes from the list endpoint itself (`group_summary=1`): PaginationService
+ * answers it for any resource with groupable_columns, so no separate endpoint is needed.
+ * `baseParams` are the list's own fixed params (e.g. `{ paginate: true }`), sent with both calls.
+ * `mapRow` is the page's own row mapper (the one its list adapter uses), so a group's rows show
+ * the same values as the ungrouped list.
+ *
  * @param {string} resourcePath e.g. "/products"
  * @param {Record<string,string>} columnMap frontend key -> real DB column, e.g. { active: "is_active" }
  * @param {(filters: object) => Array<{field:string,operator:string,value:string}>} buildActiveColumnFilters
+ * @param {{ inline?: boolean, baseParams?: object, mapRow?: (row: object) => object }} options
  */
-export function createGroupFetchers(resourcePath, columnMap, buildActiveColumnFilters = defaultBuildActiveColumnFilters) {
+export function createGroupFetchers(resourcePath, columnMap, buildActiveColumnFilters = defaultBuildActiveColumnFilters, options = {}) {
+  const { inline = false, baseParams = {}, mapRow = null } = options;
   const realColumn = (key) => columnMap[key] || key;
 
   const onFetchGroupSummaries = async ({ groupByColumn, page, limit, search, field, columnFilters }) => {
     const activeFilters = buildActiveColumnFilters(columnFilters || {});
-    const res = await api.get(`${resourcePath}/grouped`, {
+    const res = await api.get(inline ? resourcePath : `${resourcePath}/grouped`, {
       params: {
+        ...baseParams,
+        ...(inline ? { group_summary: 1 } : {}),
         group_by: groupByColumn,
         page,
         limit,
@@ -35,6 +46,10 @@ export function createGroupFetchers(resourcePath, columnMap, buildActiveColumnFi
         column_filters: activeFilters.length ? JSON.stringify(activeFilters) : undefined,
       },
     });
+    // A list that answered with rows instead of a summary (e.g. a fallback branch that never reaches
+    // PaginationService) can't be grouped: report it unsupported rather than show rows as groups.
+    const first = res.data?.data?.[0];
+    if (first && !("row_count" in first)) return { success: false };
     return res.data;
   };
 
@@ -45,9 +60,10 @@ export function createGroupFetchers(resourcePath, columnMap, buildActiveColumnFi
       ? { field: column, operator: "blank", value: "" }
       : { field: column, operator: "equals", value: String(groupValue) };
     const res = await api.get(resourcePath, {
-      params: { column_filters: JSON.stringify([filter]), page, limit },
+      params: { ...baseParams, column_filters: JSON.stringify([filter]), page, limit },
     });
-    return res.data;
+    if (!mapRow) return res.data;
+    return { ...res.data, data: (res.data?.data || []).map((row) => mapRow(row)) };
   };
 
   return { onFetchGroupSummaries, onFetchGroupRows };

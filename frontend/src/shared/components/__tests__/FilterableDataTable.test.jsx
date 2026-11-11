@@ -119,10 +119,8 @@ describe("FilterableDataTable — per-column filter popup", () => {
   });
 });
 
-// Client-side row grouping (with per-column sum/avg aggregation) was removed in favor of
-// server-side Group By (GroupAggregationService) -- see FilterableDataTable.serverGroup.test.jsx
-// for the current grouping behavior. A capped, silently-sampled client computation was worse than
-// not offering grouping at all once tables reached real scale.
+// Group By: server-paged tables group via GroupAggregationService (FilterableDataTable.serverGroup.test.jsx);
+// tables that hold every row group in the browser (FilterableDataTable.groupAndPin.test.jsx).
 
 describe("FilterableDataTable — selection + bulk delete", () => {
   const columns = [{ key: "name", label: "Name" }];

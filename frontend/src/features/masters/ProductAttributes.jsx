@@ -17,6 +17,7 @@ import PageHeader from "@/shared/components/PageHeader";
 import Breadcrumbs from "@/shared/components/Breadcrumbs";
 import { getImportProps } from "./utils/attrImportConfigs";
 import useStoreNameMap from "@/shared/hooks/useStoreNameMap";
+import { createGroupFetchers } from "@/shared/utils/serverGrouping";
 
 const mockOptions = [
   { label: "SIZE", value: "SIZE" },
@@ -67,14 +68,15 @@ const ProductAttributes = () => {
 
   const type = formData.productType;
   const endpoint = type === "SIZE" ? "/sizes" : type === "SIZEGROUP" ? "/size-groups" : `/attributes/${type.toLowerCase()}`;
+  const attributeRow = row => ({
+    ...row, name: row.size_name ?? row.group_name ?? row.name,
+    isActive: recordBoolean(row.is_active ?? true),
+    code: row.code || "—",
+    sizes_text: (row.sizes || []).map(recordName).filter(Boolean).join(", ") || "—",
+    created_by: row.created_by || row.createdByName || "—",
+  });
   const grid = useSearchGrid({
-    adapter: createSearchGridAdapter(endpoint, row => ({
-      ...row, name: row.size_name ?? row.group_name ?? row.name,
-      isActive: recordBoolean(row.is_active ?? true),
-      code: row.code || "—",
-      sizes_text: (row.sizes || []).map(recordName).filter(Boolean).join(", ") || "—",
-      created_by: row.created_by || row.createdByName || "—",
-    }), { paginate: true }),
+    adapter: createSearchGridAdapter(endpoint, attributeRow, { paginate: true }),
     enabled: Boolean(type), scopeKey: type,
     onError: err => toast.error(err.response?.data?.message || "Failed to load attributes"),
   });
@@ -226,6 +228,7 @@ const ProductAttributes = () => {
               showExport={false}
               tablePreferenceKey={`masters.product-attributes.${formData.productType.toLowerCase()}`}
               paginationMode="server"
+              {...createGroupFetchers(endpoint, {}, undefined, { inline: true, baseParams: { paginate: true }, mapRow: attributeRow })}
               enableServerSearch
               onServerSearch={grid.onServerSearch}
               pagination={grid.rawPagination}

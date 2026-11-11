@@ -12,6 +12,7 @@ import FilterableDataTable from "@/shared/components/FilterableDataTable";
 import SearchableSelect from "@/shared/components/SearchableSelect";
 import PageHeader from "@/shared/components/PageHeader";
 import Breadcrumbs from "@/shared/components/Breadcrumbs";
+import { createGroupFetchers } from "@/shared/utils/serverGrouping";
 
 const typeOptions = [
   { label: "DEPARTMENT", value: "department" },
@@ -173,6 +174,7 @@ const HrConfiguration = () => {
             showExport={false}
             tablePreferenceKey={`hrms.hr-configuration.${safeType}`}
             paginationMode="server"
+            {...createGroupFetchers(baseEndpoint, {}, undefined, { inline: true, baseParams: { paginate: true } })}
               enableServerSearch
               onServerSearch={grid.onServerSearch}
               pagination={grid.rawPagination}

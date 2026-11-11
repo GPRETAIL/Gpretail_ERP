@@ -17,7 +17,7 @@ import Breadcrumbs from "@/shared/components/Breadcrumbs";
 
 // Matches config('pagination.resources.customer_orders.groupable_columns') on the backend.
 const { onFetchGroupSummaries: fetchCustomerOrderGroupSummaries, onFetchGroupRows: fetchCustomerOrderGroupRows } =
-  createGroupFetchers("/customer-orders", { customerName: "customer_id", supplier: "supplier_id" });
+  createGroupFetchers("/customer-orders", { customerName: "customer_id", supplier: "supplier_id" }, undefined, { mapRow: (row) => mapOrderRow(row) });
 
 const ORDER_COLUMNS = [
   { key: "orderNo", label: "Order No" },

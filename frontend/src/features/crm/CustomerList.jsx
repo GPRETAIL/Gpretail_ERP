@@ -21,7 +21,7 @@ const { onFetchGroupSummaries: fetchCustomerGroupSummaries, onFetchGroupRows: fe
     customerType: "customer_type",
     supplyType: "supply_type",
     active: "is_active",
-  });
+  }, undefined, { mapRow: (row) => mapCustomerRow(row) });
 
 const CUSTOMER_IMPORT_CONFIG = {
   aliases: {

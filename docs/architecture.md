@@ -71,6 +71,26 @@ Every other crash, plus errors outside React (`window` error and unhandled promi
 to `storage/logs/client-errors-*.log` (kept 14 days). Search that log for the reference a user quotes.
 Cancelled requests and 4xx API errors are not reported, and the same error is sent at most once a minute.
 
+## Lists: Group By and pinned rows
+
+Every list uses `shared/components/FilterableDataTable.jsx`, and every list offers Group By on its columns.
+A table that holds all its rows (client pagination, or no paging) groups them in the browser. A
+server-paged table groups in the database through `shared/utils/serverGrouping.js`
+(`createGroupFetchers`):
+- **Summary:** comes from the list endpoint itself with `group_summary=1` (`inline: true`), or from an older
+  resource's own `/grouped` endpoint. `PaginationService` answers the summary from the list's own query, so
+  store scope and search apply. A resource only needs `groupable_columns` in `config/pagination.php`.
+- **Group rows:** an expanded group asks the same list for that group's rows (`column_filters`), and
+  `PaginationService` applies the filter. Pass the page's row mapper as `mapRow` so group rows look like
+  the list.
+- **Labels:** joined labels (supplier name for `supplier_id`) are looked up per page of groups, not joined
+  into the list query.
+- **Coverage guard:** `GroupByCoverage.contract.test.js` fails when a server-paged page has no group fetchers.
+
+Rows can be pinned to the top or bottom from the row right-click menu (No pin / Pin to top / Pin to
+bottom). Pins keep the row, so they stay in view across pages, sorting, filters and Group By. They last
+for the session.
+
 ## Conventions worth knowing
 
 - Business dates (for example voucher dates) use `config('app.business_timezone')`

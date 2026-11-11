@@ -44,30 +44,13 @@ class GroupAggregationService
         $totalMatchingRows = (clone $query)->count();
 
         $selectColumn = "{$baseTable}.{$column} as group_value";
-        $labelSelect = null;
-
-        if (!empty($config['join']) && !empty($config['label_from'])) {
-            $join = $config['join'];
-            $query->leftJoin(
-                $join['table'],
-                "{$baseTable}.{$join['foreign']}",
-                '=',
-                "{$join['table']}.{$join['local']}"
-            );
-            // MAX(), not a bare column: {$config['label_from']} lives on the JOINED table, so
-            // under ONLY_FULL_GROUP_BY (MariaDB's default) it isn't provably functionally
-            // dependent on the GROUP BY column even though it's 1:1 with it in practice (every row
-            // sharing a given foreign key has the identical joined label). MAX() is a real
-            // aggregate, which satisfies strict mode without changing the actual grouping.
-            $labelSelect = "MAX({$config['label_from']}) as group_label";
-        }
 
         $limit = max(1, min((int) ($request->input('limit') ?? 20), 200));
         $page = max(1, (int) $request->input('page', 1));
         $sort = $request->input('group_sort') === 'label' ? 'group_value' : 'row_count';
         $direction = $sort === 'row_count' ? 'desc' : 'asc';
 
-        $selects = array_filter([$selectColumn, $labelSelect, "COUNT(*) as row_count"]);
+        $selects = [$selectColumn, 'COUNT(*) as row_count'];
 
         $paginator = $query
             ->selectRaw(implode(', ', $selects))
@@ -75,10 +58,25 @@ class GroupAggregationService
             ->orderBy($sort, $direction)
             ->paginate($limit, ['*'], 'page', $page);
 
-        $items = collect($paginator->items())->map(function ($row) {
+        // A joined label (e.g. supplier_id -> suppliers.name) is looked up for just this page of
+        // groups, not joined into the list's query: the list's own search/filters use unqualified
+        // columns (name, email, ...) that a joined table would make ambiguous.
+        $labels = [];
+        if (!empty($config['join']) && !empty($config['label_from'])) {
+            $join = $config['join'];
+            $values = collect($paginator->items())->pluck('group_value')->filter(fn ($v) => $v !== null)->unique()->values();
+            if ($values->isNotEmpty()) {
+                $labelColumn = str_contains($config['label_from'], '.') ? substr($config['label_from'], strrpos($config['label_from'], '.') + 1) : $config['label_from'];
+                $labels = DB::table($join['table'])->whereIn($join['local'], $values)->pluck($labelColumn, $join['local'])->all();
+            }
+        }
+
+        $items = collect($paginator->items())->map(function ($row) use ($labels) {
+            $label = $row->group_value !== null ? ($labels[$row->group_value] ?? null) : null;
+
             return [
                 'group_value' => $row->group_value,
-                'label' => $row->group_label ?? ($row->group_value === null ? '(Blank)' : (string) $row->group_value),
+                'label' => $label ?? ($row->group_value === null ? '(Blank)' : (string) $row->group_value),
                 'row_count' => (int) $row->row_count,
             ];
         })->values()->all();

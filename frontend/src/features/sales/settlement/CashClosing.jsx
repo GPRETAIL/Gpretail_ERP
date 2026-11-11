@@ -14,6 +14,7 @@ import FilterableDataTable from "@/shared/components/FilterableDataTable";
 import Breadcrumbs from "@/shared/components/Breadcrumbs";
 import { Box, Stack, Typography, TextField, MenuItem, Button, Table, TableHead, TableBody, TableRow, TableCell, alpha } from "@mui/material";
 import { muiFieldSx } from "@/shared/theme/formControlSizes";
+import { createGroupFetchers } from "@/shared/utils/serverGrouping";
 
 const DENOMINATIONS = [2000, 500, 200, 100, 50, 20, 10, 5, 2, 1];
 
@@ -771,6 +772,7 @@ const CashClosing = () => {
           setSearchPage(1);
         }}
         paginationMode="server"
+        {...createGroupFetchers("/cash-closings", { cashier: "user_id" }, undefined, { inline: true })}
         pagination={searchGrid.rawPagination}
         onNextCursor={searchGrid.navigateCursor}
         onPreviousCursor={searchGrid.navigateCursor}

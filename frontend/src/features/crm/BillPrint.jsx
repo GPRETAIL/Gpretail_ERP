@@ -15,7 +15,7 @@ import { usePrintContext } from "@/features/printing/context/PrintContext";
 // Same /customer-orders resource as CrmCustomerOrders.jsx -- matches
 // config('pagination.resources.customer_orders.groupable_columns') on the backend.
 const { onFetchGroupSummaries: fetchBillPrintGroupSummaries, onFetchGroupRows: fetchBillPrintGroupRows } =
-  createGroupFetchers("/customer-orders", { customerName: "customer_id" });
+  createGroupFetchers("/customer-orders", { customerName: "customer_id" }, undefined, { mapRow: (row) => mapBillRow(row, false) });
 
 const BILL_COLUMNS = [
   { key: "location", label: "Location" },

@@ -6,6 +6,7 @@ use Illuminate\Contracts\Pagination\CursorPaginator;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -36,6 +37,14 @@ class PaginationService
 
         // 2. Resolve Pagination Mode ('offset' vs 'cursor')
         $mode = $this->resolveMode($resource, $resourceConfig, $request, $options, $query);
+
+        // 2a. Rows of one Group By group (FilterableDataTable expanding a group) -- see applyGroupRowFilters().
+        $this->applyGroupRowFilters($query, $resourceConfig, $request);
+
+        // 2b. Group By summary for this list (FilterableDataTable's group_summary=1 request) -- see respondWithGroupSummary().
+        if ($request->boolean('group_summary') && ! empty($resourceConfig['groupable_columns'])) {
+            $this->respondWithGroupSummary($query, $resource, $request);
+        }
 
         // 3. Resolve and apply safe sorting if not already sorted on query
         $this->applySorting($query, $resourceConfig, $request, $options);
@@ -72,6 +81,65 @@ class PaginationService
         );
 
         return $this->formatOffsetResponse($paginator, $limit);
+    }
+
+    /**
+     * Group By for any paginated list: the summary is computed from the list's own query -- the
+     * controller's store scope, search and filters already applied -- so a resource only needs
+     * groupable_columns in config/pagination.php, not its own /grouped endpoint. Answered with an
+     * early response (the same mechanism a failed FormRequest uses), because list controllers
+     * reshape their paginated rows afterwards and a group summary is not rows.
+     *
+     * @throws HttpResponseException always
+     */
+    private function respondWithGroupSummary(EloquentBuilder|QueryBuilder $query, string $resource, Request $request): never
+    {
+        // Eloquent eager loads, row ordering and selected columns don't apply to a GROUP BY summary.
+        $base = $query instanceof EloquentBuilder ? $query->toBase() : clone $query;
+        $base->orders = null;
+        $base->columns = null;
+        $base->limit = null;
+        $base->offset = null;
+
+        $result = app(GroupAggregationService::class)->summarize($base, $resource, $request);
+
+        throw new HttpResponseException(response()->json($result, $result['success'] ? 200 : 422));
+    }
+
+    /**
+     * Expanding a group in a grouped table asks the list endpoint for that group's rows with
+     * column_filters=[{field:<real column>, operator:"equals"|"blank", value}]. Applied here, once,
+     * for every resource that offers Group By, so a list endpoint can't forget it (several did, and
+     * every group then listed all rows). Only the resource's own groupable columns are accepted --
+     * never an arbitrary column from the request. Endpoints with their own fuller column-filter
+     * support (masters) apply the same condition again, which is harmless.
+     */
+    private function applyGroupRowFilters(EloquentBuilder|QueryBuilder $query, array $resourceConfig, Request $request): void
+    {
+        $groupable = $resourceConfig['groupable_columns'] ?? [];
+        if ($groupable === [] || ! $request->filled('column_filters')) {
+            return;
+        }
+        $filters = json_decode((string) $request->input('column_filters'), true);
+        if (! is_array($filters)) {
+            return;
+        }
+        $allowed = collect($groupable)->pluck('column')->filter()->unique()->all();
+        $table = $this->extractTableName($query);
+
+        foreach ($filters as $filter) {
+            $field = is_array($filter) ? (string) ($filter['field'] ?? '') : '';
+            $operator = is_array($filter) ? (string) ($filter['operator'] ?? '') : '';
+            if (! in_array($field, $allowed, true) || ! in_array($operator, ['equals', 'blank'], true)) {
+                continue;
+            }
+            $column = $table ? "{$table}.{$field}" : $field;
+            if ($operator === 'blank') {
+                $query->where(fn ($q) => $q->whereNull($column)->orWhere($column, ''));
+            } else {
+                $query->where($column, (string) ($filter['value'] ?? ''));
+            }
+        }
     }
 
     /**

@@ -36,6 +36,7 @@ import {
 import { TextInput, SelectInput, MultiSelectInput } from "./components/userAccessFormControls";
 import StoreGroupsDrawer from "@/features/settings/components/StoreGroupsDrawer";
 import ClientAccessDialog from "@/features/settings/components/ClientAccessDialog";
+import { createGroupFetchers } from "@/shared/utils/serverGrouping";
 
 // Intersects two entitlement `sections` maps: a module survives only when both grant it, and page
 // lists are intersected ("all" acts as the full set for that section). Drives the multi-store cap so a
@@ -686,6 +687,7 @@ const UserAccess = () => {
               columns={activeTab === "user" ? userColumns : groupColumns}
               loading={loading || userGrid.loading}
               paginationMode={activeTab === "user" ? "server" : "client"}
+              {...(activeTab === "user" ? createGroupFetchers("/user-access", { company: "store_id" }, undefined, { inline: true }) : {})}
               enableServerSearch={activeTab === "user"}
               onServerSearch={userGrid.onServerSearch}
               pagination={listGrid.rawPagination}

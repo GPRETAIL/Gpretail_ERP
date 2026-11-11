@@ -12,6 +12,7 @@ import FilterableDataTable from "@/shared/components/FilterableDataTable";
 import Breadcrumbs from "@/shared/components/Breadcrumbs";
 import ExportBottomSheet from "@/shared/components/ExportBottomSheet";
 import { Box, Stack, Typography, Button } from "@mui/material";
+import { createGroupFetchers } from "@/shared/utils/serverGrouping";
 
 const toFixed2 = (value) => Number(value || 0).toFixed(2);
 
@@ -164,6 +165,7 @@ const PhysicalStock = () => {
               setPage(1);
             }}
             paginationMode="server"
+            {...createGroupFetchers("/barcodes/physical-stock", { product: "product_name", batch: "batch_no", design: "design_no", colour: "color_name" }, undefined, { inline: true })}
             pagination={grid.rawPagination}
             onNextCursor={grid.navigateCursor}
             onPreviousCursor={grid.navigateCursor}

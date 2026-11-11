@@ -197,8 +197,9 @@ export default function FilterableDataTable({
   const [pinnedRightColumnKeys, setPinnedRightColumnKeys] = useState([]);
   // Pinned rows are session-only (not persisted via tablePreferenceKey, unlike pinned columns) --
   // mirrors rowValueFilters/Filter-Out state right below, which is also not persisted, and keeps
-  // this feature scoped to the frontend (no user_table_preferences schema change).
-  const [pinnedRowKeys, setPinnedRowKeys] = useState([]);
+  // this feature scoped to the frontend (no user_table_preferences schema change). Each pin keeps
+  // the row itself, so it stays in view across page changes, sorting, filters and Group By.
+  const [pinnedRows, setPinnedRows] = useState({ top: [], bottom: [] }); // { top|bottom: [{ key, row }] }
   const [headerContextMenu, setHeaderContextMenu] = useState(null);
   const [rowContextMenu, setRowContextMenu] = useState(null);
   const [showFilterPanel, setShowFilterPanel] = useState(false);
@@ -676,6 +677,34 @@ export default function FilterableDataTable({
     [filteredRows, sortRowsForDisplay]
   );
 
+  // Browser Group By: a table that already holds every row (client pagination, or no paging at
+  // all) groups the full filtered set here -- nothing is sampled, so the old capped-sample problem
+  // doesn't apply. Server-paged tables group through onFetchGroupSummaries (GroupAggregationService);
+  // if that backend says a column can't be grouped, a table that holds all rows falls back to this.
+  const holdsAllRows = paginationMode === "client"
+    || !((typeof onPageChange === "function" || typeof onNextCursor === "function") && typeof onLimitChange === "function");
+  const canClientGroup = holdsAllRows;
+  const isClientGrouped = Boolean(groupByColumn && canClientGroup && !isServerGrouped);
+  const clientGroups = useMemo(() => {
+    if (!isClientGrouped) return [];
+    const column = columns.find((c) => c.key === groupByColumn);
+    if (!column) return [];
+    const groups = new Map();
+    sortedRows.forEach((row) => {
+      const raw = column.valueGetter ? column.valueGetter(row) : row?.[column.key];
+      const blank = raw === null || raw === undefined || String(raw).trim() === "";
+      const key = blank ? "__blank__" : String(raw);
+      if (!groups.has(key)) {
+        const label = blank ? "(Blank)" : typeof raw === "boolean" ? (raw ? "Yes" : "No") : String(raw);
+        groups.set(key, { group_value: blank ? null : key, label, row_count: 0, rows: [] });
+      }
+      const group = groups.get(key);
+      group.row_count += 1;
+      group.rows.push(row);
+    });
+    return Array.from(groups.values());
+  }, [isClientGrouped, columns, groupByColumn, sortedRows]);
+
   useResetOnChange([groupByColumn], () => {
     setExpandedGroups({});
     setGroupRowsState({});
@@ -827,7 +856,7 @@ export default function FilterableDataTable({
 
     const menuWidth = 220;
     // Taller than the column header menu (which has no pin-status subtitle) -- accounts for the
-    // "Pin Row" item this menu adds alongside the existing Filter Out / Show Matching pair.
+    // "Pin row" item this menu adds alongside the existing Filter Out / Show Matching pair.
     const menuHeight = 128;
     const viewportPadding = 8;
     const left = Math.min(
@@ -849,9 +878,13 @@ export default function FilterableDataTable({
       rawValue,
       displayValue: toText(rawValue),
       rowKeyValue,
-      isRowPinned: pinnedRowKeys.includes(rowKeyValue),
+      row,
+      pinSide: pinnedRows.top.some((pin) => pin.key === rowKeyValue)
+        ? "top"
+        : pinnedRows.bottom.some((pin) => pin.key === rowKeyValue) ? "bottom" : null,
+      pinAnchor: null,
     });
-  }, [getSearchValue, getRowKey, pinnedRowKeys]);
+  }, [getSearchValue, getRowKey, pinnedRows]);
 
   const resolveServerSearchPayload = useCallback(() => {
     const directQuery = String(searchQuery || "").trim();
@@ -1411,17 +1444,26 @@ export default function FilterableDataTable({
     [pinnedColumnKeys, pinnedRightColumnKeys, persistTablePreference]
   );
 
-  // Mirrors handleSetColumnPin above -- same toggle-in-place shape, just against row keys
-  // instead of column keys, and no backend persistence (see the pinnedRowKeys state comment).
-  const handleTogglePinRow = useCallback((rowKeyValue) => {
+  // Mirrors handleSetColumnPin above: side "top" | "bottom" | null (no pin); a row is only ever on
+  // one side. No backend persistence (see the pinnedRows state comment).
+  const handleSetRowPin = useCallback((rowKeyValue, row, side) => {
     const normalizedKey = String(rowKeyValue ?? "").trim();
     if (!normalizedKey) return;
-    setPinnedRowKeys((prev) => (
-      prev.includes(normalizedKey)
-        ? prev.filter((key) => key !== normalizedKey)
-        : [...prev, normalizedKey]
-    ));
+    setPinnedRows((prev) => {
+      const without = (list) => list.filter((pin) => pin.key !== normalizedKey);
+      const top = without(prev.top);
+      const bottom = without(prev.bottom);
+      if (side === "top") top.push({ key: normalizedKey, row });
+      if (side === "bottom") bottom.push({ key: normalizedKey, row });
+      return { top, bottom };
+    });
     setRowContextMenu(null);
+  }, []);
+  const openRowPinSubmenu = useCallback((anchor) => {
+    setRowContextMenu((current) => (current && current.pinAnchor !== anchor ? { ...current, pinAnchor: anchor } : current));
+  }, []);
+  const closeRowPinSubmenu = useCallback(() => {
+    setRowContextMenu((current) => (current?.pinAnchor ? { ...current, pinAnchor: null } : current));
   }, []);
 
   const handleGroupByColumn = useCallback((columnKey) => {
@@ -1666,34 +1708,51 @@ export default function FilterableDataTable({
   const isAppendCursorMode = isCursorMode && cursorLoadMode === "append";
   const safePage = Math.max(Number(page) || 1, 1);
   const safeLimit = Math.max(Number(limit) || 20, 1);
+  // Grouped tables page by group, whether the groups came from the server or the browser.
+  const isGroupPaged = isServerGrouped || isClientGrouped;
+  const clientGroupLimit = canPaginate ? safeLimit : Math.max(clientGroups.length, 1);
+  const clientGroupTotalPages = Math.max(Math.ceil(clientGroups.length / clientGroupLimit), 1);
+  const clientGroupPage = Math.min(groupSummaryState.page, clientGroupTotalPages);
+  const groupSummaryData = isServerGrouped
+    ? groupSummaryState.data
+    : clientGroups.slice((clientGroupPage - 1) * clientGroupLimit, clientGroupPage * clientGroupLimit);
+  const groupPagination = isServerGrouped
+    ? groupSummaryState.pagination
+    : { total: clientGroups.length, total_pages: clientGroupTotalPages, has_next: clientGroupPage < clientGroupTotalPages };
+  const groupMatchingRows = isServerGrouped ? groupSummaryState.meta?.total_matching_rows ?? 0 : sortedRows.length;
   // Group By is server-only (GroupAggregationService) -- no client-side grouping fallback. A
   // capped, silently-sampled client computation was worse than not offering grouping at all once
   // tables reached real scale; see the "Group By" menu item gating above, which only lets a user
   // start grouping when onFetchGroupSummaries is actually wired for this page.
-  const computedTotalRows = isServerGrouped
-    ? Number(groupSummaryState.pagination?.total) || 0
+  const computedTotalRows = isGroupPaged
+    ? Number(groupPagination?.total) || 0
     : usesLocalPagination
       ? sortedRows.length
       : Number(totalRows) || 0;
-  const safeTotalPages = isServerGrouped
-    ? Math.max(Number(groupSummaryState.pagination?.total_pages) || 1, 1)
+  const safeTotalPages = isGroupPaged
+    ? Math.max(Number(groupPagination?.total_pages) || 1, 1)
     : usesLocalPagination
       ? Math.max(Math.ceil(computedTotalRows / safeLimit), 1)
       : Math.max(Number(totalPages) || 1, 1);
-  const currentPage = isServerGrouped ? groupSummaryState.page : Math.min(safePage, safeTotalPages);
-  const paginatedRows = !isServerGrouped && usesLocalPagination
+  const currentPage = isServerGrouped ? groupSummaryState.page : isClientGrouped ? clientGroupPage : Math.min(safePage, safeTotalPages);
+  const paginatedRows = !isGroupPaged && usesLocalPagination
     ? sortedRows.slice((Math.min(safePage, safeTotalPages) - 1) * safeLimit, Math.min(safePage, safeTotalPages) * safeLimit)
     : sortedRows;
+  const clientGroupRows = useMemo(() => {
+    const map = {};
+    clientGroups.forEach((group) => { map[String(group.group_value ?? "__blank__")] = group.rows; });
+    return map;
+  }, [clientGroups]);
   const paginatedGroupUnits = useMemo(() => {
-    if (!isServerGrouped) return [];
-    return groupSummaryState.data.map((item) => ({
+    if (!isGroupPaged) return [];
+    return groupSummaryData.map((item) => ({
       type: "group",
       groupKey: String(item.group_value ?? "__blank__"),
       label: item.label ?? (item.group_value === null ? "(Blank)" : String(item.group_value)),
       count: item.row_count,
       aggregates: {},
     }));
-  }, [isServerGrouped, groupSummaryState.data]);
+  }, [isGroupPaged, groupSummaryData]);
   const currentPageRowEntries = useMemo(() => {
     if (!groupByColumn) {
       return paginatedRows.map((row, index) => ({
@@ -1704,25 +1763,34 @@ export default function FilterableDataTable({
     return []; // grouped: rows come from groupRowsState, fetched lazily per expanded group
   }, [groupByColumn, paginatedRows]);
 
-  // Pin Row (freeze-row): pinned rows are rendered as a small always-mounted block right after
-  // the header, outside virtualization/keyboard-nav entirely -- see the render block below for why
-  // (a virtualized row can unmount once scrolled far out of view, which would silently un-stick it).
-  // Grouping and pinning are not combined in this version: while grouped, no rows render as
-  // pinned (pinnedRowKeys itself is left untouched, so un-grouping brings pinned rows straight back).
-  const pinnedRowEntries = useMemo(() => {
-    if (groupByColumn || pinnedRowKeys.length === 0) return [];
-    const pinnedSet = new Set(pinnedRowKeys);
-    return currentPageRowEntries.filter((entry) => pinnedSet.has(String(getRowKey(entry.row, entry.sourceIndex))));
-  }, [groupByColumn, pinnedRowKeys, currentPageRowEntries, getRowKey]);
+  // Pin row (freeze-row): pinned rows render as small always-mounted blocks -- top ones right after
+  // the header, bottom ones after the last row -- outside virtualization/keyboard-nav entirely (a
+  // virtualized row can unmount once scrolled far out of view, which would silently un-stick it).
+  // Each pin carries its row, so it stays visible on any page and while grouped; when the row is on
+  // the current page its fresh copy is shown. Ungrouped, a pinned row is not repeated in the body;
+  // grouped, it also stays in its group.
+  const pinnedKeySet = useMemo(
+    () => new Set([...pinnedRows.top, ...pinnedRows.bottom].map((pin) => pin.key)),
+    [pinnedRows]
+  );
+  const toPinnedEntries = useCallback((pins) => {
+    const fresh = new Map();
+    currentPageRowEntries.forEach((entry) => {
+      const key = String(getRowKey(entry.row, entry.sourceIndex));
+      if (pinnedKeySet.has(key)) fresh.set(key, entry);
+    });
+    return pins.map((pin) => fresh.get(pin.key) || { row: pin.row, sourceIndex: -1, pinKey: pin.key });
+  }, [currentPageRowEntries, getRowKey, pinnedKeySet]);
+  const pinnedTopEntries = useMemo(() => toPinnedEntries(pinnedRows.top), [toPinnedEntries, pinnedRows.top]);
+  const pinnedBottomEntries = useMemo(() => toPinnedEntries(pinnedRows.bottom), [toPinnedEntries, pinnedRows.bottom]);
   const unpinnedRowEntries = useMemo(() => {
-    if (groupByColumn || pinnedRowKeys.length === 0) return currentPageRowEntries;
-    const pinnedSet = new Set(pinnedRowKeys);
-    return currentPageRowEntries.filter((entry) => !pinnedSet.has(String(getRowKey(entry.row, entry.sourceIndex))));
-  }, [groupByColumn, pinnedRowKeys, currentPageRowEntries, getRowKey]);
+    if (groupByColumn || pinnedKeySet.size === 0) return currentPageRowEntries;
+    return currentPageRowEntries.filter((entry) => !pinnedKeySet.has(String(getRowKey(entry.row, entry.sourceIndex))));
+  }, [groupByColumn, pinnedKeySet, currentPageRowEntries, getRowKey]);
 
   const displayRows = useMemo(() => {
     if (!groupByColumn) {
-      // Excludes pinnedRowEntries -- those render separately, above.
+      // Excludes pinned rows -- those render separately, in the top and bottom blocks.
       return unpinnedRowEntries.map((entry) => ({
         type: "row",
         row: entry.row,
@@ -1751,7 +1819,11 @@ export default function FilterableDataTable({
         expanded,
       }];
 
-      if (expanded) {
+      if (expanded && isClientGrouped) {
+        (clientGroupRows[unit.groupKey] || []).forEach((row, idx) => {
+          items.push({ type: "row", row, sourceIndex: idx, isGroupedChild: true });
+        });
+      } else if (expanded) {
         const groupState = groupRowsState[unit.groupKey];
         (groupState?.rows || []).forEach((row, idx) => {
           items.push({ type: "row", row, sourceIndex: idx, isGroupedChild: true });
@@ -1767,7 +1839,7 @@ export default function FilterableDataTable({
 
       return items;
     });
-  }, [groupByColumn, unpinnedRowEntries, paginatedGroupUnits, expandedGroups, groupRowsState]);
+  }, [groupByColumn, unpinnedRowEntries, paginatedGroupUnits, expandedGroups, groupRowsState, isClientGrouped, clientGroupRows]);
 
   // --- Row virtualization (opt-in, see `enableVirtualization` above) ---
   const virtualizationActive = enableVirtualization && compact;
@@ -1863,25 +1935,25 @@ export default function FilterableDataTable({
     node.focus(virtualizationActive ? { preventScroll: true } : undefined);
   }, [enableKeyboardNav, activeRowIndex, virtualWindowSignature, virtualizationActive]);
 
-  const pageOptions = allowPageJump && (isServerGrouped || !isCursorMode)
+  const pageOptions = allowPageJump && (isGroupPaged || !isCursorMode)
     ? Array.from({ length: safeTotalPages }, (_, i) => i + 1)
     : [];
   const paginationBusy = loading || (isServerGrouped && groupSummaryState.loading);
-  const hasPrev = isServerGrouped
+  const hasPrev = isGroupPaged
     ? currentPage > 1
     : isCursorMode
       ? Boolean(pagination?.has_previous || pagination?.previous_cursor)
       : currentPage > 1;
-  const hasNext = isServerGrouped
-    ? Boolean(groupSummaryState.pagination?.has_next) || currentPage < safeTotalPages
+  const hasNext = isGroupPaged
+    ? Boolean(groupPagination?.has_next) || currentPage < safeTotalPages
     : isCursorMode
       ? Boolean(pagination?.has_next || pagination?.has_more || pagination?.next_cursor)
       : currentPage < safeTotalPages;
 
   const handlePrevPage = useCallback(() => {
     if (!hasPrev || paginationBusy) return;
-    if (isServerGrouped) {
-      setGroupSummaryState((prev) => ({ ...prev, page: Math.max(1, prev.page - 1) }));
+    if (isGroupPaged) {
+      setGroupSummaryState((prev) => ({ ...prev, page: Math.max(1, Math.min(prev.page, safeTotalPages) - 1) }));
     } else if (isCursorMode) {
       if (typeof onPreviousCursor === "function" && pagination?.previous_cursor) {
         onPreviousCursor(pagination.previous_cursor);
@@ -1891,12 +1963,12 @@ export default function FilterableDataTable({
     } else if (typeof onPageChange === "function") {
       onPageChange(currentPage - 1);
     }
-  }, [hasPrev, paginationBusy, isServerGrouped, isCursorMode, onPreviousCursor, onPageChange, pagination, currentPage]);
+  }, [hasPrev, paginationBusy, isGroupPaged, safeTotalPages, isCursorMode, onPreviousCursor, onPageChange, pagination, currentPage]);
 
   const handleNextPage = useCallback(() => {
     if (!hasNext || paginationBusy) return;
-    if (isServerGrouped) {
-      setGroupSummaryState((prev) => ({ ...prev, page: prev.page + 1 }));
+    if (isGroupPaged) {
+      setGroupSummaryState((prev) => ({ ...prev, page: Math.min(prev.page, safeTotalPages) + 1 }));
     } else if (isCursorMode) {
       if (typeof onNextCursor === "function" && pagination?.next_cursor) {
         onNextCursor(pagination.next_cursor);
@@ -1906,7 +1978,7 @@ export default function FilterableDataTable({
     } else if (typeof onPageChange === "function") {
       onPageChange(currentPage + 1);
     }
-  }, [hasNext, paginationBusy, isServerGrouped, isCursorMode, onNextCursor, onPageChange, pagination, currentPage]);
+  }, [hasNext, paginationBusy, isGroupPaged, safeTotalPages, isCursorMode, onNextCursor, onPageChange, pagination, currentPage]);
 
   const tableColSpan = visibleColumnDefs.length + (renderActions ? 2 : 1);
 
@@ -2007,11 +2079,99 @@ export default function FilterableDataTable({
     (isServerGrouped && groupSummaryState.loading && groupSummaryState.data.length === 0);
 
   useEffect(() => {
-    if (isServerGrouped) return;
+    if (isGroupPaged) return;
     if (!usesLocalPagination) return;
     if (safePage <= safeTotalPages) return;
     onPageChange(safeTotalPages);
-  }, [isServerGrouped, usesLocalPagination, safePage, safeTotalPages, onPageChange]);
+  }, [isGroupPaged, usesLocalPagination, safePage, safeTotalPages, onPageChange]);
+
+  // One renderer for both pinned blocks (top and bottom); see pinnedTopEntries above.
+  const renderPinnedRows = (entries, side) => {
+    const sideCount = entries.length;
+    return entries.map((entry, pinIndex) => {
+        const row = entry.row;
+        const key = entry.pinKey ?? String(getRowKey(row, entry.sourceIndex));
+        const isSelected = enableSelection && selectedRows.includes(key);
+        // Top pins stack below the header; bottom pins stack up from the bottom edge.
+        const stick = side === "top"
+          ? { top: HEADER_HEIGHT_PX + pinIndex * ROW_HEIGHT_PX }
+          : { bottom: (sideCount - 1 - pinIndex) * ROW_HEIGHT_PX };
+        const rowBgSx = isSelected
+          ? { bgcolor: (theme) => (theme.palette.mode === "dark" ? "rgba(30,58,138,0.3)" : "#eff6ff") }
+          : { bgcolor: (theme) => (theme.palette.mode === "dark" ? "rgba(120,53,15,0.22)" : "#fffbeb") };
+        const rowHoverSx = { "&:hover": rowBgSx };
+        return (
+          <TableRow
+            key={`pin-${side}-${key}`}
+            data-pinned-row={side}
+            sx={{
+              ...rowBorderTopSx, ...bodyRowSx, ...rowBgSx, ...rowHoverSx,
+              cursor: onRowClick ? "pointer" : undefined,
+            }}
+            onClick={onRowClick ? (event) => {
+              if (event.button !== 0) return;
+              onRowClick(row);
+            } : undefined}
+          >
+            <TableCell sx={{ position: "sticky", left: 0, ...stick, zIndex: 22, ...cellBorderSx, px: 1, ...bodyCellYSx, color: "text.secondary", ...rowBgSx }}>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                <Box
+                  component="button"
+                  type="button"
+                  title="Unpin row"
+                  aria-label="Unpin row"
+                  onClick={(e) => { e.stopPropagation(); handleSetRowPin(key, row, null); }}
+                  sx={{ display: "inline-flex", color: "#d97706" }}
+                >
+                  <Pin size={12} />
+                </Box>
+                {enableSelection && onSelectionChange && (
+                  <Checkbox
+                    checked={isSelected}
+                    onChange={(e) => {
+                      e.stopPropagation();
+                      handleSelectRow(key, e.target.checked);
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                    slotProps={{ input: { "aria-label": typeof getRowSelectionLabel === "function" ? getRowSelectionLabel(row) : "Select row" } }}
+                    size="small"
+                    sx={{ p: 0.25 }}
+                  />
+                )}
+              </Box>
+            </TableCell>
+            {visibleColumnDefs.map((column) => {
+              const rawValue = getRawValue(row, column);
+              const content = column.render
+                ? column.render(rawValue, row)
+                : defaultCell(rawValue);
+              const pinnedColStyle = getStickyCellStyle(column.key);
+              return (
+                <TableCell
+                  key={column.key}
+                  // pinnedColStyle spread first: a pinned row's own top/zIndex must win over a
+                  // pinned column's when a cell is both (its z-index otherwise loses to 22 below).
+                  style={{ ...(pinnedColStyle || {}), position: "sticky", ...stick, zIndex: 22 }}
+                  sx={{
+                    ...cellBorderSx, px: 1.5, ...bodyCellYSx, whiteSpace: "nowrap", color: "text.secondary",
+                    ...rowBgSx,
+                    ...(getColumnPinSide(column.key) ? { boxShadow: getPinEdgeShadow(column.key) } : null),
+                  }}
+                  onContextMenu={(event) => openRowContextMenu(event, column, row, entry.sourceIndex)}
+                >
+                  {renderSizedCellContent(column.key, content)}
+                </TableCell>
+              );
+            })}
+            {renderActions && (
+              <TableCell sx={{ position: "sticky", ...stick, zIndex: 22, px: 1.5, ...bodyCellYSx, color: "text.secondary", ...rowBgSx }} onClick={(e) => e.stopPropagation()}>
+                {renderActions(row, { selectedCount: selectedRows.length })}
+              </TableCell>
+            )}
+          </TableRow>
+        );
+      });
+  };
 
   // Detect if selected search field is a date type
   const isSearchFieldDate = useMemo(() => {
@@ -2604,7 +2764,7 @@ export default function FilterableDataTable({
                   )}
                 </TableRow>
               ))
-            ) : (groupByColumn ? groupSummaryState.data.length === 0 : sortedRows.length === 0) ? (
+            ) : (groupByColumn ? groupSummaryData.length === 0 : sortedRows.length === 0) ? (
               <TableRow>
                 <TableCell colSpan={tableColSpan} sx={{ textAlign: "center", py: 2, color: "text.disabled", ...tableTextSx }}>
                   {emptyText}
@@ -2613,87 +2773,9 @@ export default function FilterableDataTable({
             ) : (
               <>
                 {/* Pinned rows: always mounted (not part of rowsToRender/virtualization), each
-                    cell sticky at top: HEADER_HEIGHT_PX + its stack position -- the row-level
-                    equivalent of a pinned column's sticky left. Combines with a pinned column's
-                    own sticky left on the same cell when both are active. */}
-                {pinnedRowEntries.map((entry, pinIndex) => {
-                  const row = entry.row;
-                  const key = getRowKey(row, entry.sourceIndex);
-                  const isSelected = enableSelection && selectedRows.includes(key);
-                  const pinnedTop = HEADER_HEIGHT_PX + pinIndex * ROW_HEIGHT_PX;
-                  const rowBgSx = isSelected
-                    ? { bgcolor: (theme) => (theme.palette.mode === "dark" ? "rgba(30,58,138,0.3)" : "#eff6ff") }
-                    : { bgcolor: (theme) => (theme.palette.mode === "dark" ? "rgba(120,53,15,0.22)" : "#fffbeb") };
-                  const rowHoverSx = { "&:hover": rowBgSx };
-                  return (
-                    <TableRow
-                      key={key}
-                      sx={{
-                        ...rowBorderTopSx, ...bodyRowSx, ...rowBgSx, ...rowHoverSx,
-                        cursor: onRowClick ? "pointer" : undefined,
-                      }}
-                      onClick={onRowClick ? (event) => {
-                        if (event.button !== 0) return;
-                        onRowClick(row);
-                      } : undefined}
-                    >
-                      <TableCell sx={{ position: "sticky", left: 0, top: pinnedTop, zIndex: 22, ...cellBorderSx, px: 1, ...bodyCellYSx, color: "text.secondary", ...rowBgSx }}>
-                        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                          <Box
-                            component="button"
-                            type="button"
-                            title="Unpin row"
-                            onClick={(e) => { e.stopPropagation(); handleTogglePinRow(key); }}
-                            sx={{ display: "inline-flex", color: "#d97706" }}
-                          >
-                            <Pin size={12} />
-                          </Box>
-                          {enableSelection && onSelectionChange && (
-                            <Checkbox
-                              checked={isSelected}
-                              onChange={(e) => {
-                                e.stopPropagation();
-                                handleSelectRow(key, e.target.checked);
-                              }}
-                              onClick={(e) => e.stopPropagation()}
-                              slotProps={{ input: { "aria-label": typeof getRowSelectionLabel === "function" ? getRowSelectionLabel(row) : "Select row" } }}
-                              size="small"
-                              sx={{ p: 0.25 }}
-                            />
-                          )}
-                        </Box>
-                      </TableCell>
-                      {visibleColumnDefs.map((column) => {
-                        const rawValue = getRawValue(row, column);
-                        const content = column.render
-                          ? column.render(rawValue, row)
-                          : defaultCell(rawValue);
-                        const pinnedColStyle = getStickyCellStyle(column.key);
-                        return (
-                          <TableCell
-                            key={column.key}
-                            // pinnedColStyle spread first: a pinned row's own top/zIndex must win over a
-                            // pinned column's when a cell is both (its z-index otherwise loses to 22 below).
-                            style={{ ...(pinnedColStyle || {}), position: "sticky", top: pinnedTop, zIndex: 22 }}
-                            sx={{
-                              ...cellBorderSx, px: 1.5, ...bodyCellYSx, whiteSpace: "nowrap", color: "text.secondary",
-                              ...rowBgSx,
-                              ...(getColumnPinSide(column.key) ? { boxShadow: getPinEdgeShadow(column.key) } : null),
-                            }}
-                            onContextMenu={(event) => openRowContextMenu(event, column, row, entry.sourceIndex)}
-                          >
-                            {renderSizedCellContent(column.key, content)}
-                          </TableCell>
-                        );
-                      })}
-                      {renderActions && (
-                        <TableCell sx={{ position: "sticky", top: pinnedTop, zIndex: 22, px: 1.5, ...bodyCellYSx, color: "text.secondary", ...rowBgSx }} onClick={(e) => e.stopPropagation()}>
-                          {renderActions(row, { selectedCount: selectedRows.length })}
-                        </TableCell>
-                      )}
-                    </TableRow>
-                  );
-                })}
+                    cell sticky at the top (below the header) or the bottom of the scroll area --
+                    the row-level equivalent of a pinned column's sticky left/right. */}
+                {renderPinnedRows(pinnedTopEntries, "top")}
                 {virtualizationActive && virtualPaddingTop > 0 && (
                   <TableRow
                     aria-hidden="true"
@@ -2906,6 +2988,7 @@ export default function FilterableDataTable({
                     <TableCell colSpan={tableColSpan} style={{ padding: 0, border: 0 }} />
                   </TableRow>
                 )}
+                {renderPinnedRows(pinnedBottomEntries, "bottom")}
               </>
             )}
           </TableBody>
@@ -3028,7 +3111,7 @@ export default function FilterableDataTable({
             Choose columns
           </MenuItem>
           <Divider sx={{ my: 0.5 }} />
-          {(typeof onFetchGroupSummaries === "function" || headerContextMenu.isGrouped) && (
+          {(typeof onFetchGroupSummaries === "function" || canClientGroup || headerContextMenu.isGrouped) && (
             <MenuItem
               onMouseEnter={closePinSubmenu}
               onClick={() => (
@@ -3076,24 +3159,71 @@ export default function FilterableDataTable({
             <Typography sx={{ fontSize: TYPE.small, fontWeight: 600 }}>{rowContextMenu.label}</Typography>
             <Typography noWrap sx={{ fontSize: TYPE.small, color: "text.secondary" }}>{rowContextMenu.displayValue}</Typography>
           </Box>
-          {/* Hidden while grouped -- pinning doesn't combine with Group By in this version, see
-              pinnedRowEntries above. */}
-          {!groupByColumn && (
-            <MenuItem
-              onClick={() => handleTogglePinRow(rowContextMenu.rowKeyValue)}
-              sx={{ gap: 1, fontSize: 12 }}
-            >
-              <Pin size={14} style={{ color: "#d97706" }} />
-              {rowContextMenu.isRowPinned ? "Unpin Row" : "Pin Row"}
-            </MenuItem>
-          )}
           <MenuItem
+            aria-haspopup="menu"
+            aria-expanded={Boolean(rowContextMenu.pinAnchor)}
+            onMouseEnter={(event) => openRowPinSubmenu(event.currentTarget)}
+            onClick={(event) => openRowPinSubmenu(event.currentTarget)}
+            onKeyDown={(event) => { if (event.key === "ArrowRight") openRowPinSubmenu(event.currentTarget); }}
+            selected={Boolean(rowContextMenu.pinAnchor)}
+            sx={{ gap: 1, fontSize: 12 }}
+          >
+            <Pin size={14} style={{ color: "#d97706" }} />
+            Pin row
+            <Box component="span" sx={{ ml: "auto", pl: 2, color: "text.secondary", fontSize: TYPE.small }}>
+              {rowContextMenu.pinSide === "top" ? "Top" : rowContextMenu.pinSide === "bottom" ? "Bottom" : ""}
+            </Box>
+            <ChevronRight size={14} />
+          </MenuItem>
+          <Menu
+            open={Boolean(rowContextMenu.pinAnchor)}
+            anchorEl={rowContextMenu.pinAnchor}
+            onClose={closeRowPinSubmenu}
+            anchorOrigin={{ vertical: "top", horizontal: "right" }}
+            transformOrigin={{ vertical: "top", horizontal: "left" }}
+            // Not modal, like the column pin submenu: moving to another item closes this one.
+            hideBackdrop
+            disableAutoFocus
+            disableEnforceFocus
+            disableRestoreFocus
+            sx={{ pointerEvents: "none" }}
+            slotProps={{
+              paper: {
+                className: "min-w-[140px] py-1",
+                sx: { pointerEvents: "auto", bgcolor: "background.paper", border: "1px solid", borderColor: "divider", borderRadius: 1, boxShadow: 4 },
+              },
+              list: { onKeyDown: (event) => { if (event.key === "ArrowLeft" || event.key === "Escape") closeRowPinSubmenu(); } },
+            }}
+          >
+            {[
+              [null, "No pin"],
+              ["top", "Pin to top"],
+              ["bottom", "Pin to bottom"],
+            ].map(([side, label]) => (
+              <MenuItem
+                key={label}
+                role="menuitemradio"
+                aria-checked={rowContextMenu.pinSide === side}
+                selected={rowContextMenu.pinSide === side}
+                onClick={() => handleSetRowPin(rowContextMenu.rowKeyValue, rowContextMenu.row, side)}
+                sx={{ gap: 1, fontSize: TYPE.body }}
+              >
+                <ListItemIcon sx={{ minWidth: "18px !important" }}>
+                  {rowContextMenu.pinSide === side ? <Check size={14} /> : null}
+                </ListItemIcon>
+                {label}
+              </MenuItem>
+            ))}
+          </Menu>
+          <MenuItem
+            onMouseEnter={closeRowPinSubmenu}
             onClick={() => applyRowValueFilter("exclude", rowContextMenu.columnKey, rowContextMenu.rawValue)}
             sx={{ fontSize: 12 }}
           >
             Filter Out
           </MenuItem>
           <MenuItem
+            onMouseEnter={closeRowPinSubmenu}
             onClick={() => applyRowValueFilter("include", rowContextMenu.columnKey, rowContextMenu.rawValue)}
             sx={{ fontSize: 12 }}
           >
@@ -3129,8 +3259,8 @@ export default function FilterableDataTable({
         <TablePaginationFooter
           limit={safeLimit}
           onLimitChange={onLimitChange}
-          totalLabel={isServerGrouped
-            ? `${computedTotalRows.toLocaleString()} groups · ${(groupSummaryState.meta?.total_matching_rows ?? 0).toLocaleString()} rows total`
+          totalLabel={isGroupPaged
+            ? `${computedTotalRows.toLocaleString()} groups · ${groupMatchingRows.toLocaleString()} rows total`
             : isCursorMode
               ? (pagination?.estimated_total ? `Total: ~${Number(pagination.estimated_total).toLocaleString()}` : `Showing ${rows.length} rows`)
               : `Total: ${computedTotalRows}`}
@@ -3138,7 +3268,7 @@ export default function FilterableDataTable({
           totalPages={safeTotalPages}
           pageOptions={pageOptions}
           canJump={allowPageJump}
-          cursor={isCursorMode && !isServerGrouped}
+          cursor={isCursorMode && !isGroupPaged}
           append={isAppendCursorMode}
           hasPrev={hasPrev}
           hasNext={hasNext}
@@ -3146,7 +3276,7 @@ export default function FilterableDataTable({
           loading={loading}
           onPrevious={handlePrevPage}
           onNext={handleNextPage}
-          onPageChange={isServerGrouped
+          onPageChange={isGroupPaged
             ? (page) => setGroupSummaryState((prev) => ({ ...prev, page }))
             : onPageChange}
         />

@@ -26,7 +26,7 @@ import { normalizeFormSignature } from "@/shared/utils/formSignature";
 // items/ is backed by the Product model and reuses the 'products' pagination resource --
 // matches config('pagination.resources.products.groupable_columns') on the backend.
 const { onFetchGroupSummaries: fetchItemGroupSummaries, onFetchGroupRows: fetchItemGroupRows } =
-  createGroupFetchers("/items", { active: "is_active", brand: "brand_id" });
+  createGroupFetchers("/items", { active: "is_active", brand: "brand_id" }, undefined, { mapRow: (row) => normalizeItemRow(row) });
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ||

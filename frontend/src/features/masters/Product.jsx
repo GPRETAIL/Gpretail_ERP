@@ -193,7 +193,7 @@ const buildActiveColumnFilters = (filters = {}) =>
 
 // Matches config('pagination.resources.products.groupable_columns') on the backend.
 const { onFetchGroupSummaries: fetchProductGroupSummaries, onFetchGroupRows: fetchProductGroupRows } =
-  createGroupFetchers("/products", { active: "is_active", brand: "brand_id" }, buildActiveColumnFilters);
+  createGroupFetchers("/products", { active: "is_active", brand: "brand_id" }, buildActiveColumnFilters, { mapRow: mapProductRow });
 
 const buildProductQuerySuffix = (companyId) =>
   companyId ? `?company_id=${encodeURIComponent(companyId)}` : "";
