@@ -118,7 +118,7 @@ const TextInput = ({ label, name, required = false, value, onChange, placeholder
   </Stack>
 );
 
-/** The employee's 10-digit mobile (staff app sign-in uses it; the app itself is switched on in HRMS > Staff App). */
+/** The employee's 10-digit mobile (staff app sign-in uses it; the app itself is switched on in HRMS > HRMS App). */
 const ContactNoInput = ({ value, onChange }) => (
   <Stack direction="row" sx={{ alignItems: "center" }}>
     <Typography component="label" htmlFor="employee-contact-no" sx={{ width: "40%", flexShrink: 0, fontSize: TYPE.label, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5 }}>

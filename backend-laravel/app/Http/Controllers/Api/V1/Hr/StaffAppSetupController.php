@@ -51,11 +51,11 @@ class StaffAppSetupController extends Controller
         }
         $clash = $this->access->employeesForPhone($phone)->first(fn (Employee $other) => $other->id !== $employee->id && $other->store_id === $employee->store_id);
         if ($clash) {
-            throw ValidationException::withMessages(['pin' => "{$clash->name} already uses this mobile number for the staff app in this store."]);
+            throw ValidationException::withMessages(['pin' => "{$clash->name} already uses this mobile number for the HRMS app in this store."]);
         }
         $this->access->setPin($employee, $data['pin']);
 
-        return response()->json(['success' => true, 'message' => "Staff app on for {$employee->name}. Share the PIN with them; they choose their own at the first sign-in."]);
+        return response()->json(['success' => true, 'message' => "HRMS app on for {$employee->name}. Share the PIN with them; they choose their own at the first sign-in."]);
     }
 
     public function disable(Request $request, int $id): JsonResponse
@@ -63,7 +63,7 @@ class StaffAppSetupController extends Controller
         $employee = $this->find($request, $id);
         $this->access->disable($employee);
 
-        return response()->json(['success' => true, 'message' => "Staff app off for {$employee->name}."]);
+        return response()->json(['success' => true, 'message' => "HRMS app off for {$employee->name}."]);
     }
 
     public function signOut(Request $request, int $id): JsonResponse
@@ -71,7 +71,7 @@ class StaffAppSetupController extends Controller
         $employee = $this->find($request, $id);
         $this->access->signOut($employee);
 
-        return response()->json(['success' => true, 'message' => "{$employee->name} is signed out of the staff app."]);
+        return response()->json(['success' => true, 'message' => "{$employee->name} is signed out of the HRMS app."]);
     }
 
     private function find(Request $request, int $id): Employee

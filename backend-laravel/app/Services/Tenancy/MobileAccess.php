@@ -154,7 +154,10 @@ class MobileAccess
     }
 
     /** Controllers that serve several pages: action => page. */
-    private const ACTION_PAGES = ['StaffMoneyController' => [
+    private const ACTION_PAGES = ['PosOfflineController' => [
+        // Reviewing offline bills is the Offline Bills page; the series and catalog the till uses offline belong to POS Sale.
+        'review' => '/sales/offline-bills', 'markReviewed' => '/sales/offline-bills',
+    ], 'StaffMoneyController' => [
         'loans' => '/hrms/loans', 'decideLoan' => '/hrms/loans', 'disburse' => '/hrms/loans', 'skipMonth' => '/hrms/loans', 'repay' => '/hrms/loans', 'recoveries' => '/hrms/loans',
         'claims' => '/hrms/expense-claims', 'decideClaim' => '/hrms/expense-claims', 'payClaim' => '/hrms/expense-claims',
         'encashments' => '/hrms/leave-encashment', 'encash' => '/hrms/leave-encashment', 'cancelEncashment' => '/hrms/leave-encashment',
@@ -166,7 +169,7 @@ class MobileAccess
     ]];
 
     /** Where a controller in ACTION_PAGES sends the actions it does not list (the employee's own page). */
-    private const OWN_PAGES = ['StaffMoneyController' => '/hrms/my-claims', 'SeparationController' => '/hrms/my-resignation', 'TaxDeclarationController' => '/hrms/my-tax'];
+    private const OWN_PAGES = ['PosOfflineController' => '/sales/pos-sales', 'StaffMoneyController' => '/hrms/my-claims', 'SeparationController' => '/hrms/my-resignation', 'TaxDeclarationController' => '/hrms/my-tax'];
 
     public function page(Request $request): ?string
     {

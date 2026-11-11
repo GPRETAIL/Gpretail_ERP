@@ -4,6 +4,7 @@ import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { canAccessPath, getHomePathForUser } from "@/features/auth/utils/accessControl";
 import { isRegisteredProtectedPath } from "@/app/routes";
+import Login from "@/features/auth/Login";
 
 const ProtectedRoute = () => {
   const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
@@ -11,6 +12,10 @@ const ProtectedRoute = () => {
   const location = useLocation();
 
   if (!isAuthenticated) return <Navigate to="/login" replace />;
+  // A phone-app (/app) session in this browser is not a website session: its rules (one store, phone pages
+  // only) made website pages fail with "Select one assigned store to use the mobile app" or "not available
+  // to mobile sessions". Ask for the website sign-in instead, as /app does the other way round.
+  if (user?.auth_client === "mobile") return <Login />;
 
   // Bounce only when the user is denied a path that IS a real, registered route. An unbuilt or
   // mistyped path matches no route, so it is not a page the user is "barred" from — it simply does

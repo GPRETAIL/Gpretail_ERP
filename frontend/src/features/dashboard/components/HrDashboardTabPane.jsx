@@ -21,7 +21,7 @@ const QUICK_ACTIONS = [
   { label: "Request approvals", path: "/hrms/request-approvals", bg: "#4f46e5", hoverBg: "#4338ca" },
   { label: "Payroll", path: "/hrms/salary-management", bg: "#0891b2", hoverBg: "#0e7490" },
   { label: "+ Employee", path: "/hrms/employee", bg: "#9333ea", hoverBg: "#7e22ce" },
-  { label: "Staff App", path: "/hrms/staff-app", bg: "#0d9488", hoverBg: "#0f766e" },
+  { label: "HRMS App", path: "/hrms/staff-app", bg: "#0d9488", hoverBg: "#0f766e" },
 ];
 
 /**

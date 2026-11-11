@@ -162,7 +162,7 @@ export default function LeaveScreen({ showApprovals = true }) {
             {requests.map((row) => (
               <Box key={row.id} sx={card}>
                 <Typography sx={{ fontSize: 13, fontWeight: 900, color: "var(--hr-text, #0f172a)" }}>{row.employee_name}</Typography>
-                <Typography sx={{ fontSize: 11.5, color: "var(--hr-muted-strong, #475569)" }}>{row.type === "ATTENDANCE" ? "Fix attendance" : "Change shift"} · {row.from_date} · {requestSummary(row)}</Typography>
+                <Typography sx={{ fontSize: 11.5, color: "var(--hr-muted-strong, #475569)" }}>{row.type === "ATTENDANCE" ? "Regularize attendance" : "Change shift"} · {row.from_date} · {requestSummary(row)}</Typography>
                 {row.reason && <Typography sx={{ fontSize: 11.5, color: "var(--hr-muted, #64748b)", mt: 0.25 }}>"{row.reason}"</Typography>}
                 <Box sx={{ display: "flex", gap: 1, mt: 1 }}>
                   <Box component="button" type="button" onClick={() => act(row.id, "approve", "/staff-requests")} sx={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 0.5, py: 0.9, borderRadius: "10px", border: 0, bgcolor: "#059669", color: "#fff", fontWeight: 800, fontSize: 12 }}><Check size={14} /> Approve</Box>

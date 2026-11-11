@@ -63,7 +63,7 @@ function App() {
                     path="/activate"
                     element={<ActivationWizard onActivated={() => { localStorage.setItem("vx_activated", "1"); window.location.href = "/login"; }} />}
                   />
-                  <Route path="/login" element={isAuthenticated ? <Navigate to={homePath} replace /> : <Login />} />
+                  <Route path="/login" element={isAuthenticated && authUser?.auth_client !== "mobile" ? <Navigate to={homePath} replace /> : <Login />} />
                   <Route path="/set-password" element={<SetPassword />} />
                   <Route path="/app/*" element={<VynerixMobileApp />} />
                   {isAuthenticated && authUser?.web_access === false && <Route path="/notifications" element={<Navigate to="/app?notifications=1" replace />} />}

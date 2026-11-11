@@ -59,7 +59,7 @@ class StaffAuthController extends Controller
         $store = Store::find($employee->store_id);
         if (! $store || ! $this->access->storeAllowsApp($store)) {
             return response()->json(['success' => false, 'error_code' => 'MOBILE_SUBSCRIPTION_REQUIRED',
-                'message' => "The staff app is not included in {$store?->name}'s subscription. Ask your company administrator."], 403);
+                'message' => "The HRMS app is not included in {$store?->name}'s subscription. Ask your company administrator."], 403);
         }
 
         $user = DB::transaction(fn () => $this->loginFor($employee, $store));
@@ -87,7 +87,7 @@ class StaffAuthController extends Controller
             ['new_pin.digits' => 'Choose a 6-digit PIN.']);
         $employee = Employee::withoutGlobalScopes()->where('user_id', $request->user()->id)->where('app_access', true)
             ->when($request->attributes->get('store_context_id'), fn ($q, $store) => $q->where('store_id', $store))->first();
-        abort_unless($employee, 404, 'The staff app is not switched on for you.');
+        abort_unless($employee, 404, 'The HRMS app is not switched on for you.');
         if (! Hash::check($data['current_pin'], (string) $employee->app_pin)) {
             throw ValidationException::withMessages(['current_pin' => 'Your current PIN is wrong.']);
         }

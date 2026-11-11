@@ -37,6 +37,8 @@ vi.mock("react-toastify", () => ({
   },
 }));
 
+vi.mock("@/features/auth/Login", () => ({ default: () => <div>WEBSITE-SIGN-IN</div> }));
+
 import ProtectedRoute from "@/features/auth/components/ProtectedRoute";
 
 // Stands in for the layout's ComingSoon catch-all: whatever <Outlet/> resolves to for a path with
@@ -130,5 +132,18 @@ describe("ProtectedRoute — unbuilt vs unauthorized (page-permission mode)", ()
     // Home for this page-permission user resolves to their single granted page.
     expect(screen.getByText("BOUNCED:/sales/pos-sales")).toBeInTheDocument();
     expect(screen.queryByText("COMINGSOON")).not.toBeInTheDocument();
+  });
+});
+
+describe("a phone-app session in the browser", () => {
+  it("asks for the website sign-in instead of running website pages on the phone session", () => {
+    renderGuarded("/settings/backup", { role: "admin", auth_client: "mobile" });
+    expect(screen.getByText("WEBSITE-SIGN-IN")).toBeInTheDocument();
+    expect(screen.queryByText("COMINGSOON")).not.toBeInTheDocument();
+  });
+
+  it("lets a website session through", () => {
+    renderGuarded("/not-built-yet", { role: "admin", auth_client: "web" });
+    expect(screen.queryByText("WEBSITE-SIGN-IN")).not.toBeInTheDocument();
   });
 });

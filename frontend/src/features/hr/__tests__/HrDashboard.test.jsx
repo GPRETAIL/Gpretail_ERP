@@ -67,5 +67,5 @@ it("adds an HR tab to the Dashboard and keeps every HR page in the HRMS menu", (
   expect(DASHBOARD_PAGES.find((tab) => tab.id === "hrms")).toMatchObject({ name: "HR", path: "/dashboard/hrms" });
   const hrms = navItems.find((item) => item.path === "/hrms");
   expect(hrms.subItems.map((item) => item.name)).toEqual(expect.arrayContaining(["Dashboard", "Attendance", "Attendance Register", "Punch Log", "Holidays",
-    "Leave", "Leave Approvals", "Leave Applications", "Leave Balances", "Leave Setup", "Payroll", "Additional Pay", "Salary Structures", "Payroll Settings", "Payroll Reports", "My Payslips", "Staff App"]));
+    "Leave", "Leave Approvals", "Leave Applications", "Leave Balances", "Leave Setup", "Payroll", "Additional Pay", "Salary Structures", "Payroll Settings", "Payroll Reports", "My Payslips", "HRMS App"]));
 });

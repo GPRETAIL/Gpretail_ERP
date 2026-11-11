@@ -25,13 +25,13 @@ const TABS = [
 ];
 const TITLES = { home: "Home", leave: "Leave", expenses: "Expenses and advances", salary: "Salary", approvals: "Approvals", me: "Me" };
 
-/** While on /hr the browser offers to install "Vynerix Staff", not the business app. */
+/** While on /hr the browser offers to install "Vynerix HRMS", not the business app. */
 function useStaffManifest() {
   useEffect(() => {
     const link = document.querySelector('link[rel="manifest"]');
     const before = { href: link?.getAttribute("href"), title: document.title };
     link?.setAttribute("href", "/manifest-staff.webmanifest");
-    document.title = "Vynerix Staff";
+    document.title = "Vynerix HRMS";
     return () => {
       if (link && before.href) link.setAttribute("href", before.href);
       document.title = before.title;
@@ -96,6 +96,7 @@ function Shell({ session, onSignOut, theme }) {
   const [unread, setUnread] = useState(0);
   const [bell, setBell] = useState(false);
   const [error, setError] = useState("");
+  const [exitHint, setExitHint] = useState(false);
 
   const loadHome = useCallback(async () => {
     try {
@@ -105,8 +106,8 @@ function Shell({ session, onSignOut, theme }) {
       setError("");
     } catch (err) {
       const code = err?.response?.data?.code;
-      setError(code === "MOBILE_SUBSCRIPTION_REQUIRED" ? "The staff app is not part of your store's subscription right now. Ask HR."
-        : code === "STAFF_APP_DISABLED" ? "HR has switched the staff app off for you." : "Could not load. Pull down or tap Home to try again.");
+      setError(code === "MOBILE_SUBSCRIPTION_REQUIRED" ? "The HRMS app is not part of your store's subscription right now. Ask HR."
+        : code === "STAFF_APP_DISABLED" ? "HR has switched the HRMS app off for you." : "Could not load. Pull down or tap Home to try again.");
     }
   }, []);
   useEffect(() => {
@@ -114,11 +115,59 @@ function Shell({ session, onSignOut, theme }) {
     return () => clearTimeout(timer);
   }, [loadHome]);
 
+  // Back (Android back button, swipe-back) steps through the screens the employee opened instead of leaving
+  // the app. Each screen is a history entry over one "root" entry; reaching the root shows "Swipe back again
+  // to exit" for a moment, and only a second back leaves the app.
+  useEffect(() => {
+    if (window.history.state?.vxhr !== "screen") {
+      window.history.replaceState({ vxhr: "root" }, "");
+      window.history.pushState({ vxhr: "screen", tab: "home", view: "slips", bell: false }, "");
+    }
+    const onPop = (event) => {
+      const state = event.state;
+      if (state?.vxhr === "screen") {
+        setTab(state.tab);
+        setSalaryView(state.view || "slips");
+        setBell(Boolean(state.bell));
+        setExitHint(false);
+      } else if (state?.vxhr === "root") {
+        setTab("home");
+        setBell(false);
+        setExitHint(true);
+      }
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
+  useEffect(() => {
+    if (!exitHint) return undefined;
+    // No second back in time: stay in the app, and the next back asks again.
+    const timer = setTimeout(() => {
+      setExitHint(false);
+      if (window.history.state?.vxhr === "root") window.history.pushState({ vxhr: "screen", tab: "home", view: "slips", bell: false }, "");
+    }, 2500);
+    return () => clearTimeout(timer);
+  }, [exitHint]);
+
   const go = (key, view) => {
-    if (key === "salary" && view) setSalaryView(view);
+    const nextView = key === "salary" && view ? view : salaryView;
     if (key === "home") void loadHome();
+    if (key !== tab || nextView !== salaryView) {
+      window.history.pushState({ vxhr: "screen", tab: key, view: nextView, bell: false }, "");
+      setExitHint(false);
+    }
+    setSalaryView(nextView);
     setTab(key);
     window.scrollTo({ top: 0 });
+  };
+  const openBell = () => {
+    window.history.pushState({ vxhr: "screen", tab, view: salaryView, bell: true }, "");
+    setBell(true);
+  };
+  const closeBell = () => {
+    setUnread(0);
+    if (window.history.state?.bell) window.history.back();
+    else setBell(false);
   };
   const tabs = TABS.filter((t) => !t.approver || home?.can_approve);
   const approvalCount = Object.values(home?.approvals || {}).reduce((sum, n) => sum + n, 0);
@@ -135,7 +184,7 @@ function Shell({ session, onSignOut, theme }) {
             {session.store?.name}{home?.employee?.designation ? ` · ${home.employee.designation}` : ""}
           </Typography>
         </Box>
-        <Box component="button" type="button" onClick={() => setBell(true)} aria-label={unread ? `Notifications, ${unread} unread` : "Notifications"}
+        <Box component="button" type="button" onClick={openBell} aria-label={unread ? `Notifications, ${unread} unread` : "Notifications"}
           sx={{ position: "relative", width: TOUCH, height: TOUCH, borderRadius: "12px", border: `1px solid ${STAFF_COLOR.line}`, bgcolor: STAFF_COLOR.surface, color: STAFF_COLOR.text, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
           <Bell size={20} />
           {unread > 0 && <Box sx={{ position: "absolute", top: 4, right: 4, minWidth: 18, height: 18, px: 0.5, borderRadius: "999px", bgcolor: "#e11d48", color: "#fff", fontSize: 11, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{unread > 9 ? "9+" : unread}</Box>}
@@ -147,12 +196,12 @@ function Shell({ session, onSignOut, theme }) {
         {tab === "home" && <HomeTab home={home} go={go} />}
         {tab === "leave" && <LeaveScreen showApprovals={false} />}
         {tab === "expenses" && <ClaimsScreen />}
-        {tab === "salary" && <SalaryTab home={home} view={salaryView} setView={setSalaryView} />}
+        {tab === "salary" && <SalaryTab home={home} view={salaryView} setView={(view) => go("salary", view)} />}
         {tab === "approvals" && <ApprovalsTab onChanged={loadHome} />}
         {tab === "me" && <MeTab onSignOut={onSignOut} theme={theme} />}
       </Box>
 
-      <Box component="nav" aria-label="Staff app" sx={{ position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 10, bgcolor: STAFF_COLOR.surface, borderTop: `1px solid ${STAFF_COLOR.line}`, display: "grid", gridTemplateColumns: `repeat(${tabs.length}, 1fr)`, pb: "env(safe-area-inset-bottom)" }}>
+      <Box component="nav" aria-label="HRMS app" sx={{ position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 10, bgcolor: STAFF_COLOR.surface, borderTop: `1px solid ${STAFF_COLOR.line}`, display: "grid", gridTemplateColumns: `repeat(${tabs.length}, 1fr)`, pb: "env(safe-area-inset-bottom)" }}>
         {tabs.map(({ key, label, icon: Icon }) => (
           <Box key={key} component="button" type="button" onClick={() => go(key)} aria-current={tab === key ? "page" : undefined}
             sx={{ position: "relative", minHeight: TOUCH + 18, border: 0, bgcolor: "transparent", color: tab === key ? STAFF_COLOR.primary : STAFF_COLOR.faint, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 0.25,
@@ -163,7 +212,13 @@ function Shell({ session, onSignOut, theme }) {
           </Box>
         ))}
       </Box>
-      {bell && <NotificationsSheet onClose={() => { setBell(false); setUnread(0); }} />}
+      {bell && <NotificationsSheet onClose={closeBell} />}
+      {exitHint && (
+        <Box role="status" sx={{ position: "fixed", left: "50%", transform: "translateX(-50%)", bottom: "calc(84px + env(safe-area-inset-bottom))", zIndex: 1400,
+          px: 2, py: 1, borderRadius: "999px", bgcolor: "rgba(17,24,39,0.92)", color: "#fff", fontSize: STAFF_TEXT.label, fontWeight: 600, whiteSpace: "nowrap", boxShadow: 3 }}>
+          Swipe back again to exit
+        </Box>
+      )}
     </Box>
   );
 }

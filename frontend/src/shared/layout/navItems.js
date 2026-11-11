@@ -1,5 +1,5 @@
 import {
-  DevicePhoneMobileIcon, // HRMS > Staff App
+  DevicePhoneMobileIcon, // HRMS > HRMS App
   HomeModernIcon, // Warehouse (Home/Inventory)
   UserGroupIcon, // CRM (Customer Relations)
   ShoppingCartIcon, // Sales (Retail)
@@ -601,7 +601,7 @@ export const navItems = [
       { name: "Full & Final", path: "/hrms/settlements", icon: DocumentCheckIcon },
       { name: "My Tax", path: "/hrms/my-tax", icon: CalculatorIcon },
       { name: "Income Tax", path: "/hrms/income-tax", icon: BuildingLibraryIcon },
-      { name: "Staff App", path: "/hrms/staff-app", icon: DevicePhoneMobileIcon },
+      { name: "HRMS App", path: "/hrms/staff-app", icon: DevicePhoneMobileIcon },
       { name: "Payroll", path: "/hrms/salary-management", icon: CreditCardIcon },
       { name: "Additional Pay", path: "/hrms/additional-pay", icon: PlusCircleIcon },
       { name: "Salary Structures", path: "/hrms/salary-structures", icon: Squares2X2Icon },

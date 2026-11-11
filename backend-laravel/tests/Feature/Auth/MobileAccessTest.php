@@ -79,6 +79,27 @@ class MobileAccessTest extends TestCase
         $this->assertSame(201, $response->status(), $response->getContent());
     }
 
+    public function test_me_reports_which_kind_of_session_it_is(): void
+    {
+        [$user] = $this->fixture();
+        $this->clientSession($user);
+        $this->getJson('/api/auth/me')->assertOk()->assertJsonPath('data.auth_client', 'mobile');
+        $this->clientSession($user, 'web');
+        $this->getJson('/api/auth/me')->assertOk()->assertJsonPath('data.auth_client', 'web');
+    }
+
+    public function test_offline_bills_are_reachable_from_a_mobile_session_with_sales_access(): void
+    {
+        [$user] = $this->fixture();
+        $this->clientSession($user);
+        $this->getJson('/api/pos-sales/offline/review')->assertForbidden()->assertJsonPath('code', 'MODULE_ACCESS_DENIED'); // no Sales grant
+        $user->update(['role' => 'manager', 'module_permissions' => ['sales' => ['view' => true, 'add' => true]]]);
+        $this->clientSession($user->fresh());
+        $response = $this->getJson('/api/pos-sales/offline/review');
+        $this->assertSame(200, $response->status(), $response->getContent());
+        $this->getJson('/api/pos-sales/offline/series')->assertOk();
+    }
+
     public function test_tampered_expired_suspended_and_wrong_store_licences_fail_closed(): void
     {
         [$user, $store, $claims, $activation] = $this->fixture();

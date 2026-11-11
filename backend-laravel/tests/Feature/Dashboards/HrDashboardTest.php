@@ -113,7 +113,7 @@ class HrDashboardTest extends TestCase
         $this->assertSame('Christmas', $data['people']['holidays'][0]['name']);
         $messages = collect($data['action_required'])->pluck('message')->all();
         $this->assertContains('October 2026 payroll is not submitted yet', $messages);
-        $this->assertContains('1 employee has no mobile number, so cannot use the staff app', $messages);
+        $this->assertContains('1 employee has no mobile number, so cannot use the HRMS app', $messages);
         $this->assertNotContains('Elsewhere', collect($data['people']['joiners'])->pluck('name')->all());
     }
 

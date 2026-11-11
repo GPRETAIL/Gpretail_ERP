@@ -38,7 +38,7 @@ export default function HomeTab({ home, go }) {
         <Tile icon={CalendarPlus} label="Apply leave" onClick={() => go("leave")} />
         <Tile icon={Receipt} label="Claim expense" onClick={() => go("expenses")} />
         <Tile icon={HandCoins} label="Ask for advance" onClick={() => go("expenses")} />
-        <Tile icon={Clock} label="Fix attendance" onClick={() => go("me")} />
+        <Tile icon={Clock} label="Regularize attendance" onClick={() => go("me")} />
         <Tile icon={CalendarDays} label="Change shift" onClick={() => go("me")} />
         <Tile icon={Landmark} label="My tax" onClick={() => go("salary", "tax")} />
       </Box>

@@ -11,7 +11,7 @@ import { staffAppUrl } from "./staffAppPin";
 
 const when = (value) => (value ? new Date(value).toLocaleString("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit" }) : "");
 
-/** HRMS > Staff App: which employees can use the employee app (/hr), their first PIN, and signing them out. */
+/** HRMS > HRMS App: which employees can use the employee app (/hr), their first PIN, and signing them out. */
 export default function StaffAppSetup() {
   const hr = useHrManager();
   const [filter, setFilter] = useState("");
@@ -23,7 +23,7 @@ export default function StaffAppSetup() {
     { key: "name", label: "Employee", valueGetter: (r) => `${r.name}${r.code ? ` (${r.code})` : ""}` },
     { key: "designation", label: "Designation", valueGetter: (r) => r.designation || "" },
     { key: "phone", label: "Mobile", valueGetter: (r) => r.phone || "", render: (v, r) => (r.phone_ok ? v : <Typography component="span" sx={{ fontSize: TYPE.label, color: "error.main" }}>{v || "Missing"}</Typography>) },
-    { key: "app_access", label: "Staff app", valueGetter: (r) => (r.app_access ? "On" : "Off"), render: (v, r) => (
+    { key: "app_access", label: "HRMS app", valueGetter: (r) => (r.app_access ? "On" : "Off"), render: (v, r) => (
       <Chip size="small" label={r.app_access ? (r.must_change_pin ? "On · first PIN" : "On") : "Off"} color={r.app_access ? "success" : "default"} variant={r.app_access ? "filled" : "outlined"} />
     ) },
     { key: "last_login_at", label: "Last signed in", valueGetter: (r) => when(r.last_login_at) },
@@ -31,7 +31,7 @@ export default function StaffAppSetup() {
   ], []);
 
   return (
-    <HrPage title="Staff App" actions={(
+    <HrPage title="HRMS App" actions={(
       <Button size="small" variant="outlined" startIcon={<Copy size={14} />} onClick={() => navigator.clipboard?.writeText(staffAppUrl()).then(() => toast.success("Link copied"), () => {})}>
         Copy app link
       </Button>

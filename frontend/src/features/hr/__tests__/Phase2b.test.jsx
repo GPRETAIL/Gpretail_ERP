@@ -52,7 +52,7 @@ it("shows the week's roster and sets a day off from a cell", async () => {
 
 it("asks to fix a missed check-out and lets a manager approve it", async () => {
   wrap(<MyRequests />);
-  fireEvent.click(await screen.findByRole("button", { name: "Fix attendance" }));
+  fireEvent.click(await screen.findByRole("button", { name: "Regularize attendance" }));
   const dialog = await screen.findByRole("dialog");
   fireEvent.change(within(dialog).getByLabelText("Check-out"), { target: { value: "18:30" } });
   fireEvent.click(within(dialog).getByRole("button", { name: "Send for approval" }));

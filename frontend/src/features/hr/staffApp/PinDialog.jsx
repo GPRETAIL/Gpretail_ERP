@@ -19,7 +19,7 @@ export default function PinDialog({ employee, onClose, onSaved }) {
   };
   return (
     <Dialog open onClose={onClose} maxWidth="xs" fullWidth>
-      <DialogTitle sx={{ fontSize: TYPE.heading }}>{employee.app_access ? "Reset PIN" : "Switch on staff app"}: {employee.name}</DialogTitle>
+      <DialogTitle sx={{ fontSize: TYPE.heading }}>{employee.app_access ? "Reset PIN" : "Switch on HRMS app"}: {employee.name}</DialogTitle>
       <DialogContent>
         <Stack spacing={1.5} sx={{ pt: 1 }}>
           <Typography sx={{ fontSize: TYPE.body }}>
@@ -28,10 +28,10 @@ export default function PinDialog({ employee, onClose, onSaved }) {
           <TextField label="Starting PIN (6 digits)" value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
             slotProps={{ htmlInput: { inputMode: "numeric", "aria-label": "Starting PIN" } }} error={!valid && pin !== ""} helperText="Not a repeated digit or a run like 1234." />
           <Button size="small" variant="text" startIcon={<Copy size={14} />} sx={{ alignSelf: "flex-start" }}
-            onClick={() => navigator.clipboard?.writeText(`Staff app: ${staffAppUrl()}\nMobile: ${employee.phone}\nStarting PIN: ${pin}`).then(() => toast.success("Copied"), () => {})}>
+            onClick={() => navigator.clipboard?.writeText(`Vynerix HRMS: ${staffAppUrl()}\nMobile: ${employee.phone}\nStarting PIN: ${pin}`).then(() => toast.success("Copied"), () => {})}>
             Copy sign-in details
           </Button>
-          <Alert severity="info" sx={{ fontSize: TYPE.label }}>Share the PIN with the employee in person. Setting it signs them out of the staff app on any phone.</Alert>
+          <Alert severity="info" sx={{ fontSize: TYPE.label }}>Share the PIN with the employee in person. Setting it signs them out of the HRMS app on any phone.</Alert>
         </Stack>
       </DialogContent>
       <DialogActions>

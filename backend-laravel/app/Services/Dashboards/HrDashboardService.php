@@ -213,7 +213,7 @@ class HrDashboardService
 
     private function actionRequired(array $approvals, ?array $payroll, Collection $staff): array
     {
-        $labels = ['leave' => ['leave request', '/hrms/leave-approvals'], 'attendance' => ['attendance correction', '/hrms/request-approvals'],
+        $labels = ['leave' => ['leave request', '/hrms/leave-approvals'], 'attendance' => ['attendance regularization request', '/hrms/request-approvals'],
             'shift' => ['shift change', '/hrms/request-approvals'], 'overtime' => ['overtime day', '/hrms/ot-approvals'],
             'claim' => ['expense claim', '/hrms/expense-claims'], 'loan' => ['advance or loan request', '/hrms/loans'],
             'resignation' => ['resignation', '/hrms/exits'], 'tax_proof' => ['tax proof to verify', '/hrms/income-tax']];
@@ -230,7 +230,7 @@ class HrDashboardService
         $noPhone = $staff->filter(fn ($e) => strlen(StaffAppAccess::phoneKey($e->phone)) !== 10)->count();
         if ($noPhone > 0) {
             $items[] = ['type' => 'staff_app', 'severity' => 'low', 'link' => '/hrms/staff-app',
-                'message' => $noPhone.' employee'.($noPhone === 1 ? ' has' : 's have').' no mobile number, so cannot use the staff app'];
+                'message' => $noPhone.' employee'.($noPhone === 1 ? ' has' : 's have').' no mobile number, so cannot use the HRMS app'];
         }
 
         return $items;

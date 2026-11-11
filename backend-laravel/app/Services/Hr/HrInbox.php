@@ -44,7 +44,7 @@ class HrInbox
                 'detail' => $date($a->from_date).($date($a->to_date) !== $date($a->from_date) ? ' to '.$date($a->to_date) : '').($a->reason ? ' · '.$a->reason : ''),
                 'amount' => null, 'date' => $date($a->created_at)]))
             ->concat($requests->map(fn ($r) => ['type' => strtolower($r->type) === 'shift' ? 'shift' : 'attendance', 'id' => $r->id, 'employee_id' => $r->employee_id,
-                'employee_name' => $who[$r->employee_id] ?? null, 'title' => $r->type === 'SHIFT' ? 'Shift change' : 'Attendance correction',
+                'employee_name' => $who[$r->employee_id] ?? null, 'title' => $r->type === 'SHIFT' ? 'Shift change' : 'Attendance regularization',
                 'detail' => $date($r->from_date).($r->to_date && $date($r->to_date) !== $date($r->from_date) ? ' to '.$date($r->to_date) : '').($r->reason ? ' · '.$r->reason : ''),
                 'amount' => null, 'date' => $date($r->created_at)]))
             ->concat($overtime->map(fn ($a) => ['type' => 'overtime', 'id' => $a->id, 'employee_id' => $a->employee_id, 'employee_name' => $who[$a->employee_id] ?? null,

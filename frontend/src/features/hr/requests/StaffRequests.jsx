@@ -33,7 +33,7 @@ function RequestDialog({ type, shifts, onClose }) {
   };
   return (
     <Dialog open onClose={() => onClose(false)} maxWidth="xs" fullWidth>
-      <DialogTitle sx={{ fontSize: 15 }}>{type === "ATTENDANCE" ? "Fix attendance" : "Change shift"}</DialogTitle>
+      <DialogTitle sx={{ fontSize: 15 }}>{type === "ATTENDANCE" ? "Regularize attendance" : "Change shift"}</DialogTitle>
       <DialogContent>
         <Stack spacing={1.5} sx={{ pt: 1 }}>
           {type === "ATTENDANCE" ? (
@@ -74,7 +74,7 @@ function RequestDialog({ type, shifts, onClose }) {
 }
 
 const baseColumns = [
-  { key: "type", label: "Request", valueGetter: (r) => (r.type === "ATTENDANCE" ? "Fix attendance" : "Change shift") },
+  { key: "type", label: "Request", valueGetter: (r) => (r.type === "ATTENDANCE" ? "Regularize attendance" : "Change shift") },
   { key: "from_date", label: "From", valueGetter: (r) => r.from_date },
   { key: "to_date", label: "To", valueGetter: (r) => r.to_date },
   { key: "asked", label: "Asked for", valueGetter: (r) => requestSummary(r) },
@@ -110,7 +110,7 @@ export function MyRequests() {
   return (
     <HrPage title="My Requests" actions={data?.employee ? (
       <Stack direction="row" spacing={1}>
-        <Button size="small" variant="outlined" startIcon={<Clock size={14} />} onClick={() => setAsking("ATTENDANCE")}>Fix attendance</Button>
+        <Button size="small" variant="outlined" startIcon={<Clock size={14} />} onClick={() => setAsking("ATTENDANCE")}>Regularize attendance</Button>
         <Button size="small" variant="outlined" startIcon={<CalendarClock size={14} />} onClick={() => setAsking("SHIFT")}>Change shift</Button>
       </Stack>
     ) : null}>

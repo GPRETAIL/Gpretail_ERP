@@ -133,16 +133,16 @@ class StaffAppAccess
             || (array_key_exists($controller, self::ALWAYS) && (self::ALWAYS[$controller] === null || in_array($action, self::ALWAYS[$controller], true)))
             || in_array($action, self::APPROVALS[$controller] ?? [], true);
         if (! $allowed) {
-            return ['code' => 'STAFF_APP_SCOPE', 'message' => 'The staff app only covers your own HR and approvals. Use the ERP for this.'];
+            return ['code' => 'STAFF_APP_SCOPE', 'message' => 'The HRMS app only covers your own HR and approvals. Use the ERP for this.'];
         }
         $employee = Employee::withoutGlobalScopes()->where('user_id', $request->user()->id)->where('app_access', true)->where('is_active', true)
             ->when($request->attributes->get('store_context_id'), fn ($q, $store) => $q->where('store_id', $store))->first();
         if (! $employee) {
-            return ['code' => 'STAFF_APP_DISABLED', 'message' => 'The staff app is switched off for you. Ask HR.'];
+            return ['code' => 'STAFF_APP_DISABLED', 'message' => 'The HRMS app is switched off for you. Ask HR.'];
         }
         $store = Store::find($employee->store_id);
 
         return $store && $this->storeAllowsApp($store) ? null
-            : ['code' => 'MOBILE_SUBSCRIPTION_REQUIRED', 'message' => 'The staff app is not included in this store\'s subscription.'];
+            : ['code' => 'MOBILE_SUBSCRIPTION_REQUIRED', 'message' => 'The HRMS app is not included in this store\'s subscription.'];
     }
 }

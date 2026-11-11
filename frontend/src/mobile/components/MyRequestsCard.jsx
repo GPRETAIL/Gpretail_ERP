@@ -31,7 +31,7 @@ function RequestSheet({ type, shifts, onClose }) {
   return (
     <Box sx={{ position: "fixed", inset: 0, zIndex: 80, display: "flex", flexDirection: "column", justifyContent: "flex-end", bgcolor: "rgba(15,23,42,0.6)" }} onClick={() => onClose(false)}>
       <Box onClick={(e) => e.stopPropagation()} sx={{ width: "100%", maxWidth: 480, mx: "auto", bgcolor: "var(--hr-surface, #fff)", borderTopLeftRadius: "24px", borderTopRightRadius: "24px", p: 2, display: "flex", flexDirection: "column", gap: 1.25 }}>
-        <Typography sx={{ fontSize: 15, fontWeight: 900 }}>{type === "ATTENDANCE" ? "Fix attendance" : "Change shift"}</Typography>
+        <Typography sx={{ fontSize: 15, fontWeight: 900 }}>{type === "ATTENDANCE" ? "Regularize attendance" : "Change shift"}</Typography>
         {type === "ATTENDANCE" ? (
           <>
             <Box><Typography sx={label}>Date</Typography><Box component="input" type="date" max={today()} value={form.from_date} onChange={set("from_date")} sx={input} /></Box>
@@ -94,7 +94,7 @@ export default function MyRequestsCard() {
   return (
     <Box sx={{ mb: 1.5 }}>
       <Box sx={{ display: "flex", gap: 1 }}>
-        <Box component="button" type="button" onClick={() => setAsking("ATTENDANCE")} sx={button}><Clock size={15} /> Fix attendance</Box>
+        <Box component="button" type="button" onClick={() => setAsking("ATTENDANCE")} sx={button}><Clock size={15} /> Regularize attendance</Box>
         <Box component="button" type="button" onClick={() => setAsking("SHIFT")} sx={button}><CalendarClock size={15} /> Change shift</Box>
       </Box>
       {message && <Box sx={{ mt: 1, p: 1, borderRadius: "10px", bgcolor: "var(--hr-info-bg, #eef2ff)", color: "var(--hr-info-text, #3730a3)", fontSize: 12, fontWeight: 700 }}>{message}</Box>}

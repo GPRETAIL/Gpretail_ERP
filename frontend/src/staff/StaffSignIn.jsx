@@ -44,7 +44,7 @@ export default function StaffSignIn({ onSignedIn }) {
           <Box sx={{ width: 64, height: 64, borderRadius: "20px", bgcolor: "#0d9488", color: "#fff", display: "inline-flex", alignItems: "center", justifyContent: "center", mb: 1.5 }}>
             <Smartphone size={30} />
           </Box>
-          <Typography component="h1" sx={{ fontSize: 24, fontWeight: 800, color: STAFF_COLOR.text }}>Vynerix Staff</Typography>
+          <Typography component="h1" sx={{ fontSize: 24, fontWeight: 800, color: STAFF_COLOR.text }}>Vynerix HRMS</Typography>
           <Typography sx={{ fontSize: STAFF_TEXT.body, color: STAFF_COLOR.muted }}>Attendance, leave, pay and requests</Typography>
         </Box>
 

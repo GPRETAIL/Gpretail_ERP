@@ -1,7 +1,7 @@
 {
-  "name": "Vynerix Staff",
-  "short_name": "Staff",
-  "description": "Vynerix Staff - attendance, leave, salary slips, expenses and approvals for employees",
+  "name": "Vynerix HRMS",
+  "short_name": "HRMS",
+  "description": "Vynerix HRMS - attendance, leave, salary slips, expenses and approvals for employees",
   "start_url": "/hr",
   "scope": "/hr",
   "id": "/hr",

@@ -253,9 +253,24 @@ class AuthController extends Controller
                 'company_name' => $user->store?->name,
                 'counter_id' => $user->counter_id,
                 'logo' => $user->store?->logo,
+                // Which sign-in this session came from, so the website and the phone app (/app) each
+                // ask for their own sign-in instead of running on the other's session after a reload.
+                'auth_client' => self::sessionClient($request),
                 ...app(StoreContext::class)->authFields($user),
             ],
         ]);
+    }
+
+    private static function sessionClient(Request $request): string
+    {
+        $abilities = $request->user()?->currentAccessToken()?->abilities ?? [];
+        foreach (['mobile', 'staff'] as $client) {
+            if (in_array('client:'.$client, $abilities, true)) {
+                return $client;
+            }
+        }
+
+        return 'web';
     }
 
     public function localServerConfig(Request $request)

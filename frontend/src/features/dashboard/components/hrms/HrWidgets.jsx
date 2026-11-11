@@ -117,7 +117,7 @@ export function AttendanceTrend({ trend = [], loading }) {
 }
 
 const APPROVAL_TYPES = {
-  leave: ["Leave", "/hrms/leave-approvals"], attendance: ["Attendance corrections", "/hrms/request-approvals"], shift: ["Shift changes", "/hrms/request-approvals"],
+  leave: ["Leave", "/hrms/leave-approvals"], attendance: ["Attendance regularization", "/hrms/request-approvals"], shift: ["Shift changes", "/hrms/request-approvals"],
   overtime: ["Overtime", "/hrms/ot-approvals"], claim: ["Expense claims", "/hrms/expense-claims"], loan: ["Advances and loans", "/hrms/loans"],
   resignation: ["Resignations", "/hrms/exits"], tax_proof: ["Tax proofs to verify", "/hrms/income-tax"],
 };
