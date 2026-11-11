@@ -64,4 +64,28 @@ describe("ERP login", () => {
     fireEvent.change(screen.getByLabelText(/username or email/i), { target: { value: "cashier" } });
     await waitFor(() => expect(screen.getByRole("link", { name: /forgot your password/i })).toHaveAttribute("href", "/set-password"));
   });
+
+  it("warns about Caps Lock, links employees to Vynerix HRMS, and waits for a connection when offline", () => {
+    renderLogin();
+    expect(screen.getByRole("heading", { name: "Sign in" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Vynerix HRMS/ })).toHaveAttribute("href", "/hr");
+    const passwordField = screen.getByLabelText(/^password/i);
+    fireEvent.keyUp(passwordField, { key: "A", modifierCapsLock: true });
+    expect(screen.getByText("Caps Lock is on")).toBeInTheDocument();
+    fireEvent.blur(passwordField);
+    expect(screen.queryByText("Caps Lock is on")).not.toBeInTheDocument();
+
+    expect(screen.getByRole("button", { name: "Sign in" })).toBeEnabled();
+    const online = vi.spyOn(window.navigator, "onLine", "get").mockReturnValue(false);
+    fireEvent(window, new Event("offline"));
+    expect(screen.getByText(/You are offline/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Sign in" })).toBeDisabled();
+    online.mockRestore();
+  });
+
+  it("shows the sign-in form to a phone-app session instead of redirecting", () => {
+    mocks.state.auth = { isAuthenticated: true, loading: false, error: null, user: { id: 1, role: "admin", auth_client: "mobile" } };
+    renderLogin();
+    expect(screen.getByRole("heading", { name: "Sign in" })).toBeInTheDocument();
+  });
 });

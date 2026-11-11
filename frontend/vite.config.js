@@ -30,6 +30,8 @@ export default defineConfig(({ mode }) => {
   const https = loadHttpsConfig(env);
 
   return {
+    // The build date shown on the sign-in page's status line.
+    define: { __APP_BUILD__: JSON.stringify(new Date().toISOString()) },
     plugins: [
       react(),
     ],
