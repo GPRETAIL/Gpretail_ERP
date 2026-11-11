@@ -46,7 +46,7 @@ export default function ChangePin({ currentPin = "", forced = false, onDone, onC
 
   const pad = {
     current: { value: current, set: setCurrent, label: "Your current PIN", go: () => setStep("new") },
-    new: { value: next, set: setNext, label: "Choose a new PIN (4 to 6 digits)", go: () => setStep("confirm") },
+    new: { value: next, set: setNext, label: "Choose a new 6-digit PIN", go: () => setStep("confirm") },
     confirm: { value: confirm, set: setConfirm, label: "Type the new PIN again", go: save },
   }[step];
 
@@ -63,10 +63,10 @@ export default function ChangePin({ currentPin = "", forced = false, onDone, onC
         {error && <Box role="alert" sx={{ ...card, mb: 2, bgcolor: STAFF_COLOR.dangerSoft, borderColor: STAFF_COLOR.dangerBorder, color: STAFF_COLOR.danger, fontSize: STAFF_TEXT.body, fontWeight: 600 }}>{error}</Box>}
         <Box sx={card}>
           <PinPad key={step} value={pad.value} onChange={pad.set} label={pad.label} disabled={busy} />
-          <Box component="button" type="button" disabled={busy || pad.value.length < 4} onClick={pad.go} sx={{ ...primaryButton, width: "100%", mt: 2.5 }}>
+          <Box component="button" type="button" disabled={busy || pad.value.length < (step === "current" ? 4 : 6)} onClick={pad.go} sx={{ ...primaryButton, width: "100%", mt: 2.5 }}>
             {step === "confirm" ? (busy ? "Saving…" : "Save PIN") : "Next"}
           </Box>
-          <Typography sx={{ fontSize: STAFF_TEXT.small, color: STAFF_COLOR.faint, textAlign: "center", mt: 1.5 }}>Avoid 1234, 0000 and the like.</Typography>
+          <Typography sx={{ fontSize: STAFF_TEXT.small, color: STAFF_COLOR.faint, textAlign: "center", mt: 1.5 }}>Avoid 123456, 000000 and the like.</Typography>
           {onCancel && <Box component="button" type="button" onClick={onCancel} sx={{ ...secondaryButton, width: "100%", mt: 1 }}>{forced ? "Sign out" : "Cancel"}</Box>}
         </Box>
       </Box>

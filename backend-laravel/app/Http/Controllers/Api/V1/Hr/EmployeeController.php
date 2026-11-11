@@ -12,6 +12,7 @@ use App\Services\Forms\MasterFormData;
 use App\Services\Tenancy\BusinessPermissions;
 use App\Services\Tenancy\StoreContext;
 use App\Support\PaginationService;
+use App\Services\Hr\StaffAppAccess;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
@@ -131,7 +132,6 @@ class EmployeeController extends Controller
             'name' => 'required|string|max:255',
             'code' => ['nullable', 'string', 'max:50', Rule::unique('employees', 'code')->where('store_id', $request->attributes->get('store_context_id'))],
             'email' => 'nullable|email|max:255',
-            'phone' => 'nullable|string|max:50',
             'department_id' => 'nullable|exists:hr_departments,id',
             'designation_id' => 'nullable|exists:hr_designations,id',
             'salary' => 'nullable|numeric|min:0',
@@ -145,10 +145,11 @@ class EmployeeController extends Controller
             ], 422);
         }
 
+        $phone = $this->contactNo($request, null);
         $code = $request->input('code') ?: 'EMP_'.strtoupper(substr(uniqid(), -6));
-        $storeId = $request->header('X-Company-Scope-Id');
 
         $data = $this->linkLogin($request, MasterFormData::prepare($request, new Employee), null);
+        $data['phone'] = $phone;
         $data['code'] = $data['code'] ?? $code;
         $data['joining_date'] = $data['joining_date'] ?? now()->toDateString();
         $employee = Employee::create($data);
@@ -196,13 +197,54 @@ class EmployeeController extends Controller
             return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
         }
 
-        $employee->update($this->linkLogin($request, MasterFormData::prepare($request, $employee), $employee));
+        $phone = $this->contactNo($request, $employee);
+        $data = $this->linkLogin($request, MasterFormData::prepare($request, $employee), $employee);
+        if ($phone !== null) {
+            $data['phone'] = $phone;
+        }
+        $employee->update($data);
 
         return response()->json([
             'success' => true,
             'message' => 'Employee updated successfully',
             'data' => $employee->load(['department', 'designation']),
         ]);
+    }
+
+    /**
+     * Contact No is the employee's 10-digit mobile: required, valid, and unique among the store's active
+     * employees, because the staff app (/hr) signs in with it. "+91 98765 43210" and "09876543210" are
+     * stored as 9876543210. A save that does not send the field (a partial update) leaves it alone.
+     */
+    private function contactNo(Request $request, ?Employee $employee): ?string
+    {
+        if ($employee && ! $request->exists('contact_no') && ! $request->exists('phone')) {
+            return null;
+        }
+        $raw = trim((string) ($request->input('contact_no') ?? $request->input('phone') ?? ''));
+        if ($raw === '') {
+            throw ValidationException::withMessages(['contact_no' => "Contact No is required: the employee's 10-digit mobile number."]);
+        }
+        $digits = preg_replace('/\D/', '', $raw);
+        if (strlen($digits) === 12 && str_starts_with($digits, '91')) {
+            $digits = substr($digits, 2);
+        } elseif (strlen($digits) === 11 && str_starts_with($digits, '0')) {
+            $digits = substr($digits, 1);
+        }
+        if (! preg_match('/^[6-9]\d{9}$/', $digits)) {
+            throw ValidationException::withMessages(['contact_no' => 'Enter a valid 10-digit mobile number in Contact No (for example 98765 43210).']);
+        }
+        $storeId = $employee?->store_id ?? $request->attributes->get('store_context_id');
+        $clash = Employee::withoutGlobalScopes()->where('is_active', true)
+            ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
+            ->when($employee, fn ($q) => $q->whereKeyNot($employee->id))
+            ->where('phone', 'like', '%'.substr($digits, -4))->get(['id', 'name', 'phone'])
+            ->first(fn (Employee $other) => StaffAppAccess::phoneKey($other->phone) === $digits);
+        if ($clash) {
+            throw ValidationException::withMessages(['contact_no' => "{$clash->name} already has the mobile number {$digits} in this store."]);
+        }
+
+        return $digits;
     }
 
     public function destroy($id)

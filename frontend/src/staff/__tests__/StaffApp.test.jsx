@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { isStaffAppPath, readStaffSession, STAFF_STORE_KEY, STAFF_TOKEN_KEY } from "@/shared/api/staffSession";
 import { suggestPin } from "@/features/hr/staffApp/staffAppPin";
 import StaffSignIn from "../StaffSignIn";
+import PinPad from "../PinPad";
 import ChangePin from "../ChangePin";
 import ApprovalsTab from "../tabs/ApprovalsTab";
 import HomeTab from "../tabs/HomeTab";
@@ -83,18 +84,18 @@ describe("choosing a PIN", () => {
     post.mockResolvedValue({ data: {} });
     const onDone = vi.fn();
     render(<ChangePin forced currentPin="4826" onDone={onDone} />);
-    typePin("5927");
+    typePin("592718");
     fireEvent.click(screen.getByRole("button", { name: "Next" }));
-    typePin("5928");
+    typePin("592719");
     fireEvent.click(screen.getByRole("button", { name: "Save PIN" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("The two PINs are different.");
     expect(post).not.toHaveBeenCalled();
-    typePin("5927");
+    typePin("592718");
     fireEvent.click(screen.getByRole("button", { name: "Next" }));
-    typePin("5927");
+    typePin("592718");
     fireEvent.click(screen.getByRole("button", { name: "Save PIN" }));
     await waitFor(() => expect(onDone).toHaveBeenCalledOnce());
-    expect(post).toHaveBeenCalledWith("/auth/staff-pin", { current_pin: "4826", new_pin: "5927" });
+    expect(post).toHaveBeenCalledWith("/auth/staff-pin", { current_pin: "4826", new_pin: "592718" });
   });
 });
 
@@ -178,4 +179,11 @@ describe("dark mode", () => {
     expect(container.querySelector("[data-staff-theme]")).toHaveAttribute("data-staff-theme", "dark");
     expect(document.documentElement.style.colorScheme).toBe("dark");
   });
+});
+
+it("always shows six PIN dots, filled as digits are typed", () => {
+  const { rerender } = render(<PinPad value="" onChange={vi.fn()} label="PIN" />);
+  expect(screen.getByRole("status", { name: "0 digits entered" }).children).toHaveLength(6);
+  rerender(<PinPad value="2291" onChange={vi.fn()} label="PIN" />);
+  expect(screen.getByRole("status", { name: "4 digits entered" }).children).toHaveLength(6);
 });

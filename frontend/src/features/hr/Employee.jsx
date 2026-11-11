@@ -23,7 +23,6 @@ import UploadImportButton from "@/shared/components/UploadImportButton";
 import { handleEnterKeyNavigation } from "@/shared/utils/enterToNextField";
 import useStoreNameMap from "@/shared/hooks/useStoreNameMap";
 import { normalizeFormSignature } from "@/shared/utils/formSignature";
-import StaffAppSwitch from "./staffApp/StaffAppSwitch";
 
 const EMPLOYEE_IMPORT_CONFIG = {
   aliases: {
@@ -78,7 +77,7 @@ const EMPLOYEE_IMPORT_CONFIG = {
     isactive: "is_active",
     active: "is_active",
   },
-  required: ["name"],
+  required: ["name", "contact_no"],
   boolFields: [
     "hold_salary", "reason_checked", "allow_system", "e_ot", "m_ot", "beta", "is_active",
   ],
@@ -118,6 +117,27 @@ const TextInput = ({ label, name, required = false, value, onChange, placeholder
     </Stack>
   </Stack>
 );
+
+/** The employee's 10-digit mobile (staff app sign-in uses it; the app itself is switched on in HRMS > Staff App). */
+const ContactNoInput = ({ value, onChange }) => (
+  <Stack direction="row" sx={{ alignItems: "center" }}>
+    <Typography component="label" htmlFor="employee-contact-no" sx={{ width: "40%", flexShrink: 0, fontSize: TYPE.label, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5 }}>
+      <Box component="span" sx={{ color: "error.main", mr: 0.5 }}>*</Box>Contact No
+    </Typography>
+    <Box component="input" id="employee-contact-no" name="contact_no" type="tel" inputMode="numeric" autoComplete="off" value={value} onChange={onChange} placeholder="10-digit mobile"
+      sx={{ flex: 1, minWidth: 0, ...fieldBaseSx(false) }} />
+  </Stack>
+);
+
+/** The same rule the server applies: a 10-digit mobile, "+91" or a leading 0 allowed. */
+const contactNoProblem = (value) => {
+  const raw = String(value || "").trim();
+  if (!raw) return "Contact No is required: the employee's 10-digit mobile number.";
+  let digits = raw.replace(/\D/g, "");
+  if (digits.length === 12 && digits.startsWith("91")) digits = digits.slice(2);
+  else if (digits.length === 11 && digits.startsWith("0")) digits = digits.slice(1);
+  return /^[6-9]\d{9}$/.test(digits) ? "" : "Enter a valid 10-digit mobile number in Contact No (for example 98765 43210).";
+};
 
 const SelectInput = ({ label, name, required = false, options = [], value, onChange, disabled = false, sx }) => (
   <Stack direction="row" sx={{ alignItems: "center", ...sx }}>
@@ -359,6 +379,8 @@ const Employee = () => {
 
   const handleSave = async () => {
     if (!formData.name.trim()) { toast.error("Name is required"); return; }
+    const contactProblem = contactNoProblem(formData.contact_no);
+    if (contactProblem) { toast.error(contactProblem); document.getElementById("employee-contact-no")?.focus(); return; }
     const currentPayload = {
       formData,
       families: familyList,
@@ -551,8 +573,7 @@ const Employee = () => {
   const renderLeftSide = () => (
     <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" }, columnGap: 1.5, rowGap: 0.75 }}>
       <TextInput label="Employee Code" name="employee_code" value={formData.employee_code} onChange={handleChange} />
-      <TextInput label="Contact No" name="contact_no" value={formData.contact_no} onChange={handleChange} />
-      <StaffAppSwitch employeeId={currentId} />
+      <ContactNoInput value={formData.contact_no} onChange={handleChange} />
       <TextInput label="Name" name="name" required value={formData.name} onChange={handleChange} />
       <TextInput label="Surname" name="surname" value={formData.surname} onChange={handleChange} />
       <SelectInput label="Gender" name="gender" value={formData.gender} onChange={handleChange} options={GENDER_OPTIONS} />

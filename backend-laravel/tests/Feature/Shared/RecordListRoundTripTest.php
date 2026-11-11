@@ -120,7 +120,7 @@ class RecordListRoundTripTest extends TestCase
             'suppliers' => ['contact_person' => 'Supplier contact', 'contact_no' => '123456', 'gst' => 'GST-AUDIT', 'email_id' => 'supplier@example.test'],
             'transports' => ['contact_person' => 'Transport contact', 'contact_no' => '123456', 'business_mode' => 'Courier', 'allowed_payment_mode' => 'Cash'],
             'agents' => ['contact_person' => 'Agent contact', 'contact_no' => '123456', 'commission_pct' => 0],
-            'employees' => ['contact_no' => '123456', 'email_id' => 'employee@example.test', 'surname' => 'Surname'],
+            'employees' => ['contact_no' => '9876543210', 'email_id' => 'employee@example.test', 'surname' => 'Surname'],
             'taxes' => ['tax_percentage' => 0, 'is_sales_tax' => false, 'is_purchase_tax' => true],
         ];
         foreach ($cases as $path => $fields) {

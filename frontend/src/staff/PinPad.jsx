@@ -4,7 +4,7 @@ import { STAFF_COLOR, STAFF_TEXT, TOUCH } from "./staffUi";
 
 const KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "", "0", "back"];
 
-/** A phone-style keypad for a 4 to 6 digit PIN. The dots show how many digits are typed, never the digits. */
+/** A phone-style keypad for a 6-digit PIN: six dots fill as digits are typed (never showing them). */
 export default function PinPad({ value, onChange, label, max = 6, disabled = false }) {
   const press = (key) => {
     if (disabled) return;
@@ -15,7 +15,7 @@ export default function PinPad({ value, onChange, label, max = 6, disabled = fal
     <Box>
       {label && <Typography sx={{ fontSize: STAFF_TEXT.body, fontWeight: 700, color: STAFF_COLOR.text, textAlign: "center", mb: 1.5 }}>{label}</Typography>}
       <Box role="status" aria-label={`${value.length} digits entered`} sx={{ display: "flex", justifyContent: "center", gap: 1.5, mb: 2.5 }}>
-        {Array.from({ length: Math.max(4, value.length) }, (_, i) => (
+        {Array.from({ length: max }, (_, i) => (
           <Box key={i} sx={{ width: 14, height: 14, borderRadius: "50%", bgcolor: i < value.length ? STAFF_COLOR.primary : "transparent", border: `2px solid ${i < value.length ? STAFF_COLOR.primary : STAFF_COLOR.faint}` }} />
         ))}
       </Box>

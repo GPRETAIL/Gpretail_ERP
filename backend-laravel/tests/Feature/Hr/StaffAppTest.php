@@ -81,7 +81,7 @@ class StaffAppTest extends TestCase
         $this->withToken((string) $token);
     }
 
-    private function hrSetsPin(Employee $employee, string $pin = '4826', ?User $hr = null): void
+    private function hrSetsPin(Employee $employee, string $pin = '482619', ?User $hr = null): void
     {
         $this->as(($hr ?? $this->hr)->createToken('web-token', ['client:web'])->plainTextToken);
         $this->postJson("/api/staff-app-setup/{$employee->id}/pin", ['pin' => $pin])->assertOk();
@@ -103,7 +103,7 @@ class StaffAppTest extends TestCase
         $this->assertFalse($list[$this->lead->id]['app_access']);
 
         // Any way of writing the number: the last 10 digits match.
-        $login = $this->staffLogin('09876543210', '4826')->assertOk()->assertJsonPath('data.must_change_pin', true)
+        $login = $this->staffLogin('09876543210', '482619')->assertOk()->assertJsonPath('data.must_change_pin', true)
             ->assertJsonPath('data.employee.id', $this->staff->id)->assertJsonPath('data.user.auth_client', 'staff');
         $user = User::findOrFail($login->json('data.user.id'));
         $this->assertSame('staff', $user->role);
@@ -112,13 +112,13 @@ class StaffAppTest extends TestCase
         $this->assertSame($user->id, $this->staff->fresh()->user_id);
 
         $this->as($login->json('data.token'));
-        $this->postJson('/api/auth/staff-pin', ['current_pin' => '4826', 'new_pin' => '1234'])->assertUnprocessable()->assertJsonValidationErrors('new_pin');
-        $this->postJson('/api/auth/staff-pin', ['current_pin' => '4826', 'new_pin' => '7777'])->assertUnprocessable();
-        $this->postJson('/api/auth/staff-pin', ['current_pin' => '1111', 'new_pin' => '5927'])->assertUnprocessable()->assertJsonValidationErrors('current_pin');
-        $this->postJson('/api/auth/staff-pin', ['current_pin' => '4826', 'new_pin' => '5927'])->assertOk();
+        $this->postJson('/api/auth/staff-pin', ['current_pin' => '482619', 'new_pin' => '123456'])->assertUnprocessable()->assertJsonValidationErrors('new_pin');
+        $this->postJson('/api/auth/staff-pin', ['current_pin' => '482619', 'new_pin' => '777777'])->assertUnprocessable();
+        $this->postJson('/api/auth/staff-pin', ['current_pin' => '111111', 'new_pin' => '592718'])->assertUnprocessable()->assertJsonValidationErrors('current_pin');
+        $this->postJson('/api/auth/staff-pin', ['current_pin' => '482619', 'new_pin' => '592718'])->assertOk();
 
-        $this->staffLogin('9876543210', '4826')->assertUnauthorized();
-        $this->staffLogin('+91 98765 43210', '5927')->assertOk()->assertJsonPath('data.must_change_pin', false)->assertJsonPath('data.user.id', $user->id);
+        $this->staffLogin('9876543210', '482619')->assertUnauthorized();
+        $this->staffLogin('+91 98765 43210', '592718')->assertOk()->assertJsonPath('data.must_change_pin', false)->assertJsonPath('data.user.id', $user->id);
         $this->assertSame(1, User::where('email', 'like', '%'.StaffAppAccess::HIDDEN_EMAIL_DOMAIN)->count(), 'The hidden login is made once.');
 
         // The hidden login is not listed in User Access.
@@ -127,36 +127,48 @@ class StaffAppTest extends TestCase
         $this->assertNotContains($user->id, collect($this->getJson('/api/user-access')->assertOk()->json('data'))->pluck('id')->all());
     }
 
+    public function test_new_pins_are_six_digits_but_an_older_four_digit_pin_still_signs_in(): void
+    {
+        $this->as($this->hr->createToken('web-token', ['client:web'])->plainTextToken);
+        $this->postJson("/api/staff-app-setup/{$this->staff->id}/pin", ['pin' => '4826'])->assertUnprocessable()->assertJsonFragment(['The starting PIN must be 6 digits.']);
+        $this->hrSetsPin($this->staff);
+        $this->as($this->staffLogin('9876543210', '482619')->json('data.token'));
+        $this->postJson('/api/auth/staff-pin', ['current_pin' => '482619', 'new_pin' => '5927'])->assertUnprocessable()->assertJsonFragment(['Choose a 6-digit PIN.']);
+
+        Employee::withoutGlobalScopes()->whereKey($this->staff->id)->update(['app_pin' => \Illuminate\Support\Facades\Hash::make('4826'), 'app_pin_must_change' => false]);
+        $this->staffLogin('9876543210', '4826')->assertOk();
+    }
+
     public function test_wrong_pins_lock_the_number_and_unknown_numbers_get_the_same_answer(): void
     {
         $this->hrSetsPin($this->staff);
-        $this->staffLogin('9000000000', '4826')->assertUnauthorized()->assertJsonPath('message', 'Phone number or PIN is wrong.');
+        $this->staffLogin('9000000000', '482619')->assertUnauthorized()->assertJsonPath('message', 'Phone number or PIN is wrong.');
         for ($i = 0; $i < 5; $i++) {
-            $this->staffLogin('9876543210', '1357')->assertUnauthorized()->assertJsonPath('message', 'Phone number or PIN is wrong.');
+            $this->staffLogin('9876543210', '135790')->assertUnauthorized()->assertJsonPath('message', 'Phone number or PIN is wrong.');
         }
-        $this->staffLogin('9876543210', '4826')->assertStatus(429);
+        $this->staffLogin('9876543210', '482619')->assertStatus(429);
     }
 
     public function test_access_off_no_mobile_licence_and_weak_or_clashing_pins_are_refused(): void
     {
-        $this->staffLogin('9876543210', '4826')->assertUnauthorized(); // Never switched on.
+        $this->staffLogin('9876543210', '482619')->assertUnauthorized(); // Never switched on.
         $this->as($this->hr->createToken('web-token', ['client:web'])->plainTextToken);
-        $this->postJson("/api/staff-app-setup/{$this->staff->id}/pin", ['pin' => '2345'])->assertUnprocessable();
-        $this->postJson("/api/staff-app-setup/{$this->staff->id}/pin", ['pin' => '0000'])->assertUnprocessable();
+        $this->postJson("/api/staff-app-setup/{$this->staff->id}/pin", ['pin' => '234567'])->assertUnprocessable();
+        $this->postJson("/api/staff-app-setup/{$this->staff->id}/pin", ['pin' => '000000'])->assertUnprocessable();
         $noPhone = $this->employee('No Phone', '', $this->store);
-        $this->postJson("/api/staff-app-setup/{$noPhone->id}/pin", ['pin' => '4826'])->assertUnprocessable()->assertJsonFragment(['Add a 10-digit mobile number (Contact No) to this employee first.']);
-        $this->postJson("/api/staff-app-setup/{$this->staff->id}/pin", ['pin' => '4826'])->assertOk();
+        $this->postJson("/api/staff-app-setup/{$noPhone->id}/pin", ['pin' => '482619'])->assertUnprocessable()->assertJsonFragment(['Add a 10-digit mobile number (Contact No) to this employee first.']);
+        $this->postJson("/api/staff-app-setup/{$this->staff->id}/pin", ['pin' => '482619'])->assertOk();
         $twin = $this->employee('Same Number', '9876543210', $this->store);
-        $this->postJson("/api/staff-app-setup/{$twin->id}/pin", ['pin' => '4826'])->assertUnprocessable();
+        $this->postJson("/api/staff-app-setup/{$twin->id}/pin", ['pin' => '482619'])->assertUnprocessable();
 
         $this->postJson("/api/staff-app-setup/{$this->staff->id}/disable")->assertOk();
-        $this->staffLogin('9876543210', '4826')->assertUnauthorized();
+        $this->staffLogin('9876543210', '482619')->assertUnauthorized();
 
         $basic = $this->licensedStore('No mobile branch', 52, mobile: false);
         $hr = $this->login('manager', $basic);
         $worker = $this->employee('Basic Worker', '9123456789', $basic);
-        $this->hrSetsPin($worker, '4826', $hr);
-        $this->staffLogin('9123456789', '4826')->assertForbidden()->assertJsonPath('error_code', 'MOBILE_SUBSCRIPTION_REQUIRED');
+        $this->hrSetsPin($worker, '482619', $hr);
+        $this->staffLogin('9123456789', '482619')->assertForbidden()->assertJsonPath('error_code', 'MOBILE_SUBSCRIPTION_REQUIRED');
     }
 
     public function test_the_same_number_in_two_stores_asks_which_store(): void
@@ -165,19 +177,19 @@ class StaffAppTest extends TestCase
         $branchHr = $this->login('manager', $branch);
         $twin = $this->employee('Staff Senthil', '9876543210', $branch);
         $this->hrSetsPin($this->staff);
-        $this->hrSetsPin($twin, '4826', $branchHr);
+        $this->hrSetsPin($twin, '482619', $branchHr);
 
-        $stores = $this->staffLogin('9876543210', '4826')->assertStatus(409)->assertJsonPath('error_code', 'CHOOSE_STORE')->json('data.stores');
+        $stores = $this->staffLogin('9876543210', '482619')->assertStatus(409)->assertJsonPath('error_code', 'CHOOSE_STORE')->json('data.stores');
         $this->assertEqualsCanonicalizing([$this->store->id, $branch->id], array_column($stores, 'store_id'));
-        $this->staffLogin('9876543210', '4826', $branch->id)->assertOk()->assertJsonPath('data.store.id', $branch->id)->assertJsonPath('data.employee.id', $twin->id);
+        $this->staffLogin('9876543210', '482619', $branch->id)->assertOk()->assertJsonPath('data.store.id', $branch->id)->assertJsonPath('data.employee.id', $twin->id);
     }
 
     public function test_a_staff_token_reaches_own_hr_and_approvals_only_even_for_a_manager(): void
     {
         $this->hrSetsPin($this->staff);
-        $this->hrSetsPin($this->lead, '5938');
-        $staffToken = $this->staffLogin('9876543210', '4826')->json('data.token');
-        $leadToken = $this->staffLogin('9840011111', '5938')->assertOk()->assertJsonPath('data.user.id', $this->leadLogin->id)->json('data.token');
+        $this->hrSetsPin($this->lead, '593817');
+        $staffToken = $this->staffLogin('9876543210', '482619')->json('data.token');
+        $leadToken = $this->staffLogin('9840011111', '593817')->assertOk()->assertJsonPath('data.user.id', $this->leadLogin->id)->json('data.token');
 
         // The employee: own check-in, requests and home; nothing else, not even a list of products.
         $this->as($staffToken);
@@ -218,7 +230,7 @@ class StaffAppTest extends TestCase
     public function test_the_staff_app_lists_only_the_employees_own_hr_notifications(): void
     {
         $this->hrSetsPin($this->staff);
-        $token = $this->staffLogin('9876543210', '4826')->json('data.token');
+        $token = $this->staffLogin('9876543210', '482619')->json('data.token');
         $userId = $this->staff->fresh()->user_id;
         Notification::withoutGlobalScopes()->create(['type' => 'LEAVE_DECIDED', 'title' => 'Leave approved', 'message' => 'Your leave is approved.', 'link' => '/hrms/leave',
             'reference_type' => 'LEAVE_APPLICATION', 'reference_id' => 1, 'store_id' => $this->store->id, 'user_id' => $userId]);
@@ -236,7 +248,7 @@ class StaffAppTest extends TestCase
     {
         $this->staff->forceFill(['master_details' => ['bank_account_no' => '123456789012', 'pan_number' => 'ABCDE1234F', 'aadhar_no' => '999988887777', 'blood_group' => 'O+']])->save();
         $this->hrSetsPin($this->staff);
-        $token = $this->staffLogin('9876543210', '4826')->json('data.token');
+        $token = $this->staffLogin('9876543210', '482619')->json('data.token');
         $this->as($token);
         $profile = $this->getJson('/api/staff-app/profile')->assertOk()->assertJsonPath('data.bank_account', '••••9012')
             ->assertJsonPath('data.pan', '••••234F')->assertJsonPath('data.reports_to', 'Lead Lakshmi')->assertJsonPath('data.blood_group', 'O+');

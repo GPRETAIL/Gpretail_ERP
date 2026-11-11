@@ -43,7 +43,7 @@ class StaffAppSetupController extends Controller
     /** Switch the app on with a first PIN, or reset a forgotten one. The employee must change it at the next sign-in. */
     public function setPin(Request $request, int $id): JsonResponse
     {
-        $data = $request->validate(['pin' => 'required|digits_between:4,6']);
+        $data = $request->validate(['pin' => 'required|digits:6'], ['pin.digits' => 'The starting PIN must be 6 digits.']);
         $employee = $this->find($request, $id);
         $phone = StaffAppAccess::phoneKey($employee->phone);
         if (strlen($phone) !== 10) {

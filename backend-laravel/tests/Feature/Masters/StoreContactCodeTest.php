@@ -37,6 +37,9 @@ class StoreContactCodeTest extends TestCase
     private function row(string $table, Store $store, string $code): array
     {
         $row = ['name' => 'Contact '.$code, 'code' => $code];
+        if ($table === 'employees') {
+            $row['phone'] = '9'.random_int(100000000, 999999999);
+        }
         if ($table === 'hr_designations') {
             $row['department_id'] = DB::table('hr_departments')->insertGetId(['name' => 'Department', 'code' => 'DEPT-'.$code, 'store_id' => $store->id]);
         }

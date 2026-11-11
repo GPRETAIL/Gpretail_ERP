@@ -39,7 +39,7 @@ class EmployeeDocumentTest extends TestCase
     {
         $this->actingAsRole('manager');
 
-        return Employee::find($this->postJson('/api/employees', ['name' => 'Asha', 'salary' => 25000, 'aadhar_number' => '1234 5678 9012', 'bank_account_no' => '99887766'])
+        return Employee::find($this->postJson('/api/employees', ['name' => 'Asha', 'contact_no' => '9876500004', 'salary' => 25000, 'aadhar_number' => '1234 5678 9012', 'bank_account_no' => '99887766'])
             ->assertCreated()->json('data.id'));
     }
 

@@ -86,8 +86,8 @@ class MasterFormRoundTripTest extends TestCase
 
     public function test_employee_details_and_collections_are_not_silently_discarded(): void
     {
-        $id = $this->postJson('/api/employees', ['employee_code' => 'EMP-RT', 'name' => 'Employee', 'contact_no' => '123456', 'email_id' => 'employee@example.test', 'surname' => 'Test', 'gross_pay' => '12000', 'date_of_joining' => '2026-10-01', 'pf_no' => 'PF-RT', 'families' => [['name' => 'Family']], 'additionalInfos' => [['name' => 'Remark', 'value' => 'Test']]])->assertCreated()->json('data.id');
-        $this->getJson('/api/employees/'.$id)->assertOk()->assertJsonPath('data.employee_code', 'EMP-RT')->assertJsonPath('data.contact_no', '123456')->assertJsonPath('data.date_of_joining', '2026-10-01')->assertJsonPath('data.surname', 'Test')->assertJsonPath('data.pf_no', 'PF-RT')->assertJsonPath('data.families.0.name', 'Family')->assertJsonPath('data.additionalInfos.0.name', 'Remark')->assertJsonPath('data.created_by', 'Master Owner');
+        $id = $this->postJson('/api/employees', ['employee_code' => 'EMP-RT', 'name' => 'Employee', 'contact_no' => '+91 98765 43210', 'email_id' => 'employee@example.test', 'surname' => 'Test', 'gross_pay' => '12000', 'date_of_joining' => '2026-10-01', 'pf_no' => 'PF-RT', 'families' => [['name' => 'Family']], 'additionalInfos' => [['name' => 'Remark', 'value' => 'Test']]])->assertCreated()->json('data.id');
+        $this->getJson('/api/employees/'.$id)->assertOk()->assertJsonPath('data.employee_code', 'EMP-RT')->assertJsonPath('data.contact_no', '9876543210')->assertJsonPath('data.date_of_joining', '2026-10-01')->assertJsonPath('data.surname', 'Test')->assertJsonPath('data.pf_no', 'PF-RT')->assertJsonPath('data.families.0.name', 'Family')->assertJsonPath('data.additionalInfos.0.name', 'Remark')->assertJsonPath('data.created_by', 'Master Owner');
     }
 
     public function test_a_product_saved_without_a_unit_of_measure_gets_pcs_and_keeps_its_unit_when_cleared(): void
@@ -124,7 +124,7 @@ class MasterFormRoundTripTest extends TestCase
     public function test_master_create_view_edit_save_list_delete_and_import_lifecycle(): void
     {
         foreach (['brands', 'items', 'products', 'suppliers', 'transports', 'agents', 'taxes', 'employees', 'sizes', 'size-groups', 'attributes/style', 'configurations/location', 'configurations/counter', 'configurations/tailoring_unit'] as $path) {
-            $payload = ['name' => 'Lifecycle '.$path, 'code' => 'LIFE-'.str_replace('/', '-', $path)];
+            $payload = ['name' => 'Lifecycle '.$path, 'code' => 'LIFE-'.str_replace('/', '-', $path)] + ($path === 'employees' ? ['contact_no' => '9876512345'] : []);
             $id = $this->postJson('/api/'.$path, $payload)->assertCreated()->json('data.id');
             $this->assertNotNull($id, $path);
             $this->getJson('/api/'.$path.'/'.$id)->assertOk()->assertJsonPath('data.name', $payload['name']);

@@ -195,13 +195,13 @@ class AttendanceEngineTest extends TestCase
     {
         $login = $this->user('cashier');
         Sanctum::actingAs($this->user('manager'));
-        $id = $this->postJson('/api/employees', ['name' => 'Asha', 'allow_system' => true, 'system_username' => $login->username])->assertCreated()->json('data.id');
+        $id = $this->postJson('/api/employees', ['name' => 'Asha', 'contact_no' => '9876500001', 'allow_system' => true, 'system_username' => $login->username])->assertCreated()->json('data.id');
         $this->assertSame($login->id, Employee::find($id)->user_id);
 
         $this->putJson("/api/employees/{$id}", ['name' => 'Asha R'])->assertOk(); // Not sent: the link stays.
         $this->assertSame($login->id, Employee::find($id)->user_id);
-        $this->postJson('/api/employees', ['name' => 'Twin', 'allow_system' => true, 'system_username' => $login->username])->assertUnprocessable()->assertJsonValidationErrors('system_username');
-        $this->postJson('/api/employees', ['name' => 'Ghost', 'allow_system' => true, 'system_username' => 'nobody-here'])->assertUnprocessable();
+        $this->postJson('/api/employees', ['name' => 'Twin', 'contact_no' => '9876500002', 'allow_system' => true, 'system_username' => $login->username])->assertUnprocessable()->assertJsonValidationErrors('system_username');
+        $this->postJson('/api/employees', ['name' => 'Ghost', 'contact_no' => '9876500003', 'allow_system' => true, 'system_username' => 'nobody-here'])->assertUnprocessable();
 
         $this->putJson("/api/employees/{$id}", ['allow_system' => false])->assertOk();
         $this->assertNull(Employee::find($id)->user_id);

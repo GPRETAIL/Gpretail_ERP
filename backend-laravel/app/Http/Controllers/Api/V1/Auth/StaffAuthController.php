@@ -82,7 +82,9 @@ class StaffAuthController extends Controller
     /** The signed-in employee changes their own PIN (required after HR sets one). */
     public function changePin(Request $request): JsonResponse
     {
-        $data = $request->validate(['current_pin' => 'required|digits_between:4,6', 'new_pin' => 'required|digits_between:4,6|different:current_pin']);
+        // New PINs are 6 digits; sign-in still takes an older 4 or 5 digit PIN.
+        $data = $request->validate(['current_pin' => 'required|digits_between:4,6', 'new_pin' => 'required|digits:6|different:current_pin'],
+            ['new_pin.digits' => 'Choose a 6-digit PIN.']);
         $employee = Employee::withoutGlobalScopes()->where('user_id', $request->user()->id)->where('app_access', true)
             ->when($request->attributes->get('store_context_id'), fn ($q, $store) => $q->where('store_id', $store))->first();
         abort_unless($employee, 404, 'The staff app is not switched on for you.');

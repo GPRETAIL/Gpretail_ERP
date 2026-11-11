@@ -32,7 +32,7 @@ class MasterImportCoverageTest extends TestCase
             'suppliers' => ['suppliers', ['contact_person' => 'Contact', 'contact_no' => '123456', 'gst' => 'GST-IMPORT', 'email_id' => 'supplier@example.test'], ['contact_person' => 'Contact', 'contact_no' => '123456', 'gst' => 'GST-IMPORT']],
             'transports' => ['transports', ['contact_person' => 'Driver', 'contact_no' => '123456', 'bank_account_name' => 'Bank account'], ['contact_person' => 'Driver', 'contact_no' => '123456', 'bank_account_name' => 'Bank account']],
             'agents' => ['agents', ['commission_pct' => 12.5, 'commission_amt' => 10], ['commission_pct' => 12.5, 'commission_amt' => 10]],
-            'employees' => ['employees', ['employee_code' => 'EMP-IMPORT', 'date_of_joining' => '2026-10-22', 'contact_no' => '123456', 'surname' => 'Surname'], ['date_of_joining' => '2026-10-22', 'contact_no' => '123456', 'surname' => 'Surname']],
+            'employees' => ['employees', ['employee_code' => 'EMP-IMPORT', 'date_of_joining' => '2026-10-22', 'contact_no' => '9876543210', 'surname' => 'Surname'], ['date_of_joining' => '2026-10-22', 'contact_no' => '9876543210', 'surname' => 'Surname']],
             'sizes' => ['sizes', ['measurement' => '40', 'ageSet' => 'Adult', 'UOM' => 'PCS', 'sortOrder' => 3, 'IsComboSize' => true, 'IsMeterSize' => true, 'isVariant' => true], ['measurement' => '40', 'age_set' => 'Adult', 'uom' => 'PCS', 'sort_order' => 3, 'isComboSize' => true, 'isMeterSize' => true, 'isVariant' => true]],
             'size-groups' => ['size_groups', ['sortOrder' => 4, 'enableSizeRatio' => true], ['sort_order' => 4, 'enableSizeRatio' => true]],
         ];
