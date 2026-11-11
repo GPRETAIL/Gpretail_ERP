@@ -4,6 +4,7 @@ import React, { useState, useCallback, useMemo } from "react";
 import { ChevronDown } from "lucide-react";
 import { Box, Typography } from "@mui/material";
 import api from "@/shared/api/apiClient";
+import LoadingSkeleton from "@/shared/components/LoadingSkeleton";
 
 const money = (n) =>
   "₹ " +
@@ -128,7 +129,7 @@ export default function PurchaseSummaryScreen() {
 
       {loading ? (
         <Box className="vx-card" sx={{ textAlign: "center" }}>
-          <Typography component="p" sx={{ fontSize: 14, color: "#94a3b8" }}>Loading…</Typography>
+          <LoadingSkeleton variant="list" rows={4} label="Loading purchase summary" />
         </Box>
       ) : (
         <BreakdownView type={breakdownType} bills={bills} />

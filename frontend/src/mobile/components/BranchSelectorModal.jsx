@@ -4,6 +4,7 @@ import React, { useState, useCallback } from "react";
 import { X, Check, Store } from "lucide-react";
 import { Box, Typography } from "@mui/material";
 import api from "@/shared/api/apiClient";
+import LoadingSkeleton from "@/shared/components/LoadingSkeleton";
 
 /**
  * Store switcher for users assigned to (or able to see) more than one
@@ -61,7 +62,7 @@ export default function BranchSelectorModal({ isOpen, onClose }) {
 
         <Box sx={{ p: 1.5, overflowY: "auto", flex: 1, display: "flex", flexDirection: "column", gap: 0.75 }}>
           {loading ? (
-            <Typography component="p" sx={{ textAlign: "center", fontSize: 12, color: "#94a3b8", py: 4 }}>Loading stores...</Typography>
+            <LoadingSkeleton variant="list" rows={4} label="Loading stores" sx={{ py: 2 }} />
           ) : stores.length === 0 ? (
             <Typography component="p" sx={{ textAlign: "center", fontSize: 12, color: "#94a3b8", py: 4 }}>No stores found</Typography>
           ) : (

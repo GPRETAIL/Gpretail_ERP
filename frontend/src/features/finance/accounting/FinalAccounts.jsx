@@ -3,6 +3,7 @@ import { Alert, Box, Paper, Stack, Table, TableBody, TableCell, TableHead, Table
 import { DateFilters, FinanceReportLayout } from "./components/FinanceReportLayout";
 import LedgerStatementDialog from "./components/LedgerStatementDialog";
 import { financialYearStart, money, today, useFinanceReport } from "./utils/financeUtils";
+import LoadingSkeleton from "@/shared/components/LoadingSkeleton";
 
 const TITLES = { trading: "Trading Account", pl: "Profit & Loss Account", balance: "Balance Sheet" };
 
@@ -111,7 +112,7 @@ export default function FinalAccounts({ variant }) {
       <Stack direction={{ xs: "column", md: "row" }} spacing={1.5} sx={{ alignItems: { xs: "stretch", md: "flex-start" } }}>
         {sides.map(side => <Side key={side.title} {...side} onOpen={setOpen} />)}
       </Stack>
-      {!data && report.loading ? <Box sx={{ p: 2 }}><Typography variant="body2">Loading…</Typography></Box> : null}
+      {!data && report.loading ? <Box sx={{ p: 2 }}><LoadingSkeleton variant="table" rows={10} label="Loading accounts" /></Box> : null}
       {open ? <LedgerStatementDialog account={open} from={isBalance ? undefined : range.from} to={range.to} onClose={() => setOpen(null)} /> : null}
     </FinanceReportLayout>
   );

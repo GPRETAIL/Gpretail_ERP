@@ -27,6 +27,7 @@ import SecurityPinSettings from "../security/SecurityPinSettings";
 import DisplayAccessibilitySettings from "./DisplayAccessibilitySettings";
 import { isRestrictedRole } from "../utils/rolePermissions";
 import { useMobileAccess } from "../utils/mobileAccessContext";
+import LoadingSkeleton from "@/shared/components/LoadingSkeleton";
 
 const RemoteSupport = lazy(() => import("@/features/settings/RemoteSupport"));
 
@@ -208,7 +209,7 @@ export default function SettingsScreen({ onLogout, onTriggerPwa, appLock, biomet
 
       {/* ─── MODALS & DRAWERS ─── */}
       {activeModal === "support" && <SettingsDrawer title="Remote Support" onClose={() => setActiveModal(null)}>
-        <Suspense fallback={<Typography>Loading remote support…</Typography>}><RemoteSupport /></Suspense>
+        <Suspense fallback={<LoadingSkeleton variant="list" rows={3} label="Loading remote support" />}><RemoteSupport /></Suspense>
       </SettingsDrawer>}
 
       {/* Business Profile Modal */}
@@ -249,7 +250,7 @@ export default function SettingsScreen({ onLogout, onTriggerPwa, appLock, biomet
                 </Box>
               ))
             ) : (
-              <Box sx={{ p: 1.5, textAlign: "center", fontSize: 12, color: "#64748b" }}>Loading user database...</Box>
+              <LoadingSkeleton variant="list" rows={3} label="Loading users" sx={{ p: 1.5 }} />
             )}
           </Box>
         </SettingsDrawer>
@@ -272,7 +273,7 @@ export default function SettingsScreen({ onLogout, onTriggerPwa, appLock, biomet
                 </Box>
               ))
             ) : (
-              <Box sx={{ p: 1.5, textAlign: "center", fontSize: 12, color: "#64748b" }}>Loading role groups...</Box>
+              <LoadingSkeleton variant="list" rows={3} label="Loading role groups" sx={{ p: 1.5 }} />
             )}
           </Box>
         </SettingsDrawer>

@@ -31,6 +31,7 @@ import {
   alpha,
 } from "@mui/material";
 import { muiFieldSx, SEARCHABLE_TRIGGER_SX } from "@/shared/theme/formControlSizes";
+import LoadingSkeleton from "@/shared/components/LoadingSkeleton";
 
 // ─── Sub-components (outside to prevent focus loss) ─────────────────────────
 
@@ -1288,7 +1289,7 @@ const LastSavedDialog = ({ open, loading, entry, onClose }) => {
         </Stack>
         <Box sx={{ flex: 1, overflowY: "auto", px: 2, py: 2 }}>
           {loading ? (
-            <Box sx={{ py: 6, textAlign: "center", fontSize: 12.25, color: "text.secondary" }}>Loading last saved direct purchase...</Box>
+            <LoadingSkeleton variant="table" rows={6} label="Loading last saved direct purchase" sx={{ py: 3 }} />
           ) : !entry ? (
             <Box sx={{ py: 6, textAlign: "center", fontSize: 12.25, color: "text.secondary" }}>No direct purchase found for the selected store.</Box>
           ) : (

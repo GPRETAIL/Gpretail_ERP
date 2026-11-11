@@ -13,6 +13,7 @@ import { post, useHrManager } from "../utils/hrApi";
 import { rupees } from "../payroll/payslipPrint";
 import { errorMessage } from "../utils/hrStatus";
 import { PROOF_STATUS, REGIME_LABEL, SECTION, fyChoices, fyOf, form16Html, quarterMonths } from "./taxShared";
+import LoadingSkeleton from "@/shared/components/LoadingSkeleton";
 
 const MULTIPART = { headers: { "Content-Type": "multipart/form-data" } };
 const today = () => new Date().toLocaleDateString("en-CA");
@@ -508,7 +509,7 @@ function TaxRules({ fy }) {
   // The loaded rules are edited in place; saving reloads them.
   const [data, load, setData] = useGet("/tds/rules", { fy });
   const rules = data?.rules;
-  if (!rules) return <Typography variant="body2">Loading…</Typography>;
+  if (!rules) return <LoadingSkeleton variant="table" rows={10} label="Loading tax rules" />;
   const set = (path, value) => setData((prev) => {
     const next = structuredClone(prev);
     let node = next.rules;

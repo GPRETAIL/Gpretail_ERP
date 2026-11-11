@@ -4,6 +4,7 @@ import { Box, Button, Chip, IconButton, MenuItem, Paper, Stack, TextField, Typog
 import { Plus, Trash2 } from "lucide-react";
 import api from "@/shared/api/apiClient";
 import { errorMessage } from "../utils/hrStatus";
+import LoadingSkeleton from "@/shared/components/LoadingSkeleton";
 
 const CALCS = [["PERCENT_OF_GROSS", "% of gross"], ["PERCENT_OF_BASIC", "% of Basic"], ["FIXED", "Fixed ₹"], ["BALANCE", "The balance"]];
 
@@ -63,7 +64,7 @@ export default function SalaryStructures({ canManage }) {
     }
   };
 
-  if (!data) return <Typography variant="body2">Loading…</Typography>;
+  if (!data) return <LoadingSkeleton variant="table" rows={10} label="Loading salary structures" />;
   const earnings = data.components.filter((c) => c.type === "EARNING" && c.is_active && !["OT", "INCENTIVE", "BATTA"].includes(c.statutory));
   const setLine = (i, key, value) => setLines((prev) => prev.map((l, j) => (j === i ? { ...l, [key]: value } : l)));
   return (

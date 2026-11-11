@@ -2,6 +2,7 @@ import { useCallback, useState } from "react";
 import { Alert, Button, Checkbox, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, Stack, Table, TableBody, TableCell, TableHead, TableRow, Typography } from "@mui/material";
 import api from "@/shared/api/apiClient";
 import useAsyncQuery from "@/shared/hooks/useAsyncQuery";
+import LoadingSkeleton from "@/shared/components/LoadingSkeleton";
 
 export default function ClientAccessDialog({ user, onClose, onSaved }) {
   const [form, setForm] = useState(null);
@@ -31,7 +32,7 @@ export default function ClientAccessDialog({ user, onClose, onSaved }) {
     <DialogTitle>Web, mobile and module access · {user.name || user.email}</DialogTitle>
     <DialogContent dividers>
       {(error || loadError) && <Alert severity="error">{error || "Unable to load access settings."}</Alert>}
-      {loading && <Typography>Loading access…</Typography>}
+      {loading && <LoadingSkeleton variant="list" rows={3} label="Loading access" />}
       {data && form && <Stack spacing={2}>
         <Alert severity="info">Store: {data.store.name}. Mobile subscription: {data.store.mobile_entitled ? "Included" : "Unavailable"}. User grants are limited by this store's subscription. Saving replaces role defaults and signs this user out of existing sessions.</Alert>
         <Stack direction="row">

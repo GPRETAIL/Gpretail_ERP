@@ -8,6 +8,7 @@ import { toast } from "react-toastify";
 import { Box, Button, Stack, Table, TableBody, TableCell, TableHead, TableRow, Typography } from "@mui/material";
 import api from "@/shared/api/apiClient";
 import Breadcrumbs from "@/shared/components/Breadcrumbs";
+import LoadingSkeleton from "@/shared/components/LoadingSkeleton";
 
 const toNum = (value, fallback = 0) => {
   const parsed = Number(value);
@@ -73,7 +74,7 @@ const CustomerProfile = () => {
 
       <Box sx={{ flex: 1, p: 2, minHeight: 0, overflow: "auto" }}>
         {loading ? (
-          <Typography sx={{ textAlign: "center", py: 4, fontSize: "inherit", color: "text.secondary" }}>Loading...</Typography>
+          <LoadingSkeleton variant="list" rows={6} label="Loading customer profile" />
         ) : !customer ? (
           <Typography sx={{ textAlign: "center", py: 4, fontSize: "inherit", color: "text.secondary" }}>Customer not found.</Typography>
         ) : (

@@ -23,6 +23,7 @@ import { useDispatch } from "react-redux";
 import checkAuth from "@/features/auth/utils/checkAuth";
 import api from "@/shared/api/apiClient";
 import { muiFieldSx } from "@/shared/theme/formControlSizes";
+import LoadingSkeleton from "@/shared/components/LoadingSkeleton";
 
 const REQUIRED_FIELDS = ["code", "name", "regName", "contactPerson", "contactNo"];
 
@@ -471,7 +472,7 @@ const CompanySettings = () => {
   const fieldSx = muiFieldSx;
 
   if (loading) {
-    return <Typography sx={{ fontSize: 12.25, color: "text.secondary" }}>Loading company setup...</Typography>;
+    return <LoadingSkeleton variant="table" rows={8} label="Loading company setup" />;
   }
 
   return (

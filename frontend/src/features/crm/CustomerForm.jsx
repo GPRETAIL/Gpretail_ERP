@@ -9,6 +9,7 @@ import { Box, Button, Stack, Typography } from "@mui/material";
 import api from "@/shared/api/apiClient";
 import Breadcrumbs from "@/shared/components/Breadcrumbs";
 import { TextInput, SelectInput, CheckboxInput } from "@/shared/components/CustomInputs";
+import LoadingSkeleton from "@/shared/components/LoadingSkeleton";
 
 const CUSTOMER_TYPES = [
   "Employee", "Retail", "Provider", "Customer", "Tailoring",
@@ -226,7 +227,7 @@ const CustomerForm = () => {
       <Box sx={{ flex: 1, p: 2, minHeight: 0 }}>
         <Stack sx={{ bgcolor: "background.paper", boxShadow: 3, borderRadius: "7px", border: "1px solid", borderColor: "divider", width: "100%", height: "100%", minHeight: 0, overflow: "auto", px: 2.5, py: 2 }}>
           {loadingRecord ? (
-            <Typography sx={{ textAlign: "center", py: 4, color: "text.secondary" }}>Loading...</Typography>
+            <LoadingSkeleton variant="table" rows={6} label="Loading customer" />
           ) : (
             <Box sx={{ display: "grid", gap: "8px 32px", gridTemplateColumns: { xl: "repeat(3, 1fr)" }, width: "100%" }}>
               {/* Row 1 */}

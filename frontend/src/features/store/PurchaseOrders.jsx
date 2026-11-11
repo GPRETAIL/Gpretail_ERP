@@ -13,6 +13,7 @@ import SearchGridPanel from "@/shared/components/SearchGridPanel";
 import useSearchGrid from "@/shared/hooks/useSearchGrid";
 import { browserPrintHtml } from "@/features/sales/pos/utils/posSalesUtils";
 import { PO_FILTERS, day, lineLabel, money, purchaseOrderHtml, purchaseOrderWhatsAppUrl, qty, statusColor, statusLabel } from "./utils/purchaseOrderPrint";
+import LoadingSkeleton from "@/shared/components/LoadingSkeleton";
 
 const blankOrder = { supplier_id: "", expected_date: "", notes: "", items: [], receipts: [], status: "DRAFT" };
 
@@ -83,7 +84,7 @@ function OrderEditor({ uuid, suppliers, storeName, onClose, onChanged }) {
     <Dialog open onClose={() => { if (!busy) onClose(); }} maxWidth="md" fullWidth>
       <DialogTitle>{order?.po_no ? `${order.po_no} · ${statusLabel({ ...order, items: lines })}` : "New purchase order"}</DialogTitle>
       <DialogContent>
-        {!order ? <Typography sx={{ color: "text.secondary" }}>Loading…</Typography> : (
+        {!order ? <LoadingSkeleton variant="table" rows={6} label="Loading purchase order" /> : (
           <Stack spacing={1.5} sx={{ pt: 1 }}>
             {order.status === "APPROVED" && <Alert severity="info">Receive the goods in Warehouse &gt; Direct Purchase: choose this supplier, then this order under "Against PO". The order closes itself when everything has arrived.</Alert>}
             {order.source === "AUTO" && draft && <Alert severity="info">Drafted by the reorder engine for items at or below their reorder level. Check the quantities and supplier, then approve.</Alert>}

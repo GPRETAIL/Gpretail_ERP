@@ -5,6 +5,7 @@ import api from "@/shared/api/apiClient";
 import { browserPrintHtml } from "@/features/sales/pos/utils/posSalesUtils";
 import { errorMessage } from "@/features/hr/utils/hrStatus";
 import { monthLabel, payslipHtml, payslipWhatsAppUrl, rupees } from "@/features/hr/payroll/payslipPrint";
+import LoadingSkeleton from "@/shared/components/LoadingSkeleton";
 
 const card = { p: 1.5, borderRadius: "16px", bgcolor: "var(--hr-surface, #fff)", border: "1px solid var(--hr-border, rgba(226,232,240,0.8))" };
 const days = (value) => { const n = Number(value) || 0; return Number.isInteger(n) ? String(n) : n.toFixed(1); };
@@ -76,7 +77,7 @@ export default function PayslipsScreen({ masked = false }) {
   }, []);
 
   if (open) return <SlipDetail id={open} onBack={() => setOpen(null)} />;
-  if (!data) return <Box sx={card}><Typography sx={{ fontSize: 12.5, color: "var(--hr-faint, #94a3b8)" }}>Loading…</Typography></Box>;
+  if (!data) return <Box sx={card}><LoadingSkeleton variant="list" rows={3} label="Loading payslips" /></Box>;
   if (!data.employee) return <Box sx={card}><Typography sx={{ fontSize: 12.5, color: "var(--hr-muted, #64748b)" }}>Your login is not linked to an employee yet. Ask HR to link it on your employee record.</Typography></Box>;
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>

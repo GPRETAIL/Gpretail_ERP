@@ -4,6 +4,7 @@ import { Alert, Box, Button, Checkbox, FormControlLabel, IconButton, MenuItem, P
 import { Plus, Trash2 } from "lucide-react";
 import api from "@/shared/api/apiClient";
 import { errorMessage } from "../utils/hrStatus";
+import LoadingSkeleton from "@/shared/components/LoadingSkeleton";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -23,7 +24,7 @@ export default function PayrollSettings({ canManage }) {
     return () => { active = false; };
   }, []);
 
-  if (!settings) return <Typography variant="body2">Loading…</Typography>;
+  if (!settings) return <LoadingSkeleton variant="table" rows={10} label="Loading payroll settings" />;
   const set = (section, key, value) => setSettings((prev) => ({ ...prev, [section]: { ...(prev[section] || {}), [key]: value } }));
   const pt = settings.pt;
   const chooseState = (state) => {

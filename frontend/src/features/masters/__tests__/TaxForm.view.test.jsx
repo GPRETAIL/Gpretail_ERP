@@ -33,7 +33,7 @@ describe("Tax View", () => {
     render(<MemoryRouter initialEntries={["/masters/tax/GST-VIEW?company_id=7"]}>
       <Routes><Route path="/masters/tax/:taxCode" element={<TaxForm />} /></Routes>
     </MemoryRouter>);
-    expect(screen.getByRole("status")).toHaveTextContent("Loading tax record");
+    expect(screen.getByRole("status", { name: "Loading tax record" })).toBeInTheDocument();
     expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Edit" })).toBeDisabled();
     rejectLoad({ response: { data: { message: "Tax lookup failed" } } });

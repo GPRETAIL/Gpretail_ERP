@@ -4,6 +4,7 @@ import { Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle, MenuI
 import { LocateFixed } from "lucide-react";
 import api from "@/shared/api/apiClient";
 import { errorMessage } from "../utils/hrStatus";
+import LoadingSkeleton from "@/shared/components/LoadingSkeleton";
 
 const listOf = (payload) => (Array.isArray(payload) ? payload : Array.isArray(payload?.data) ? payload.data : []);
 
@@ -69,7 +70,7 @@ export default function AttendanceSettingsDialog({ onClose }) {
     <Dialog open onClose={() => onClose(false)} maxWidth="sm" fullWidth>
       <DialogTitle sx={{ fontSize: 15 }}>Attendance settings</DialogTitle>
       <DialogContent>
-        {!form ? <Typography variant="body2" sx={{ py: 2 }}>Loading…</Typography> : (
+        {!form ? <LoadingSkeleton variant="list" rows={5} label="Loading attendance settings" /> : (
           <Stack spacing={2} sx={{ pt: 1 }}>
             <Typography variant="subtitle2">Shift</Typography>
             <TextField select size="small" label="Default working hour" value={form.default_working_hour_id} onChange={set("default_working_hour_id")}

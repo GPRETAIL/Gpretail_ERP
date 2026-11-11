@@ -13,6 +13,7 @@ import { post, useEmployees, useHrManager, useLoader } from "../utils/hrApi";
 import { rupees } from "../payroll/payslipPrint";
 import { EXIT_REASON, EXIT_STATUS, EXIT_TYPE, MONEY_STATUS, days, errorMessage } from "../utils/hrStatus";
 import { experienceLetterHtml, relievingLetterHtml, settlementHtml } from "./exitPrint";
+import LoadingSkeleton from "@/shared/components/LoadingSkeleton";
 
 const today = () => new Date().toLocaleDateString("en-CA");
 const addDays = (date, n) => { const d = new Date(`${date}T00:00:00`); d.setDate(d.getDate() + Number(n || 0)); return d.toLocaleDateString("en-CA"); };
@@ -179,7 +180,7 @@ function ExitReport() {
   useEffect(() => {
     api.get("/separations/report").then((r) => setData(r.data?.data || null)).catch(() => setData({ total: 0 }));
   }, []);
-  if (!data) return <Typography variant="body2">Loading…</Typography>;
+  if (!data) return <LoadingSkeleton variant="table" rows={6} label="Loading resignation" />;
   const block = (title, entries, labels) => (
     <Paper variant="outlined" sx={{ p: 1.5 }}>
       <Typography variant="subtitle2" sx={{ mb: 1 }}>{title}</Typography>

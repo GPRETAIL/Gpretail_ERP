@@ -3,6 +3,7 @@ import { Box, Button, Dialog, DialogContent, DialogTitle, IconButton, Stack, Typ
 import { X } from "lucide-react";
 import api from "@/shared/api/apiClient";
 import useAsyncQuery from "@/shared/hooks/useAsyncQuery";
+import LoadingSkeleton from "@/shared/components/LoadingSkeleton";
 
 const money = value => Number(value || 0).toLocaleString("en-IN", { style: "currency", currency: "INR" });
 const SummaryRow = ({ label, value, strong = false }) => <Stack direction="row" justifyContent="space-between" sx={{ gap: 2, fontWeight: strong ? 700 : 400 }}><span>{label}</span><span>{money(value)}</span></Stack>;
@@ -19,7 +20,7 @@ export default function SaleInvoiceDetails({ saleId, onClose }) {
       <IconButton aria-label="Close invoice details" onClick={onClose}><X size={20} /></IconButton>
     </DialogTitle>
     <DialogContent dividers>
-      {loading ? <Typography role="status">Loading invoice…</Typography> : error ? <Stack spacing={2}><Typography role="alert">{error.response?.data?.message || "Unable to load this invoice."}</Typography><Button onClick={() => reload()}>Retry</Button></Stack> : invoice ? <Stack spacing={2}>
+      {loading ? <LoadingSkeleton variant="table" rows={6} label="Loading invoice" /> : error ? <Stack spacing={2}><Typography role="alert">{error.response?.data?.message || "Unable to load this invoice."}</Typography><Button onClick={() => reload()}>Retry</Button></Stack> : invoice ? <Stack spacing={2}>
         <Box sx={{ fontSize: 13 }}>
           {invoice.store?.name && <Typography fontWeight={700}>{invoice.store.name}</Typography>}
           <Typography variant="body2">{invoice.customer?.name || invoice.customer_name || "Walk-in customer"}</Typography>

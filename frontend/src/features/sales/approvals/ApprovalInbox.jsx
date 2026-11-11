@@ -9,6 +9,7 @@ import api from "@/shared/api/apiClient";
 import AsyncSearchSelect from "@/shared/components/AsyncSearchSelect";
 import { Box, Stack, Typography, TextField, MenuItem, IconButton, Button, Table, TableHead, TableBody, TableRow, TableCell, alpha } from "@mui/material";
 import { FIELD_HEIGHT, muiFieldSx } from "@/shared/theme/formControlSizes";
+import LoadingSkeleton from "@/shared/components/LoadingSkeleton";
 
 const mapCustomerOption = (row) => ({
   value: String(row.id),
@@ -379,7 +380,7 @@ const ApprovalInbox = () => {
 
             <Stack spacing={2} sx={{ p: 2, overflowY: "auto", maxHeight: "calc(90vh - 56px)", color: "text.primary" }}>
               {loadingDetails ? (
-                <Typography sx={{ fontSize: 12.25, color: "text.secondary" }}>Loading details...</Typography>
+                <LoadingSkeleton variant="list" rows={3} label="Loading details" />
               ) : !selectedSale ? (
                 <Typography sx={{ fontSize: 12.25, color: "text.secondary" }}>Unable to load details.</Typography>
               ) : (

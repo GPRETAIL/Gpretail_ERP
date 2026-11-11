@@ -16,6 +16,7 @@ import api from "@/shared/api/apiClient";
 import { normalizeFormSignature } from "@/shared/utils/formSignature";
 import UploadImportButton from "@/shared/components/UploadImportButton";
 import { ATTR_IMPORT_CONFIGS, GENERIC_ATTR_CONFIG, GENERIC_ATTR_TRANSFORM } from "./utils/attrImportConfigs";
+import LoadingSkeleton from "@/shared/components/LoadingSkeleton";
 
 const mockOptions = [
   { label: "SIZE", value: "SIZE" },
@@ -933,7 +934,7 @@ const ProductAttributeForm = () => {
             />
           </Box>
           {loadingRecord ? (
-            <Box sx={{ textAlign: "center", py: 4, color: "text.secondary" }}>Loading...</Box>
+            <LoadingSkeleton variant="table" rows={6} label="Loading attribute" />
           ) : (
             <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "repeat(12, 1fr)" }, gap: 1.5 }}>{renderDynamicFields()}</Box>
           )}

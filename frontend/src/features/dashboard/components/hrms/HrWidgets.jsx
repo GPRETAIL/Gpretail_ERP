@@ -4,6 +4,7 @@ import { AlertOctagon, Building2, CalendarClock, CalendarHeart, ClipboardCheck, 
 import { Box, ButtonBase, Stack, Typography } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import { formatCurrency, severityTileSx } from "@/features/dashboard/utils/dashboardFormatters";
+import LoadingSkeleton from "@/shared/components/LoadingSkeleton";
 
 const fmtDate = (iso) => (iso ? new Date(`${iso}T00:00:00`).toLocaleDateString("en-IN", { day: "numeric", month: "short" }) : "");
 const monthShort = (ym) => new Date(`${ym}-01T00:00:00`).toLocaleDateString("en-IN", { month: "short", year: "2-digit" });
@@ -17,7 +18,7 @@ function Panel({ icon: Icon, title, color = "primary.main", children, onOpen, lo
         </Typography>
         {onOpen && <ButtonBase onClick={onOpen} sx={{ fontSize: TYPE.small, fontWeight: 600, color: "primary.main", px: 0.5, borderRadius: 1 }}>Open</ButtonBase>}
       </Stack>
-      <Box sx={{ flex: 1, minHeight: 0, overflowY: "auto" }}>{loading ? <Empty>Loading…</Empty> : children}</Box>
+      <Box sx={{ flex: 1, minHeight: 0, overflowY: "auto" }}>{loading ? <LoadingSkeleton variant="list" rows={3} /> : children}</Box>
     </Box>
   );
 }
@@ -47,7 +48,7 @@ export function HrActionRequired({ actionRequired = [], loading }) {
         <Box sx={{ color: "warning.main", display: "inline-flex" }}><AlertOctagon size={20} /></Box>
         <Typography component="h2" sx={{ fontSize: 13, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Action required</Typography>
       </Stack>
-      {loading ? <Empty>Loading…</Empty> : actionRequired.length === 0 ? <Empty>Nothing needs attention. Everything is up to date.</Empty> : (
+      {loading ? <LoadingSkeleton variant="list" rows={1} /> : actionRequired.length === 0 ? <Empty>Nothing needs attention. Everything is up to date.</Empty> : (
         <Box sx={{ display: "grid", gap: 1.5, gridTemplateColumns: { xs: "1fr", sm: "repeat(2, minmax(0, 1fr))", lg: "repeat(4, minmax(0, 1fr))" } }}>
           {actionRequired.map((item) => (
             <ButtonBase key={item.type} onClick={() => navigate(item.link)}

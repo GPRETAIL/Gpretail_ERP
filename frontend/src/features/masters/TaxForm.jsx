@@ -21,6 +21,7 @@ import PageHeader from "@/shared/components/PageHeader";
 import Breadcrumbs from "@/shared/components/Breadcrumbs";
 import { handleEnterKeyNavigation } from "@/shared/utils/enterToNextField";
 import { normalizeFormSignature } from "@/shared/utils/formSignature";
+import LoadingSkeleton from "@/shared/components/LoadingSkeleton";
 
 const DEFAULT_RANGED_TAX_ITEMS = [
     {
@@ -400,7 +401,7 @@ const TaxForm = () => {
 
       <Box sx={{ p: 1.5, flex: 1, minHeight: 0 }}>
         {recordLoading ? (
-          <Typography role="status" sx={{ p: 2 }}>Loading tax record…</Typography>
+          <LoadingSkeleton variant="table" rows={6} label="Loading tax record" sx={{ p: 2 }} />
         ) : loadError ? (
           <Alert severity="error" action={<Button onClick={() => setLoadAttempt((attempt) => attempt + 1)}>Retry</Button>}>
             {loadError}

@@ -3,6 +3,7 @@ import { Box, Typography } from "@mui/material";
 import { Check, Paperclip, X } from "lucide-react";
 import api from "@/shared/api/apiClient";
 import { STAFF_COLOR, STAFF_TEXT, card, errorText, primaryButton, rupee, secondaryButton } from "../staffUi";
+import LoadingSkeleton from "@/shared/components/LoadingSkeleton";
 
 const FILTERS = [["all", "All"], ["leave", "Leave"], ["attendance", "Attendance"], ["shift", "Shift"], ["overtime", "Overtime"], ["claim", "Expenses"], ["loan", "Advances"], ["resignation", "Resignations"]];
 
@@ -111,7 +112,7 @@ export default function ApprovalsTab({ onChanged }) {
         ))}
       </Box>
       {message && <Box role="status" sx={{ ...card, bgcolor: STAFF_COLOR.primarySoft, borderColor: STAFF_COLOR.primaryBorder, color: STAFF_COLOR.primaryDark, fontSize: STAFF_TEXT.label, fontWeight: 700 }}>{message}</Box>}
-      {items === null && <Box sx={card}><Typography sx={{ fontSize: STAFF_TEXT.body, color: STAFF_COLOR.faint }}>Loading…</Typography></Box>}
+      {items === null && <Box sx={card}><LoadingSkeleton variant="list" rows={4} label="Loading approvals" /></Box>}
       {items && shown.length === 0 && <Box sx={card}><Typography sx={{ fontSize: STAFF_TEXT.body, color: STAFF_COLOR.muted }}>Nothing is waiting for your approval.</Typography></Box>}
       {shown.map((item) => (
         <Item key={`${item.type}-${item.id}`} item={item} onDone={(text) => { setMessage(`${item.employee_name}: ${text}`); void load(); onChanged?.(); }} />

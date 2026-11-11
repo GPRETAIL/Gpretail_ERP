@@ -13,6 +13,7 @@ import SalaryTab from "./tabs/SalaryTab";
 import MeTab from "./tabs/MeTab";
 import { STAFF_COLOR, STAFF_TEXT, STAFF_THEMES, TOUCH, card, staffThemeVars } from "./staffUi";
 import useStaffTheme from "./useStaffTheme";
+import LoadingSkeleton from "@/shared/components/LoadingSkeleton";
 
 const TABS = [
   { key: "home", label: "Home", icon: Home },
@@ -72,7 +73,7 @@ function NotificationsSheet({ onClose }) {
           <Typography sx={{ flex: 1, fontSize: STAFF_TEXT.heading, fontWeight: 800, color: STAFF_COLOR.text }}>Notifications</Typography>
           <Box component="button" type="button" onClick={onClose} aria-label="Close" sx={{ width: TOUCH, height: TOUCH, border: 0, bgcolor: "transparent", color: STAFF_COLOR.muted, cursor: "pointer" }}><X size={22} /></Box>
         </Box>
-        {rows === null && <Typography sx={{ fontSize: STAFF_TEXT.body, color: STAFF_COLOR.faint }}>Loading…</Typography>}
+        {rows === null && <LoadingSkeleton variant="list" rows={4} label="Loading notifications" />}
         {rows?.length === 0 && <Box sx={card}><Typography sx={{ fontSize: STAFF_TEXT.body, color: STAFF_COLOR.muted }}>No notifications yet.</Typography></Box>}
         <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
           {(rows || []).map((n) => (

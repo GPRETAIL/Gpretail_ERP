@@ -13,6 +13,7 @@ import { FONT_OPTIONS, TEXT_SIZE_OPTIONS, isHexColor } from "@/shared/theme/them
 import { COLOR_FIELDS, ENTERPRISE_THEMES, STYLE_OPTIONS, isEnterpriseTheme, normalizeTheme, themeErrors, themePayload } from "@/shared/theme/themeWorkspace";
 import { isTenantAdmin } from "@/features/auth/utils/accessControl";
 import { apiErrorMessage } from "@/shared/api/apiErrorMessage";
+import LoadingSkeleton from "@/shared/components/LoadingSkeleton";
 
 function ThemeEditor({ snapshot, prefix, companyScope, mode, reload, token, onBusy, onDirty }) {
   const dispatch = useDispatch();
@@ -162,7 +163,7 @@ function ThemeEditor({ snapshot, prefix, companyScope, mode, reload, token, onBu
             </>}
             {section === 4 && <>
               <Typography component="h2" sx={{ fontSize: 13, fontWeight: 700 }}>Saved Presets</Typography>
-              {libraryLoading && <Typography>Loading presets…</Typography>}
+              {libraryLoading && <LoadingSkeleton variant="list" rows={3} label="Loading presets" />}
               {library?.failed && <Alert severity="warning" action={<Button onClick={() => reloadLibrary()}>Retry</Button>}>Some presets or history could not be loaded.</Alert>}
               {!libraryLoading && !library?.presets?.length && <Typography>No saved presets yet.</Typography>}
               {(library?.presets || []).map(preset => <Stack direction="row" spacing={1} key={preset.id} sx={{ alignItems: "center", flexWrap: "wrap" }}><Typography sx={{ flex: 1 }}>{preset.name}</Typography><Button disabled={busy || !editable} onClick={() => { setDraft(normalizeTheme(preset.config)); setSection(0); }}>Preview Preset</Button><Button disabled={busy || !editable} onClick={() => { if (window.confirm(`Delete the preset “${preset.name}”?`)) run(() => scopedApi.delete(`${prefix}/theme-presets/${preset.id}`), "Preset deleted"); }}>Delete</Button></Stack>)}
@@ -221,7 +222,7 @@ export default function Themes() {
       <Button size="small" disabled={busy} onClick={() => { if (!editorDirtyKey || window.confirm("Discard your draft and reload the saved theme?")) reload(); }}>Reload saved theme</Button>
     </Stack>
     {!prefix && <Alert severity="info">Select a store to manage its theme. A linked Tenant Administrator can set a company default before stores are created.</Alert>}
-    {loading && <Typography sx={{ p: 2 }}>Loading saved theme…</Typography>}
+    {loading && <LoadingSkeleton variant="list" rows={4} label="Loading saved theme" sx={{ p: 2 }} />}
     {error && <Alert severity="error" action={<Button onClick={() => reload({ silent: true })}>Retry</Button>}>{apiErrorMessage(error, "Unable to load the saved theme. Your active appearance has not changed.")}</Alert>}
     {snapshot?.meta && <ThemeEditor key={`${prefix}:${snapshot.meta.revision}:${JSON.stringify(snapshot.data)}`} snapshot={snapshot} prefix={prefix} companyScope={scope === "company"} mode={mode} reload={reload} token={token} onBusy={setBusy} onDirty={setEditorDirtyKey} />}
   </Box>;

@@ -5,6 +5,7 @@ import { X, RefreshCw, Trash2, CloudOff, Check } from "lucide-react";
 import { Box, Typography } from "@mui/material";
 import { getSyncQueue, removeSyncQueueItem } from "../offline/db";
 import { processSyncQueue } from "../offline/syncManager";
+import LoadingSkeleton from "@/shared/components/LoadingSkeleton";
 
 const formatAction = (action) =>
   String(action || "")
@@ -86,7 +87,7 @@ export default function SyncCenterModal({ isOpen, onClose }) {
 
         <Box sx={{ p: 1.5, overflowY: "auto", flex: 1, display: "flex", flexDirection: "column", gap: 1 }}>
           {loading ? (
-            <Typography component="p" sx={{ textAlign: "center", fontSize: 12, color: "#94a3b8", py: 4 }}>Loading queue...</Typography>
+            <LoadingSkeleton variant="list" rows={4} label="Loading queue" sx={{ py: 2 }} />
           ) : queue.length === 0 ? (
             <Box sx={{ textAlign: "center", py: 5 }}>
               <Check size={28} style={{ color: "#10b981", margin: "0 auto 8px" }} />

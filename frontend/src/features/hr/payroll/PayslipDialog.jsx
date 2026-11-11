@@ -6,6 +6,7 @@ import api from "@/shared/api/apiClient";
 import { browserPrintHtml } from "@/features/sales/pos/utils/posSalesUtils";
 import { errorMessage } from "../utils/hrStatus";
 import { payslipHtml, payslipWhatsAppUrl, rupees } from "./payslipPrint";
+import LoadingSkeleton from "@/shared/components/LoadingSkeleton";
 
 const days = (value) => { const n = Number(value) || 0; return Number.isInteger(n) ? String(n) : n.toFixed(1); };
 
@@ -37,7 +38,7 @@ export default function PayslipDialog({ id, mine = false, onClose }) {
         {slip ? `Payslip · ${slip.snapshot?.name || ""} · ${slip.month_label}` : "Payslip"}
       </DialogTitle>
       <DialogContent>
-        {!slip ? <Typography variant="body2" sx={{ py: 2 }}>Loading…</Typography> : (
+        {!slip ? <LoadingSkeleton variant="table" rows={8} label="Loading payslip" /> : (
           <Stack spacing={1.5}>
             <Typography variant="body2" color="text.secondary">
               Payable {days(slip.payable_days)} of {days(slip.days_in_month)} days · Loss of pay {days(slip.lop_days)} · Gross salary ₹{rupees(slip.gross_fixed)}

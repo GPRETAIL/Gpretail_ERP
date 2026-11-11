@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Alert, Box, Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle, Stack, Table, TableBody, TableCell, TableHead, TableRow, Typography } from "@mui/material";
 import { DateFilters } from "./FinanceReportLayout";
 import { VOUCHER_TYPES, drCr, financialYearStart, money, today, useFinanceReport } from "@/features/finance/accounting/utils/financeUtils";
+import LoadingSkeleton from "@/shared/components/LoadingSkeleton";
 
 /** One ledger's entries for a period with a running balance. */
 export default function LedgerStatementDialog({ account, onClose, from: initialFrom, to: initialTo }) {
@@ -62,7 +63,7 @@ export default function LedgerStatementDialog({ account, onClose, from: initialF
             </Table>
             {data.entries.length === 0 ? <Chip size="small" label="No entries in this period" sx={{ mt: 1 }} /> : null}
           </Box>
-        ) : report.loading ? <Typography variant="body2">Loading…</Typography> : null}
+        ) : report.loading ? <LoadingSkeleton variant="table" rows={8} label="Loading statement" /> : null}
       </DialogContent>
       <DialogActions><Button onClick={onClose}>Close</Button></DialogActions>
     </Dialog>

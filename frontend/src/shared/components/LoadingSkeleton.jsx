@@ -10,9 +10,10 @@ const CHART_BARS = [45, 70, 55, 85, 60, 75, 40, 65, 90, 50];
  * rows     rows for "table" / "list" (default 5)
  * height   block height for "chart" / "table" (px)
  * width    width for "value" (default 4.5em)
+ * label    what is loading, read out by screen readers (default "Loading")
  */
-export default function LoadingSkeleton({ variant = "value", rows = 5, height, width, sx }) {
-  const status = { role: "status", "aria-label": "Loading" };
+export default function LoadingSkeleton({ variant = "value", rows = 5, height, width, sx, label = "Loading" }) {
+  const status = { role: "status", "aria-label": label };
 
   if (variant === "value") {
     return <Box component="span" {...status} sx={{ ...pulseSx, display: "inline-block", verticalAlign: "middle", width: width ?? "4.5em", height: "0.9em", ...sx }} />;

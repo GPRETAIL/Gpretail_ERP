@@ -10,6 +10,7 @@ import { Box, Button, Stack, Table, TableBody, TableCell, TableHead, TableRow, T
 import api from "@/shared/api/apiClient";
 import Breadcrumbs from "@/shared/components/Breadcrumbs";
 import { muiFieldSx } from "@/shared/theme/formControlSizes";
+import LoadingSkeleton from "@/shared/components/LoadingSkeleton";
 
 const toNum = (value, fallback = 0) => {
   const parsed = Number(value);
@@ -98,7 +99,7 @@ const LoyaltyManagement = () => {
 
         <Box sx={{ bgcolor: "background.paper", boxShadow: 3, borderRadius: "7px", border: "1px solid", borderColor: "divider", flex: 1, overflow: "auto" }}>
           {loading ? (
-            <Typography sx={{ textAlign: "center", py: 4, fontSize: "inherit", color: "text.secondary" }}>Loading...</Typography>
+            <LoadingSkeleton variant="table" rows={6} label="Loading loyalty" />
           ) : activeTab === "balances" ? (
             <Table sx={{ width: "100%", "& th, & td": { fontSize: "inherit" } }}>
               <TableHead sx={{ bgcolor: "action.hover", position: "sticky", top: 0 }}>

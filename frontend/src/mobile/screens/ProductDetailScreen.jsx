@@ -2,6 +2,7 @@ import useAsyncQuery from "@/shared/hooks/useAsyncQuery";
 import React, { useCallback } from "react";
 import { Box, Typography } from "@mui/material";
 import api from "@/shared/api/apiClient";
+import LoadingSkeleton from "@/shared/components/LoadingSkeleton";
 
 const money = (n) =>
   "₹ " +
@@ -24,7 +25,7 @@ export default function ProductDetailScreen({ product, onBack }) {
   if (loading || !p) {
     return (
       <Box className="vx-card" sx={{ textAlign: "center" }}>
-        <Typography component="p" sx={{ fontSize: 14, color: "#94a3b8" }}>Loading product details...</Typography>
+        <LoadingSkeleton variant="list" rows={5} label="Loading product details" />
       </Box>
     );
   }
