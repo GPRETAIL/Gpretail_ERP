@@ -31,6 +31,9 @@ class Employee extends Model
         'leave_policy_id',
     ];
 
+    /** The staff-app PIN hash never leaves the server (employee lists, exports, sync). */
+    protected $hidden = ['app_pin'];
+
     protected function casts(): array
     {
         return [
@@ -38,6 +41,8 @@ class Employee extends Model
             'joining_date' => 'date',
             'relieving_date' => 'date:Y-m-d',
             'is_active' => 'boolean',
+            'app_access' => 'boolean',
+            'app_pin_must_change' => 'boolean',
         ];
     }
 

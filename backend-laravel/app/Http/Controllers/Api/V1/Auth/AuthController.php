@@ -166,8 +166,8 @@ class AuthController extends Controller
             }
         }
 
-        // Create Sanctum Token
-        $user->tokens()->delete();
+        // Create Sanctum Token. A new ERP sign-in replaces earlier ERP sessions; the staff app (/hr) keeps its own.
+        $user->tokens()->where('name', '!=', \App\Services\Hr\StaffAppAccess::TOKEN_NAME)->delete();
         $token = $user->createToken($client.'-token', ['client:'.$client])->plainTextToken;
 
         return response()->json([

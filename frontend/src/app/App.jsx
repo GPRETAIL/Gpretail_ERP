@@ -12,17 +12,20 @@ import PageSkeleton from "@/shared/components/PageSkeleton";
 import PwaInstallPrompt from "@/shared/layout/PwaInstallPrompt";
 import StoreSelectionDialog from "@/shared/layout/StoreSelectionDialog";
 import PlatformNotificationBanner from "@/features/notifications/components/PlatformNotificationBanner";
+import { isStaffAppPath } from "@/shared/api/staffSession";
 
 // A desktop login must not download the mobile workspace (and vice versa).
 const MainLayout = lazy(() => import("@/shared/layout/MainLayout"));
 const VynerixMobileApp = lazy(() => import("@/mobile/MobileAppV2"));
 const SetPassword = lazy(() => import("@/features/auth/SetPassword"));
 const ForceChangePassword = lazy(() => import("@/features/auth/ForceChangePassword"));
+const StaffApp = lazy(() => import("@/staff/StaffApp"));
 
 function App() {
   const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
   const authUser = useSelector((state) => state.auth.user);
-  const isMobileRoute = useLocation().pathname.toLowerCase().startsWith("/app");
+  const { pathname } = useLocation();
+  const isMobileRoute = pathname.toLowerCase().startsWith("/app");
 
   // Normalize capital /App path to lowercase /app for case-insensitive mobile routing
   if (window.location.pathname.toLowerCase() === "/app" || window.location.pathname.toLowerCase().startsWith("/app/")) {
@@ -30,6 +33,18 @@ function App() {
       window.location.replace("/app" + window.location.pathname.substring(4));
       return null;
     }
+  }
+
+  // The staff app (/hr) is a separate employee app with its own sign-in: none of the ERP session,
+  // activation, store picker or install prompt applies there.
+  if (isStaffAppPath(pathname)) {
+    return (
+      <ChunkErrorBoundary>
+        <Suspense fallback={<PageSkeleton rows={6} />}>
+          <StaffApp />
+        </Suspense>
+      </ChunkErrorBoundary>
+    );
   }
 
   const homePath = "/dashboard";

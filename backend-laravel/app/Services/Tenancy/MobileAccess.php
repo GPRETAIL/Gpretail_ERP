@@ -56,7 +56,7 @@ class MobileAccess
         'SettingsController' => '/settings/application-settings', 'SettingsDashboardController' => '/settings/application-settings',
         'ConfigurationController' => '/settings/application-settings', 'BackupController' => '/settings/backup',
         'StoreController' => '/settings/company', 'UserAccessController' => '/settings/company',
-        'ItemLocatorController' => '/sales/stock-item-locator',
+        'ItemLocatorController' => '/sales/stock-item-locator', 'StaffAppSetupController' => '/hrms/staff-app',
     ];
 
     public function tenantAdmin(User $user): bool
@@ -198,6 +198,10 @@ class MobileAccess
 
     public function authorize(Request $request): ?array
     {
+        if (\App\Services\Hr\StaffAppAccess::isStaffToken($request)) {
+            // The staff app (/hr): only the employee's own HR and approvals, whatever else the login may do.
+            return app(\App\Services\Hr\StaffAppAccess::class)->refusal($request);
+        }
         $user = $request->user();
         $controller = class_basename($request->route()?->getControllerClass() ?? '');
         if (in_array($controller, ['AuthController', 'MobileAccessController', 'StoreActivationController'], true)

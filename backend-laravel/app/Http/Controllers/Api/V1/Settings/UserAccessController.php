@@ -37,6 +37,8 @@ class UserAccessController extends Controller
         $ids = app(StoreContext::class)->available(request()->user())->pluck('id')->all();
         $query = User::query()->where(fn ($q) => $q->whereIn('store_id', $ids)
             ->orWhereHas('assignedStores', fn ($stores) => $stores->whereIn('stores.id', $ids)));
+        // Hidden logins made by the staff app (/hr) are managed on the HR Staff App page, not here.
+        $query->where('email', 'not like', '%'.\App\Services\Hr\StaffAppAccess::HIDDEN_EMAIL_DOMAIN);
         $code = request()->user()?->platform_company_code;
         if ($code) {
             $query->where('platform_company_code', $code);

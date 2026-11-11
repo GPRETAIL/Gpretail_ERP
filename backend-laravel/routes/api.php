@@ -40,6 +40,8 @@ Route::prefix('auth')->group(function () {
     Route::get('config', [AuthController::class, 'config'])->middleware('throttle:30,1');
     Route::post('google', [AuthController::class, 'google'])->middleware('throttle:10,1');
     Route::post('login', [AuthController::class, 'login'])->middleware('throttle:10,1');
+    Route::post('staff-login', [\App\Http\Controllers\Api\V1\Auth\StaffAuthController::class, 'login'])->middleware('throttle:20,1');
+    Route::post('staff-pin', [\App\Http\Controllers\Api\V1\Auth\StaffAuthController::class, 'changePin'])->middleware(['auth:sanctum', 'throttle:10,1']);
     Route::post('logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
     Route::get('me', [AuthController::class, 'me'])->middleware('auth:sanctum');
     Route::post('counter', [AuthController::class, 'counter'])->middleware('auth:sanctum');

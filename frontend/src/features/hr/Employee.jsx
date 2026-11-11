@@ -23,6 +23,7 @@ import UploadImportButton from "@/shared/components/UploadImportButton";
 import { handleEnterKeyNavigation } from "@/shared/utils/enterToNextField";
 import useStoreNameMap from "@/shared/hooks/useStoreNameMap";
 import { normalizeFormSignature } from "@/shared/utils/formSignature";
+import StaffAppSwitch from "./staffApp/StaffAppSwitch";
 
 const EMPLOYEE_IMPORT_CONFIG = {
   aliases: {
@@ -551,6 +552,7 @@ const Employee = () => {
     <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" }, columnGap: 1.5, rowGap: 0.75 }}>
       <TextInput label="Employee Code" name="employee_code" value={formData.employee_code} onChange={handleChange} />
       <TextInput label="Contact No" name="contact_no" value={formData.contact_no} onChange={handleChange} />
+      <StaffAppSwitch employeeId={currentId} />
       <TextInput label="Name" name="name" required value={formData.name} onChange={handleChange} />
       <TextInput label="Surname" name="surname" value={formData.surname} onChange={handleChange} />
       <SelectInput label="Gender" name="gender" value={formData.gender} onChange={handleChange} options={GENDER_OPTIONS} />

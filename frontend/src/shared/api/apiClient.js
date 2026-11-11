@@ -8,6 +8,7 @@ import {
   prepareRoutingForRequest,
   shouldRetryOnCloud,
 } from "./runtimeRouting";
+import { isStaffAppPath, STAFF_STORE_KEY, STAFF_TOKEN_KEY } from "./staffSession";
 
 // Wire contract with backend/vx-common StoreAssignment.SELECT_STORE_MESSAGE: writes made while
 // viewing All Stores or multiple stores at once can't tell which store to save into, so the
@@ -22,7 +23,11 @@ const NO_STORES_MESSAGE = "No stores are available";
 // just an expired/invalid session - excluded below so a mistyped password on
 // the login screen doesn't get treated as "your session expired" and clear
 // storage/redirect out from under the form the user is actively typing into.
-const LOGIN_PATHS = ["/auth/login", "/auth/google", "/admin-auth/login"];
+const LOGIN_PATHS = ["/auth/login", "/auth/google", "/admin-auth/login", "/auth/staff-login"];
+
+// The staff app (/hr) keeps its own sign-in, so an HR person's ERP session in the same browser is untouched.
+const tokenKey = () => (isStaffAppPath() ? STAFF_TOKEN_KEY : "token");
+const selectedStoreId = () => (isStaffAppPath() ? localStorage.getItem(STAFF_STORE_KEY) : sessionStorage.getItem("activeStoreId"));
 
 // Base URL: in Docker, nginx proxies /api → backend container.
 // In local dev, vite.config.js proxies /api → VITE_API_PROXY_TARGET.
@@ -38,12 +43,12 @@ api.defaults.adapter = sharedReads.adapter;
 api.interceptors.request.use(
   async (config) => {
     if (!["get", "head", "options"].includes(String(config.method || "get").toLowerCase())) sharedReads.invalidate();
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem(tokenKey());
     if (token) config.headers.Authorization = `Bearer ${token}`;
 
     // A form may provision a user in another authorized store without changing all open tabs.
     // The API checks this explicit scope against the operator's assignments.
-    const activeStoreId = config.storeScopeId == null ? sessionStorage.getItem("activeStoreId") : String(config.storeScopeId);
+    const activeStoreId = config.storeScopeId == null ? selectedStoreId() : String(config.storeScopeId);
     if (activeStoreId && !/^[1-9]\d*$/.test(activeStoreId)) throw new Error("Invalid store selection");
     if (activeStoreId) {
       config.headers["X-Company-Scope-Id"] = activeStoreId;
@@ -62,14 +67,14 @@ api.interceptors.response.use(
     // Navigation and superseded searches deliberately abort requests.
     // Preserve cancellation for callers without retrying or reporting an outage.
     if (axios.isCancel(error) || error?.code === "ERR_CANCELED") return Promise.reject(error);
-    const currentToken = localStorage.getItem("token");
+    const currentToken = localStorage.getItem(tokenKey());
     const sentHeaders = axios.AxiosHeaders.from(error.config?.headers);
     const sentToken = String(sentHeaders.get("Authorization") || "").replace(/^Bearer\s+/i, "");
     const sentStore = String(sentHeaders.get("X-Company-Scope-Id") || "");
     // An old tab request must not replay under a newer login/store or trigger
     // that newer workspace's session/access/selection handlers.
     if ((sentToken && sentToken !== currentToken) || (error.config?.storeScopeId == null &&
-      sentStore !== (sessionStorage.getItem("activeStoreId") || ""))) return Promise.reject(error);
+      sentStore !== (selectedStoreId() || ""))) return Promise.reject(error);
     if (shouldRetryOnCloud(error)) {
       const retryConfig = buildCloudRetryConfig(error.config);
       return api.request(retryConfig);
@@ -83,6 +88,11 @@ api.interceptors.response.use(
     const isLoginRequest = LOGIN_PATHS.some((path) => requestUrl.includes(path));
     if (error.response?.status === 401 && !isLoginRequest && currentToken && sentToken === currentToken) {
       void clearPrivateApiCache();
+      if (isStaffAppPath()) {
+        localStorage.removeItem(STAFF_TOKEN_KEY);
+        window.dispatchEvent(new CustomEvent("vx-staff-auth-expired"));
+        return Promise.reject(error);
+      }
       // Clear once for this session. A late response from an older login must
       // never sign out a newly authenticated session.
       localStorage.removeItem("token");

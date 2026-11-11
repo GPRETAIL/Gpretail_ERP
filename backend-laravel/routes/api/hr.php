@@ -20,6 +20,8 @@ use App\Http\Controllers\Api\V1\Hr\IncomeTaxController;
 use App\Http\Controllers\Api\V1\Hr\TaxDeclarationController;
 use App\Http\Controllers\Api\V1\Hr\FinalSettlementController;
 use App\Http\Controllers\Api\V1\Hr\StaffMoneyController;
+use App\Http\Controllers\Api\V1\Hr\StaffAppController;
+use App\Http\Controllers\Api\V1\Hr\StaffAppSetupController;
 use App\Http\Controllers\Api\V1\Hr\HrConfigurationController;
 use Illuminate\Support\Facades\Route;
 
@@ -181,3 +183,13 @@ Route::delete('tds/challans/{id}', [IncomeTaxController::class, 'destroyChallan'
 Route::get('tds/register', [IncomeTaxController::class, 'register']);
 Route::get('tds/form16', [IncomeTaxController::class, 'form16']);
 Route::get('tds/form24q', [IncomeTaxController::class, 'form24q']);
+
+// Staff app (/hr): the employee's home, approvals inbox, profile and team; HR switches it on per employee.
+Route::get('staff-app/home', [StaffAppController::class, 'home']);
+Route::get('staff-app/inbox', [StaffAppController::class, 'inbox']);
+Route::get('staff-app/profile', [StaffAppController::class, 'profile']);
+Route::get('staff-app/team', [StaffAppController::class, 'team']);
+Route::get('staff-app-setup', [StaffAppSetupController::class, 'index']);
+Route::post('staff-app-setup/{id}/pin', [StaffAppSetupController::class, 'setPin'])->whereNumber('id');
+Route::post('staff-app-setup/{id}/disable', [StaffAppSetupController::class, 'disable'])->whereNumber('id');
+Route::post('staff-app-setup/{id}/sign-out', [StaffAppSetupController::class, 'signOut'])->whereNumber('id');

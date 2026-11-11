@@ -50,6 +50,7 @@ const Exits = lazy(() => import("@/features/hr/exits/Exits").then((m) => ({ defa
 const FinalSettlements = lazy(() => import("@/features/hr/exits/Exits").then((m) => ({ default: m.FinalSettlements })));
 const MyTax = lazy(() => import("@/features/hr/tax/Tax").then((m) => ({ default: m.MyTax })));
 const IncomeTax = lazy(() => import("@/features/hr/tax/Tax").then((m) => ({ default: m.IncomeTax })));
+const StaffAppSetup = lazy(() => import("@/features/hr/staffApp/StaffAppSetup"));
 const AttendanceRegisterPage = lazy(() => import("@/features/hr/HrSectionPages").then((m) => ({ default: m.AttendanceRegisterPage })));
 const PunchLogPage = lazy(() => import("@/features/hr/HrSectionPages").then((m) => ({ default: m.PunchLogPage })));
 const HolidaysPage = lazy(() => import("@/features/hr/HrSectionPages").then((m) => ({ default: m.HolidaysPage })));
@@ -177,6 +178,7 @@ export const protectedLayoutRoutes = [
   { path: "/hrms/settlements", render: () => <FinalSettlements /> },
   { path: "/hrms/my-tax", render: () => <MyTax /> },
   { path: "/hrms/income-tax", render: () => <IncomeTax /> },
+  { path: "/hrms/staff-app", render: () => <StaffAppSetup /> },
   { path: "/hrms/attendance-register", render: () => <AttendanceRegisterPage /> },
   { path: "/hrms/punch-log", render: () => <PunchLogPage /> },
   { path: "/hrms/holidays", render: () => <HolidaysPage /> },

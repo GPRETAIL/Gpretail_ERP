@@ -59,10 +59,13 @@ function ApplySheet({ balances, onClose }) {
   );
 }
 
-/** Mobile Leave: my balances and applications, apply, and (for managers) leave waiting for approval. */
-export default function LeaveScreen() {
+/**
+ * Mobile Leave: my balances and applications, apply, and (for managers) leave waiting for approval.
+ * The staff app (/hr) has its own Approvals tab and passes showApprovals={false}.
+ */
+export default function LeaveScreen({ showApprovals = true }) {
   const role = useSelector((state) => state.auth.user?.role);
-  const approver = APPROVER_ROLES.includes(role);
+  const approver = showApprovals && APPROVER_ROLES.includes(role);
   const [mine, setMine] = useState(null);
   const [inbox, setInbox] = useState([]);
   const [requests, setRequests] = useState([]);

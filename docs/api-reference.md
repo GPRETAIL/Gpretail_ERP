@@ -1,6 +1,6 @@
 # API reference
 
-Every endpoint under `/api`, grouped by module (639 endpoints). Generated from
+Every endpoint under `/api`, grouped by module (649 endpoints). Generated from
 `php artisan route:list --sort=definition --json`; regenerate it after changing routes.
 
 - Each signed-in endpoint is also served under `/api/v1/...` with the same behaviour.
@@ -13,11 +13,11 @@ Every endpoint under `/api`, grouped by module (639 endpoints). Generated from
 ## Modules
 
 - [Analytical](#analytical) (2)
-- [Auth](#auth) (14)
+- [Auth](#auth) (16)
 - [Crm](#crm) (28)
 - [Dashboards](#dashboards) (24)
 - [Finance](#finance) (23)
-- [Hr](#hr) (150)
+- [Hr](#hr) (158)
 - [Masters](#masters) (120)
 - [Notifications](#notifications) (11)
 - [Other](#other) (1)
@@ -41,6 +41,8 @@ Every endpoint under `/api`, grouped by module (639 endpoints). Generated from
 | GET | `/api/auth/config` | AuthController@config | no |
 | POST | `/api/auth/google` | AuthController@google | no |
 | POST | `/api/auth/login` | AuthController@login | no |
+| POST | `/api/auth/staff-login` | StaffAuthController@login | no |
+| POST | `/api/auth/staff-pin` | StaffAuthController@changePin | yes |
 | POST | `/api/auth/logout` | AuthController@logout | yes |
 | GET | `/api/auth/me` | AuthController@me | yes |
 | POST | `/api/auth/counter` | AuthController@counter | yes |
@@ -297,6 +299,14 @@ Every endpoint under `/api`, grouped by module (639 endpoints). Generated from
 | GET | `/api/tds/register` | IncomeTaxController@register | yes |
 | GET | `/api/tds/form16` | IncomeTaxController@form16 | yes |
 | GET | `/api/tds/form24q` | IncomeTaxController@form24q | yes |
+| GET | `/api/staff-app/home` | StaffAppController@home | yes |
+| GET | `/api/staff-app/inbox` | StaffAppController@inbox | yes |
+| GET | `/api/staff-app/profile` | StaffAppController@profile | yes |
+| GET | `/api/staff-app/team` | StaffAppController@team | yes |
+| GET | `/api/staff-app-setup` | StaffAppSetupController@index | yes |
+| POST | `/api/staff-app-setup/{id}/pin` | StaffAppSetupController@setPin | yes |
+| POST | `/api/staff-app-setup/{id}/disable` | StaffAppSetupController@disable | yes |
+| POST | `/api/staff-app-setup/{id}/sign-out` | StaffAppSetupController@signOut | yes |
 
 ## Masters
 

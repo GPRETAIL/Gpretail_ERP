@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1\Notifications;
 
+use App\Services\Hr\StaffAppAccess;
 use App\Http\Controllers\Controller;
 use App\Models\Notification;
 use App\Models\StoreLocalNode;
@@ -76,6 +77,11 @@ class NotificationController extends Controller
 
     public function index(Request $request)
     {
+        if (StaffAppAccess::isStaffToken($request)) {
+            // The staff app shows only the employee's HR notifications, never the store's stock or sales alerts.
+            return response()->json($this->paginationService->paginate(StaffAppAccess::onlyHrNotifications(app(NotificationInbox::class)->query($request->user()), $request->user())
+                ->orderByRaw('COALESCE(recipient.read_at, app_notifications.read_at) IS NOT NULL')->orderByDesc('app_notifications.id'), 'notifications', $request));
+        }
         app(PlatformNotificationSync::class)->syncIfStale();
         $this->generateAllAlerts();
 
@@ -114,6 +120,9 @@ class NotificationController extends Controller
 
     public function unreadCount(Request $request)
     {
+        if (StaffAppAccess::isStaffToken($request)) {
+            return response()->json(['success' => true, 'data' => ['count' => StaffAppAccess::onlyHrNotifications(app(NotificationInbox::class)->unread($request->user()), $request->user())->count()]]);
+        }
         app(PlatformNotificationSync::class)->syncIfStale();
         $this->generateAllAlerts();
 

@@ -611,6 +611,12 @@
       "add": true,
       "edit": true,
       "delete": true
+    },
+    "/hrms/staff-app": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": false
     }
   },
   "cashier": {

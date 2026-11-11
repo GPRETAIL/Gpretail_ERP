@@ -81,8 +81,11 @@ class BusinessPermissions
         if ($controller === 'InvoiceAiController') {
             return in_array($action, ['getEngineConfig', 'saveEngineConfig'], true) ? 'settings.manage' : 'purchases.post';
         }
-        if ($this->isHrSelfService($request)) {
-            return 'personal';
+        if ($this->isHrSelfService($request) || in_array($controller, ['StaffAppController', 'StaffAuthController'], true)) {
+            return 'personal'; // Only the signed-in employee's own data and team, and changing their own PIN.
+        }
+        if ($controller === 'StaffAppSetupController') {
+            return $read ? 'hr.view' : 'hr.manage';
         }
         if ($controller === 'StaffMoneyController' && ! $read) {
             // Deciding is a manager's approval; paying out, recovering and encashing are payroll work.
