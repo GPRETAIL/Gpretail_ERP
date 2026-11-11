@@ -138,7 +138,7 @@ describe("App route shape", () => {
     vi.mocked(checkAuth).mockImplementationOnce(async dispatch => { dispatch(logout()); });
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => ({ data: { activated: false } }) }));
     renderApp("/login");
-    expect(await screen.findByRole("heading", { name: /A fresh start\.\s*A familiar workspace\./, exact: true })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Sign in", exact: true })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Activate this deployment" })).not.toBeInTheDocument();
     expect(localStorage.getItem("token")).toBeNull();
   });
@@ -169,7 +169,7 @@ describe("App route shape", () => {
   it("still serves the public /login route rather than the splat layout", async () => {
     renderApp("/login", { authenticated: false });
 
-    expect(await screen.findByRole("heading", { name: /A fresh start\.\s*A familiar workspace\./, exact: true })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Sign in", exact: true })).toBeInTheDocument();
     expect(screen.queryByText(/^LAYOUT@/)).not.toBeInTheDocument();
   });
 });
