@@ -65,6 +65,15 @@ return [
             'replace_placeholders' => true,
         ],
 
+        // Front-end crashes reported by the app (ClientErrorController).
+        'client_errors' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/client-errors.log'),
+            'level' => 'error',
+            'days' => 14,
+            'replace_placeholders' => true,
+        ],
+
         'daily' => [
             'driver' => 'daily',
             'path' => storage_path('logs/laravel.log'),

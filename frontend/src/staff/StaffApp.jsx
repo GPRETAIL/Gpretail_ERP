@@ -14,6 +14,7 @@ import MeTab from "./tabs/MeTab";
 import { STAFF_COLOR, STAFF_TEXT, STAFF_THEMES, TOUCH, card, staffThemeVars } from "./staffUi";
 import useStaffTheme from "./useStaffTheme";
 import LoadingSkeleton from "@/shared/components/LoadingSkeleton";
+import ErrorBoundary from "@/shared/components/ErrorBoundary";
 
 const TABS = [
   { key: "home", label: "Home", icon: Home },
@@ -193,12 +194,14 @@ function Shell({ session, onSignOut, theme }) {
 
       <Box component="main" sx={{ px: 2, pt: 2, pb: "calc(88px + env(safe-area-inset-bottom))", maxWidth: 640, mx: "auto" }}>
         {error && <Box role="alert" sx={{ ...card, mb: 2, bgcolor: STAFF_COLOR.dangerSoft, borderColor: STAFF_COLOR.dangerBorder, color: STAFF_COLOR.danger, fontSize: STAFF_TEXT.body, fontWeight: 600 }}>{error}</Box>}
+        <ErrorBoundary variant="page" where={`hr:${tab}`} resetKeys={[tab, salaryView]}>
         {tab === "home" && <HomeTab home={home} go={go} />}
         {tab === "leave" && <LeaveScreen showApprovals={false} />}
         {tab === "expenses" && <ClaimsScreen />}
         {tab === "salary" && <SalaryTab home={home} view={salaryView} setView={(view) => go("salary", view)} />}
         {tab === "approvals" && <ApprovalsTab onChanged={loadHome} />}
         {tab === "me" && <MeTab onSignOut={onSignOut} theme={theme} />}
+        </ErrorBoundary>
       </Box>
 
       <Box component="nav" aria-label="HRMS app" sx={{ position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 10, bgcolor: STAFF_COLOR.surface, borderTop: `1px solid ${STAFF_COLOR.line}`, display: "grid", gridTemplateColumns: `repeat(${tabs.length}, 1fr)`, pb: "env(safe-area-inset-bottom)" }}>

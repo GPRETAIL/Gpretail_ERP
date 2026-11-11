@@ -4,6 +4,7 @@ import "@fontsource-variable/inter/wght.css";
 import "./index.css";
 import "./shared/theme/themeStyles.css";
 import App from "./app/App.jsx";
+import { listenForUncaughtErrors } from "./shared/utils/clientErrors";
 
 import store from "./app/store.js";
 import { BrowserRouter } from "react-router-dom";
@@ -28,6 +29,9 @@ if (import.meta.env.PROD && "serviceWorker" in navigator) {
       });
   });
 }
+
+// Crashes outside React's render (event handlers, timers, promises) are reported too.
+listenForUncaughtErrors();
 
 createRoot(document.getElementById("root")).render(
   <Provider store={store}>

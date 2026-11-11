@@ -1,7 +1,7 @@
 import React, { Suspense, lazy } from "react";
 import { matchRoutes, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import PageSkeleton from "@/shared/components/PageSkeleton";
-import ChunkErrorBoundary from "@/shared/components/ChunkErrorBoundary";
+import ErrorBoundary from "@/shared/components/ErrorBoundary";
 
 const RouteLoadingFallback = () => <PageSkeleton variant="form" rows={8} />;
 
@@ -303,13 +303,15 @@ export const renderProtectedLayoutRouteElements = () =>
     <Route key={route.path} path={route.path} element={route.render()} />
   ));
 
+// A crash in a page shows "Something went wrong on this page" inside the page area only (menu, header and
+// tabs keep working) and clears when the user opens another page.
 export const ProtectedLayoutRouteRenderer = ({ location }) => (
-  <ChunkErrorBoundary>
+  <ErrorBoundary variant="page" where={`page:${location?.pathname || ""}`} resetKeys={[location?.pathname]} homePath="/dashboard">
     <Suspense fallback={<RouteLoadingFallback />}>
       <Routes location={location}>
         {renderProtectedLayoutRouteElements()}
         <Route path="*" element={<ComingSoon />} />
       </Routes>
     </Suspense>
-  </ChunkErrorBoundary>
+  </ErrorBoundary>
 );

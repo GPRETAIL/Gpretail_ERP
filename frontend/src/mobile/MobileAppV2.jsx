@@ -51,6 +51,7 @@ import { isPageGatedForRole } from "./utils/rolePermissions";
 import MobileAccessGate from "./components/MobileAccessGate";
 import { canOpenMobileScreen, useMobileAccess } from "./utils/mobileAccessContext";
 import "./workspace.css";
+import ErrorBoundary from "@/shared/components/ErrorBoundary";
 
 // Screen title map
 const TITLES = {
@@ -374,6 +375,7 @@ function MobileWorkspace() {
 
       {/* Main Content Area */}
       <Box component="main" className="vx-ws-main" style={{ paddingBottom: 80 }}>
+        <ErrorBoundary variant="page" where={`app:${visiblePage}`} resetKeys={[visiblePage]}>
         {visiblePage === "dashboard" && (
           <DashboardScreen
             onNavigate={navigateTo}
@@ -454,6 +456,7 @@ function MobileWorkspace() {
         )}
 
         {visiblePage === "approvals" && <ApprovalsScreen />}
+        </ErrorBoundary>
       </Box>
 
       {/* "Press back again to exit" -- shown for 2s after a back press at

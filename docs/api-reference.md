@@ -1,6 +1,6 @@
 # API reference
 
-Every endpoint under `/api`, grouped by module (650 endpoints). Generated from
+Every endpoint under `/api`, grouped by module (651 endpoints). Generated from
 `php artisan route:list --sort=definition --json`; regenerate it after changing routes.
 
 - Each signed-in endpoint is also served under `/api/v1/...` with the same behaviour.
@@ -21,7 +21,7 @@ Every endpoint under `/api`, grouped by module (650 endpoints). Generated from
 - [Masters](#masters) (120)
 - [Notifications](#notifications) (11)
 - [Other](#other) (1)
-- [Platform](#platform) (20)
+- [Platform](#platform) (21)
 - [Sales](#sales) (94)
 - [Settings](#settings) (70)
 - [Store](#store) (18)
@@ -478,6 +478,7 @@ Every endpoint under `/api`, grouped by module (650 endpoints). Generated from
 | GET | `/api/company-stores` | StoreActivationController@index | yes |
 | POST | `/api/company-stores/sync` | StoreActivationController@sync | yes |
 | POST | `/api/company-stores/activate` | StoreActivationController@activate | yes |
+| POST | `/api/client-errors` | ClientErrorController@store | yes |
 | GET | `/api/companies/tenant-sync/overview` | StoreActivationController@overview | yes |
 | POST | `/api/companies/tenant-sync/pull` | StoreActivationController@sync | yes |
 

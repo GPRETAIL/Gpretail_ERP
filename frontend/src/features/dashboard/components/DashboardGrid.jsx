@@ -7,6 +7,7 @@ import { GripVertical, X, Plus } from "lucide-react";
 import { Box, Chip, IconButton, Typography } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import { useDashboardLayout } from "@/features/dashboard/context/DashboardLayoutContext";
+import ErrorBoundary from "@/shared/components/ErrorBoundary";
 
 const BREAKPOINTS = { lg: 1024, md: 768, sm: 480, xs: 0 };
 const COLS = { lg: 12, md: 12, sm: 6, xs: 1 };
@@ -163,7 +164,9 @@ export default function DashboardGrid({ tabKey, widgets }) {
               </Box>
             )}
             <Box sx={{ height: "100%", overflow: "auto", p: 0.25 }}>
-              <w.component {...(w.props || {})} />
+              <ErrorBoundary variant="widget" where={`dashboard:${tabKey}:${w.key}`} resetKeys={[w.key]}>
+                <w.component {...(w.props || {})} />
+              </ErrorBoundary>
             </Box>
           </Box>
         ))}

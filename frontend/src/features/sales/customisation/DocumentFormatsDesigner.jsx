@@ -40,6 +40,7 @@ import {
   loadPrintFormatSettings,
   savePrintFormatSettings,
 } from "./utils/printFormatDefaults";
+import ErrorBoundary from "@/shared/components/ErrorBoundary";
 
 export default function DocumentFormatsDesigner({ onDirtyChange }) {
   const theme = useTheme();
@@ -1413,11 +1414,13 @@ export default function DocumentFormatsDesigner({ onDirtyChange }) {
               marginBottom: "100px",
             }}
           >
-            <InvoiceTemplateRenderer
-              settings={settings}
-              data={sampleDataForPreview}
-              isPrintMode={false}
-            />
+            <ErrorBoundary variant="widget" where="print-preview" resetKeys={[settings]}>
+              <InvoiceTemplateRenderer
+                settings={settings}
+                data={sampleDataForPreview}
+                isPrintMode={false}
+              />
+            </ErrorBoundary>
           </Box>
         </Box>
       </Box>

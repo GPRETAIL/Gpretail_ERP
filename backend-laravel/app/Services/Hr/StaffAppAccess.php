@@ -34,7 +34,7 @@ class StaffAppAccess
     ];
 
     private const ALWAYS = [
-        'StaffAppController' => null, 'NotificationController' => null, 'PushSubscriptionController' => null,
+        'StaffAppController' => null, 'NotificationController' => null, 'PushSubscriptionController' => null, 'ClientErrorController' => null,
         'HolidayController' => ['index'], 'StaffAuthController' => ['changePin'], 'AuthController' => ['me', 'logout'],
     ];
 

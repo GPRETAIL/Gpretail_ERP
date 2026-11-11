@@ -60,6 +60,17 @@ Shared hosting runs no queue workers, so background work is done by scheduled co
 
 Realtime updates use hosted Pusher, configured in `.env`.
 
+## When the frontend crashes
+
+`shared/components/ErrorBoundary.jsx` contains a crash to the part it happened in: the page area
+(reset when the path changes), each dashboard widget, each HRMS app tab and `/app` screen, and the print
+preview. The menu, header and tabs stay usable, and the user sees an honest message with a reference such
+as `E-7F3K2`. After a deploy, a missing code file reloads the page once instead (guarded so it never loops).
+Every other crash, plus errors outside React (`window` error and unhandled promise rejections), is sent by
+`shared/utils/clientErrors.js` to `POST /api/client-errors`, which writes it with the user, store and page
+to `storage/logs/client-errors-*.log` (kept 14 days). Search that log for the reference a user quotes.
+Cancelled requests and 4xx API errors are not reported, and the same error is sent at most once a minute.
+
 ## Conventions worth knowing
 
 - Business dates (for example voucher dates) use `config('app.business_timezone')`
