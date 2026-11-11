@@ -209,7 +209,7 @@ for (const style of ["glassmorphism", "liquid_ai"]) {
 // advanced-color choice.
 // Default text colours under every palette (a named palette, style preset or a tenant's own colours win).
 export const DEFAULT_TEXT = {
-  light: { primary: "#1f2937", secondary: "#4b5563" },
+  light: { primary: "#111827", secondary: "#4b5563" },
   dark: { primary: "#f3f4f6", secondary: "#cbd5e1" },
 };
 // Links on dark backgrounds: the brand blue is too dark to read there (about 3:1).
@@ -300,7 +300,7 @@ export const FONT_OPTIONS = [
   {
     id: "system",
     label: "System Default",
-    description: "Native App — uses your device’s interface font; works offline.",
+    description: "Recommended — your device’s own font (Segoe UI on Windows): sharpest text, works offline.",
     stack: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
     google: null,
   },
@@ -309,7 +309,7 @@ export const FONT_OPTIONS = [
   { id: "ibm_plex_sans", label: "IBM Plex Sans", description: "Enterprise — structured typography for business forms and dashboards.", stack: '"IBM Plex Sans", "Segoe UI", Arial, sans-serif', google: "IBM+Plex+Sans:wght@400;500;600;700" },
   { id: "source_sans_3", label: "Source Sans 3", description: "Professional — clear, restrained typography for detailed ERP work.", stack: '"Source Sans 3", "Segoe UI", Arial, sans-serif', google: "Source+Sans+3:wght@400;500;600;700" },
   // Bundled with the app (@fontsource-variable/inter, imported in main.jsx): no download, works offline.
-  { id: "inter", label: "Inter", description: "Recommended — clean, even ERP text; bundled with the app, works offline.", stack: '"Inter Variable", "Inter", "Segoe UI", -apple-system, Roboto, Arial, sans-serif', google: null },
+  { id: "inter", label: "Inter", description: "Clean, even text on every device; bundled with the app, works offline.", stack: '"Inter Variable", "Inter", "Segoe UI", -apple-system, Roboto, Arial, sans-serif', google: null },
   { id: "roboto", label: "Roboto", stack: '"Roboto", sans-serif', google: "Roboto:wght@400;500;700" },
   { id: "poppins", label: "Poppins", stack: '"Poppins", sans-serif', google: "Poppins:wght@400;500;600;700" },
   {
@@ -319,7 +319,9 @@ export const FONT_OPTIONS = [
     google: "Playfair+Display:wght@400;600;700",
   },
 ];
-export const DEFAULT_FONT = "inter";
+// The device's own interface font: Segoe UI on Windows (sharpest with ClearType), the Apple font on
+// iPhone/Mac, Roboto on Android. Inter stays bundled for companies that pick it in Themes.
+export const DEFAULT_FONT = "system";
 
 export function getFontOption(id) {
   return FONT_OPTIONS.find((opt) => opt.id === id) || FONT_OPTIONS.find((opt) => opt.id === DEFAULT_FONT);
@@ -352,18 +354,22 @@ export const TONES = {
 };
 
 // Screen typography presets; receipt and invoice documents use their own print styles.
+// ERP and CRM screens use body/label/heading/button; CRM customer names use name; POS billing uses the
+// larger, touch-friendly pos* sizes (item names and inputs, cart rows, totals, buttons).
 export const TEXT_SIZE_OPTIONS = [
-  { id: "compact", label: "Compact", body: 13, labelSize: 12, heading: 16, button: 13 },
-  { id: "comfortable", label: "Comfortable", body: 14, labelSize: 13, heading: 18, button: 14 },
-  { id: "large", label: "Large", body: 16, labelSize: 14, heading: 20, button: 16 },
+  { id: "compact", label: "Compact", body: 13, labelSize: 12, heading: 16, button: 13, name: 15, posItem: 15, posRow: 14, posTotal: 24, posButton: 15 },
+  { id: "comfortable", label: "Comfortable", body: 14, labelSize: 13, heading: 18, button: 14, name: 16, posItem: 16, posRow: 15, posTotal: 26, posButton: 16 },
+  { id: "large", label: "Large", body: 16, labelSize: 14, heading: 20, button: 16, name: 18, posItem: 18, posRow: 17, posTotal: 30, posButton: 18 },
 ];
+const TYPOGRAPHY_VARIABLES = { body: "body", label: "labelSize", heading: "heading", button: "button", name: "name", "pos-item": "posItem", "pos-row": "posRow", "pos-total": "posTotal", "pos-button": "posButton" };
+export const TYPOGRAPHY_VARIABLE_NAMES = Object.keys(TYPOGRAPHY_VARIABLES);
 export function getTextSizeOption(id) {
   return TEXT_SIZE_OPTIONS.find(option => option.id === id) || TEXT_SIZE_OPTIONS[1];
 }
 export function applyTypographyPreset(element, id) {
   const preset = getTextSizeOption(id);
   element.dataset.textSize = preset.id;
-  for (const [key, value] of Object.entries({ body: preset.body, label: preset.labelSize, heading: preset.heading, button: preset.button })) {
-    element.style.setProperty(`--erp-font-${key}`, `${value}px`);
+  for (const [key, field] of Object.entries(TYPOGRAPHY_VARIABLES)) {
+    element.style.setProperty(`--erp-font-${key}`, `${preset[field]}px`);
   }
 }

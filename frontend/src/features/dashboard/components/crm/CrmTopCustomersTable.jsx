@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { UserCheck } from "lucide-react";
@@ -35,19 +36,19 @@ export default function CrmTopCustomersTable({ topCustomers = [] }) {
         <Table size="small" sx={{ "& td, & th": { border: 0, fontSize: 12 } }}>
           <TableHead>
             <TableRow sx={{ borderBottom: "1px solid", borderColor: "divider" }}>
-              <TableCell sx={{ pb: 1, fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>
+              <TableCell sx={{ pb: 1, fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>
                 Name
               </TableCell>
-              <TableCell sx={{ pb: 1, fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>
+              <TableCell sx={{ pb: 1, fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>
                 Phone
               </TableCell>
-              <TableCell align="right" sx={{ pb: 1, fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>
+              <TableCell align="right" sx={{ pb: 1, fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>
                 Points
               </TableCell>
-              <TableCell align="right" sx={{ pb: 1, fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>
+              <TableCell align="right" sx={{ pb: 1, fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>
                 Orders
               </TableCell>
-              <TableCell align="center" sx={{ pb: 1, fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>
+              <TableCell align="center" sx={{ pb: 1, fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>
                 360 View
               </TableCell>
             </TableRow>

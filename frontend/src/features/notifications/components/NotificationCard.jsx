@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import { Box, Button, Chip, IconButton, Link, Stack, Tooltip, Typography } from "@mui/material";
 import { Bell, Check, CreditCard, Megaphone, ShieldCheck } from "lucide-react";
 
@@ -47,7 +48,7 @@ export default function NotificationCard({ notification: row, compact = false, p
             <Stack direction="row" spacing={1} sx={{ alignItems: "baseline" }}>
               <Typography component="h3" noWrap title={row.title} sx={{ flex: 1, minWidth: 0, fontSize: 13, lineHeight: 1.35, fontWeight: row.read_at ? 500 : 700 }}>{row.title}</Typography>
               {validDate && (
-                <Typography component="time" dateTime={date.toISOString()} title={date.toLocaleString()} sx={{ fontSize: 11, color: "text.secondary", flexShrink: 0 }}>
+                <Typography component="time" dateTime={date.toISOString()} title={date.toLocaleString()} sx={{ fontSize: TYPE.small, color: "text.secondary", flexShrink: 0 }}>
                   {relativeTime(date)}
                 </Typography>
               )}
@@ -56,8 +57,8 @@ export default function NotificationCard({ notification: row, compact = false, p
               {row.message}
             </Typography>
             <Stack direction="row" spacing={1.25} useFlexGap sx={{ alignItems: "center", flexWrap: "wrap", mt: 0.5 }}>
-              <Typography component="span" sx={{ fontSize: 11, color: "text.secondary" }}>{label}</Typography>
-              {important && <Typography component="span" sx={{ fontSize: 11, fontWeight: 700, color: "warning.dark" }}>Important</Typography>}
+              <Typography component="span" sx={{ fontSize: TYPE.small, color: "text.secondary" }}>{label}</Typography>
+              {important && <Typography component="span" sx={{ fontSize: TYPE.small, fontWeight: 700, color: "warning.dark" }}>Important</Typography>}
               <Box sx={{ flex: 1 }} />
               {row.platform_action === "subscription" ? (
                 <Link href={portalUrl} target="_blank" rel="noopener noreferrer" underline="hover" sx={linkSx}>Manage subscription</Link>
@@ -93,7 +94,7 @@ export default function NotificationCard({ notification: row, compact = false, p
           <Stack direction="row" spacing={1} useFlexGap sx={{ alignItems: "center", flexWrap: "wrap", mt: 1 }}>
             <Typography variant="caption" color="text.secondary">{label}</Typography>
             {validDate && <Typography component="time" dateTime={date.toISOString()} variant="caption" color="text.secondary">{date.toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</Typography>}
-            {important && <Chip label="Important" color="warning" size="small" variant="outlined" sx={{ height: 20, fontSize: 10 }} />}
+            {important && <Chip label="Important" color="warning" size="small" variant="outlined" sx={{ height: 20, fontSize: TYPE.small }} />}
           </Stack>
           <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: "wrap", mt: 0.5 }}>
             {!row.read_at && <Button size="small" disabled={pending} onClick={() => onRead(row.id)} sx={{ fontSize: 12 }}>Mark read</Button>}

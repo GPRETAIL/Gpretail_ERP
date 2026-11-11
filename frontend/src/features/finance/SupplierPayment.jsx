@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import PageHeader from "@/shared/components/PageHeader";
 import useAsyncQuery from "@/shared/hooks/useAsyncQuery";
 import SearchGridPanel from "@/shared/components/SearchGridPanel";
@@ -102,7 +103,7 @@ const PENDING_TABLE_COLUMNS = [
 const HISTORY_TABLE_COLUMNS = PENDING_TABLE_COLUMNS.filter((column) => column.key !== "amount");
 
 // Label above a field, matching the app's existing small-caps field-label look.
-const fieldLabelSx = { fontSize: 11.5, fontWeight: 600, color: "text.secondary", mb: 0.5, display: "block" };
+const fieldLabelSx = { fontSize: TYPE.small, fontWeight: 600, color: "text.secondary", mb: 0.5, display: "block" };
 
 // Read-only "field display" box used in the Invoice Summary panel.
 const SummaryField = ({ label, children, sx }) => (
@@ -740,7 +741,7 @@ const SupplierPayment = () => {
                         }}
                       >
                         {detailData.summary?.eligible_for_payment ? "Eligible for Payment" : "Review Before Paying"}
-                        <Typography component="div" sx={{ fontSize: 11, fontWeight: 500, mt: 0.25 }}>
+                        <Typography component="div" sx={{ fontSize: TYPE.small, fontWeight: 500, mt: 0.25 }}>
                           {detailData.summary?.eligibility_reason}
                         </Typography>
                       </Box>
@@ -974,7 +975,7 @@ const SupplierPayment = () => {
                     <Typography sx={{ fontSize: 13, fontWeight: 700 }}>
                       Paying: <Box component="span" sx={{ color: "primary.main" }}>{fmt(Number(paidAmountInput || 0))}</Box>
                       {Number(paidAmountInput || 0) < totalSelectedPayable && (
-                        <Box component="span" sx={{ ml: 1, fontSize: 10, color: "warning.main", fontWeight: 400 }}>
+                        <Box component="span" sx={{ ml: 1, fontSize: TYPE.small, color: "warning.main", fontWeight: 400 }}>
                           (Partial payment — status will remain pending)
                         </Box>
                       )}

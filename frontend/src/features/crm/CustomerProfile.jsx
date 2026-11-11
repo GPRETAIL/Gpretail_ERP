@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import PageHeader from "@/shared/components/PageHeader";
 import useAsyncQuery from "@/shared/hooks/useAsyncQuery";
 import React, { useCallback, useState } from "react";
@@ -30,7 +31,7 @@ const TABS = [
 
 const StatCard = ({ label, value }) => (
   <Box sx={{ bgcolor: "action.hover", border: "1px solid", borderColor: "divider", borderRadius: "7px", p: 1.5 }}>
-    <Typography sx={{ fontSize: 10, color: "text.secondary" }}>{label}</Typography>
+    <Typography sx={{ fontSize: TYPE.small, color: "text.secondary" }}>{label}</Typography>
     <Typography sx={{ fontSize: 13, fontWeight: 600, mt: 0.5 }}>{value}</Typography>
   </Box>
 );
@@ -51,7 +52,7 @@ const CustomerProfile = () => {
   const loyalty = data?.loyalty || {};
 
   return (
-    <Box className="master-responsive" sx={{ display: "flex", flexDirection: "column", height: "100%", bgcolor: "background.default", color: "text.primary", fontSize: 11 }}>
+    <Box className="master-responsive" sx={{ display: "flex", flexDirection: "column", height: "100%", bgcolor: "background.default", color: "text.primary", fontSize: TYPE.small }}>
       <PageHeader
         onBack={() => navigate(-1)}
         title={<>
@@ -89,7 +90,7 @@ const CustomerProfile = () => {
                   {(customer.name || "?").charAt(0).toUpperCase()}
                 </Box>
                 <Box>
-                  <Typography sx={{ fontSize: 13, fontWeight: 700 }}>{customer.name}</Typography>
+                  <Typography sx={{ fontSize: TYPE.name, fontWeight: 600 }}>{customer.name}</Typography>
                   <Typography sx={{ fontSize: "inherit", color: "text.secondary" }}>
                     {customer.code} {customer.phone ? `• ${customer.phone}` : ""} {customer.email ? `• ${customer.email}` : ""}
                   </Typography>

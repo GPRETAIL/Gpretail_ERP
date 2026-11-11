@@ -170,7 +170,7 @@ const PrintStatusFooter = () => {
                   ? ` · ${subscription.soonestDaysLeft}d`
                   : ""
               }`}
-              sx={{ height: 20, fontSize: "11px", fontWeight: 600, cursor: "pointer" }}
+              sx={{ height: 20, fontSize: TYPE.small, fontWeight: 600, cursor: "pointer" }}
             />
           ) : subscription?.dueSoon ? (
             <Chip
@@ -181,7 +181,7 @@ const PrintStatusFooter = () => {
                 ? "Subscription expired. Click to renew."
                 : `Subscription due in ${subscription.soonestDaysLeft} day(s). Click to view plans.`}
               label={subscription.soonestDaysLeft < 0 ? "EXPIRED · Renew" : subscription.soonestDaysLeft === 0 ? "DUE · today" : `DUE · ${subscription.soonestDaysLeft}d`}
-              sx={{ height: 20, fontSize: "11px", fontWeight: 600, cursor: "pointer" }}
+              sx={{ height: 20, fontSize: TYPE.small, fontWeight: 600, cursor: "pointer" }}
             />
           ) : null}
 
@@ -254,7 +254,7 @@ const PrintStatusFooter = () => {
                 <Box
                   component="span"
                   sx={{
-                    borderRadius: 10, px: 0.75, fontSize: 10, fontWeight: 600,
+                    borderRadius: 10, px: 0.75, fontSize: TYPE.small, fontWeight: 600,
                     bgcolor: syncStatus.outboxFailed > 0 ? "error.light" : "action.selected",
                     color: syncStatus.outboxFailed > 0 ? "error.dark" : "text.secondary",
                   }}

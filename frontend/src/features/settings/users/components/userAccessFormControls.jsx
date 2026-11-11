@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { Box, Checkbox, MenuItem, Stack, TextField, Typography } from "@mui/material";
@@ -10,7 +11,7 @@ import { muiFieldSx } from "@/shared/theme/formControlSizes";
 
 // Label stays a separate column to the left of the field (not MUI's own floating label) --
 // this two-column layout is the established look across every UserAccess/StoreGroups form.
-const fieldLabelSx = { width: "33.333%", fontSize: 11.5, fontWeight: 500, color: "text.secondary" };
+const fieldLabelSx = { width: "33.333%", fontSize: TYPE.small, fontWeight: 500, color: "text.secondary" };
 
 export const TextInput = ({ label, value, onChange, type = "text", required = false }) => (
   <Stack direction="row" sx={{ alignItems: "center" }}>
@@ -133,7 +134,7 @@ export const MultiSelectInput = ({
               <Box
                 key={selectedLabel}
                 component="span"
-                sx={{ borderRadius: "50px", bgcolor: (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.24 : 0.08), px: 1, py: 0.5, fontSize: 10.5, fontWeight: 500, color: "primary.main" }}
+                sx={{ borderRadius: "50px", bgcolor: (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.24 : 0.08), px: 1, py: 0.5, fontSize: TYPE.small, fontWeight: 500, color: "primary.main" }}
               >
                 {selectedLabel}
               </Box>
@@ -141,7 +142,7 @@ export const MultiSelectInput = ({
           </Stack>
         ) : null}
 
-        {helperText ? <Typography sx={{ mt: 0.5, fontSize: 10.5, color: "text.secondary" }}>{helperText}</Typography> : null}
+        {helperText ? <Typography sx={{ mt: 0.5, fontSize: TYPE.small, color: "text.secondary" }}>{helperText}</Typography> : null}
       </Box>
     </Stack>
   );

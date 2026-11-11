@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
@@ -74,7 +75,7 @@ export default function OfflineBills() {
     {
       key: "status", label: "Status", valueGetter: row => (row.reviewed_at ? "Checked" : "To check"),
       render: (_value, row) => row.reviewed_at
-        ? <Box><Chip size="small" color="success" label="Checked" />{row.review_note ? <Typography sx={{ fontSize: 11, color: "text.secondary" }}>{row.review_note}</Typography> : null}</Box>
+        ? <Box><Chip size="small" color="success" label="Checked" />{row.review_note ? <Typography sx={{ fontSize: TYPE.small, color: "text.secondary" }}>{row.review_note}</Typography> : null}</Box>
         : canEdit ? <Button size="small" variant="outlined" onClick={() => setSigning(row)}>Mark checked</Button> : <Chip size="small" color="warning" label="To check" />,
     },
   ], [canEdit]);

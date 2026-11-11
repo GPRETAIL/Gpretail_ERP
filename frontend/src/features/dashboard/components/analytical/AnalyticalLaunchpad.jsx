@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { Compass, ArrowRight } from "lucide-react";
@@ -29,7 +30,7 @@ export default function AnalyticalLaunchpad({ quickLinks = [] }) {
           >
             <Box>
               <Typography sx={{ fontSize: 12, fontWeight: 600, color: "text.primary" }}>{link.label}</Typography>
-              <Typography sx={{ fontSize: 10.5, color: "text.secondary" }}>{link.description}</Typography>
+              <Typography sx={{ fontSize: TYPE.small, color: "text.secondary" }}>{link.description}</Typography>
             </Box>
             <Box
               sx={{

@@ -45,7 +45,7 @@ describe("ensureGoogleFontLoaded", () => {
 
 describe("FONT_OPTIONS", () => {
   it("native and bundled fonts work without a network request and web fonts declare a family", () => {
-    const offline = [DEFAULT_FONT, "system", "segoe_ui"];
+    const offline = [DEFAULT_FONT, "inter", "segoe_ui"];
     for (const id of offline) {
       const native = getFontOption(id);
       expect(native.google).toBeNull();
@@ -53,7 +53,7 @@ describe("FONT_OPTIONS", () => {
       ensureGoogleFontLoaded(native.google);
     }
     expect(document.querySelector('link[href*="fonts.googleapis.com"]')).toBeNull();
-    expect(DEFAULT_FONT).toBe("inter"); // Bundled with the app (@fontsource-variable/inter).
+    expect(DEFAULT_FONT).toBe("system"); // Segoe UI on Windows; Inter is bundled (@fontsource-variable/inter).
     FONT_OPTIONS.filter((opt) => !offline.includes(opt.id)).forEach((opt) => {
       expect(opt.google).toBeTruthy();
     });

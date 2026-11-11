@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import PageHeader from "@/shared/components/PageHeader";
 import SearchGridPanel from "@/shared/components/SearchGridPanel";
 import { masterSearchAreaSx } from "@/shared/theme/erpUi";
@@ -67,7 +68,7 @@ const CUSTOMER_IMPORT_CONFIG = {
 
 const CUSTOMER_COLUMNS = [
   { key: "code", label: "Code" },
-  { key: "name", label: "Name" },
+  { key: "name", label: "Name", render: (value) => <span style={{ fontSize: TYPE.name, fontWeight: 600 }}>{value}</span> },
   { key: "customerType", label: "Customer Type" },
   { key: "customerCategory", label: "Category" },
   { key: "mobileNo", label: "Mobile" },
@@ -185,7 +186,7 @@ const CustomerList = () => {
           />
         </>}
         actions={<>
-          <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", fontSize: 10.5, fontWeight: 500, color: "text.secondary" }}>
+          <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", fontSize: TYPE.small, fontWeight: 500, color: "text.secondary" }}>
           <UploadImportButton
             endpoint="/customers/bulk"
             fieldConfig={CUSTOMER_IMPORT_CONFIG}

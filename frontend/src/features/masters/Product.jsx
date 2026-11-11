@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import { mapProductRow } from "./utils/masterListRows";
 import useSearchGrid, { createSearchGridAdapter } from "@/shared/hooks/useSearchGrid";
 import MasterSearchPanel from "./components/MasterSearchPanel";
@@ -482,10 +483,10 @@ const Product = () => {
           <Box sx={{ display: "flex", flexDirection: { xs: "column", lg: "row" }, gap: 1.5, flex: 1, minHeight: 0 }}>
             {showBulkEditPanel && (
               <Box sx={{ width: { xs: "100%", lg: "448px" }, flexShrink: 0, border: 1, borderColor: (theme) => alpha(theme.palette.primary.main, 0.3), bgcolor: (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.06), borderRadius: "5.25px", p: 1.5, overflowY: "auto", maxHeight: { xs: 420, lg: "100%" } }}>
-                <Typography component="h3" sx={{ fontSize: 11, fontWeight: 600, color: "primary.main", mb: 1 }}>
+                <Typography component="h3" sx={{ fontSize: TYPE.small, fontWeight: 600, color: "primary.main", mb: 1 }}>
                   Bulk Edit ({selectedRows.length} selected)
                 </Typography>
-                <Box sx={{ display: "grid", gridTemplateColumns: { sm: "1fr 1fr" }, gap: 1, fontSize: 11 }}>
+                <Box sx={{ display: "grid", gridTemplateColumns: { sm: "1fr 1fr" }, gap: 1, fontSize: TYPE.small }}>
                   <Box>
                     <Typography component="label" sx={{ display: "block", color: "text.secondary", mb: 0.25 }}>Change Brand</Typography>
                     <Box component="select" value={bulkEditForm.brandId} onChange={(e) => handleBulkFieldChange("brandId", e.target.value)} sx={{ width: "100%", minWidth: 0, ...fieldBaseSx(false) }}>
@@ -620,7 +621,7 @@ const Product = () => {
                     onClick={resetBulkEditForm}
                     disabled={bulkUpdating}
                     variant="outlined"
-                    sx={{ fontSize: 11, color: "text.secondary", borderColor: "grey.300" }}
+                    sx={{ fontSize: TYPE.small, color: "text.secondary", borderColor: "grey.300" }}
                   >
                     Reset
                   </Button>

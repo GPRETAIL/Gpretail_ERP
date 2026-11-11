@@ -4,7 +4,7 @@ import { ThemeProvider as MuiThemeProvider } from "@mui/material/styles";
 import { useTheme as useAppTheme } from "./themeContext";
 import api from "@/shared/api/apiClient";
 import { loginSuccess } from "@/features/auth/authSlice";
-import { createTenantTheme, DEFAULT_THEME_STYLE, THEME_STYLES, getFontOption, ensureGoogleFontLoaded, applyTypographyPreset } from "./themeRegistry";
+import { createTenantTheme, DEFAULT_THEME_STYLE, THEME_STYLES, getFontOption, ensureGoogleFontLoaded, applyTypographyPreset, TYPOGRAPHY_VARIABLE_NAMES } from "./themeRegistry";
 
 // Wraps the whole app in a dynamic MUI theme fed by the logged-in tenant's brand payload
 // (state.auth.user.brand, from /auth/me) -- so any MUI component anywhere, existing or future,
@@ -70,7 +70,7 @@ export default function TenantThemeProvider({ children }) {
     applyTypographyPreset(root, brand?.text_size);
     return () => {
       delete root.dataset.textSize;
-      for (const key of ["body", "label", "heading", "button"]) root.style.removeProperty(`--erp-font-${key}`);
+      for (const key of TYPOGRAPHY_VARIABLE_NAMES) root.style.removeProperty(`--erp-font-${key}`);
     };
   }, [brand?.text_size]);
 

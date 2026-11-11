@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import React from "react";
 import LoadingSkeleton from "@/shared/components/LoadingSkeleton";
 import { useNavigate } from "react-router-dom";
@@ -21,7 +22,7 @@ export function UsersCard({ summary = {}, loading, privacyMode }) {
   return (
     <ButtonBase onClick={() => navigate("/settings/user-access")} sx={cardSx("primary.main")}>
       <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", color: "text.secondary" }}>
-        <Typography sx={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Users</Typography>
+        <Typography sx={{ fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Users</Typography>
         <Box sx={{ color: "primary.main", display: "inline-flex" }}>
           <Users size={20} />
         </Box>
@@ -29,7 +30,7 @@ export function UsersCard({ summary = {}, loading, privacyMode }) {
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "text.primary", ...blurSx(privacyMode) }}>
         {loading ? <LoadingSkeleton /> : wholeNumber(summary.total_users)}
       </Typography>
-      <Typography sx={{ mt: 0.5, fontSize: 11, color: "text.secondary", ...blurSx(privacyMode) }}>
+      <Typography sx={{ mt: 0.5, fontSize: TYPE.small, color: "text.secondary", ...blurSx(privacyMode) }}>
         Active: {wholeNumber(summary.active_users)}
       </Typography>
     </ButtonBase>
@@ -41,7 +42,7 @@ export function SettingsEmployeesCard({ summary = {}, loading, privacyMode }) {
   return (
     <ButtonBase onClick={() => navigate("/hrms/employee")} sx={cardSx("#a5b4fc")}>
       <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", color: "text.secondary" }}>
-        <Typography sx={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Employees</Typography>
+        <Typography sx={{ fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Employees</Typography>
         <Box sx={{ color: "#6366f1", display: "inline-flex" }}>
           <UserCog size={20} />
         </Box>
@@ -49,7 +50,7 @@ export function SettingsEmployeesCard({ summary = {}, loading, privacyMode }) {
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "text.primary", ...blurSx(privacyMode) }}>
         {loading ? <LoadingSkeleton /> : wholeNumber(summary.total_employees)}
       </Typography>
-      <Typography sx={{ mt: 0.5, fontSize: 11, color: "text.secondary", ...blurSx(privacyMode) }}>
+      <Typography sx={{ mt: 0.5, fontSize: TYPE.small, color: "text.secondary", ...blurSx(privacyMode) }}>
         Active: {wholeNumber(summary.active_employees)}
       </Typography>
     </ButtonBase>
@@ -61,7 +62,7 @@ export function SettingsStoresCard({ summary = {}, loading, privacyMode }) {
   return (
     <ButtonBase onClick={() => navigate("/settings/company")} sx={cardSx("success.main")}>
       <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", color: "text.secondary" }}>
-        <Typography sx={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Stores</Typography>
+        <Typography sx={{ fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Stores</Typography>
         <Box sx={{ color: "success.main", display: "inline-flex" }}>
           <StoreIcon size={20} />
         </Box>
@@ -69,7 +70,7 @@ export function SettingsStoresCard({ summary = {}, loading, privacyMode }) {
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "text.primary", ...blurSx(privacyMode) }}>
         {loading ? <LoadingSkeleton /> : wholeNumber(summary.total_stores)}
       </Typography>
-      <Typography sx={{ mt: 0.5, fontSize: 11, color: "text.secondary", ...blurSx(privacyMode) }}>
+      <Typography sx={{ mt: 0.5, fontSize: TYPE.small, color: "text.secondary", ...blurSx(privacyMode) }}>
         Active: {wholeNumber(summary.active_stores)}
       </Typography>
     </ButtonBase>
@@ -81,7 +82,7 @@ export function LastBackupCard({ summary = {}, loading, privacyMode }) {
   return (
     <ButtonBase onClick={() => navigate("/settings/backup")} sx={cardSx("warning.main")}>
       <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", color: "text.secondary" }}>
-        <Typography sx={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Last Backup</Typography>
+        <Typography sx={{ fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Last Backup</Typography>
         <Box sx={{ color: "warning.main", display: "inline-flex" }}>
           <DatabaseBackup size={20} />
         </Box>
@@ -89,7 +90,7 @@ export function LastBackupCard({ summary = {}, loading, privacyMode }) {
       <Typography sx={{ mt: 1, fontSize: 15.75, fontWeight: 800, color: "text.primary", ...blurSx(privacyMode) }}>
         {loading ? <LoadingSkeleton /> : summary.last_backup_at ? new Date(summary.last_backup_at).toLocaleDateString("en-IN") : "Never"}
       </Typography>
-      <Typography sx={{ mt: 0.5, fontSize: 11, color: "text.secondary", ...blurSx(privacyMode) }}>
+      <Typography sx={{ mt: 0.5, fontSize: TYPE.small, color: "text.secondary", ...blurSx(privacyMode) }}>
         {summary.last_backup_size || "-"}
       </Typography>
     </ButtonBase>

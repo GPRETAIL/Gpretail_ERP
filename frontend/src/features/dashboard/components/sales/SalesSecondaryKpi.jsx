@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import React from "react";
 import LoadingSkeleton from "@/shared/components/LoadingSkeleton";
 import { useNavigate } from "react-router-dom";
@@ -23,7 +24,7 @@ export function MonthlySalesCard({ summary = {}, loading, privacyMode }) {
   return (
     <ButtonBase onClick={() => navigate("/sales/reports")} sx={cardSx("#a5b4fc")}>
       <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", color: "text.secondary" }}>
-        <Typography sx={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+        <Typography sx={{ fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
           Monthly Sales
         </Typography>
         <Box sx={{ color: "#6366f1", display: "inline-flex" }}>
@@ -33,7 +34,7 @@ export function MonthlySalesCard({ summary = {}, loading, privacyMode }) {
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "text.primary", ...blurSx(privacyMode) }}>
         {loading ? <LoadingSkeleton /> : formatCurrency(summary.month_sales_amount)}
       </Typography>
-      <Typography sx={{ mt: 0.5, fontSize: 11, color: "text.secondary", ...blurSx(privacyMode) }}>
+      <Typography sx={{ mt: 0.5, fontSize: TYPE.small, color: "text.secondary", ...blurSx(privacyMode) }}>
         {summary.month_bills_count || 0} bills this calendar month
       </Typography>
     </ButtonBase>
@@ -45,7 +46,7 @@ export function TotalInvoicesCard({ summary = {}, loading, privacyMode }) {
   return (
     <ButtonBase onClick={() => navigate("/sales/pos-sales")} sx={cardSx("primary.main")}>
       <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", color: "text.secondary" }}>
-        <Typography sx={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+        <Typography sx={{ fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
           Total Invoices (Period)
         </Typography>
         <Box sx={{ color: "primary.main", display: "inline-flex" }}>
@@ -55,7 +56,7 @@ export function TotalInvoicesCard({ summary = {}, loading, privacyMode }) {
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "text.primary", ...blurSx(privacyMode) }}>
         {loading ? <LoadingSkeleton /> : Number(summary.range_bills_count || 0).toLocaleString()}
       </Typography>
-      <Typography sx={{ mt: 0.5, fontSize: 11, color: "text.secondary", ...blurSx(privacyMode) }}>
+      <Typography sx={{ mt: 0.5, fontSize: TYPE.small, color: "text.secondary", ...blurSx(privacyMode) }}>
         {Number(summary.today_bills_count || 0).toLocaleString()} today
       </Typography>
     </ButtonBase>
@@ -67,7 +68,7 @@ export function ProductsSoldCard({ summary = {}, loading, privacyMode }) {
   return (
     <ButtonBase onClick={() => navigate("/sales/reports")} sx={cardSx("#d8b4fe")}>
       <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", color: "text.secondary" }}>
-        <Typography sx={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+        <Typography sx={{ fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
           Products Sold (Period)
         </Typography>
         <Box sx={{ color: "#9333ea", display: "inline-flex" }}>
@@ -77,7 +78,7 @@ export function ProductsSoldCard({ summary = {}, loading, privacyMode }) {
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "text.primary", ...blurSx(privacyMode) }}>
         {loading ? <LoadingSkeleton /> : Number(summary.distinct_products_sold || 0).toLocaleString()}
       </Typography>
-      <Typography sx={{ mt: 0.5, fontSize: 11, color: "text.secondary", ...blurSx(privacyMode) }}>
+      <Typography sx={{ mt: 0.5, fontSize: TYPE.small, color: "text.secondary", ...blurSx(privacyMode) }}>
         {Number(summary.range_qty_sold || 0).toLocaleString()} units sold
       </Typography>
     </ButtonBase>

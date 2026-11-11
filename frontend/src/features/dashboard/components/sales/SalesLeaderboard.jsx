@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import React from "react";
 import { Trophy } from "lucide-react";
 import { Box, Stack, Typography } from "@mui/material";
@@ -28,7 +29,7 @@ export default function SalesLeaderboard({ topSalesPersons = [] }) {
                 <Box
                   sx={{
                     display: "flex", height: 20, width: 20, alignItems: "center", justifyContent: "center",
-                    borderRadius: "50%", fontSize: 10, fontWeight: 700, color: "warning.dark",
+                    borderRadius: "50%", fontSize: TYPE.small, fontWeight: 700, color: "warning.dark",
                     bgcolor: (theme) => alpha(theme.palette.warning.main, theme.palette.mode === "dark" ? 0.24 : 0.15),
                   }}
                 >
@@ -38,7 +39,7 @@ export default function SalesLeaderboard({ topSalesPersons = [] }) {
               </Stack>
               <Box sx={{ textAlign: "right" }}>
                 <Typography sx={{ fontSize: 12, fontWeight: 700, color: "text.primary" }}>{formatCurrency(row.amount)}</Typography>
-                <Typography sx={{ fontSize: 10, color: "text.secondary" }}>{row.bills} bills</Typography>
+                <Typography sx={{ fontSize: TYPE.small, color: "text.secondary" }}>{row.bills} bills</Typography>
               </Box>
             </Stack>
           ))

@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import LiveDateTime from "@/shared/components/LiveDateTime";
 import ApprovalDialog from "@/features/sales/approvals/components/ApprovalDialog";
 import useStockRules, { noStockRowSx, shortQtyByStock } from "@/shared/hooks/useStockRules";
@@ -2452,7 +2453,7 @@ const PosSales = () => {
           <Box sx={{ borderBottom: 1, borderColor: "divider", bgcolor: "background.paper", px: 1.5, py: 1.5 }}>
             <Stack direction="row" sx={{ flexWrap: "wrap", alignItems: "flex-end", gap: 1 }}>
               <Box sx={{ width: "100%", minWidth: { md: 220 }, flex: 1 }}>
-                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 10.5, fontWeight: 700, color: "error.main" }}>Barcode</Typography>
+                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: TYPE.label, fontWeight: 700, color: "error.main" }}>Barcode</Typography>
                 <TextField
                   inputRef={barcodeInputRef}
                   type="text"
@@ -2463,11 +2464,11 @@ const PosSales = () => {
                   placeholder={applyingReturn ? "Fetching return..." : "Scan / enter barcode"}
                   size="small"
                   fullWidth
-                  sx={{ "& .MuiInputBase-input": { fontSize: 10.5, py: 0.75 } }}
+                  sx={{ "& .MuiInputBase-input": { fontSize: TYPE.small, py: 0.75 } }}
                 />
               </Box>
               <Box sx={{ width: "100%", minWidth: { md: 280 }, flex: 1.3 }}>
-                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 10.5, fontWeight: 700, color: "error.main" }}>Product (In Stock)</Typography>
+                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: TYPE.label, fontWeight: 700, color: "error.main" }}>Product (In Stock)</Typography>
                 <AsyncSearchSelect
                   name="posProduct"
                   value={addProductKey}
@@ -2479,7 +2480,7 @@ const PosSales = () => {
                 />
               </Box>
               <Box sx={{ width: 112 }}>
-                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 10.5, fontWeight: 700, color: "error.main" }}>Qty</Typography>
+                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: TYPE.label, fontWeight: 700, color: "error.main" }}>Qty</Typography>
                 <TextField
                   type="number"
                   slotProps={{ htmlInput: { min: 1 } }}
@@ -2493,7 +2494,7 @@ const PosSales = () => {
                   }}
                   size="small"
                   fullWidth
-                  sx={{ "& .MuiInputBase-input": { fontSize: 10.5, py: 0.75 } }}
+                  sx={{ "& .MuiInputBase-input": { fontSize: TYPE.small, py: 0.75 } }}
                 />
               </Box>
               <Box sx={{ width: 40 }}>
@@ -2508,7 +2509,7 @@ const PosSales = () => {
                 </Button>
               </Box>
             </Stack>
-            {selectedStockHint ? <Typography sx={{ mt: 1, fontSize: 10.5, color: "text.secondary" }}>{selectedStockHint}</Typography> : null}
+            {selectedStockHint ? <Typography sx={{ mt: 1, fontSize: TYPE.small, color: "text.secondary" }}>{selectedStockHint}</Typography> : null}
           </Box>
 
           <Box sx={{ flex: 1, minHeight: 0, overflowX: "auto" }}>
@@ -2621,11 +2622,11 @@ const PosSales = () => {
 
               <Box sx={{ flex: 1, minHeight: 0, overflowY: "auto" }} style={{ scrollbarGutter: "stable" }}>
                 {displayCartLines.length === 0 ? (
-                  <Box sx={{ display: "flex", height: "100%", alignItems: "center", justifyContent: "center", py: 8, textAlign: "center", fontSize: 10.5, color: "text.disabled" }}>
+                  <Box sx={{ display: "flex", height: "100%", alignItems: "center", justifyContent: "center", py: 8, textAlign: "center", fontSize: TYPE.small, color: "text.disabled" }}>
                     No products added yet.
                   </Box>
                 ) : filteredCartLines.length === 0 ? (
-                  <Box sx={{ display: "flex", height: "100%", alignItems: "center", justifyContent: "center", py: 8, textAlign: "center", fontSize: 10.5, color: "text.disabled" }}>
+                  <Box sx={{ display: "flex", height: "100%", alignItems: "center", justifyContent: "center", py: 8, textAlign: "center", fontSize: TYPE.small, color: "text.disabled" }}>
                     No matching products found.
                   </Box>
                 ) : (
@@ -2761,7 +2762,7 @@ const PosSales = () => {
       <Box sx={{ width: "100%", display: { xl: "flex" }, minHeight: { xl: 0 } }}>
         <Box sx={{ width: "100%", bgcolor: "background.paper", border: 1, borderColor: "grey.300", borderRadius: "7px", boxShadow: 1, p: 1.5, display: { xl: "flex" }, height: { xl: "100%" }, flexDirection: { xl: "column" } }}>
           <Box sx={{ borderBottom: 1, borderColor: "divider", pb: 1 }}>
-            <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", gap: 1.5, fontSize: 10 }}>
+            <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", gap: 1.5, fontSize: TYPE.small }}>
               <LiveDateTime />
             </Stack>
           </Box>
@@ -2770,7 +2771,7 @@ const PosSales = () => {
             <Box sx={{ display: "grid", gap: 1, gridTemplateColumns: { md: "minmax(0,1fr) 96px" } }}>
               <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75 }}>
                 <Box>
-                  <Typography component="label" sx={{ mb: 0.25, display: "block", fontSize: 8, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>Customer Number</Typography>
+                  <Typography component="label" sx={{ mb: 0.25, display: "block", fontSize: TYPE.label, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>Customer Number</Typography>
                   <TextField
                     type="text"
                     value={newCustomer.mobileNo}
@@ -2784,11 +2785,11 @@ const PosSales = () => {
                     placeholder="Write customer number and press Enter"
                     size="small"
                     fullWidth
-                    sx={{ "& .MuiInputBase-input": { fontSize: 9, py: 0.5 } }}
+                    sx={{ "& .MuiInputBase-input": { fontSize: TYPE.small, py: 0.5 } }}
                   />
                 </Box>
                 <Box>
-                  <Typography component="label" sx={{ mb: 0.25, display: "block", fontSize: 8, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>Customer Name</Typography>
+                  <Typography component="label" sx={{ mb: 0.25, display: "block", fontSize: TYPE.label, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>Customer Name</Typography>
                   <TextField
                     type="text"
                     value={newCustomer.name}
@@ -2796,12 +2797,12 @@ const PosSales = () => {
                     placeholder="Customer name"
                     size="small"
                     fullWidth
-                    sx={{ "& .MuiInputBase-input": { fontSize: 9, py: 0.5 } }}
+                    sx={{ "& .MuiInputBase-input": { fontSize: TYPE.small, py: 0.5 } }}
                   />
                 </Box>
                 {creditEnabled ? (
                   <Box>
-                    <Typography component="label" sx={{ mb: 0.25, display: "block", fontSize: 8, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>Remarks</Typography>
+                    <Typography component="label" sx={{ mb: 0.25, display: "block", fontSize: TYPE.label, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>Remarks</Typography>
                     <TextField
                       type="text"
                       value={creditRemarks}
@@ -2809,14 +2810,14 @@ const PosSales = () => {
                       placeholder="Remarks"
                       size="small"
                       fullWidth
-                      sx={{ "& .MuiInputBase-input": { fontSize: 9, py: 0.5 } }}
+                      sx={{ "& .MuiInputBase-input": { fontSize: TYPE.small, py: 0.5 } }}
                     />
                   </Box>
                 ) : null}
               </Box>
 
               <Box sx={{ display: "flex", flexDirection: "column", gap: 1, pt: { xs: 0, md: 3 } }}>
-                <Stack component="label" direction="row" sx={{ alignItems: "center", justifyContent: "space-between", gap: 1, fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>
+                <Stack component="label" direction="row" sx={{ alignItems: "center", justifyContent: "space-between", gap: 1, fontSize: TYPE.label, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>
                   <Box component="span">Credit</Box>
                   <Checkbox
                     checked={creditEnabled}
@@ -2830,7 +2831,7 @@ const PosSales = () => {
                     sx={{ p: 0 }}
                   />
                 </Stack>
-                <Stack component="label" direction="row" sx={{ alignItems: "center", justifyContent: "space-between", gap: 1, fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>
+                <Stack component="label" direction="row" sx={{ alignItems: "center", justifyContent: "space-between", gap: 1, fontSize: TYPE.label, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>
                   <Box component="span">IGST</Box>
                   <Checkbox
                     checked={igstEnabled}
@@ -2848,7 +2849,7 @@ const PosSales = () => {
 
             {igstEnabled ? (
               <Box>
-                <Typography component="label" sx={{ mb: 0.25, display: "block", fontSize: 8, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>
+                <Typography component="label" sx={{ mb: 0.25, display: "block", fontSize: TYPE.label, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>
                   Place Of Supply
                 </Typography>
                 <TextField
@@ -2857,7 +2858,7 @@ const PosSales = () => {
                   onChange={(event) => setPlaceOfSupplyStateId(event.target.value)}
                   size="small"
                   fullWidth
-                  sx={{ "& .MuiInputBase-input": { fontSize: 9, py: 0.5 } }}
+                  sx={{ "& .MuiInputBase-input": { fontSize: TYPE.small, py: 0.5 } }}
                 >
                   <MenuItem value="">Select state</MenuItem>
                   {customerConfigOptions.states.map((row) => (
@@ -2872,14 +2873,14 @@ const PosSales = () => {
 
           <Box sx={{ borderTop: 1, borderColor: "divider", py: 1.5 }}>
             <Box sx={{ overflow: "hidden", borderRadius: "3.5px", border: 1, borderColor: "divider" }}>
-              <Box sx={{ display: "grid", gridTemplateColumns: "1.1fr 0.9fr 72px", borderBottom: 1, borderColor: "divider", bgcolor: "action.hover", fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>
+              <Box sx={{ display: "grid", gridTemplateColumns: "1.1fr 0.9fr 72px", borderBottom: 1, borderColor: "divider", bgcolor: "action.hover", fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>
                 <Box sx={{ px: 1, py: 1 }}>Last Bill</Box>
                 <Box sx={{ borderLeft: 1, borderColor: "divider", px: 1, py: 1, textAlign: "right" }}>Amount</Box>
                 <Box sx={{ borderLeft: 1, borderColor: "divider", px: 1, py: 1, textAlign: "center" }}>Action</Box>
               </Box>
               <Box sx={{ height: 112, overflowY: "auto" }}>
                 {latestPosDocument ? (
-                  <Box sx={{ display: "grid", gridTemplateColumns: "1.1fr 0.9fr 72px", alignItems: "center", fontSize: 10.5, color: "text.secondary" }}>
+                  <Box sx={{ display: "grid", gridTemplateColumns: "1.1fr 0.9fr 72px", alignItems: "center", fontSize: TYPE.small, color: "text.secondary" }}>
                     <Box sx={{ px: 1, py: 1, fontWeight: 600 }}>
                       {formatLatestPosDocumentNumber(latestPosDocument)}
                     </Box>
@@ -2937,7 +2938,7 @@ const PosSales = () => {
                     </Box>
                   </Box>
                 ) : (
-                  <Box sx={{ display: "flex", height: "100%", alignItems: "center", justifyContent: "center", px: 1, textAlign: "center", fontSize: 10.5, color: "text.disabled" }}>
+                  <Box sx={{ display: "flex", height: "100%", alignItems: "center", justifyContent: "center", px: 1, textAlign: "center", fontSize: TYPE.small, color: "text.disabled" }}>
                     No saved document yet
                   </Box>
                 )}
@@ -2945,8 +2946,8 @@ const PosSales = () => {
             </Box>
           </Box>
 
-          <Stack sx={{ gap: igstEnabled ? 0.75 : 1, borderTop: 1, borderColor: "divider", pt: 1.5, fontSize: igstEnabled ? { xs: 8, md: 9, lg: 10 } : { xs: 10, md: 12.25, lg: 14 } }}>
-            <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", fontSize: { xs: 16, md: 17.5, lg: 21 } }}>
+          <Stack sx={{ gap: igstEnabled ? 0.75 : 1, borderTop: 1, borderColor: "divider", pt: 1.5, fontSize: igstEnabled ? TYPE.label : TYPE.posRow, fontVariantNumeric: "tabular-nums" }}>
+            <Stack direction="row" className="pos-total" sx={{ alignItems: "center", justifyContent: "space-between", fontSize: TYPE.posTotal }}>
               <Box component="span" sx={{ fontWeight: 800, color: "text.primary" }}>Amount</Box>
               <Box component="span" sx={{ fontWeight: 800, color: summary.amount < 0 ? "error.main" : "text.primary" }}>
                 {formatMoney(summary.amount)}
@@ -3118,7 +3119,7 @@ const PosSales = () => {
       <Box sx={showSearchPage ? masterSearchAreaSx : { flex: 1, minHeight: 0, p: 2, display: "flex", flexDirection: "column", gap: 2, pb: { xs: 14, xl: 2 } }}>
         {showSearchPage ? renderSearchPage() : renderEntryPage()}
 
-        {loading && <Typography sx={{ fontSize: 10.5, color: "text.secondary", px: 0.5 }}>Loading master data...</Typography>}
+        {loading && <Typography sx={{ fontSize: TYPE.small, color: "text.secondary", px: 0.5 }}>Loading master data...</Typography>}
       </Box>
 
       {salesManDialog.open && (
@@ -3133,7 +3134,7 @@ const PosSales = () => {
             <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", borderBottom: 1, borderColor: "divider", px: 2, py: 1.5 }}>
               <Box>
                 <Typography sx={{ fontSize: 12.25, fontWeight: 600, color: "text.primary" }}>Sales Man</Typography>
-                <Typography sx={{ fontSize: 10.5, color: "text.secondary" }}>Write or scan the Sales Man ID</Typography>
+                <Typography sx={{ fontSize: TYPE.small, color: "text.secondary" }}>Write or scan the Sales Man ID</Typography>
               </Box>
               <IconButton
                 type="button"
@@ -3147,7 +3148,7 @@ const PosSales = () => {
             </Stack>
 
             <Box sx={{ px: 2, py: 2 }}>
-              <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 10.5, fontWeight: 700, color: "error.main" }}>Sales Man ID</Typography>
+              <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: TYPE.label, fontWeight: 700, color: "error.main" }}>Sales Man ID</Typography>
               <TextField
                 type="text"
                 value={salesManDialog.value}
@@ -3199,7 +3200,7 @@ const PosSales = () => {
             <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", borderBottom: 1, borderColor: "divider", px: 2.5, py: 2 }}>
               <Box>
                 <Typography sx={{ fontSize: 12.25, fontWeight: 600, color: "text.primary" }}>Quick Customer</Typography>
-                <Typography sx={{ fontSize: 10.5, color: "text.secondary" }}>
+                <Typography sx={{ fontSize: TYPE.small, color: "text.secondary" }}>
                   Press Enter to move to next field. On mobile number Enter, existing customers appear below.
                 </Typography>
               </Box>
@@ -3472,7 +3473,7 @@ const PosSales = () => {
             <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", borderBottom: 1, borderColor: "divider", px: 2.5, py: 2 }}>
               <Box>
                 <Typography sx={{ fontSize: 12.25, fontWeight: 600, color: "text.primary" }}>Sale Discount</Typography>
-                <Typography sx={{ fontSize: 10.5, color: "text.secondary" }}>
+                <Typography sx={{ fontSize: TYPE.small, color: "text.secondary" }}>
                   Select sale rows and apply a discount percentage to the current POS bill.
                 </Typography>
               </Box>
@@ -3621,7 +3622,7 @@ const PosSales = () => {
             <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", borderBottom: 1, borderColor: "divider", px: 2, py: 1.5 }}>
               <Box>
                 <Typography sx={{ fontSize: 12.25, fontWeight: 600, color: "text.primary" }}>POS Payment</Typography>
-                <Typography sx={{ fontSize: 10.5, color: "text.secondary" }}>Review bill amount and enter received payment</Typography>
+                <Typography sx={{ fontSize: TYPE.small, color: "text.secondary" }}>Review bill amount and enter received payment</Typography>
               </Box>
               <IconButton
                 type="button"
@@ -3648,7 +3649,7 @@ const PosSales = () => {
                 </Stack>
                 <Stack direction="row" sx={{ justifyContent: "space-between", borderRadius: "3.5px", border: 1, borderColor: "divider", px: 1.5, py: 1 }}>
                   <Box component="span" sx={{ color: "text.secondary" }}>Net Amount</Box>
-                  <Box component="span" sx={{ fontWeight: 600, color: paymentDisplayTotals.netAmount < 0 ? "error.main" : "text.primary" }}>
+                  <Box component="span" className="pos-total" sx={{ fontWeight: 800, fontSize: TYPE.posTotal, fontVariantNumeric: "tabular-nums", color: paymentDisplayTotals.netAmount < 0 ? "error.main" : "text.primary" }}>
                     {formatMoney(paymentDisplayTotals.netAmount)}
                   </Box>
                 </Stack>
@@ -3674,7 +3675,7 @@ const PosSales = () => {
                 {paymentTotals.refundAmount > 0 && (
                   <Box sx={{ borderRadius: "3.5px", border: 1, borderColor: (theme) => alpha(theme.palette.warning.main, 0.4), bgcolor: (theme) => alpha(theme.palette.warning.main, theme.palette.mode === "dark" ? 0.16 : 0.08), p: 1.5 }}>
                     <Stack direction="row" sx={{ flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 1 }}>
-                      <Typography sx={{ fontSize: 10.5, color: "warning.dark" }}>
+                      <Typography sx={{ fontSize: TYPE.small, color: "warning.dark" }}>
                         Confirm the refund before saving. Any received amount is added to the refund.
                       </Typography>
                       <Button
@@ -3695,7 +3696,7 @@ const PosSales = () => {
                 )}
 
                 <Stack sx={{ gap: 1 }}>
-                  <Typography sx={{ fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>Cash</Typography>
+                  <Typography sx={{ fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>Cash</Typography>
                   <TextField
                     type="number"
                     autoFocus
@@ -3711,7 +3712,7 @@ const PosSales = () => {
 
                 <Box sx={{ display: "grid", gap: 1, gridTemplateColumns: { md: "1fr 1fr" } }}>
                   <Stack sx={{ gap: 1 }}>
-                    <Typography sx={{ fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>Card Amount</Typography>
+                    <Typography sx={{ fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>Card Amount</Typography>
                     <TextField
                       type="number"
                       slotProps={{ htmlInput: { min: 0, step: 0.01 } }}
@@ -3723,7 +3724,7 @@ const PosSales = () => {
                     />
                   </Stack>
                   <Stack sx={{ gap: 1 }}>
-                    <Typography sx={{ fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>Card Type</Typography>
+                    <Typography sx={{ fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>Card Type</Typography>
                     <Box
                       component="select"
                       ref={cardTypeSelectRef}
@@ -3747,7 +3748,7 @@ const PosSales = () => {
 
                 <Box sx={{ display: "grid", gap: 1, gridTemplateColumns: { md: "1fr 1fr" } }}>
                   <Stack sx={{ gap: 1 }}>
-                    <Typography sx={{ fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>UPI Amount</Typography>
+                    <Typography sx={{ fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>UPI Amount</Typography>
                     <TextField
                       type="number"
                       slotProps={{ htmlInput: { min: 0, step: 0.01 } }}
@@ -3759,7 +3760,7 @@ const PosSales = () => {
                     />
                   </Stack>
                   <Stack sx={{ gap: 1 }}>
-                    <Typography sx={{ fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>UPI Provider</Typography>
+                    <Typography sx={{ fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>UPI Provider</Typography>
                     <Box
                       component="select"
                       ref={upiProviderSelectRef}

@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import React from "react";
 import LoadingSkeleton from "@/shared/components/LoadingSkeleton";
 import { PieChart } from "lucide-react";
@@ -25,7 +26,7 @@ export default function WarehouseSellingModeBreakdown({ inventory = {}, performa
           </Box>
           Selling Mode Breakdown
         </Typography>
-        <Typography sx={{ fontSize: 11, color: "text.disabled" }}>Respects Pieces / Packs / Cut</Typography>
+        <Typography sx={{ fontSize: TYPE.small, color: "text.disabled" }}>Respects Pieces / Packs / Cut</Typography>
       </Stack>
 
       <Stack spacing={1.5}>
@@ -37,8 +38,8 @@ export default function WarehouseSellingModeBreakdown({ inventory = {}, performa
             </Typography>
           </Stack>
           <Stack direction="row" sx={{ mt: 0.5, justifyContent: "space-between" }}>
-            <Typography sx={{ fontSize: 11, color: "text.secondary" }}>{modes.piece?.product_count || 0} Products</Typography>
-            <Typography sx={{ fontSize: 11, color: "text.secondary" }}>Value: {formatCurrency(modes.piece?.cost_value)}</Typography>
+            <Typography sx={{ fontSize: TYPE.small, color: "text.secondary" }}>{modes.piece?.product_count || 0} Products</Typography>
+            <Typography sx={{ fontSize: TYPE.small, color: "text.secondary" }}>Value: {formatCurrency(modes.piece?.cost_value)}</Typography>
           </Stack>
         </Box>
 
@@ -50,8 +51,8 @@ export default function WarehouseSellingModeBreakdown({ inventory = {}, performa
             </Typography>
           </Stack>
           <Stack direction="row" sx={{ mt: 0.5, justifyContent: "space-between" }}>
-            <Typography sx={{ fontSize: 11, color: "text.secondary" }}>{modes.pack?.product_count || 0} Products</Typography>
-            <Typography sx={{ fontSize: 11, color: "text.secondary" }}>Value: {formatCurrency(modes.pack?.cost_value)}</Typography>
+            <Typography sx={{ fontSize: TYPE.small, color: "text.secondary" }}>{modes.pack?.product_count || 0} Products</Typography>
+            <Typography sx={{ fontSize: TYPE.small, color: "text.secondary" }}>Value: {formatCurrency(modes.pack?.cost_value)}</Typography>
           </Stack>
         </Box>
 
@@ -63,8 +64,8 @@ export default function WarehouseSellingModeBreakdown({ inventory = {}, performa
             </Typography>
           </Stack>
           <Stack direction="row" sx={{ mt: 0.5, justifyContent: "space-between" }}>
-            <Typography sx={{ fontSize: 11, color: "text.secondary" }}>{modes.cut?.product_count || 0} Products</Typography>
-            <Typography sx={{ fontSize: 11, color: "text.secondary" }}>Value: {formatCurrency(modes.cut?.cost_value)}</Typography>
+            <Typography sx={{ fontSize: TYPE.small, color: "text.secondary" }}>{modes.cut?.product_count || 0} Products</Typography>
+            <Typography sx={{ fontSize: TYPE.small, color: "text.secondary" }}>Value: {formatCurrency(modes.cut?.cost_value)}</Typography>
           </Stack>
         </Box>
       </Stack>

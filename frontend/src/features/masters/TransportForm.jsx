@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import React, { useState, useEffect, useRef } from "react";
 import { ArrowLeft, PlusCircle, Save, Search } from "lucide-react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
@@ -20,7 +21,7 @@ const mapTaxOption = (t) => ({
 
 /* ─── tiny inline helpers (layout only -- the field look itself is the shared fieldBaseSx) ─── */
 const Label = ({ children, required }) => (
-  <Typography component="span" sx={{ width: "40%", fontSize: 11.5, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5, flexShrink: 0 }}>
+  <Typography component="span" sx={{ width: "40%", fontSize: TYPE.small, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5, flexShrink: 0 }}>
     {required && <Box component="span" sx={{ color: "error.main", mr: 0.5 }}>*</Box>}
     {children}
   </Typography>
@@ -46,7 +47,7 @@ const Select = ({ options = [], placeholder, className: _className, disabled = f
 );
 
 const Check = ({ label, ...props }) => (
-  <Stack component="label" direction="row" sx={{ alignItems: "center", gap: 0.75, fontSize: 11.5, color: "text.secondary", cursor: "pointer", userSelect: "none" }}>
+  <Stack component="label" direction="row" sx={{ alignItems: "center", gap: 0.75, fontSize: TYPE.label, color: "text.secondary", cursor: "pointer", userSelect: "none" }}>
     <Box component="input" type="checkbox" {...props} sx={{ width: 14, height: 14, m: 0, accentColor: "#2563eb" }} />
     {label}
   </Stack>
@@ -491,7 +492,7 @@ const TransportForm = () => {
           <Field>
             <Label>Loading Charges</Label>
             <Stack direction="row" sx={{ flex: 1, gap: 0.5, alignItems: "center" }}>
-              <Typography component="span" sx={{ fontSize: 10.5, color: "text.secondary", whiteSpace: "nowrap" }}>Per Box</Typography>
+              <Typography component="span" sx={{ fontSize: TYPE.small, color: "text.secondary", whiteSpace: "nowrap" }}>Per Box</Typography>
               <Input
                 name="loadingPerBox"
                 type="number"
@@ -499,7 +500,7 @@ const TransportForm = () => {
                 onChange={handleChange}
                 disabled={readOnly}
               />
-              <Typography component="span" sx={{ fontSize: 10.5, color: "text.secondary", whiteSpace: "nowrap" }}>Per Bundle</Typography>
+              <Typography component="span" sx={{ fontSize: TYPE.small, color: "text.secondary", whiteSpace: "nowrap" }}>Per Bundle</Typography>
               <Input
                 name="loadingPerBundle"
                 type="number"
@@ -537,7 +538,7 @@ const TransportForm = () => {
           {!readOnly && (
             <Stack direction="row" sx={{ gap: 0.5, mb: 1, alignItems: "flex-end" }}>
               <Stack sx={{ gap: 0.5, flex: 1 }}>
-                <Typography component="span" sx={{ fontSize: 10.5, color: "text.secondary" }}>City</Typography>
+                <Typography component="span" sx={{ fontSize: TYPE.small, color: "text.secondary" }}>City</Typography>
                 <Select
                   name="cityId"
                   value={rateRow.cityId}
@@ -547,7 +548,7 @@ const TransportForm = () => {
                 />
               </Stack>
               <Stack sx={{ gap: 0.5, width: 80 }}>
-                <Typography component="span" sx={{ fontSize: 10.5, color: "text.secondary" }}>Per Kg</Typography>
+                <Typography component="span" sx={{ fontSize: TYPE.small, color: "text.secondary" }}>Per Kg</Typography>
                 <Input
                   name="perKg"
                   type="number"
@@ -557,7 +558,7 @@ const TransportForm = () => {
                 />
               </Stack>
               <Stack sx={{ gap: 0.5, width: 80 }}>
-                <Typography component="span" sx={{ fontSize: 10.5, color: "text.secondary" }}>Per Box</Typography>
+                <Typography component="span" sx={{ fontSize: TYPE.small, color: "text.secondary" }}>Per Box</Typography>
                 <Input
                   name="perBox"
                   type="number"
@@ -567,7 +568,7 @@ const TransportForm = () => {
                 />
               </Stack>
               <Stack sx={{ gap: 0.5, width: 96 }}>
-                <Typography component="span" sx={{ fontSize: 10.5, color: "text.secondary" }}>Per Bundle</Typography>
+                <Typography component="span" sx={{ fontSize: TYPE.small, color: "text.secondary" }}>Per Bundle</Typography>
                 <Input
                   name="perBundle"
                   type="number"
@@ -629,7 +630,7 @@ const TransportForm = () => {
             </Table>
           </Box>
 
-          <Typography sx={{ mt: 1, fontSize: 10.5, color: "text.disabled", textAlign: "right" }}>
+          <Typography sx={{ mt: 1, fontSize: TYPE.small, color: "text.disabled", textAlign: "right" }}>
             {rates.length === 1 ? "Showing 1 row" : `Showing ${rates.length} rows`}
           </Typography>
         </Card>

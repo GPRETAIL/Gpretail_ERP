@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import useSearchGrid, { createSearchGridAdapter } from "@/shared/hooks/useSearchGrid";
 import MasterSearchPanel from "./components/MasterSearchPanel";
 import { masterSearchAreaSx } from "@/shared/theme/erpUi";
@@ -501,7 +502,7 @@ const Brand = ({ initialCreate = false }) => {
                 />
 
                 <Stack direction="row" sx={{ alignItems: "center" }}>
-                  <Typography component="label" sx={{ width: "40%", fontSize: 11.5, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5 }}>
+                  <Typography component="label" sx={{ width: "40%", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5 }}>
                     Logo
                   </Typography>
                   <Stack direction="row" sx={{ flex: 1, alignItems: "center", gap: 1 }}>
@@ -525,7 +526,7 @@ const Brand = ({ initialCreate = false }) => {
                         }
                       }}
                     />
-                    <Typography component="span" sx={{ fontSize: 10.5, color: "text.secondary", fontStyle: "italic" }}>No file selected</Typography>
+                    <Typography component="span" sx={{ fontSize: TYPE.small, color: "text.secondary", fontStyle: "italic" }}>No file selected</Typography>
                   </Stack>
                 </Stack>
 

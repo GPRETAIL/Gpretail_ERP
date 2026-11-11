@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import PageHeader from "@/shared/components/PageHeader";
 import React, { useState } from "react";
 import { Search } from "lucide-react";
@@ -8,7 +9,7 @@ import { muiFieldSx } from "@/shared/theme/formControlSizes";
 // Reusable SelectInput helper component (simplified)
 const SelectInput = ({ label, options, value, onChange, name, isRequired = false }) => (
   <Box sx={{ flex: 1, minWidth: 0 }}>
-    <Typography component="label" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>
+    <Typography component="label" sx={{ display: "block", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary" }}>
       {isRequired && (
         <Box component="span" sx={{ color: "error.main", mr: 0.25 }}>
           *
@@ -113,7 +114,7 @@ const TransportIssueSearch = () => {
             />
 
             <Box>
-              <Typography component="label" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>
+              <Typography component="label" sx={{ display: "block", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary" }}>
                 Issue No
               </Typography>
               <TextField
@@ -127,7 +128,7 @@ const TransportIssueSearch = () => {
             </Box>
 
             <Box>
-              <Typography component="label" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>
+              <Typography component="label" sx={{ display: "block", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary" }}>
                 Issue Date
               </Typography>
               <TextField
@@ -178,7 +179,7 @@ const TransportIssueSearch = () => {
               borderBottom: 1,
               borderColor: "divider",
               bgcolor: alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.08),
-              fontSize: 10.5,
+              fontSize: TYPE.small,
               fontWeight: 600,
               color: "text.secondary",
             })}
@@ -229,7 +230,7 @@ const TransportIssueSearch = () => {
           {/* Footer Bar of the Table */}
           <Stack
             direction="row"
-            sx={{ justifyContent: "flex-start", alignItems: "center", p: 1, fontSize: 10.5, color: "text.secondary", borderTop: 1, borderColor: "divider", bgcolor: "action.hover" }}
+            sx={{ justifyContent: "flex-start", alignItems: "center", p: 1, fontSize: TYPE.small, color: "text.secondary", borderTop: 1, borderColor: "divider", bgcolor: "action.hover" }}
           >
             <Box component="span">Showing all {results.length} rows</Box>
           </Stack>
@@ -247,7 +248,7 @@ const TransportIssueSearch = () => {
           alignItems: "center",
           px: 2,
           py: 0.5,
-          fontSize: 10.5,
+          fontSize: TYPE.small,
           color: "text.secondary",
           borderTop: 1,
           borderColor: "divider",

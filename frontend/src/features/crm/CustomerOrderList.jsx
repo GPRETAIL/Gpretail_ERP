@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import PageHeader from "@/shared/components/PageHeader";
 import SearchGridPanel from "@/shared/components/SearchGridPanel";
 import { masterSearchAreaSx } from "@/shared/theme/erpUi";
@@ -179,7 +180,7 @@ const CustomerOrderList = () => {
           />
         </>}
         actions={<>
-          <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", fontSize: 10.5, fontWeight: 500, color: "text.secondary" }}>
+          <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", fontSize: TYPE.small, fontWeight: 500, color: "text.secondary" }}>
           <Button onClick={() => navigate("/crm/customer-orders/new")} className="topbar-action-btn topbar-action-new">
             <PlusCircle size={12} style={{marginRight: 4}} /> New
           </Button>

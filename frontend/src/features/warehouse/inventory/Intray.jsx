@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import PageHeader from "@/shared/components/PageHeader";
 import React, { useState } from "react";
 import { Search } from "lucide-react";
@@ -103,7 +104,7 @@ const Intray = () => {
         <Stack direction="row" spacing={2} sx={{ alignItems: "flex-end" }}>
           {/* Type Filter */}
           <Box sx={{ flex: 1, maxWidth: 200 }}>
-            <Typography component="label" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>
+            <Typography component="label" sx={{ display: "block", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary" }}>
               Type
             </Typography>
             <TextField select name="type" value={filters.type} onChange={handleFilterChange} size="small" fullWidth sx={muiFieldSx}>
@@ -117,7 +118,7 @@ const Intray = () => {
 
           {/* Company Filter */}
           <Box sx={{ flex: 1, maxWidth: 200 }}>
-            <Typography component="label" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>
+            <Typography component="label" sx={{ display: "block", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary" }}>
               Company
             </Typography>
             <TextField select name="company" value={filters.company} onChange={handleFilterChange} size="small" fullWidth sx={muiFieldSx}>
@@ -131,7 +132,7 @@ const Intray = () => {
 
           {/* Status Filter */}
           <Box sx={{ flex: 1, maxWidth: 200 }}>
-            <Typography component="label" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>
+            <Typography component="label" sx={{ display: "block", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary" }}>
               Status
             </Typography>
             <TextField select name="status" value={filters.status} onChange={handleFilterChange} size="small" fullWidth sx={muiFieldSx}>
@@ -145,7 +146,7 @@ const Intray = () => {
 
           {/* Date Filter (as date range or single date) */}
           <Box sx={{ flex: 1, maxWidth: 200 }}>
-            <Typography component="label" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>
+            <Typography component="label" sx={{ display: "block", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary" }}>
               Date
             </Typography>
             <TextField type="date" name="date" value={filters.date} onChange={handleFilterChange} size="small" fullWidth sx={muiFieldSx} />
@@ -168,7 +169,7 @@ const Intray = () => {
               borderBottom: 1,
               borderColor: "divider",
               bgcolor: alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.08),
-              fontSize: 10.5,
+              fontSize: TYPE.small,
               fontWeight: 600,
               color: "text.secondary",
             })}
@@ -248,7 +249,7 @@ const Intray = () => {
           </Box>
 
           {/* Footer Bar of the Table */}
-          <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center", p: 1, fontSize: 10.5, color: "text.secondary", borderTop: 1, borderColor: "divider", bgcolor: "action.hover" }}>
+          <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center", p: 1, fontSize: TYPE.small, color: "text.secondary", borderTop: 1, borderColor: "divider", bgcolor: "action.hover" }}>
             <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
               <Box component="input" type="checkbox" sx={{ width: 12, height: 12 }} />
               <Box component="input" type="checkbox" sx={{ width: 12, height: 12 }} />
@@ -276,7 +277,7 @@ const Intray = () => {
       {/* --- Footer License/Contact Bar --- */}
       <Stack
         direction="row"
-        sx={{ position: "fixed", bottom: 0, width: "100%", justifyContent: "space-between", alignItems: "center", px: 2, py: 0.5, fontSize: 10.5, color: "text.secondary", borderTop: 1, borderColor: "divider", bgcolor: "action.hover" }}
+        sx={{ position: "fixed", bottom: 0, width: "100%", justifyContent: "space-between", alignItems: "center", px: 2, py: 0.5, fontSize: TYPE.small, color: "text.secondary", borderTop: 1, borderColor: "divider", bgcolor: "action.hover" }}
       >
         <Box component="span" sx={{ fontFamily: "monospace" }}>
           License : 4J2A3G-SGND8T-L6A7EM-9CH16V @ **STORE SOFT SOLUTION PVT

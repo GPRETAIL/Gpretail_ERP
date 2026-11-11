@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import React from "react";
 import LoadingSkeleton from "@/shared/components/LoadingSkeleton";
 import { Sparkles } from "lucide-react";
@@ -24,7 +25,7 @@ export default function AnalyticalInsightsPanel({ insights = {}, loading }) {
           const entry = insights[row.key];
           return (
             <Box key={row.key} sx={{ borderRadius: "7px", border: "1px solid", borderColor: "divider", bgcolor: "action.hover", p: 1.5 }}>
-              <Typography sx={{ fontSize: 10.5, fontWeight: 600, textTransform: "uppercase", color: "text.secondary" }}>{row.label}</Typography>
+              <Typography sx={{ fontSize: TYPE.small, fontWeight: 600, textTransform: "uppercase", color: "text.secondary" }}>{row.label}</Typography>
               <Stack direction="row" sx={{ mt: 0.5, alignItems: "center", justifyContent: "space-between" }}>
                 <Typography component="span" sx={{ fontWeight: 500, color: "text.primary" }}>
                   {loading ? <LoadingSkeleton /> : entry?.name}

@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import { recordName } from "./utils/masterListRows";
 import useSearchGrid, { createSearchGridAdapter } from "@/shared/hooks/useSearchGrid";
 import MasterSearchPanel from "./components/MasterSearchPanel";
@@ -124,7 +125,7 @@ const normalizeItemRow = (item = {}) => ({
 });
 
 // ─── Reusable field components (layout only -- the field look is the shared fieldBaseSx) ──
-const LABEL_SX = { fontSize: 11.5, fontWeight: 500, color: "text.secondary" };
+const LABEL_SX = { fontSize: TYPE.small, fontWeight: 500, color: "text.secondary" };
 
 const Label = ({ text, required }) => (
   <Typography component="span" sx={LABEL_SX}>

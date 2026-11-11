@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import PageHeader from "@/shared/components/PageHeader";
 import useResetOnChange from "@/shared/hooks/useResetOnChange";
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
@@ -35,7 +36,7 @@ import { muiFieldSx, SEARCHABLE_TRIGGER_SX } from "@/shared/theme/formControlSiz
 
 const LField = ({ label, children, className = "" }) => (
   <Stack direction="row" spacing={1} className={className} sx={{ alignItems: "center", mb: 1 }}>
-    <Typography component="label" sx={{ width: 112, fontSize: 11.5, fontWeight: 700, color: "error.dark", flexShrink: 0 }}>{label}</Typography>
+    <Typography component="label" sx={{ width: 112, fontSize: TYPE.label, fontWeight: 700, color: "error.dark", flexShrink: 0 }}>{label}</Typography>
     <Box sx={{ flex: 1 }}>{children}</Box>
   </Stack>
 );
@@ -777,7 +778,7 @@ const SizeSearchSelect = ({ value, onChange, sizes, sizeGroups, sellingMode }) =
           <Box component="ul" ref={listRef} sx={{ maxHeight: 208, overflowY: "auto", m: 0, p: 0, listStyle: "none" }}>
             <Box component="li" onClick={() => selectOption("")} sx={{ px: 1, py: 0.5, fontSize: 12.25, color: "text.secondary", cursor: "pointer", bgcolor: highlightedIndex === 0 ? (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.08) : "transparent", "&:hover": { bgcolor: highlightedIndex === 0 ? undefined : "action.hover" } }}>Size...</Box>
             {groupedDisplay.map((item) => {
-              if (item.type === "header") return <Box component="li" key={`hdr-${item.label}`} sx={{ px: 1, py: 0.25, fontSize: 9, fontWeight: 600, color: "text.disabled", textTransform: "uppercase", bgcolor: "action.hover", userSelect: "none" }}>{item.label}</Box>;
+              if (item.type === "header") return <Box component="li" key={`hdr-${item.label}`} sx={{ px: 1, py: 0.25, fontSize: TYPE.small, fontWeight: 600, color: "text.disabled", textTransform: "uppercase", bgcolor: "action.hover", userSelect: "none" }}>{item.label}</Box>;
               const thisIdx = ++optionIndex;
               return (
                 <Box component="li" key={item.key} onClick={() => selectOption(item.value)}
@@ -938,23 +939,23 @@ const JumpSizeDialog = ({
         <Stack spacing={1.5} sx={{ px: 2, py: 1.5 }}>
           <Stack direction="row" spacing={1}>
             <Box sx={{ flex: 1 }}>
-              <Typography component="label" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>Start</Typography>
+              <Typography component="label" sx={{ display: "block", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary" }}>Start</Typography>
               <TextField type="number" value={start} onChange={(e) => setStart(e.target.value)} size="small" fullWidth placeholder="10" sx={muiFieldSx} />
             </Box>
             <Box sx={{ display: "flex", alignItems: "flex-end", pb: 0.5, color: "text.disabled", fontWeight: 700 }}>-</Box>
             <Box sx={{ flex: 1 }}>
-              <Typography component="label" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>Increment</Typography>
+              <Typography component="label" sx={{ display: "block", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary" }}>Increment</Typography>
               <TextField type="number" value={increment} onChange={(e) => setIncrement(e.target.value)} size="small" fullWidth placeholder="2" sx={muiFieldSx} />
             </Box>
             <Box sx={{ display: "flex", alignItems: "flex-end", pb: 0.5, color: "text.disabled", fontWeight: 700 }}>-</Box>
             <Box sx={{ flex: 1 }}>
-              <Typography component="label" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>End</Typography>
+              <Typography component="label" sx={{ display: "block", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary" }}>End</Typography>
               <TextField type="number" value={end} onChange={(e) => setEnd(e.target.value)} size="small" fullWidth placeholder="26" sx={muiFieldSx} />
             </Box>
           </Stack>
           <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", gap: 1.5 }}>
-            <Typography sx={{ fontSize: 10.5, fontWeight: 500, color: "text.secondary" }}>Total Qty: <Box component="span" sx={{ fontWeight: 600, color: "text.primary" }}>{Math.max(0, parseInt(totalQty, 10) || 0)}</Box></Typography>
-            <Stack component="label" direction="row" spacing={1} sx={{ alignItems: "center", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>
+            <Typography sx={{ fontSize: TYPE.small, fontWeight: 500, color: "text.secondary" }}>Total Qty: <Box component="span" sx={{ fontWeight: 600, color: "text.primary" }}>{Math.max(0, parseInt(totalQty, 10) || 0)}</Box></Typography>
+            <Stack component="label" direction="row" spacing={1} sx={{ alignItems: "center", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary" }}>
               <Checkbox
                 checked={changePrice}
                 onChange={(event) => setChangePrice(event.target.checked)}
@@ -971,7 +972,7 @@ const JumpSizeDialog = ({
             <Box sx={{ border: "1px solid", borderColor: "divider", borderRadius: "3.5px", maxHeight: 208, overflow: "auto" }}>
               {changePrice ? (
                 <Box sx={{ minWidth: 820 }}>
-                  <Box sx={{ display: "grid", gridTemplateColumns: "1fr 72px 88px 78px 88px 92px 78px 92px 60px", bgcolor: (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.08), fontSize: 10.5, fontWeight: 600, color: "text.secondary", borderBottom: 1, borderColor: "divider", position: "sticky", top: 0 }}>
+                  <Box sx={{ display: "grid", gridTemplateColumns: "1fr 72px 88px 78px 88px 92px 78px 92px 60px", bgcolor: (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.08), fontSize: 12, fontWeight: 600, color: "text.secondary", borderBottom: 1, borderColor: "divider", position: "sticky", top: 0 }}>
                     <Box sx={{ p: 1, borderRight: 1, borderColor: "divider" }}>Size</Box>
                     <Box sx={{ p: 1, borderRight: 1, borderColor: "divider", textAlign: "center" }}>Qty</Box>
                     <Box sx={{ p: 1, borderRight: 1, borderColor: "divider", textAlign: "right" }}>Cost</Box>
@@ -986,15 +987,15 @@ const JumpSizeDialog = ({
                     <Box key={`${item.size}-${idx}`} sx={{ display: "grid", gridTemplateColumns: "1fr 72px 88px 78px 88px 92px 78px 92px 60px", alignItems: "center", fontSize: 12.25, borderBottom: 1, borderColor: "divider", "&:hover": { bgcolor: "action.hover" } }}>
                       <Box sx={{ p: 1, borderRight: 1, borderColor: "divider", fontWeight: 500, color: "text.primary" }}>{item.size}</Box>
                       <Box sx={{ p: 1, borderRight: 1, borderColor: "divider" }}>
-                        <TextField type="number" value={item.qty} onChange={(e) => handleQtyChange(idx, e.target.value)} size="small" fullWidth sx={{ "& .MuiInputBase-input": { textAlign: "center", fontSize: 10.5, py: 0.25 } }} />
+                        <TextField type="number" value={item.qty} onChange={(e) => handleQtyChange(idx, e.target.value)} size="small" fullWidth sx={{ "& .MuiInputBase-input": { textAlign: "center", fontSize: 12, py: 0.25 } }} />
                       </Box>
                       <Box sx={{ p: 1, borderRight: 1, borderColor: "divider", textAlign: "right", color: "text.primary" }}>{item.cost.toFixed(2)}</Box>
                       <Box sx={{ p: 1, borderRight: 1, borderColor: "divider", textAlign: "right", color: "text.primary" }}>{item.purchaseDiscountPerc.toFixed(2)}%</Box>
                       <Box sx={{ p: 1, borderRight: 1, borderColor: "divider" }}>
-                        <TextField type="number" value={item.marginValue} onChange={(e) => handleMarginChange(idx, e.target.value)} size="small" fullWidth sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 10.5, py: 0.25 } }} />
+                        <TextField type="number" value={item.marginValue} onChange={(e) => handleMarginChange(idx, e.target.value)} size="small" fullWidth sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 12, py: 0.25 } }} />
                       </Box>
                       <Box sx={{ p: 1, borderRight: 1, borderColor: "divider" }}>
-                        <TextField type="number" value={item.mrp} onChange={(e) => handleMrpChange(idx, e.target.value)} size="small" fullWidth sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 10.5, py: 0.25 } }} />
+                        <TextField type="number" value={item.mrp} onChange={(e) => handleMrpChange(idx, e.target.value)} size="small" fullWidth sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 12, py: 0.25 } }} />
                       </Box>
                       <Box sx={{ p: 1, borderRight: 1, borderColor: "divider", textAlign: "right", color: "text.primary" }}>{item.saleDiscountPerc.toFixed(2)}%</Box>
                       <Box sx={{ p: 1, borderRight: 1, borderColor: "divider", textAlign: "right", fontWeight: 500, color: "text.primary" }}>{item.final.toFixed(2)}</Box>
@@ -1014,7 +1015,7 @@ const JumpSizeDialog = ({
                 </Box>
               ) : (
                 <>
-                  <Stack direction="row" sx={{ bgcolor: (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.08), fontSize: 10.5, fontWeight: 600, color: "text.secondary", borderBottom: 1, borderColor: "divider", position: "sticky", top: 0 }}>
+                  <Stack direction="row" sx={{ bgcolor: (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.08), fontSize: 12, fontWeight: 600, color: "text.secondary", borderBottom: 1, borderColor: "divider", position: "sticky", top: 0 }}>
                     <Box sx={{ p: 1, width: 48, borderRight: 1, borderColor: "divider", textAlign: "center" }}>S.No</Box>
                     <Box sx={{ p: 1, flex: 1, borderRight: 1, borderColor: "divider" }}>Size</Box>
                     <Box sx={{ p: 1, width: 80, borderRight: 1, borderColor: "divider", textAlign: "center" }}>Qty</Box>
@@ -1022,10 +1023,10 @@ const JumpSizeDialog = ({
                   </Stack>
                   {generatedSizes.map((item, idx) => (
                     <Stack key={`${item.size}-${idx}`} direction="row" sx={{ fontSize: 12.25, borderBottom: 1, borderColor: "divider", "&:hover": { bgcolor: "action.hover" } }}>
-                      <Box sx={{ p: 1, width: 48, borderRight: 1, borderColor: "divider", textAlign: "center", fontSize: 10.5, color: "text.primary" }}>{idx + 1}</Box>
+                      <Box sx={{ p: 1, width: 48, borderRight: 1, borderColor: "divider", textAlign: "center", fontSize: TYPE.small, color: "text.primary" }}>{idx + 1}</Box>
                       <Box sx={{ p: 1, flex: 1, borderRight: 1, borderColor: "divider", fontWeight: 500, color: "text.primary" }}>{item.size}</Box>
                       <Box sx={{ p: 1, width: 80, borderRight: 1, borderColor: "divider", textAlign: "center" }}>
-                        <TextField type="number" value={item.qty} onChange={(e) => handleQtyChange(idx, e.target.value)} size="small" fullWidth sx={{ "& .MuiInputBase-input": { textAlign: "center", fontSize: 10.5, py: 0.25 } }} />
+                        <TextField type="number" value={item.qty} onChange={(e) => handleQtyChange(idx, e.target.value)} size="small" fullWidth sx={{ "& .MuiInputBase-input": { textAlign: "center", fontSize: 12, py: 0.25 } }} />
                       </Box>
                       <Box sx={{ p: 1, width: 56, textAlign: "center" }}>
                         <Button
@@ -1106,7 +1107,7 @@ const CutDetailDialog = ({
         </Stack>
         <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1.5, px: 2, py: 2 }}>
           <Box>
-            <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>Quantity</Typography>
+            <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary" }}>Quantity</Typography>
             <TextField
               type="number"
               value={qty}
@@ -1118,7 +1119,7 @@ const CutDetailDialog = ({
             />
           </Box>
           <Box>
-            <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>Meter</Typography>
+            <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary" }}>Meter</Typography>
             <TextField
               type="number"
               value={meter}
@@ -1154,7 +1155,7 @@ const JumpSizeViewDialog = ({ open, onClose, rows }) => {
         <Box sx={{ px: 2, py: 2 }}>
           <Box sx={{ overflow: "hidden", borderRadius: "3.5px", border: "1px solid", borderColor: "divider" }}>
             {hasCutDetails ? (
-              <Box sx={{ display: "grid", gridTemplateColumns: "1fr 88px 88px 88px 92px", bgcolor: (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.08), fontSize: 10.5, fontWeight: 600, color: "text.secondary", borderBottom: 1, borderColor: "divider" }}>
+              <Box sx={{ display: "grid", gridTemplateColumns: "1fr 88px 88px 88px 92px", bgcolor: (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.08), fontSize: TYPE.small, fontWeight: 600, color: "text.secondary", borderBottom: 1, borderColor: "divider" }}>
                 <Box sx={{ p: 1, borderRight: 1, borderColor: "divider" }}>Size</Box>
                 <Box sx={{ p: 1, borderRight: 1, borderColor: "divider", textAlign: "center" }}>Qty</Box>
                 <Box sx={{ p: 1, borderRight: 1, borderColor: "divider", textAlign: "right" }}>Meter</Box>
@@ -1162,7 +1163,7 @@ const JumpSizeViewDialog = ({ open, onClose, rows }) => {
                 <Box sx={{ p: 1, textAlign: "right" }}>MRP</Box>
               </Box>
             ) : (
-              <Box sx={{ display: "grid", gridTemplateColumns: "1fr 72px 88px 78px 88px 92px 78px 92px", bgcolor: (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.08), fontSize: 10.5, fontWeight: 600, color: "text.secondary", borderBottom: 1, borderColor: "divider" }}>
+              <Box sx={{ display: "grid", gridTemplateColumns: "1fr 72px 88px 78px 88px 92px 78px 92px", bgcolor: (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.08), fontSize: TYPE.small, fontWeight: 600, color: "text.secondary", borderBottom: 1, borderColor: "divider" }}>
                 <Box sx={{ p: 1, borderRight: 1, borderColor: "divider" }}>Size</Box>
                 <Box sx={{ p: 1, borderRight: 1, borderColor: "divider", textAlign: "center" }}>Qty</Box>
                 <Box sx={{ p: 1, borderRight: 1, borderColor: "divider", textAlign: "right" }}>Cost</Box>
@@ -1220,7 +1221,7 @@ const QuickAttributeDialog = ({ open, form, saving, onClose, onChange, onSave })
         </Stack>
         <Stack spacing={1.5} sx={{ px: 2, py: 2 }}>
           <Box>
-            <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 11.5, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>Attribute</Typography>
+            <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: TYPE.label, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>Attribute</Typography>
             <TextField
               select
               name="type"
@@ -1238,7 +1239,7 @@ const QuickAttributeDialog = ({ open, form, saving, onClose, onChange, onSave })
             </TextField>
           </Box>
           <Box>
-            <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 11.5, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>Code</Typography>
+            <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: TYPE.label, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>Code</Typography>
             <TextField
               type="text"
               name="code"
@@ -1250,7 +1251,7 @@ const QuickAttributeDialog = ({ open, form, saving, onClose, onChange, onSave })
             />
           </Box>
           <Box>
-            <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 11.5, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>Name</Typography>
+            <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: TYPE.label, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>Name</Typography>
             <TextField
               type="text"
               name="name"
@@ -1294,35 +1295,35 @@ const LastSavedDialog = ({ open, loading, entry, onClose }) => {
             <Stack spacing={2}>
               <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr 1fr", md: "repeat(4, 1fr)" }, gap: 1.5, fontSize: 12.25 }}>
                 <Box sx={{ borderRadius: "3.5px", border: "1px solid", borderColor: "divider", bgcolor: "action.hover", px: 1.5, py: 1 }}>
-                  <Typography sx={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>Invoice No</Typography>
+                  <Typography sx={{ fontSize: TYPE.small, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>Invoice No</Typography>
                   <Typography sx={{ mt: 0.5, fontWeight: 500, color: "text.primary" }}>{entry.invoice_no || "-"}</Typography>
                 </Box>
                 <Box sx={{ borderRadius: "3.5px", border: "1px solid", borderColor: "divider", bgcolor: "action.hover", px: 1.5, py: 1 }}>
-                  <Typography sx={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>Company</Typography>
+                  <Typography sx={{ fontSize: TYPE.small, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>Company</Typography>
                   <Typography sx={{ mt: 0.5, fontWeight: 500, color: "text.primary" }}>{getMeaningfulLabel(entry.company?.name, entry.company_name)}</Typography>
                 </Box>
                 <Box sx={{ borderRadius: "3.5px", border: "1px solid", borderColor: "divider", bgcolor: "action.hover", px: 1.5, py: 1 }}>
-                  <Typography sx={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>Supplier</Typography>
+                  <Typography sx={{ fontSize: TYPE.small, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>Supplier</Typography>
                   <Typography sx={{ mt: 0.5, fontWeight: 500, color: "text.primary" }}>{getMeaningfulLabel(entry.supplier?.name, entry.supplier_name)}</Typography>
                 </Box>
                 <Box sx={{ borderRadius: "3.5px", border: "1px solid", borderColor: "divider", bgcolor: "action.hover", px: 1.5, py: 1 }}>
-                  <Typography sx={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>Status</Typography>
+                  <Typography sx={{ fontSize: TYPE.small, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>Status</Typography>
                   <Typography sx={{ mt: 0.5, fontWeight: 500, color: "text.primary" }}>{entry.invoice_workflow_status || "-"}</Typography>
                 </Box>
                 <Box sx={{ borderRadius: "3.5px", border: "1px solid", borderColor: "divider", bgcolor: "action.hover", px: 1.5, py: 1 }}>
-                  <Typography sx={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>Invoice Date</Typography>
+                  <Typography sx={{ fontSize: TYPE.small, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>Invoice Date</Typography>
                   <Typography sx={{ mt: 0.5, fontWeight: 500, color: "text.primary" }}>{entry.invoice_date || "-"}</Typography>
                 </Box>
                 <Box sx={{ borderRadius: "3.5px", border: "1px solid", borderColor: "divider", bgcolor: "action.hover", px: 1.5, py: 1 }}>
-                  <Typography sx={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>Retail Location</Typography>
+                  <Typography sx={{ fontSize: TYPE.small, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>Retail Location</Typography>
                   <Typography sx={{ mt: 0.5, fontWeight: 500, color: "text.primary" }}>{entry.retail_location || "-"}</Typography>
                 </Box>
                 <Box sx={{ borderRadius: "3.5px", border: "1px solid", borderColor: "divider", bgcolor: "action.hover", px: 1.5, py: 1 }}>
-                  <Typography sx={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>Tax</Typography>
+                  <Typography sx={{ fontSize: TYPE.small, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>Tax</Typography>
                   <Typography sx={{ mt: 0.5, fontWeight: 500, color: "text.primary" }}>{Number(entry.tax_amount || 0).toFixed(2)}</Typography>
                 </Box>
                 <Box sx={{ borderRadius: "3.5px", border: "1px solid", borderColor: "divider", bgcolor: "action.hover", px: 1.5, py: 1 }}>
-                  <Typography sx={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>Total</Typography>
+                  <Typography sx={{ fontSize: TYPE.small, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>Total</Typography>
                   <Typography sx={{ mt: 0.5, fontWeight: 500, color: "text.primary" }}>{Number(entry.total || 0).toFixed(2)}</Typography>
                 </Box>
               </Box>
@@ -1399,7 +1400,7 @@ const TaxChargeTypeDialog = ({ open, value, onClose, onConfirm }) => {
           <Typography sx={{ fontSize: 12.25, fontWeight: 600, color: "text.primary" }}>Charge Type</Typography>
         </Box>
         <Box sx={{ px: 2, py: 2 }}>
-          <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 11.5, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>Type</Typography>
+          <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: TYPE.label, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>Type</Typography>
           <SearchableSelect
             name="chargeType"
             options={CHARGE_TYPE_DIALOG_OPTIONS}
@@ -2616,7 +2617,7 @@ const DirectPurchaseEntry = () => {
         <Box sx={{ width: 380, flexShrink: 0, p: 2, borderRight: 1, borderColor: "divider", bgcolor: "background.paper", overflowY: "auto" }}>
           <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
             <Box sx={{ flex: 1 }}>
-              <Typography component="label" sx={{ fontSize: 11.5, fontWeight: 700, color: "error.dark" }}>Type</Typography>
+              <Typography component="label" sx={{ fontSize: TYPE.label, fontWeight: 700, color: "error.dark" }}>Type</Typography>
               <TextField
                 select
                 name="purchaseType"
@@ -2634,7 +2635,7 @@ const DirectPurchaseEntry = () => {
               </TextField>
             </Box>
             <Box sx={{ flex: 1 }}>
-              <Typography component="label" sx={{ fontSize: 11.5, fontWeight: 700, color: "error.dark" }}>PO Number</Typography>
+              <Typography component="label" sx={{ fontSize: TYPE.label, fontWeight: 700, color: "error.dark" }}>PO Number</Typography>
               <TextField type="text" name="poNo" value={form.poNo} onChange={handleFormChange} size="small" fullWidth sx={muiFieldSx} />
             </Box>
           </Stack>
@@ -2645,26 +2646,26 @@ const DirectPurchaseEntry = () => {
           {/* LR No / LR Date / Bundles */}
           <Stack direction="row" spacing={1} sx={{ mb: 1 }}>
             <Box sx={{ flex: 1 }}>
-              <Typography component="label" sx={{ fontSize: 11.5, fontWeight: 700, color: "error.dark" }}>LR No</Typography>
+              <Typography component="label" sx={{ fontSize: TYPE.label, fontWeight: 700, color: "error.dark" }}>LR No</Typography>
               <TextField type="text" name="lrNo" value={form.lrNo} onChange={handleFormChange} size="small" fullWidth sx={muiFieldSx} />
             </Box>
             <Box sx={{ flex: 1 }}>
-              <Typography component="label" sx={{ fontSize: 11.5, fontWeight: 700, color: "error.dark" }}>LR Date</Typography>
+              <Typography component="label" sx={{ fontSize: TYPE.label, fontWeight: 700, color: "error.dark" }}>LR Date</Typography>
               <TextField type="date" name="lrDate" value={form.lrDate} onChange={handleFormChange} size="small" fullWidth sx={muiFieldSx} />
             </Box>
             <Box sx={{ width: 80 }}>
-              <Typography component="label" sx={{ fontSize: 11.5, fontWeight: 700, color: "error.dark" }}>Bundles</Typography>
+              <Typography component="label" sx={{ fontSize: TYPE.label, fontWeight: 700, color: "error.dark" }}>Bundles</Typography>
               <TextField type="text" name="bundles" value={form.bundles} onChange={handleFormChange} size="small" fullWidth sx={muiFieldSx} />
             </Box>
           </Stack>
 
           <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1, mb: 1 }}>
             <Box sx={{ minWidth: 0 }}>
-              <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 11.5, fontWeight: 700, color: "error.dark" }}>Company</Typography>
+              <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: TYPE.label, fontWeight: 700, color: "error.dark" }}>Company</Typography>
               <AsyncSearchSelect name="companyId" value={form.companyId} onChange={handleFormChange} options={companies} placeholder="Select..." searchPlaceholder="Search company..." />
             </Box>
             <Box sx={{ minWidth: 0 }}>
-              <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 11.5, fontWeight: 700, color: "error.dark" }}>Retail Location</Typography>
+              <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: TYPE.label, fontWeight: 700, color: "error.dark" }}>Retail Location</Typography>
               {isSuperAdmin ? (
                 <AsyncSearchSelect
                   name="retailLocation"
@@ -2690,11 +2691,11 @@ const DirectPurchaseEntry = () => {
 
           <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1, mb: 1 }}>
             <Box sx={{ minWidth: 0 }}>
-              <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 11.5, fontWeight: 700, color: "error.dark" }}>Transport</Typography>
+              <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: TYPE.label, fontWeight: 700, color: "error.dark" }}>Transport</Typography>
               <AsyncSearchSelect name="transportId" value={form.transportId} onChange={handleFormChange} options={transports} onAsyncSearch={handleAsyncTransportSearch} placeholder="Select..." searchPlaceholder="Search transport..." />
             </Box>
             <Box sx={{ minWidth: 0 }}>
-              <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 11.5, fontWeight: 700, color: "error.dark" }}>Supplier</Typography>
+              <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: TYPE.label, fontWeight: 700, color: "error.dark" }}>Supplier</Typography>
               <AsyncSearchSelect name="supplierId" value={form.supplierId} onChange={handleFormChange} options={suppliers} onAsyncSearch={handleAsyncSupplierSearch} placeholder="Select..." searchPlaceholder="Search supplier..." />
             </Box>
           </Box>
@@ -2703,17 +2704,17 @@ const DirectPurchaseEntry = () => {
 
           <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr auto auto", gap: 1, mb: 1, alignItems: "end" }}>
             <Box sx={{ minWidth: 0 }}>
-              <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 11.5, fontWeight: 700, color: "error.dark" }}>Invoice No</Typography>
+              <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: TYPE.label, fontWeight: 700, color: "error.dark" }}>Invoice No</Typography>
               <TextField type="text" name="invoiceNo" value={form.invoiceNo} onChange={handleFormChange} size="small" fullWidth sx={muiFieldSx} />
             </Box>
             <Box sx={{ minWidth: 0 }}>
-              <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 11.5, fontWeight: 700, color: "error.dark" }}>Invoice Date</Typography>
+              <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: TYPE.label, fontWeight: 700, color: "error.dark" }}>Invoice Date</Typography>
               <TextField type="date" name="invoiceDate" value={form.invoiceDate} onChange={handleFormChange} size="small" fullWidth sx={muiFieldSx} />
             </Box>
-            <Stack component="label" direction="row" spacing={0.5} sx={{ alignItems: "center", fontSize: 11.5, fontWeight: 700, color: "error.dark", pb: 0.5, whiteSpace: "nowrap" }}>
+            <Stack component="label" direction="row" spacing={0.5} sx={{ alignItems: "center", fontSize: TYPE.label, fontWeight: 700, color: "error.dark", pb: 0.5, whiteSpace: "nowrap" }}>
               <Checkbox size="small" name="igst" checked={form.igst} onChange={handleFormChange} sx={{ p: 0 }} /> IGST
             </Stack>
-            <Stack component="label" direction="row" spacing={0.5} sx={{ alignItems: "center", fontSize: 11.5, fontWeight: 700, color: "error.dark", pb: 0.5, whiteSpace: "nowrap" }}>
+            <Stack component="label" direction="row" spacing={0.5} sx={{ alignItems: "center", fontSize: TYPE.label, fontWeight: 700, color: "error.dark", pb: 0.5, whiteSpace: "nowrap" }}>
               <Checkbox size="small" name="iDiscount" checked={form.iDiscount} onChange={handleFormChange} sx={{ p: 0 }} /> I.Disnt
             </Stack>
           </Box>
@@ -2721,10 +2722,10 @@ const DirectPurchaseEntry = () => {
           <Box component="hr" sx={{ my: 1.5, border: 0, borderTop: 1, borderColor: "divider" }} />
 
           <Box sx={{ mb: 1 }}>
-            <Typography component="h4" sx={{ fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.primary" }}>Tax Details</Typography>
+            <Typography component="h4" sx={{ fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.primary" }}>Tax Details</Typography>
           </Box>
 
-          <Box sx={{ display: "grid", gridTemplateColumns: "1.5fr 1fr 1fr 1fr auto", alignItems: "center", gap: 1, px: 0.5, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "error.dark" }}>
+          <Box sx={{ display: "grid", gridTemplateColumns: "1.5fr 1fr 1fr 1fr auto", alignItems: "center", gap: 1, px: 0.5, fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "error.dark" }}>
             <Box>Tax Type</Box>
             <Box>Value</Box>
             <Box>Discount</Box>
@@ -2828,15 +2829,15 @@ const DirectPurchaseEntry = () => {
           {/* Bill Value / Charges / Tax */}
           <Stack direction="row" spacing={1} sx={{ mb: 1 }}>
             <Box sx={{ flex: 1 }}>
-              <Typography component="label" sx={{ fontSize: 11.5, fontWeight: 700, color: "error.dark" }}>Bill Value</Typography>
+              <Typography component="label" sx={{ fontSize: TYPE.label, fontWeight: 700, color: "error.dark" }}>Bill Value</Typography>
               <TextField type="text" value={invoiceSummary.billValue.toFixed(2)} slotProps={{ input: { readOnly: true } }} size="small" fullWidth sx={[muiFieldSx, { "& .MuiInputBase-root": { bgcolor: "action.hover" }, "& .MuiInputBase-input": { color: "text.secondary" } }]} />
             </Box>
             <Box sx={{ flex: 1 }}>
-              <Typography component="label" sx={{ fontSize: 11.5, fontWeight: 700, color: "error.dark" }}>Charges</Typography>
+              <Typography component="label" sx={{ fontSize: TYPE.label, fontWeight: 700, color: "error.dark" }}>Charges</Typography>
               <TextField type="text" name="otherCharges" value={form.otherCharges} onChange={handleFormChange} size="small" fullWidth sx={muiFieldSx} />
             </Box>
             <Box sx={{ flex: 1 }}>
-              <Typography component="label" sx={{ fontSize: 11.5, fontWeight: 700, color: "error.dark" }}>Tax</Typography>
+              <Typography component="label" sx={{ fontSize: TYPE.label, fontWeight: 700, color: "error.dark" }}>Tax</Typography>
               <TextField type="text" value={invoiceSummary.tax.toFixed(2)} slotProps={{ input: { readOnly: true } }} size="small" fullWidth sx={[muiFieldSx, { "& .MuiInputBase-root": { bgcolor: "action.hover" }, "& .MuiInputBase-input": { color: "text.secondary" } }]} />
             </Box>
           </Stack>
@@ -2844,15 +2845,15 @@ const DirectPurchaseEntry = () => {
           {/* Pur. Discnt % / Pur. Discnt / Total */}
           <Stack direction="row" spacing={1} sx={{ mb: 1 }}>
             <Box sx={{ flex: 1 }}>
-              <Typography component="label" sx={{ fontSize: 11.5, fontWeight: 700, color: "error.dark" }}>Pur. Discnt %</Typography>
+              <Typography component="label" sx={{ fontSize: TYPE.label, fontWeight: 700, color: "error.dark" }}>Pur. Discnt %</Typography>
               <TextField type="text" value={invoiceSummary.purDiscountPerc.toFixed(2)} slotProps={{ input: { readOnly: true } }} size="small" fullWidth sx={[muiFieldSx, { "& .MuiInputBase-root": { bgcolor: "action.hover" }, "& .MuiInputBase-input": { color: "text.secondary" } }]} />
             </Box>
             <Box sx={{ flex: 1 }}>
-              <Typography component="label" sx={{ fontSize: 11.5, fontWeight: 700, color: "error.dark" }}>Pur. Discnt</Typography>
+              <Typography component="label" sx={{ fontSize: TYPE.label, fontWeight: 700, color: "error.dark" }}>Pur. Discnt</Typography>
               <TextField type="text" value={invoiceSummary.purDiscount.toFixed(2)} slotProps={{ input: { readOnly: true } }} size="small" fullWidth sx={[muiFieldSx, { "& .MuiInputBase-root": { bgcolor: "action.hover" }, "& .MuiInputBase-input": { color: "text.secondary" } }]} />
             </Box>
             <Box sx={{ flex: 1 }}>
-              <Typography component="label" sx={{ fontSize: 11.5, fontWeight: 700, color: "error.dark" }}>Total</Typography>
+              <Typography component="label" sx={{ fontSize: TYPE.label, fontWeight: 700, color: "error.dark" }}>Total</Typography>
               <TextField type="text" value={invoiceSummary.total.toFixed(2)} slotProps={{ input: { readOnly: true } }} size="small" fullWidth sx={[muiFieldSx, { "& .MuiInputBase-root": { bgcolor: "action.hover" }, "& .MuiInputBase-input": { fontWeight: 700, color: "primary.main" } }]} />
             </Box>
           </Stack>
@@ -2987,7 +2988,7 @@ const DirectPurchaseEntry = () => {
                     placeholder="Search product"
                     size="small"
                     fullWidth
-                    sx={{ "& .MuiInputBase-input": { fontSize: 10.5, py: 0.5 } }}
+                    sx={{ "& .MuiInputBase-input": { fontSize: TYPE.small, py: 0.5 } }}
                   />
                 </Box>
                 <Box sx={{ p: 1, width: 96, flexShrink: 0, borderRight: 1, borderColor: "divider" }}>
@@ -2999,7 +3000,7 @@ const DirectPurchaseEntry = () => {
                     placeholder="Search brand"
                     size="small"
                     fullWidth
-                    sx={{ "& .MuiInputBase-input": { fontSize: 10.5, py: 0.5 } }}
+                    sx={{ "& .MuiInputBase-input": { fontSize: TYPE.small, py: 0.5 } }}
                   />
                 </Box>
                 <Box sx={{ p: 1, width: 80, flexShrink: 0, borderRight: 1, borderColor: "divider" }}>
@@ -3011,7 +3012,7 @@ const DirectPurchaseEntry = () => {
                     placeholder="Search size"
                     size="small"
                     fullWidth
-                    sx={{ "& .MuiInputBase-input": { fontSize: 10.5, py: 0.5 } }}
+                    sx={{ "& .MuiInputBase-input": { fontSize: TYPE.small, py: 0.5 } }}
                   />
                 </Box>
                 <Box sx={{ p: 1, width: 80, flexShrink: 0, borderRight: 1, borderColor: "divider" }}>
@@ -3023,7 +3024,7 @@ const DirectPurchaseEntry = () => {
                     placeholder="Search design"
                     size="small"
                     fullWidth
-                    sx={{ "& .MuiInputBase-input": { fontSize: 10.5, py: 0.5 } }}
+                    sx={{ "& .MuiInputBase-input": { fontSize: TYPE.small, py: 0.5 } }}
                   />
                 </Box>
                 <Box sx={{ p: 1, width: 64, flexShrink: 0, borderRight: 1, borderColor: "divider" }}>
@@ -3035,7 +3036,7 @@ const DirectPurchaseEntry = () => {
                     placeholder="Qty"
                     size="small"
                     fullWidth
-                    sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 10.5, py: 0.5 } }}
+                    sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: TYPE.small, py: 0.5 } }}
                   />
                 </Box>
                 <Box sx={{ p: 1, width: 80, flexShrink: 0, borderRight: 1, borderColor: "divider" }}>
@@ -3047,7 +3048,7 @@ const DirectPurchaseEntry = () => {
                     placeholder="Cost"
                     size="small"
                     fullWidth
-                    sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 10.5, py: 0.5 } }}
+                    sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: TYPE.small, py: 0.5 } }}
                   />
                 </Box>
                 <Box sx={{ p: 1, width: 72, flexShrink: 0, borderRight: 1, borderColor: "divider" }}>
@@ -3059,7 +3060,7 @@ const DirectPurchaseEntry = () => {
                     placeholder="Disc"
                     size="small"
                     fullWidth
-                    sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 10.5, py: 0.5 } }}
+                    sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: TYPE.small, py: 0.5 } }}
                   />
                 </Box>
                 <Box sx={{ p: 1, width: 72, flexShrink: 0, borderRight: 1, borderColor: "divider" }}>
@@ -3071,7 +3072,7 @@ const DirectPurchaseEntry = () => {
                     placeholder="Margin"
                     size="small"
                     fullWidth
-                    sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 10.5, py: 0.5 } }}
+                    sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: TYPE.small, py: 0.5 } }}
                   />
                 </Box>
                 <Box sx={{ p: 1, width: 88, flexShrink: 0, borderRight: 1, borderColor: "divider" }}>
@@ -3083,7 +3084,7 @@ const DirectPurchaseEntry = () => {
                     placeholder="Rate"
                     size="small"
                     fullWidth
-                    sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 10.5, py: 0.5 } }}
+                    sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: TYPE.small, py: 0.5 } }}
                   />
                 </Box>
                 <Box sx={{ p: 1, width: 88, flexShrink: 0, borderRight: 1, borderColor: "divider" }}>
@@ -3095,10 +3096,10 @@ const DirectPurchaseEntry = () => {
                     placeholder="Amount"
                     size="small"
                     fullWidth
-                    sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 10.5, py: 0.5 } }}
+                    sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: TYPE.small, py: 0.5 } }}
                   />
                 </Box>
-                <Box sx={{ p: 1, width: 96, flexShrink: 0, fontSize: 11, color: "text.secondary", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Box sx={{ p: 1, width: 96, flexShrink: 0, fontSize: TYPE.small, color: "text.secondary", display: "flex", alignItems: "center", justifyContent: "center" }}>
                   Enter
                 </Box>
               </Stack>
@@ -3109,7 +3110,7 @@ const DirectPurchaseEntry = () => {
                   <Box sx={{ display: "flex", height: "100%", alignItems: "center", justifyContent: "center", py: 8, textAlign: "center", color: "text.disabled", fontSize: 12.25 }}>No items added yet.</Box>
                 ) : (
                   filteredItems.map((item) => (
-                    <Stack key={item.id} direction="row" sx={{ fontSize: 11, borderBottom: 1, borderColor: "divider", "&:hover": { bgcolor: "action.hover" }, color: "text.primary" }}>
+                    <Stack key={item.id} direction="row" sx={{ fontSize: TYPE.small, borderBottom: 1, borderColor: "divider", "&:hover": { bgcolor: "action.hover" }, color: "text.primary" }}>
                       <Box sx={{ p: 1, width: 32, flexShrink: 0, borderRight: 1, borderColor: "divider", textAlign: "center" }}>
                         <Checkbox size="small" checked disabled sx={{ p: 0 }} />
                       </Box>

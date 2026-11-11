@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import useAsyncQuery from "@/shared/hooks/useAsyncQuery";
 import SearchGridPanel from "@/shared/components/SearchGridPanel";
 import useSearchGrid from "@/shared/hooks/useSearchGrid";
@@ -261,7 +262,7 @@ const MultiSelectInput = ({
 
   return (
     <Stack spacing={0.5}>
-      <Typography component="label" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>{label}</Typography>
+      <Typography component="label" sx={{ display: "block", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary" }}>{label}</Typography>
       <Box sx={{ position: "relative" }} ref={wrapperRef}>
         <Box
           component="button"
@@ -312,7 +313,7 @@ const MultiSelectInput = ({
           </Box>
         ) : null}
       </Box>
-      {helperText ? <Typography sx={{ fontSize: 10.5, color: "text.secondary" }}>{helperText}</Typography> : null}
+      {helperText ? <Typography sx={{ fontSize: TYPE.small, color: "text.secondary" }}>{helperText}</Typography> : null}
     </Stack>
   );
 };
@@ -829,7 +830,7 @@ export default function BackupCenter() {
           </Box>
           <Stack direction="row" spacing={1.5} sx={{ width: { xs: "100%", lg: "auto" }, flexShrink: 0, alignItems: "flex-end" }}>
             <Box sx={{ flex: 1, minWidth: { xs: 0, lg: 220 } }}>
-              <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 11.5, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.03em", color: "text.secondary" }}>Current Scope</Typography>
+              <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: TYPE.label, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.03em", color: "text.secondary" }}>Current Scope</Typography>
               <Box sx={{ height: FIELD_HEIGHT, display: "flex", alignItems: "center", borderRadius: "4px", border: "1px solid", borderColor: "divider", bgcolor: "action.hover", color: "text.secondary", px: 1, fontSize: 12.25 }}>{selectedScopeLabel}</Box>
             </Box>
             <Button type="button" className="glass-btn glass-btn-primary" sx={{ height: FIELD_HEIGHT, minHeight: FIELD_HEIGHT, flexShrink: 0, whiteSpace: "nowrap" }} startIcon={<RefreshCw size={16} />} onClick={() => loadOverview(selectedCompanyId)}>
@@ -844,9 +845,9 @@ export default function BackupCenter() {
           <Box sx={{ ...cardSx, borderRadius: "10.5px" }}>
             <Stack direction="row" sx={{ alignItems: "flex-start", justifyContent: "space-between" }}>
               <Box>
-                <Typography sx={{ fontSize: 10.5, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.03em", color: "text.secondary" }}>Last Backup</Typography>
+                <Typography sx={{ fontSize: TYPE.small, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.03em", color: "text.secondary" }}>Last Backup</Typography>
                 <Typography sx={{ mt: 1, fontSize: 15.75, fontWeight: 700, color: "text.primary" }}>{toText(overview.stats?.last_backup_status, "Never").replace(/\b\w/g, (char) => char.toUpperCase())}</Typography>
-                <Typography sx={{ mt: 0.5, fontSize: 10.5, color: "text.secondary" }}>{toDateTime(overview.stats?.last_backup_at)}</Typography>
+                <Typography sx={{ mt: 0.5, fontSize: TYPE.small, color: "text.secondary" }}>{toDateTime(overview.stats?.last_backup_at)}</Typography>
               </Box>
               <Box sx={{ color: "success.main", display: "inline-flex" }}>
                 <CheckCircle2 size={32} />
@@ -856,9 +857,9 @@ export default function BackupCenter() {
           <Box sx={{ ...cardSx, borderRadius: "10.5px" }}>
             <Stack direction="row" sx={{ alignItems: "flex-start", justifyContent: "space-between" }}>
               <Box>
-                <Typography sx={{ fontSize: 10.5, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.03em", color: "text.secondary" }}>Next Schedule</Typography>
+                <Typography sx={{ fontSize: TYPE.small, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.03em", color: "text.secondary" }}>Next Schedule</Typography>
                 <Typography sx={{ mt: 1, fontSize: 15.75, fontWeight: 700, color: "text.primary" }}>{toDateTime(overview.stats?.next_scheduled_backup)}</Typography>
-                <Typography sx={{ mt: 0.5, fontSize: 10.5, color: "text.secondary" }}>Automatic scheduler</Typography>
+                <Typography sx={{ mt: 0.5, fontSize: TYPE.small, color: "text.secondary" }}>Automatic scheduler</Typography>
               </Box>
               <Box sx={{ color: "primary.main", display: "inline-flex" }}>
                 <Clock3 size={32} />
@@ -868,9 +869,9 @@ export default function BackupCenter() {
           <Box sx={{ ...cardSx, borderRadius: "10.5px" }}>
             <Stack direction="row" sx={{ alignItems: "flex-start", justifyContent: "space-between" }}>
               <Box>
-                <Typography sx={{ fontSize: 10.5, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.03em", color: "text.secondary" }}>Storage Usage</Typography>
+                <Typography sx={{ fontSize: TYPE.small, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.03em", color: "text.secondary" }}>Storage Usage</Typography>
                 <Typography sx={{ mt: 1, fontSize: 15.75, fontWeight: 700, color: "text.primary" }}>{overview.stats?.storage_usage?.total_label || "0 B"}</Typography>
-                <Typography sx={{ mt: 0.5, fontSize: 10.5, color: "text.secondary" }}>
+                <Typography sx={{ mt: 0.5, fontSize: TYPE.small, color: "text.secondary" }}>
                   Local {overview.stats?.storage_usage?.local_label || "0 B"} / Cloud {overview.stats?.storage_usage?.cloud_label || "0 B"}
                 </Typography>
               </Box>
@@ -882,9 +883,9 @@ export default function BackupCenter() {
           <Box sx={{ ...cardSx, borderRadius: "10.5px" }}>
             <Stack direction="row" sx={{ alignItems: "flex-start", justifyContent: "space-between" }}>
               <Box>
-                <Typography sx={{ fontSize: 10.5, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.03em", color: "text.secondary" }}>History</Typography>
+                <Typography sx={{ fontSize: TYPE.small, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.03em", color: "text.secondary" }}>History</Typography>
                 <Typography sx={{ mt: 1, fontSize: 15.75, fontWeight: 700, color: "text.primary" }}>{overview.stats?.total_backups || 0} backups</Typography>
-                <Typography sx={{ mt: 0.5, fontSize: 10.5, color: "text.secondary" }}>
+                <Typography sx={{ mt: 0.5, fontSize: TYPE.small, color: "text.secondary" }}>
                   {overview.stats?.success_count || 0} success / {overview.stats?.failed_count || 0} failed
                 </Typography>
               </Box>
@@ -900,7 +901,7 @@ export default function BackupCenter() {
             <Stack direction="row" sx={{ mb: 2, alignItems: "center", justifyContent: "space-between", borderBottom: 1, borderColor: "divider", pb: 1 }}>
               <Box>
                 <Typography component="h2" sx={{ fontSize: 14, fontWeight: 700, color: "text.primary" }}>Create Backup</Typography>
-                <Typography sx={{ fontSize: 10.5, color: "text.secondary" }}>Run full, incremental or module-wise backups for the selected store scope.</Typography>
+                <Typography sx={{ fontSize: TYPE.small, color: "text.secondary" }}>Run full, incremental or module-wise backups for the selected store scope.</Typography>
               </Box>
               <Box sx={{ color: "primary.main", display: "inline-flex" }}>
                 <Archive size={20} />
@@ -909,7 +910,7 @@ export default function BackupCenter() {
 
             <Stack spacing={1.5}>
               <Box>
-                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>Backup Type</Typography>
+                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary" }}>Backup Type</Typography>
                 <TextField select size="small" fullWidth sx={fieldSx} value={createForm.backupType} onChange={(event) => setCreateForm((prev) => ({ ...prev, backupType: event.target.value }))}>
                   {backupTypeOptions.map((option) => (
                     <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
@@ -929,7 +930,7 @@ export default function BackupCenter() {
               ) : null}
 
               <Box>
-                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>Backup Scope</Typography>
+                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary" }}>Backup Scope</Typography>
                 {canSelectStore ? (
                   <TextField select size="small" fullWidth sx={fieldSx} value={selectedCompanyId} disabled={creatingBackup || restoring || importing} onChange={(event) => { setSelectedCompanyId(event.target.value); setRestoreForm(createDefaultRestoreForm()); }}>
                     <MenuItem value="">All Stores</MenuItem>
@@ -943,7 +944,7 @@ export default function BackupCenter() {
               </Box>
 
               <Box>
-                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>Storage Mode</Typography>
+                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary" }}>Storage Mode</Typography>
                 <TextField select size="small" fullWidth sx={fieldSx} value={createForm.storageMode} onChange={(event) => setCreateForm((prev) => ({ ...prev, storageMode: event.target.value }))}>
                   {storageModeOptions.map((option) => {
                     const needsCloud = option.value === "cloud" || option.value === "hybrid";
@@ -956,16 +957,16 @@ export default function BackupCenter() {
                   })}
                 </TextField>
                 {settingsForm.cloudConfigured ? (
-                  <Typography sx={{ mt: 0.5, fontSize: 10.5, color: "success.main" }}>✓ OCI Object Storage is configured for this store.</Typography>
+                  <Typography sx={{ mt: 0.5, fontSize: TYPE.small, color: "success.main" }}>✓ OCI Object Storage is configured for this store.</Typography>
                 ) : (
-                  <Typography sx={{ mt: 0.5, fontSize: 10.5, color: "text.secondary" }}>Cloud options require OCI credentials saved in Storage Settings.</Typography>
+                  <Typography sx={{ mt: 0.5, fontSize: TYPE.small, color: "text.secondary" }}>Cloud options require OCI credentials saved in Storage Settings.</Typography>
                 )}
               </Box>
 
               {createFormIncludesUsers && !createForm.encryptionEnabled ? (
                 <Typography
                   sx={{
-                    fontSize: 10.5, color: "warning.dark", bgcolor: (theme) => alpha(theme.palette.warning.main, theme.palette.mode === "dark" ? 0.2 : 0.08),
+                    fontSize: TYPE.small, color: "warning.dark", bgcolor: (theme) => alpha(theme.palette.warning.main, theme.palette.mode === "dark" ? 0.2 : 0.08),
                     border: "1px solid", borderColor: "warning.main", borderRadius: "5.25px", p: 1,
                   }}
                 >
@@ -988,7 +989,7 @@ export default function BackupCenter() {
               {createForm.encryptionEnabled ? (
                 <>
                   <Box>
-                    <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>Encryption Password</Typography>
+                    <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary" }}>Encryption Password</Typography>
                     <TextField
                       type="password"
                       size="small"
@@ -999,7 +1000,7 @@ export default function BackupCenter() {
                     />
                   </Box>
                   <Box>
-                    <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>Password Hint</Typography>
+                    <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary" }}>Password Hint</Typography>
                     <TextField
                       size="small"
                       fullWidth
@@ -1015,7 +1016,7 @@ export default function BackupCenter() {
                 sx={{
                   borderRadius: "5.25px", border: "1px solid", borderColor: "primary.main",
                   bgcolor: (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.2 : 0.08),
-                  p: 1.5, fontSize: 10.5, color: "primary.dark",
+                  p: 1.5, fontSize: TYPE.small, color: "primary.dark",
                 }}
               >
                 Local storage writes to the system backup folder, cloud storage writes to the server backup folder, and hybrid writes to both.
@@ -1031,7 +1032,7 @@ export default function BackupCenter() {
                 {creatingBackup ? `Backing up… ${formatElapsed(createElapsedMs)}` : "Run Backup"}
               </Button>
               {creatingBackup ? (
-                <Typography sx={{ fontSize: 10.5, color: "warning.main" }}>
+                <Typography sx={{ fontSize: TYPE.small, color: "warning.main" }}>
                   Please don&apos;t close this window or navigate away until the backup finishes.
                 </Typography>
               ) : null}
@@ -1045,7 +1046,7 @@ export default function BackupCenter() {
             <Stack direction="row" sx={{ mb: 2, alignItems: "center", justifyContent: "space-between", borderBottom: 1, borderColor: "divider", pb: 1 }}>
               <Box>
                 <Typography component="h2" sx={{ fontSize: 14, fontWeight: 700, color: "text.primary" }}>Storage, Schedule & Retention</Typography>
-                <Typography sx={{ fontSize: 10.5, color: "text.secondary" }}>Automatic backups, retention windows and cleanup policy for the selected store scope.</Typography>
+                <Typography sx={{ fontSize: TYPE.small, color: "text.secondary" }}>Automatic backups, retention windows and cleanup policy for the selected store scope.</Typography>
               </Box>
               <Box sx={{ color: "#6366f1", display: "inline-flex" }}>
                 <Cloud size={20} />
@@ -1054,7 +1055,7 @@ export default function BackupCenter() {
 
             <Stack spacing={1.5}>
               <Box>
-                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>Default Storage</Typography>
+                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary" }}>Default Storage</Typography>
                 <TextField select size="small" fullWidth sx={fieldSx} value={settingsForm.storageMode} onChange={(event) => setSettingsForm((prev) => ({ ...prev, storageMode: event.target.value }))}>
                   {storageModeOptions.map((option) => {
                     const needsCloud = option.value === "cloud" || option.value === "hybrid";
@@ -1079,9 +1080,9 @@ export default function BackupCenter() {
                 <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between" }}>
                   <Typography sx={{ fontSize: 12.25, fontWeight: 600, color: "#6366f1" }}>☁ Oracle Cloud (OCI) Object Storage</Typography>
                   {settingsForm.cloudConfigured ? (
-                    <Box component="span" sx={{ fontSize: 10.5, fontWeight: 500, px: 1, py: 0.25, borderRadius: "50px", bgcolor: (theme) => alpha(theme.palette.success.main, theme.palette.mode === "dark" ? 0.24 : 0.15), color: "success.main" }}>✓ Configured</Box>
+                    <Box component="span" sx={{ fontSize: TYPE.small, fontWeight: 500, px: 1, py: 0.25, borderRadius: "50px", bgcolor: (theme) => alpha(theme.palette.success.main, theme.palette.mode === "dark" ? 0.24 : 0.15), color: "success.main" }}>✓ Configured</Box>
                   ) : (
-                    <Box component="span" sx={{ fontSize: 10.5, fontWeight: 500, px: 1, py: 0.25, borderRadius: "50px", bgcolor: "action.selected", color: "text.secondary" }}>Not configured</Box>
+                    <Box component="span" sx={{ fontSize: TYPE.small, fontWeight: 500, px: 1, py: 0.25, borderRadius: "50px", bgcolor: "action.selected", color: "text.secondary" }}>Not configured</Box>
                   )}
                 </Stack>
                 <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 1 }}>
@@ -1138,15 +1139,15 @@ export default function BackupCenter() {
                     onClick={handleTestCloudConnection}
                     disabled={cloudTestStatus === "testing"}
                     startIcon={<Cloud size={14} />}
-                    sx={{ fontSize: 11, bgcolor: "#6366f1", "&:hover": { bgcolor: "#4f46e5" } }}
+                    sx={{ fontSize: TYPE.small, bgcolor: "#6366f1", "&:hover": { bgcolor: "#4f46e5" } }}
                   >
                     {cloudTestStatus === "testing" ? "Testing..." : "Test Connection"}
                   </Button>
                   {cloudTestStatus === "ok" && (
-                    <Box component="span" sx={{ fontSize: 10.5, fontWeight: 500, color: "success.main" }}>✓ {cloudTestMessage}</Box>
+                    <Box component="span" sx={{ fontSize: TYPE.small, fontWeight: 500, color: "success.main" }}>✓ {cloudTestMessage}</Box>
                   )}
                   {cloudTestStatus === "fail" && (
-                    <Box component="span" sx={{ fontSize: 10.5, color: "error.main" }}>{cloudTestMessage}</Box>
+                    <Box component="span" sx={{ fontSize: TYPE.small, color: "error.main" }}>{cloudTestMessage}</Box>
                   )}
                 </Stack>
                 <FormControlLabel
@@ -1173,7 +1174,7 @@ export default function BackupCenter() {
                 }
                 label="Enable local storage for scheduled backups"
               />
-              <Typography sx={{ mt: -1, fontSize: 10.5, color: "text.secondary" }}>
+              <Typography sx={{ mt: -1, fontSize: TYPE.small, color: "text.secondary" }}>
                 Enabling both stores a copy in each location (Hybrid). Cloud storage requires the OCI credentials above to be configured; scheduled backups fall back to local storage automatically if they are not.
               </Typography>
 
@@ -1229,7 +1230,7 @@ export default function BackupCenter() {
                     sx={{
                       borderRadius: "7px", border: "1px solid", borderColor: "success.main",
                       bgcolor: (theme) => alpha(theme.palette.success.main, theme.palette.mode === "dark" ? 0.2 : 0.08),
-                      p: 1.5, fontSize: 10.5, color: "success.dark",
+                      p: 1.5, fontSize: TYPE.small, color: "success.dark",
                     }}
                   >
                     ✓ Scheduled backups are actively running — last one completed {toDateTime(settingsForm.lastScheduledAt)}. Your external trigger is working.
@@ -1237,7 +1238,7 @@ export default function BackupCenter() {
                 ) : (
                   <Typography
                     sx={{
-                      borderRadius: "7px", border: "1px solid", p: 1.5, fontSize: 10.5,
+                      borderRadius: "7px", border: "1px solid", p: 1.5, fontSize: TYPE.small,
                       ...(overview.cronSecretConfigured
                         ? { borderColor: "warning.main", bgcolor: (theme) => alpha(theme.palette.warning.main, theme.palette.mode === "dark" ? 0.2 : 0.08), color: "warning.dark" }
                         : { borderColor: "error.main", bgcolor: (theme) => alpha(theme.palette.error.main, theme.palette.mode === "dark" ? 0.2 : 0.08), color: "error.dark" }),
@@ -1255,7 +1256,7 @@ export default function BackupCenter() {
                   sx={{
                     borderRadius: "7px", border: "1px solid", borderColor: "primary.main",
                     bgcolor: (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.2 : 0.08),
-                    p: 1.5, fontSize: 10.5, color: "primary.dark",
+                    p: 1.5, fontSize: TYPE.small, color: "primary.dark",
                   }}
                 >
                   This server has no background job runner, so scheduled backups need an
@@ -1342,10 +1343,10 @@ export default function BackupCenter() {
               ) : null}
 
               <Box>
-                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>
+                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary" }}>
                   Retention (how many old scheduled backups to keep)
                 </Typography>
-                <Typography sx={{ mb: 1, fontSize: 10.5, color: "text.secondary" }}>
+                <Typography sx={{ mb: 1, fontSize: TYPE.small, color: "text.secondary" }}>
                   Only the box matching your Schedule Frequency above is actually used right now - it&apos;s highlighted below. The other two are just saved for whenever you switch frequency later.
                 </Typography>
                 <Box sx={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1.5 }}>
@@ -1365,7 +1366,7 @@ export default function BackupCenter() {
                             : { borderColor: "divider" }),
                         }}
                       >
-                        <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 11.5, fontWeight: 500, color: active ? "primary.main" : "text.secondary" }}>
+                        <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: TYPE.label, fontWeight: 500, color: active ? "primary.main" : "text.secondary" }}>
                           {label}
                           {active ? " (active)" : ""}
                         </Typography>
@@ -1406,7 +1407,7 @@ export default function BackupCenter() {
             <Stack direction="row" sx={{ mb: 2, alignItems: "center", justifyContent: "space-between", borderBottom: 1, borderColor: "divider", pb: 1 }}>
               <Box>
                 <Typography component="h2" sx={{ fontSize: 14, fontWeight: 700, color: "text.primary" }}>Restore & Import</Typography>
-                <Typography sx={{ fontSize: 10.5, color: "text.secondary" }}>Restore a saved version or import backups from another system.</Typography>
+                <Typography sx={{ fontSize: TYPE.small, color: "text.secondary" }}>Restore a saved version or import backups from another system.</Typography>
               </Box>
               <Box sx={{ color: "success.main", display: "inline-flex" }}>
                 <Shield size={20} />
@@ -1418,13 +1419,13 @@ export default function BackupCenter() {
                 sx={{
                   borderRadius: "5.25px", border: "1px solid", borderColor: "warning.main",
                   bgcolor: (theme) => alpha(theme.palette.warning.main, theme.palette.mode === "dark" ? 0.2 : 0.08),
-                  p: 1.5, fontSize: 10.5, color: "warning.dark",
+                  p: 1.5, fontSize: TYPE.small, color: "warning.dark",
                 }}
               >
                 Click the restore icon in Backup History to select a backup here, then press <Box component="span" sx={{ fontWeight: 600 }}>Run Restore</Box>.
               </Typography>
               <Box>
-                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>Selected Backup</Typography>
+                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary" }}>Selected Backup</Typography>
                 <TextField
                   select
                   size="small"
@@ -1448,12 +1449,12 @@ export default function BackupCenter() {
                   ))}
                 </TextField>
                 {restoreForm.backupId ? (
-                  <Typography sx={{ mt: 0.5, fontSize: 10.5, fontWeight: 500, color: "success.main" }}>Backup #{restoreForm.backupId} is selected for restore.</Typography>
+                  <Typography sx={{ mt: 0.5, fontSize: TYPE.small, fontWeight: 500, color: "success.main" }}>Backup #{restoreForm.backupId} is selected for restore.</Typography>
                 ) : null}
               </Box>
 
               <Box>
-                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>Restore Type</Typography>
+                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary" }}>Restore Type</Typography>
                 <TextField select size="small" fullWidth sx={fieldSx} value={restoreForm.restoreType} onChange={(event) => setRestoreForm((prev) => ({ ...prev, restoreType: event.target.value }))}>
                   {restoreTypeOptions.map((option) => (
                     <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
@@ -1476,20 +1477,20 @@ export default function BackupCenter() {
               />
 
               <Box>
-                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>Restore Into Store</Typography>
+                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary" }}>Restore Into Store</Typography>
                 <TextField select size="small" fullWidth sx={fieldSx} value={restoreForm.targetCompanyId} onChange={(event) => setRestoreForm((prev) => ({ ...prev, targetCompanyId: event.target.value }))}>
                   <MenuItem value="">Original store(s) from backup</MenuItem>
                   {companyOptions.map((option) => (
                     <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
                   ))}
                 </TextField>
-                <Typography sx={{ mt: 0.5, fontSize: 10.5, color: "text.secondary" }}>
+                <Typography sx={{ mt: 0.5, fontSize: TYPE.small, color: "text.secondary" }}>
                   Leave this on <Box component="span" sx={{ fontWeight: 500 }}>Original store(s) from backup</Box> to restore rows back to the same store saved inside the backup file.
                 </Typography>
               </Box>
 
               <Box>
-                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>Password</Typography>
+                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary" }}>Password</Typography>
                 <TextField
                   type="password"
                   size="small"
@@ -1520,13 +1521,13 @@ export default function BackupCenter() {
                 {restoring ? `Restoring… ${formatElapsed(restoreElapsedMs)}` : "Run Restore"}
               </Button>
               {restoring ? (
-                <Typography sx={{ fontSize: 10.5, color: "warning.main" }}>
+                <Typography sx={{ fontSize: TYPE.small, color: "warning.main" }}>
                   Please don&apos;t close this window or navigate away until the restore finishes. Larger restores can take a while.
                 </Typography>
               ) : null}
 
               <Stack spacing={1.5} sx={{ borderTop: 1, borderColor: "divider", pt: 1.5 }}>
-                <Typography component="label" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>Import Backup File</Typography>
+                <Typography component="label" sx={{ display: "block", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary" }}>Import Backup File</Typography>
                 <Box
                   component="input"
                   type="file"
@@ -1535,7 +1536,7 @@ export default function BackupCenter() {
                   sx={{ fontSize: 12.25, color: "text.secondary" }}
                 />
                 <Box>
-                  <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>Import Password</Typography>
+                  <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary" }}>Import Password</Typography>
                   <TextField
                     type="password"
                     size="small"

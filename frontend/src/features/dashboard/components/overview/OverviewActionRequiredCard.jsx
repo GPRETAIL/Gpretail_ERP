@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import React from "react";
 import LoadingSkeleton from "@/shared/components/LoadingSkeleton";
 import { useNavigate } from "react-router-dom";
@@ -89,13 +90,13 @@ export default function OverviewActionRequiredCard({ items = [], loading, onItem
                 </Stack>
                 <Typography
                   sx={{
-                    fontSize: 11, color: "text.secondary", display: "-webkit-box",
+                    fontSize: TYPE.small, color: "text.secondary", display: "-webkit-box",
                     WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden",
                   }}
                 >
                   {item.message}
                 </Typography>
-                <Typography sx={{ mt: "auto", pt: 0.5, fontSize: 10, color: "text.disabled" }}>
+                <Typography sx={{ mt: "auto", pt: 0.5, fontSize: TYPE.small, color: "text.disabled" }}>
                   {timeAgo(item.created_at)}
                 </Typography>
               </ButtonBase>

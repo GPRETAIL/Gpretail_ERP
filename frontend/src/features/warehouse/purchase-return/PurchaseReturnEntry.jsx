@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import PageHeader from "@/shared/components/PageHeader";
 import useResetOnChange from "@/shared/hooks/useResetOnChange";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -15,7 +16,7 @@ import { Box, Stack, Typography, TextField as MuiTextField, MenuItem, Button, Ta
 
 const SelectField = ({ label, name, value, onChange, options, inline = false, sx }) => (
   <Box sx={{ display: inline ? "flex" : "block", alignItems: inline ? "center" : undefined, gap: inline ? 1 : undefined, ...sx }}>
-    <Typography component="label" sx={inline ? { width: 112, flexShrink: 0, fontSize: 11.5, fontWeight: 500, color: "text.secondary" } : { display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>
+    <Typography component="label" sx={inline ? { width: 112, flexShrink: 0, fontSize: TYPE.label, fontWeight: 500, color: "text.secondary" } : { display: "block", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>
       {label}
     </Typography>
     <MuiTextField select name={name} value={value} onChange={onChange} size="small" fullWidth sx={[muiFieldSx, { flex: inline ? 1 : undefined }]}>
@@ -31,7 +32,7 @@ const SelectField = ({ label, name, value, onChange, options, inline = false, sx
 
 const TextField = ({ label, name, value, onChange, type = "text", placeholder = "", onKeyDown, inline = false, sx }) => (
   <Box sx={{ display: inline ? "flex" : "block", alignItems: inline ? "center" : undefined, gap: inline ? 1 : undefined, ...sx }}>
-    <Typography component="label" sx={inline ? { width: 112, flexShrink: 0, fontSize: 11.5, fontWeight: 500, color: "text.secondary" } : { display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>
+    <Typography component="label" sx={inline ? { width: 112, flexShrink: 0, fontSize: TYPE.label, fontWeight: 500, color: "text.secondary" } : { display: "block", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>
       {label}
     </Typography>
     <MuiTextField
@@ -50,7 +51,7 @@ const TextField = ({ label, name, value, onChange, type = "text", placeholder = 
 
 const InlineTextField = ({ label, name, value, onChange, type = "text", placeholder = "", maxWidth }) => (
   <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-    <Typography component="label" sx={{ width: 96, flexShrink: 0, fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>{label}</Typography>
+    <Typography component="label" sx={{ width: 96, flexShrink: 0, fontSize: TYPE.label, fontWeight: 500, color: "text.secondary" }}>{label}</Typography>
     <MuiTextField
       type={type}
       name={name}
@@ -66,7 +67,7 @@ const InlineTextField = ({ label, name, value, onChange, type = "text", placehol
 
 const STOCK_TABLE_WIDTHS = [132, 84, 132, 88, 62, 72, 74, 66, 82, 78, 88, 46];
 
-const gridInputSx = { "& .MuiInputBase-input": { fontSize: 11, py: 0.5, px: 0.75 } };
+const gridInputSx = { "& .MuiInputBase-input": { fontSize: TYPE.small, py: 0.5, px: 0.75 } };
 const GridCellInput = ({ align = "center", sx, ...props }) => (
   <MuiTextField
     size="small"
@@ -998,7 +999,7 @@ const PurchaseReturnEntry = () => {
                 {isSupplierMode ? (
                   <>
                     <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-                      <Typography component="label" sx={{ width: 112, flexShrink: 0, fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>Supplier</Typography>
+                      <Typography component="label" sx={{ width: 112, flexShrink: 0, fontSize: TYPE.label, fontWeight: 500, color: "text.secondary" }}>Supplier</Typography>
                       <Box sx={{ flex: 1 }}>
                         <AsyncSearchSelect
                           name="supplierId"
@@ -1031,7 +1032,7 @@ const PurchaseReturnEntry = () => {
                     />
 
                     <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-                      <Typography component="label" sx={{ width: 112, flexShrink: 0, fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>Agent</Typography>
+                      <Typography component="label" sx={{ width: 112, flexShrink: 0, fontSize: TYPE.label, fontWeight: 500, color: "text.secondary" }}>Agent</Typography>
                       <Box sx={{ flex: 1 }}>
                         <AsyncSearchSelect
                           name="agentId"
@@ -1143,7 +1144,7 @@ const PurchaseReturnEntry = () => {
 
           {isReturnDebitNote ? (
             <Box sx={{ bgcolor: "background.paper", height: 300, p: 2, borderRadius: "7px", boxShadow: 3, border: "1px solid", borderColor: "divider", display: "flex", flexDirection: "column" }}>
-              <Box sx={{ display: "grid", gridTemplateColumns: "1.4fr 90px 80px", gap: 1.5, fontSize: 10.5, fontWeight: 600, color: "text.secondary", textTransform: "uppercase", letterSpacing: "0.05em", borderBottom: 1, borderColor: "divider", pb: 1, flexShrink: 0 }}>
+              <Box sx={{ display: "grid", gridTemplateColumns: "1.4fr 90px 80px", gap: 1.5, fontSize: TYPE.small, fontWeight: 600, color: "text.secondary", textTransform: "uppercase", letterSpacing: "0.05em", borderBottom: 1, borderColor: "divider", pb: 1, flexShrink: 0 }}>
                 <Box>Supplier</Box>
                 <Box>Interstate</Box>
                 <Box sx={{ textAlign: "right" }}>Qty</Box>
@@ -1179,7 +1180,7 @@ const PurchaseReturnEntry = () => {
                     <col key={`stock-head-col-${index}`} style={{ width }} />
                   ))}
                 </colgroup>
-                <TableHead sx={(theme) => ({ bgcolor: alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.08), fontSize: 10.5, fontWeight: 600, color: "text.secondary", textTransform: "uppercase" })}>
+                <TableHead sx={(theme) => ({ bgcolor: alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.08), fontSize: TYPE.small, fontWeight: 600, color: "text.secondary", textTransform: "uppercase" })}>
                   <TableRow>
                     <TableCell sx={{ border: "1px solid", borderColor: "divider", textAlign: "left" }}>Barcode</TableCell>
                     <TableCell sx={{ border: "1px solid", borderColor: "divider", textAlign: "left" }}>Inv No</TableCell>
@@ -1260,10 +1261,10 @@ const PurchaseReturnEntry = () => {
                             key={row.id}
                             sx={{ fontSize: 12.25, borderBottom: 1, borderColor: "divider", "&:hover": { bgcolor: "action.hover" } }}
                           >
-                            <TableCell sx={{ px: 1, py: 0.75, fontSize: 11, fontFamily: "monospace", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", borderRight: "1px solid", borderColor: "divider", color: "text.primary" }}>
+                            <TableCell sx={{ px: 1, py: 0.75, fontSize: TYPE.small, fontFamily: "monospace", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", borderRight: "1px solid", borderColor: "divider", color: "text.primary" }}>
                               {row.barcode}
                             </TableCell>
-                            <TableCell sx={{ px: 1, py: 0.75, fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", borderRight: "1px solid", borderColor: "divider", color: "text.primary" }}>
+                            <TableCell sx={{ px: 1, py: 0.75, fontSize: TYPE.small, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", borderRight: "1px solid", borderColor: "divider", color: "text.primary" }}>
                               {row.invoiceNo}
                             </TableCell>
                             <TableCell sx={{ px: 1, py: 0.75, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", borderRight: "1px solid", borderColor: "divider", color: "text.primary" }}>
@@ -1357,7 +1358,7 @@ const PurchaseReturnEntry = () => {
                 maxWidth={120}
               />
               <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-                <Typography component="label" sx={{ width: 96, flexShrink: 0, fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>Tax</Typography>
+                <Typography component="label" sx={{ width: 96, flexShrink: 0, fontSize: TYPE.label, fontWeight: 500, color: "text.secondary" }}>Tax</Typography>
                 <Box sx={{ maxWidth: 180, width: "100%" }}>
                   <AsyncSearchSelect
                     name="taxId"
@@ -1400,7 +1401,7 @@ const PurchaseReturnEntry = () => {
                 <Box component="span" sx={{ color: "text.secondary" }}>Total</Box>
                 <Box component="span" sx={{ fontWeight: 600, color: "error.main" }}>{tableTotals.total.toFixed(2)}</Box>
               </Stack>
-              <Box sx={{ fontSize: 11, color: "text.secondary", pt: 0.75, borderTop: 1, borderColor: "divider" }}>
+              <Box sx={{ fontSize: TYPE.small, color: "text.secondary", pt: 0.75, borderTop: 1, borderColor: "divider" }}>
                 Note: Freight Tax is calculated from Packing Price and selected Tax %.
               </Box>
             </Stack>
@@ -1419,7 +1420,7 @@ const PurchaseReturnEntry = () => {
                 <Box component="span" sx={{ fontWeight: 500, color: "text.primary" }}>{tableTotals.gross.toFixed(2)}</Box>
               </Stack>
               <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-                <Typography component="label" sx={{ width: 96, flexShrink: 0, fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>Transport</Typography>
+                <Typography component="label" sx={{ width: 96, flexShrink: 0, fontSize: TYPE.label, fontWeight: 500, color: "text.secondary" }}>Transport</Typography>
                 <Box sx={{ maxWidth: 180, width: "100%" }}>
                   <AsyncSearchSelect
                     name="transportId"

@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import { browserPrintHtml } from "./utils/posSalesUtils";
 import PageHeader from "@/shared/components/PageHeader";
 import useCounterAssignmentPrompt from "./hooks/useCounterAssignmentPrompt";
@@ -705,7 +706,7 @@ const TouchSales = () => {
             />
 
             {appliedReturn && (
-              <Stack direction="row" sx={{ mt: 1, alignItems: "center", justifyContent: "space-between", gap: 1, fontSize: 10.5, bgcolor: (theme) => alpha(theme.palette.warning.main, theme.palette.mode === "dark" ? 0.16 : 0.08), border: "1px solid", borderColor: (theme) => alpha(theme.palette.warning.main, 0.4), borderRadius: "3.5px", px: 1, py: 0.75, color: "warning.dark" }}>
+              <Stack direction="row" sx={{ mt: 1, alignItems: "center", justifyContent: "space-between", gap: 1, fontSize: TYPE.small, bgcolor: (theme) => alpha(theme.palette.warning.main, theme.palette.mode === "dark" ? 0.16 : 0.08), border: "1px solid", borderColor: (theme) => alpha(theme.palette.warning.main, 0.4), borderRadius: "3.5px", px: 1, py: 0.75, color: "warning.dark" }}>
                 <Box component="span">
                   <Box component="b">{appliedReturn.displayReturnNo || formatReturnNo(appliedReturn.returnNo)}</Box>
                   {" · "}
@@ -774,8 +775,8 @@ const TouchSales = () => {
                     <Stack direction="row" sx={{ flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 1 }}>
                       <Box>
                         <Typography sx={{ fontWeight: 600, fontSize: 12.25 }}>{row.productName}</Typography>
-                        <Typography sx={{ fontSize: 10.5, color: "text.secondary", fontFamily: "monospace" }}>{row.barcode}</Typography>
-                        <Typography sx={{ fontSize: 10.5, color: "text.secondary", mt: 0.5 }}>
+                        <Typography sx={{ fontSize: TYPE.small, color: "text.secondary", fontFamily: "monospace" }}>{row.barcode}</Typography>
+                        <Typography sx={{ fontSize: TYPE.small, color: "text.secondary", mt: 0.5 }}>
                           Selling Price: <Box component="b">{formatMoney(row.price)}</Box> | Stock: <Box component="b">{remaining}</Box>
                         </Typography>
                       </Box>
@@ -862,7 +863,7 @@ const TouchSales = () => {
               </Stack>
 
               {detectedCustomer && (
-                <Box sx={{ mb: 1.5, borderRadius: "3.5px", border: "1px solid", borderColor: (theme) => alpha(theme.palette.success.main, 0.4), bgcolor: (theme) => alpha(theme.palette.success.main, theme.palette.mode === "dark" ? 0.16 : 0.08), px: 1, py: 0.5, fontSize: 10.5, color: "success.dark" }}>
+                <Box sx={{ mb: 1.5, borderRadius: "3.5px", border: "1px solid", borderColor: (theme) => alpha(theme.palette.success.main, 0.4), bgcolor: (theme) => alpha(theme.palette.success.main, theme.palette.mode === "dark" ? 0.16 : 0.08), px: 1, py: 0.5, fontSize: TYPE.small, color: "success.dark" }}>
                   Customer: {detectedCustomer.name}
                 </Box>
               )}
@@ -889,11 +890,11 @@ const TouchSales = () => {
                         return (
                           <TableRow key={line.lineId} sx={{ borderTop: 1, borderColor: "divider", bgcolor: (theme) => alpha(theme.palette.warning.main, theme.palette.mode === "dark" ? 0.12 : 0.06) }}>
                             <TableCell sx={{ px: 1, py: 1 }}>
-                              <Typography sx={{ fontSize: 9, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, color: "warning.dark" }}>
+                              <Typography sx={{ fontSize: TYPE.small, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, color: "warning.dark" }}>
                                 {line.returnNoteLabel}
                               </Typography>
-                              <Typography sx={{ fontSize: 10.5, fontWeight: 500, color: "text.primary" }}>{line.productName}</Typography>
-                              <Typography sx={{ fontSize: 9, fontFamily: "monospace", color: "text.secondary" }}>{line.barcode}</Typography>
+                              <Typography sx={{ fontSize: TYPE.small, fontWeight: 500, color: "text.primary" }}>{line.productName}</Typography>
+                              <Typography sx={{ fontSize: TYPE.small, fontFamily: "monospace", color: "text.secondary" }}>{line.barcode}</Typography>
                             </TableCell>
                             <TableCell sx={{ px: 1, py: 1, textAlign: "center", fontWeight: 500, color: "error.main" }}>{line.qty}</TableCell>
                             <TableCell sx={{ px: 1, py: 1, textAlign: "right" }}>{formatMoney(line.price)}</TableCell>
@@ -910,8 +911,8 @@ const TouchSales = () => {
                       return (
                         <TableRow key={line.lineId} sx={{ borderTop: 1, borderColor: "divider" }}>
                           <TableCell sx={{ px: 1, py: 1 }}>
-                            <Typography sx={{ fontSize: 10.5, fontWeight: 500 }}>{line.productName}</Typography>
-                            <Typography sx={{ fontSize: 9, fontFamily: "monospace", color: "text.secondary" }}>{line.barcode}</Typography>
+                            <Typography sx={{ fontSize: TYPE.small, fontWeight: 500 }}>{line.productName}</Typography>
+                            <Typography sx={{ fontSize: TYPE.small, fontFamily: "monospace", color: "text.secondary" }}>{line.barcode}</Typography>
                           </TableCell>
                           <TableCell sx={{ px: 1, py: 1, textAlign: "center" }}>
                             <Stack direction="row" spacing={0.5} sx={{ display: "inline-flex", alignItems: "center" }}>
@@ -965,7 +966,7 @@ const TouchSales = () => {
               </Stack>
 
               {appliedReturn && billSummary.netAmount < 0 ? (
-                <Stack component="label" direction="row" spacing={1} sx={{ alignItems: "center", cursor: "pointer", fontSize: 10.5, color: "text.secondary" }}>
+                <Stack component="label" direction="row" spacing={1} sx={{ alignItems: "center", cursor: "pointer", fontSize: TYPE.label, color: "text.secondary" }}>
                   <Checkbox
                     size="small"
                     checked={refundApproved}
@@ -998,7 +999,7 @@ const TouchSales = () => {
           </Stack>
         </Box>
 
-        {loading && <Typography sx={{ mt: 1, fontSize: 10.5, color: "text.secondary" }}>Loading touch sale data...</Typography>}
+        {loading && <Typography sx={{ mt: 1, fontSize: TYPE.small, color: "text.secondary" }}>Loading touch sale data...</Typography>}
       </Stack>
       <CounterAssignmentDialog
         open={counterAssignmentOpen}

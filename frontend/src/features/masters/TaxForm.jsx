@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import React, { useState, useEffect, useRef } from "react";
 import {
   ArrowLeft,
@@ -420,7 +421,7 @@ const TaxForm = () => {
                 disabled={isView || isEdit}
               />
               {errors.taxCode && (
-                <Typography sx={{ fontSize: 11, color: "error.main", mt: 0.25, ml: "33%" }}>
+                <Typography sx={{ fontSize: TYPE.small, color: "error.main", mt: 0.25, ml: "33%" }}>
                   {errors.taxCode}
                 </Typography>
               )}
@@ -432,7 +433,7 @@ const TaxForm = () => {
                 disabled={isView}
               />
               {errors.name && (
-                <Typography sx={{ fontSize: 11, color: "error.main", mt: 0.25, ml: "33%" }}>
+                <Typography sx={{ fontSize: TYPE.small, color: "error.main", mt: 0.25, ml: "33%" }}>
                   {errors.name}
                 </Typography>
               )}
@@ -445,7 +446,7 @@ const TaxForm = () => {
                 disabled={isView}
               />
               {errors.taxCharges && (
-                <Typography sx={{ fontSize: 11, color: "error.main", mt: 0.25, ml: "33%" }}>
+                <Typography sx={{ fontSize: TYPE.small, color: "error.main", mt: 0.25, ml: "33%" }}>
                   {errors.taxCharges}
                 </Typography>
               )}
@@ -468,7 +469,7 @@ const TaxForm = () => {
                 disabled={isView}
               />
               {errors.salesTax && (
-                <Typography sx={{ fontSize: 11, color: "error.main", mt: 0.25, ml: "33%" }}>
+                <Typography sx={{ fontSize: TYPE.small, color: "error.main", mt: 0.25, ml: "33%" }}>
                   {errors.salesTax}
                 </Typography>
               )}
@@ -481,7 +482,7 @@ const TaxForm = () => {
                 disabled={isView}
               />
               {errors.purchaseTax && (
-                <Typography sx={{ fontSize: 11, color: "error.main", mt: 0.25, ml: "33%" }}>
+                <Typography sx={{ fontSize: TYPE.small, color: "error.main", mt: 0.25, ml: "33%" }}>
                   {errors.purchaseTax}
                 </Typography>
               )}
@@ -493,7 +494,7 @@ const TaxForm = () => {
                 disabled={isView}
               />
               {errors.disable && (
-                <Typography sx={{ fontSize: 11, color: "error.main", mt: 0.25, ml: "33%" }}>
+                <Typography sx={{ fontSize: TYPE.small, color: "error.main", mt: 0.25, ml: "33%" }}>
                   {errors.disable}
                 </Typography>
               )}

@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { Truck } from "lucide-react";
@@ -35,19 +36,19 @@ export default function WarehouseIncomingShipmentsTable({ incoming = [] }) {
         <Table size="small" sx={{ "& td, & th": { border: 0, fontSize: 12 } }}>
           <TableHead>
             <TableRow sx={{ borderBottom: "1px solid", borderColor: "divider" }}>
-              <TableCell sx={{ pb: 1, fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>
+              <TableCell sx={{ pb: 1, fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>
                 Purchase / Inv No
               </TableCell>
-              <TableCell sx={{ pb: 1, fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>
+              <TableCell sx={{ pb: 1, fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>
                 Supplier
               </TableCell>
-              <TableCell align="right" sx={{ pb: 1, fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>
+              <TableCell align="right" sx={{ pb: 1, fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>
                 Qty
               </TableCell>
-              <TableCell align="right" sx={{ pb: 1, fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>
+              <TableCell align="right" sx={{ pb: 1, fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>
                 Amount
               </TableCell>
-              <TableCell align="center" sx={{ pb: 1, fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>
+              <TableCell align="center" sx={{ pb: 1, fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>
                 Status
               </TableCell>
             </TableRow>
@@ -73,7 +74,7 @@ export default function WarehouseIncomingShipmentsTable({ incoming = [] }) {
                       component="span"
                       sx={{
                         display: "inline-flex", borderRadius: 1, px: 0.75, py: 0.25,
-                        fontSize: 10, fontWeight: 700, textTransform: "uppercase",
+                        fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase",
                         bgcolor: (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.24 : 0.15),
                         color: "primary.main",
                       }}

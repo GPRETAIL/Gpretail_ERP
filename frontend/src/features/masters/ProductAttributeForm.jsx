@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import { ArrowLeft, PlusCircle, Save, Trash2 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -541,7 +542,7 @@ const ProductAttributeForm = () => {
             <Box sx={{ gridColumn: { xs: "span 12", lg: "span 4" }, display: "flex", flexDirection: "column", gap: 1 }}>
               <Box sx={{ border: 1, borderColor: "grey.300", borderRadius: "3.5px", overflow: "hidden" }}>
                 {/* Header */}
-                <Stack direction="row" sx={{ bgcolor: "action.hover", borderBottom: 1, borderColor: "divider", p: 1, fontSize: 10.5, fontWeight: 600, color: "text.secondary" }}>
+                <Stack direction="row" sx={{ bgcolor: "action.hover", borderBottom: 1, borderColor: "divider", p: 1, fontSize: TYPE.small, fontWeight: 600, color: "text.secondary" }}>
                   <Box sx={{ flex: 1, px: 0.5 }}>Size</Box>
                   <Box sx={{ width: 40, px: 0.5, textAlign: "right" }}>Remove</Box>
                 </Stack>
@@ -569,7 +570,7 @@ const ProductAttributeForm = () => {
                 </Stack>
 
                 {/* Size rows */}
-                <Box sx={{ fontSize: 10.5 }}>
+                <Box sx={{ fontSize: TYPE.small }}>
                   {sizeList.length === 0 ? (
                     <Box sx={{ color: "text.disabled", fontStyle: "italic", p: 1.5, textAlign: "center" }}>No sizes added</Box>
                   ) : (
@@ -711,7 +712,7 @@ const ProductAttributeForm = () => {
               onChange={handleChange}
             />
 
-            <Box sx={{ border: 1, borderColor: "divider", p: 1, fontSize: 10.5, bgcolor: "action.hover", borderRadius: "3.5px" }}>
+            <Box sx={{ border: 1, borderColor: "divider", p: 1, fontSize: TYPE.small, bgcolor: "action.hover", borderRadius: "3.5px" }}>
               <Typography component="h4" sx={{ fontWeight: 600, mb: 0.5 }}>Pricing Rules</Typography>
               <Typography sx={{ color: "text.secondary" }}>Pricing rules grid here…</Typography>
             </Box>

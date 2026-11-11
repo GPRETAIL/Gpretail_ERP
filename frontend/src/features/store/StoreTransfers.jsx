@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
@@ -192,7 +193,7 @@ export default function StoreTransfers({ mode = "all" }) {
                 const short = problem ? "-" : qty(Math.max(0, Number(line.quantity) - Number(line.received) - Number(line.damaged || 0)));
                 return (
                   <TableRow key={line.id}>
-                    <TableCell><Typography sx={{ fontSize: 12.5, fontWeight: 600 }}>{describeLine(line)}</Typography><Typography sx={{ fontSize: 11, color: "text.secondary" }}>{line.product_code}</Typography></TableCell>
+                    <TableCell><Typography sx={{ fontSize: 12.5, fontWeight: 600 }}>{describeLine(line)}</Typography><Typography sx={{ fontSize: TYPE.small, color: "text.secondary" }}>{line.product_code}</Typography></TableCell>
                     <TableCell align="right">{qty(line.quantity)}</TableCell>
                     <TableCell><TextField size="small" type="number" value={line.received} error={Boolean(problem)} helperText={problem || " "} onChange={(e) => updateLine(line.id, "received", e.target.value)} slotProps={{ htmlInput: { min: 0, step: "any", "aria-label": `Received ${line.product_name}` } }} sx={{ width: 100 }} /></TableCell>
                     <TableCell><TextField size="small" type="number" value={line.damaged} onChange={(e) => updateLine(line.id, "damaged", e.target.value)} slotProps={{ htmlInput: { min: 0, step: "any", "aria-label": `Damaged ${line.product_name}` } }} sx={{ width: 90 }} helperText=" " /></TableCell>

@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import PageHeader from "@/shared/components/PageHeader";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
@@ -580,7 +581,7 @@ const WarehouseDashboard = () => {
         const config = STATUS_ICON_MAP[entry.status] || STATUS_ICON_MAP.lr_entry;
         return <Box component={config.icon} title={config.title} sx={{ width: 16, height: 16, color: config.color }} />;
       } } : {}),
-      ...(column.key === "status" ? { render: (value, entry) => <Box component="span" sx={[{ px: 1, py: 0.25, borderRadius: 999, fontSize: 11 }, statusChipSx(entry.status)]}>{value}</Box> } : {}),
+      ...(column.key === "status" ? { render: (value, entry) => <Box component="span" sx={[{ px: 1, py: 0.25, borderRadius: 999, fontSize: TYPE.small }, statusChipSx(entry.status)]}>{value}</Box> } : {}),
       ...(column.key === "files" ? { render: (_value, entry) => {
         const files = Array.isArray(entry.attachments) ? entry.attachments : [];
         return files.length ? <Stack direction="row" useFlexGap spacing={0.5} sx={{ flexWrap: "wrap" }}>{files.map(file => {
@@ -625,7 +626,7 @@ const WarehouseDashboard = () => {
                 onClick={() => handleStatusUpdate(selectedEntry.id, "completed")}
                 disabled={statusUpdatingId === selectedEntry.id}
                 className="glass-btn glass-btn-success"
-                sx={{ px: 1.5, py: 0.5, fontSize: 10.5, opacity: statusUpdatingId === selectedEntry.id ? 0.6 : 1 }}
+                sx={{ px: 1.5, py: 0.5, fontSize: TYPE.small, opacity: statusUpdatingId === selectedEntry.id ? 0.6 : 1 }}
               >
                 Complete
               </Button>
@@ -634,7 +635,7 @@ const WarehouseDashboard = () => {
                   onClick={() => handleStatusUpdate(selectedEntry.id, "cancelled")}
                   disabled={statusUpdatingId === selectedEntry.id}
                   className="glass-btn glass-btn-danger"
-                  sx={{ px: 1.5, py: 0.5, fontSize: 10.5, opacity: statusUpdatingId === selectedEntry.id ? 0.6 : 1 }}
+                  sx={{ px: 1.5, py: 0.5, fontSize: TYPE.small, opacity: statusUpdatingId === selectedEntry.id ? 0.6 : 1 }}
                 >
                   Cancel
                 </Button>
@@ -698,7 +699,7 @@ const WarehouseDashboard = () => {
         )}
 
         {selectedEntry && (
-          <Typography sx={{ ml: "auto", fontSize: 10.5, color: "text.secondary" }}>
+          <Typography sx={{ ml: "auto", fontSize: TYPE.small, color: "text.secondary" }}>
             Selected: <Box component="strong">#{selectedEntry.lr_entry_no || selectedEntry.invoice_no || selectedEntry.id}</Box> —{" "}
             {STATUS_LABELS[selectedEntry.status] || selectedEntry.status}
           </Typography>
@@ -711,8 +712,8 @@ const WarehouseDashboard = () => {
             {STATUS_TABS.map(tab => (
               <Button key={tab.key} aria-pressed={activeTab === tab.key} onClick={() => { setActiveTab(tab.key); setSelectedRowKey(null); setPage(1); }}
                 variant={activeTab === tab.key ? "contained" : "outlined"} color={activeTab === tab.key ? "primary" : "inherit"}
-                sx={{ minWidth: 0, height: 30, borderRadius: 999, px: 1.5, gap: 0.75, fontSize: 11, whiteSpace: "nowrap", textTransform: "none" }}>
-                {tab.label}<Box component="span" sx={{ minWidth: 18, borderRadius: 999, px: 0.5, bgcolor: "action.hover", fontSize: 10 }}>{getTabCount(tab.key)}</Box>
+                sx={{ minWidth: 0, height: 30, borderRadius: 999, px: 1.5, gap: 0.75, fontSize: TYPE.small, whiteSpace: "nowrap", textTransform: "none" }}>
+                {tab.label}<Box component="span" sx={{ minWidth: 18, borderRadius: 999, px: 0.5, bgcolor: "action.hover", fontSize: TYPE.small }}>{getTabCount(tab.key)}</Box>
               </Button>
             ))}
           </Stack>

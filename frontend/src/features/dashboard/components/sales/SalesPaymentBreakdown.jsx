@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import React from "react";
 import { PieChart } from "lucide-react";
 import { Box, Stack, Typography } from "@mui/material";
@@ -48,7 +49,7 @@ export default function SalesPaymentBreakdown({ paymentBreakdown = [], performan
                       }}
                     />
                   </Box>
-                  <Typography sx={{ mt: 0.5, fontSize: 11, color: "text.secondary" }}>{row.bills} bills</Typography>
+                  <Typography sx={{ mt: 0.5, fontSize: TYPE.small, color: "text.secondary" }}>{row.bills} bills</Typography>
                 </Box>
               );
             })

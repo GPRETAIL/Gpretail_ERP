@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import useAsyncQuery from "@/shared/hooks/useAsyncQuery";
 import { Fragment, useCallback, useEffect, useEffectEvent, useRef, useState } from "react";
 import {
@@ -249,15 +250,15 @@ export default function ConfigureLocalServer() {
         </Stack>
         <Box sx={{ mt: 1, display: "grid", gap: 1.5, gridTemplateColumns: { md: "repeat(3, 1fr)" }, fontSize: 12.25, color: "text.secondary" }}>
           <Box>
-            <Box sx={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: "0.03em", color: "text.secondary" }}>Tenant Key</Box>
+            <Box sx={{ fontSize: TYPE.small, textTransform: "uppercase", letterSpacing: "0.03em", color: "text.secondary" }}>Tenant Key</Box>
             <Box sx={{ mt: 0.5, fontWeight: 500, wordBreak: "break-all", color: "text.primary" }}>{config?.tenant_key || "Not assigned"}</Box>
           </Box>
           <Box>
-            <Box sx={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: "0.03em", color: "text.secondary" }}>Connector Status</Box>
+            <Box sx={{ fontSize: TYPE.small, textTransform: "uppercase", letterSpacing: "0.03em", color: "text.secondary" }}>Connector Status</Box>
             <Box sx={{ mt: 0.5, fontWeight: 500, color: "text.primary" }}>{config?.connector_status || "Not started"}</Box>
           </Box>
           <Box>
-            <Box sx={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: "0.03em", color: "text.secondary" }}>Last Seen</Box>
+            <Box sx={{ fontSize: TYPE.small, textTransform: "uppercase", letterSpacing: "0.03em", color: "text.secondary" }}>Last Seen</Box>
             <Box sx={{ mt: 0.5, fontWeight: 500, color: "text.primary" }}>{formatDateTime(config?.connector_last_seen_at)}</Box>
           </Box>
         </Box>
@@ -272,7 +273,7 @@ export default function ConfigureLocalServer() {
 
           <Stack spacing={2} sx={{ mt: 2 }}>
             <Box>
-              <Typography component="label" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.75 }}>
+              <Typography component="label" sx={{ display: "block", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary", mb: 0.75 }}>
                 Local Server URL
               </Typography>
               <TextField
@@ -284,13 +285,13 @@ export default function ConfigureLocalServer() {
                 placeholder="http://192.168.1.25:8000"
                 sx={muiFieldSx}
               />
-              <Typography sx={{ mt: 0.5, fontSize: 10.5, color: "text.secondary" }}>
+              <Typography sx={{ mt: 0.5, fontSize: TYPE.small, color: "text.secondary" }}>
                 The LAN address of this store's local server, e.g. http://192.168.1.25:8000. Leave blank to disable local-server failover for this store.
               </Typography>
             </Box>
 
             <Box>
-              <Typography component="label" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.75 }}>
+              <Typography component="label" sx={{ display: "block", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary", mb: 0.75 }}>
                 Cloud Server URL
               </Typography>
               <TextField
@@ -302,7 +303,7 @@ export default function ConfigureLocalServer() {
                 placeholder={config?.effective_cloud_server_url || "https://yourcompany.gpsoftware.in"}
                 sx={muiFieldSx}
               />
-              <Typography sx={{ mt: 0.5, fontSize: 10.5, color: "text.secondary" }}>
+              <Typography sx={{ mt: 0.5, fontSize: TYPE.small, color: "text.secondary" }}>
                 Where devices fail over to when the local server above is unreachable. Leave blank to use the
                 platform default ({config?.effective_cloud_server_url || "not set"}).
               </Typography>
@@ -349,15 +350,15 @@ export default function ConfigureLocalServer() {
           <Typography component="h2" sx={{ fontSize: 14, fontWeight: 600, color: "text.primary" }}>How It Works</Typography>
           <Stack spacing={2} sx={{ mt: 2, fontSize: 12.25, color: "text.secondary" }}>
             <Stack direction="row" spacing={1.5}>
-              <Box sx={{ display: "flex", flexShrink: 0, height: 21, width: 21, alignItems: "center", justifyContent: "center", borderRadius: "50%", bgcolor: "primary.main", fontSize: 10.5, fontWeight: 600, color: "primary.contrastText" }}>1</Box>
+              <Box sx={{ display: "flex", flexShrink: 0, height: 21, width: 21, alignItems: "center", justifyContent: "center", borderRadius: "50%", bgcolor: "primary.main", fontSize: TYPE.small, fontWeight: 600, color: "primary.contrastText" }}>1</Box>
               <Box>Save the address first. Test Local runs from the ERP server and requires an approved, reachable endpoint. A cloud host usually cannot reach a private store LAN; the installed local connector and the counter browser perform their own connection checks.</Box>
             </Stack>
             <Stack direction="row" spacing={1.5}>
-              <Box sx={{ display: "flex", flexShrink: 0, height: 21, width: 21, alignItems: "center", justifyContent: "center", borderRadius: "50%", bgcolor: "primary.main", fontSize: 10.5, fontWeight: 600, color: "primary.contrastText" }}>2</Box>
+              <Box sx={{ display: "flex", flexShrink: 0, height: 21, width: 21, alignItems: "center", justifyContent: "center", borderRadius: "50%", bgcolor: "primary.main", fontSize: TYPE.small, fontWeight: 600, color: "primary.contrastText" }}>2</Box>
               <Box>From then on, every device automatically checks the local server first and uses it when reachable — no separate login or URL to remember.</Box>
             </Stack>
             <Stack direction="row" spacing={1.5}>
-              <Box sx={{ display: "flex", flexShrink: 0, height: 21, width: 21, alignItems: "center", justifyContent: "center", borderRadius: "50%", bgcolor: "primary.main", fontSize: 10.5, fontWeight: 600, color: "primary.contrastText" }}>3</Box>
+              <Box sx={{ display: "flex", flexShrink: 0, height: 21, width: 21, alignItems: "center", justifyContent: "center", borderRadius: "50%", bgcolor: "primary.main", fontSize: TYPE.small, fontWeight: 600, color: "primary.contrastText" }}>3</Box>
               <Box>If the local server goes down, devices switch to this cloud URL automatically so the store can keep working, and switch back the moment local is healthy again.</Box>
             </Stack>
           </Stack>
@@ -386,11 +387,11 @@ export default function ConfigureLocalServer() {
               <TableHead>
                 <TableRow>
                   <TableCell sx={{ width: 24, borderColor: "divider" }} />
-                  <TableCell sx={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: "0.03em", color: "text.secondary", borderColor: "divider" }}>Store</TableCell>
-                  <TableCell sx={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: "0.03em", color: "text.secondary", borderColor: "divider" }}>Status</TableCell>
-                  <TableCell sx={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: "0.03em", color: "text.secondary", borderColor: "divider" }}>Last Heartbeat</TableCell>
-                  <TableCell sx={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: "0.03em", color: "text.secondary", borderColor: "divider" }}>Last Catch-up</TableCell>
-                  <TableCell sx={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: "0.03em", color: "text.secondary", borderColor: "divider" }}>Outbox</TableCell>
+                  <TableCell sx={{ fontSize: TYPE.small, textTransform: "uppercase", letterSpacing: "0.03em", color: "text.secondary", borderColor: "divider" }}>Store</TableCell>
+                  <TableCell sx={{ fontSize: TYPE.small, textTransform: "uppercase", letterSpacing: "0.03em", color: "text.secondary", borderColor: "divider" }}>Status</TableCell>
+                  <TableCell sx={{ fontSize: TYPE.small, textTransform: "uppercase", letterSpacing: "0.03em", color: "text.secondary", borderColor: "divider" }}>Last Heartbeat</TableCell>
+                  <TableCell sx={{ fontSize: TYPE.small, textTransform: "uppercase", letterSpacing: "0.03em", color: "text.secondary", borderColor: "divider" }}>Last Catch-up</TableCell>
+                  <TableCell sx={{ fontSize: TYPE.small, textTransform: "uppercase", letterSpacing: "0.03em", color: "text.secondary", borderColor: "divider" }}>Outbox</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -419,7 +420,7 @@ export default function ConfigureLocalServer() {
                         <TableCell sx={{ borderColor: "divider", color: "text.primary" }}>
                           {node.store_name || `Store #${node.store_id}`}
                           {node.store_code ? (
-                            <Box component="span" sx={{ ml: 0.5, fontSize: 10.5, color: "text.secondary" }}>({node.store_code})</Box>
+                            <Box component="span" sx={{ ml: 0.5, fontSize: TYPE.small, color: "text.secondary" }}>({node.store_code})</Box>
                           ) : null}
                         </TableCell>
                         <TableCell sx={{ borderColor: "divider", fontWeight: 500, color: nodeTone.token ? `${nodeTone.token}.main` : "text.secondary" }}>
@@ -444,7 +445,7 @@ export default function ConfigureLocalServer() {
                         <TableRow>
                           <TableCell colSpan={6} sx={{ bgcolor: "action.hover", px: 1.5, py: 1.5, borderColor: "divider" }}>
                             <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", mb: 1 }}>
-                              <Typography component="h3" sx={{ fontSize: 10.5, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.03em", color: "text.secondary" }}>
+                              <Typography component="h3" sx={{ fontSize: TYPE.small, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.03em", color: "text.secondary" }}>
                                 Queued writes for this store
                               </Typography>
                               {node.outbox_failed > 0 && (
@@ -456,7 +457,7 @@ export default function ConfigureLocalServer() {
                                   color="inherit"
                                   size="small"
                                   startIcon={retryingAllStoreId === node.store_id ? <Loader2 size={12} style={{ animation: "app-spin 1s linear infinite" }} /> : <RotateCcw size={12} />}
-                                  sx={{ fontSize: 11 }}
+                                  sx={{ fontSize: TYPE.small }}
                                 >
                                   Retry All Failed
                                 </Button>
@@ -464,19 +465,19 @@ export default function ConfigureLocalServer() {
                             </Stack>
 
                             {outboxLoading ? (
-                              <Stack direction="row" spacing={1} sx={{ alignItems: "center", fontSize: 10.5, color: "text.secondary", py: 1 }}>
+                              <Stack direction="row" spacing={1} sx={{ alignItems: "center", fontSize: TYPE.small, color: "text.secondary", py: 1 }}>
                                 <Loader2 size={14} style={{ animation: "app-spin 1s linear infinite" }} />
                                 <Box component="span">Loading...</Box>
                               </Stack>
                             ) : outboxEvents.length === 0 ? (
-                              <Typography sx={{ fontSize: 10.5, color: "text.secondary", py: 1 }}>No queued events.</Typography>
+                              <Typography sx={{ fontSize: TYPE.small, color: "text.secondary", py: 1 }}>No queued events.</Typography>
                             ) : (
                               <Stack spacing={0.75}>
                                 {outboxEvents.map((event) => (
                                   <Stack
                                     key={event.id}
                                     direction="row"
-                                    sx={{ alignItems: "flex-start", justifyContent: "space-between", gap: 1.5, borderRadius: "4px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", px: 1.25, py: 1, fontSize: 10.5 }}
+                                    sx={{ alignItems: "flex-start", justifyContent: "space-between", gap: 1.5, borderRadius: "4px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", px: 1.25, py: 1, fontSize: TYPE.small }}
                                   >
                                     <Box sx={{ minWidth: 0 }}>
                                       <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
@@ -509,7 +510,7 @@ export default function ConfigureLocalServer() {
                                         color="inherit"
                                         size="small"
                                         startIcon={retryingId === event.id ? <Loader2 size={12} style={{ animation: "app-spin 1s linear infinite" }} /> : <RotateCcw size={12} />}
-                                        sx={{ flexShrink: 0, fontSize: 11 }}
+                                        sx={{ flexShrink: 0, fontSize: TYPE.small }}
                                       >
                                         Retry
                                       </Button>

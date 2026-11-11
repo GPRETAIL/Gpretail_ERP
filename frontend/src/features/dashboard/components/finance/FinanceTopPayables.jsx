@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import React from "react";
 import { Building2 } from "lucide-react";
 import { Box, Stack, Typography } from "@mui/material";
@@ -23,7 +24,7 @@ export default function FinanceTopPayables({ topPayables = [] }) {
               <Typography component="span" sx={{ fontSize: "inherit", fontWeight: 500, color: "text.secondary" }}>{row.supplier_name}</Typography>
               <Box sx={{ textAlign: "right" }}>
                 <Typography sx={{ fontSize: 12, fontWeight: 700, color: "error.main" }}>{formatCurrency(row.outstanding)}</Typography>
-                <Typography sx={{ fontSize: 10, color: "text.secondary" }}>{row.bills} bills</Typography>
+                <Typography sx={{ fontSize: TYPE.small, color: "text.secondary" }}>{row.bills} bills</Typography>
               </Box>
             </Stack>
           ))

@@ -117,10 +117,10 @@ describe("TenantThemeProvider", () => {
   // this inline style on <html> is the only place it's ever applied, for both the Tailwind shell
   // and (via typography.fontFamily: "inherit") every MUI component too.
   describe("mirrors font_family onto <html> style.fontFamily for the whole app", () => {
-    it("defaults to the bundled Inter font when the tenant has none set, with no network request", async () => {
+    it("defaults to the device font when the tenant has none set, with no network request", async () => {
       renderWithBrand({ primary_color: "#ff0000" });
 
-      await waitFor(() => expect(document.documentElement.style.fontFamily).toContain("Inter Variable"));
+      await waitFor(() => expect(document.documentElement.style.fontFamily).toContain("Segoe UI"));
       expect(document.querySelector('link[href*="fonts.googleapis.com"]')).toBeNull();
     });
 
@@ -132,16 +132,17 @@ describe("TenantThemeProvider", () => {
       expect(link?.href).toContain("family=Manrope");
     });
 
-    it("keeps the system stack when a tenant chose it", async () => {
-      renderWithBrand({ font_family: "system" });
-
-      await waitFor(() => expect(document.documentElement.style.fontFamily).toContain("BlinkMacSystemFont"));
-    });
-
-    it("falls back to the bundled default for an unrecognized stored value", async () => {
-      renderWithBrand({ font_family: "comic-sans" });
+    it("uses the bundled Inter font when a tenant chose it, with no network request", async () => {
+      renderWithBrand({ font_family: "inter" });
 
       await waitFor(() => expect(document.documentElement.style.fontFamily).toContain("Inter Variable"));
+      expect(document.querySelector('link[href*="fonts.googleapis.com"]')).toBeNull();
+    });
+
+    it("falls back to the device font for an unrecognized stored value", async () => {
+      renderWithBrand({ font_family: "comic-sans" });
+
+      await waitFor(() => expect(document.documentElement.style.fontFamily).toContain("BlinkMacSystemFont"));
     });
   });
 });

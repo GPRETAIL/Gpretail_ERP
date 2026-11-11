@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import PageHeader from "@/shared/components/PageHeader";
 import SearchGridPanel from "@/shared/components/SearchGridPanel";
 import useSearchGrid from "@/shared/hooks/useSearchGrid";
@@ -218,7 +219,7 @@ const SalesVsPurchase = () => {
             <Stack spacing={1}>
               <StoreFilterSelect value={storeFilter} onChange={setStoreFilter} />
               <Box ref={purchaseRangeRef} sx={{ position: "relative" }}>
-                <Typography component="label" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>
+                <Typography component="label" sx={{ display: "block", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>
                   Purchase Date
                 </Typography>
                 <Box
@@ -226,7 +227,7 @@ const SalesVsPurchase = () => {
                   type="button"
                   onClick={() => setOpenRangePicker((prev) => (prev === "purchase" ? null : "purchase"))}
                   sx={{
-                    display: "block", width: "100%", px: 1, py: 0.75, fontSize: 10.5, textAlign: "left",
+                    display: "block", width: "100%", px: 1, py: 0.75, fontSize: TYPE.small, textAlign: "left",
                     border: "1px solid", borderColor: "divider", borderRadius: "5.25px", bgcolor: "background.paper",
                     color: "text.primary", cursor: "pointer", fontFamily: "inherit",
                   }}
@@ -240,7 +241,7 @@ const SalesVsPurchase = () => {
                       border: "1px solid", borderColor: "divider", borderRadius: "5.25px", boxShadow: 4,
                     }}
                   >
-                    <Typography component="label" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>From</Typography>
+                    <Typography component="label" sx={{ display: "block", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>From</Typography>
                     <TextField
                       type="date"
                       size="small"
@@ -249,7 +250,7 @@ const SalesVsPurchase = () => {
                       value={purchaseFromDate}
                       onChange={(e) => setPurchaseFromDate(e.target.value)}
                     />
-                    <Typography component="label" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>To</Typography>
+                    <Typography component="label" sx={{ display: "block", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>To</Typography>
                     <TextField
                       type="date"
                       size="small"
@@ -266,7 +267,7 @@ const SalesVsPurchase = () => {
                           setPurchaseFromDate("");
                           setPurchaseToDate("");
                         }}
-                        sx={{ minWidth: "auto", p: 0, fontSize: 11 }}
+                        sx={{ minWidth: "auto", p: 0, fontSize: TYPE.small }}
                       >
                         Clear
                       </Button>
@@ -275,7 +276,7 @@ const SalesVsPurchase = () => {
                         variant="contained"
                         size="small"
                         onClick={() => setOpenRangePicker(null)}
-                        sx={{ fontSize: 11, bgcolor: "#6366f1", "&:hover": { bgcolor: "#4f46e5" } }}
+                        sx={{ fontSize: TYPE.small, bgcolor: "#6366f1", "&:hover": { bgcolor: "#4f46e5" } }}
                       >
                         Done
                       </Button>
@@ -285,7 +286,7 @@ const SalesVsPurchase = () => {
               </Box>
 
               <Box ref={saleRangeRef} sx={{ position: "relative" }}>
-                <Typography component="label" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>
+                <Typography component="label" sx={{ display: "block", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>
                   Sale Date
                 </Typography>
                 <Box
@@ -293,7 +294,7 @@ const SalesVsPurchase = () => {
                   type="button"
                   onClick={() => setOpenRangePicker((prev) => (prev === "sale" ? null : "sale"))}
                   sx={{
-                    display: "block", width: "100%", px: 1, py: 0.75, fontSize: 10.5, textAlign: "left",
+                    display: "block", width: "100%", px: 1, py: 0.75, fontSize: TYPE.small, textAlign: "left",
                     border: "1px solid", borderColor: "divider", borderRadius: "5.25px", bgcolor: "background.paper",
                     color: "text.primary", cursor: "pointer", fontFamily: "inherit",
                   }}
@@ -307,7 +308,7 @@ const SalesVsPurchase = () => {
                       border: "1px solid", borderColor: "divider", borderRadius: "5.25px", boxShadow: 4,
                     }}
                   >
-                    <Typography component="label" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>From</Typography>
+                    <Typography component="label" sx={{ display: "block", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>From</Typography>
                     <TextField
                       type="date"
                       size="small"
@@ -316,7 +317,7 @@ const SalesVsPurchase = () => {
                       value={saleFromDate}
                       onChange={(e) => setSaleFromDate(e.target.value)}
                     />
-                    <Typography component="label" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>To</Typography>
+                    <Typography component="label" sx={{ display: "block", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>To</Typography>
                     <TextField
                       type="date"
                       size="small"
@@ -333,7 +334,7 @@ const SalesVsPurchase = () => {
                           setSaleFromDate("");
                           setSaleToDate("");
                         }}
-                        sx={{ minWidth: "auto", p: 0, fontSize: 11 }}
+                        sx={{ minWidth: "auto", p: 0, fontSize: TYPE.small }}
                       >
                         Clear
                       </Button>
@@ -342,7 +343,7 @@ const SalesVsPurchase = () => {
                         variant="contained"
                         size="small"
                         onClick={() => setOpenRangePicker(null)}
-                        sx={{ fontSize: 11, bgcolor: "#6366f1", "&:hover": { bgcolor: "#4f46e5" } }}
+                        sx={{ fontSize: TYPE.small, bgcolor: "#6366f1", "&:hover": { bgcolor: "#4f46e5" } }}
                       >
                         Done
                       </Button>
@@ -382,7 +383,7 @@ const SalesVsPurchase = () => {
                 key={f.key}
                 onClick={() => handleFieldClick(f.key)}
                 sx={{
-                  display: "block", width: "100%", textAlign: "left", px: 1.5, py: 0.75, fontSize: 10.5, fontWeight: 500,
+                  display: "block", width: "100%", textAlign: "left", px: 1.5, py: 0.75, fontSize: TYPE.small, fontWeight: 500,
                   border: 0, borderLeft: "2px solid", cursor: "pointer", fontFamily: "inherit", bgcolor: "transparent",
                   ...(activeField === f.key
                     ? { borderLeftColor: "#6366f1", color: "#6366f1", bgcolor: (theme) => alpha("#6366f1", theme.palette.mode === "dark" ? 0.2 : 0.08) }
@@ -400,7 +401,7 @@ const SalesVsPurchase = () => {
           <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", mb: 0.75 }}>
             <Box>
               <Typography component="h2" sx={{ fontSize: 14, fontWeight: 700, color: "text.primary" }}>Sales Vs Purchase</Typography>
-              <Typography sx={{ fontSize: 10.5, color: "text.secondary", mt: 0.25 }}>
+              <Typography sx={{ fontSize: TYPE.small, color: "text.secondary", mt: 0.25 }}>
                 Grouped by: <Box component="span" sx={{ fontWeight: 500, color: "#6366f1" }}>{activeLabel}</Box>
                 {purchaseRangeText ? (
                   <Box component="span">
@@ -434,7 +435,7 @@ const SalesVsPurchase = () => {
               direction="row"
               spacing={3}
               sx={{
-                mb: 0.75, flexWrap: "wrap", rowGap: 0.5, px: 1.5, py: 1, fontSize: 10.5,
+                mb: 0.75, flexWrap: "wrap", rowGap: 0.5, px: 1.5, py: 1, fontSize: TYPE.small,
                 bgcolor: "action.hover", border: "1px solid", borderColor: "divider", borderRadius: "5.25px",
                 fontWeight: 600, color: "text.primary",
               }}

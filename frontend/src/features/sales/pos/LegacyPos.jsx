@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import { browserPrintHtml } from "./utils/posSalesUtils";
 import useStockRules, { noStockRowSx, shortQtyByStock } from "@/shared/hooks/useStockRules";
 import NoStockChip from "@/shared/components/NoStockChip";
@@ -2158,7 +2159,7 @@ const LegacyPos = () => {
 
   /* ───────────────── RENDER ───────────────── */
   return (
-    <Box sx={{ height: "100%", display: "flex", flexDirection: "column", bgcolor: "background.default", color: "text.primary", overflow: "hidden", ...(showSearchPage ? { height: "100%", minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden" } : {}) }}>
+    <Box className="pos-billing" sx={{ height: "100%", display: "flex", flexDirection: "column", bgcolor: "background.default", color: "text.primary", overflow: "hidden", ...(showSearchPage ? { height: "100%", minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden" } : {}) }}>
       {/* ─── TOP BAR ─── */}
       <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", px: 1.5, py: 0.75, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1, flexShrink: 0 }}>
         {/* Tabs */}
@@ -2374,7 +2375,7 @@ const LegacyPos = () => {
                       hover
                       sx={isExchangeReturnLine(line) ? { bgcolor: (theme) => alpha(theme.palette.error.main, theme.palette.mode === "dark" ? 0.12 : 0.06) } : shortByStock.has(line.stockId) ? noStockRowSx : undefined}
                     >
-                      <TableCell sx={{ fontSize: 10.5, fontFamily: "monospace", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{idx + 1}</TableCell>
+                      <TableCell sx={{ fontSize: TYPE.small, fontFamily: "monospace", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{idx + 1}</TableCell>
                       <TableCell sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: isExchangeReturnLine(line) ? "error.main" : undefined }} title={line.productName}>{line.productName}{!isExchangeReturnLine(line) && <NoStockChip shortQty={shortByStock.get(line.stockId)} sx={{ ml: 0.5 }} />}</TableCell>
                       <TableCell sx={{ textAlign: "right", color: isExchangeReturnLine(line) ? "error.main" : undefined }}>{formatMoney(line.mrp)}</TableCell>
                       <TableCell>
@@ -2452,19 +2453,19 @@ const LegacyPos = () => {
             {/* Row 1: Discount, SubTotal, Total, Balance */}
             <Box sx={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 1.5, alignItems: "flex-end" }}>
               <Box>
-                <Typography component="label" sx={{ display: "block", fontSize: 10.5, fontWeight: 500, color: "text.secondary" }}>Discount_amt</Typography>
+                <Typography component="label" sx={{ display: "block", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary" }}>Discount_amt</Typography>
                 <Typography sx={{ fontSize: 12.25, fontWeight: 600, color: "text.primary" }}>{formatMoney(cartWithTotals.reduce((s, l) => s + l.discAmt, 0))}</Typography>
               </Box>
               <Box>
-                <Typography component="label" sx={{ display: "block", fontSize: 10.5, fontWeight: 500, color: "text.secondary" }}>SubTotal</Typography>
+                <Typography component="label" sx={{ display: "block", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary" }}>SubTotal</Typography>
                 <Typography sx={{ fontSize: 12.25, fontWeight: 600, color: "text.primary" }}>{formatMoney(subtotal)}</Typography>
               </Box>
               <Box>
-                <Typography component="label" sx={{ display: "block", fontSize: 10.5, fontWeight: 500, color: "error.main" }}>Total</Typography>
+                <Typography component="label" sx={{ display: "block", fontSize: TYPE.label, fontWeight: 500, color: "error.main" }}>Total</Typography>
                 <Typography sx={{ fontSize: 21, fontWeight: 700, color: "error.main" }}>₹ {formatMoney(totalAmount)}</Typography>
               </Box>
               <Box>
-                <Typography component="label" sx={{ display: "block", fontSize: 10.5, fontWeight: 500, color: "text.secondary" }}>Balanceamt</Typography>
+                <Typography component="label" sx={{ display: "block", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary" }}>Balanceamt</Typography>
                 <Typography sx={{ fontSize: 15.75, fontWeight: 700, color: balanceAmount < 0 ? "error.main" : "success.main" }}>
                   ₹ {formatMoney(balanceAmount)}
                 </Typography>
@@ -2515,7 +2516,7 @@ const LegacyPos = () => {
           </Stack>
 
           <Stack sx={{ display: { lg: "none" }, bgcolor: "background.paper", borderTop: 1, borderColor: "divider", px: 1.5, py: 1, gap: 1, flexShrink: 0 }}>
-            <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", fontSize: 10.5, color: "text.secondary" }}>
+            <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", fontSize: TYPE.small, color: "text.secondary" }}>
               <Box component="span">{totalItems} item{totalItems !== 1 ? "s" : ""} · SubTotal</Box>
               <Box component="span" sx={{ fontSize: 15.75, fontWeight: 700, color: "text.primary" }}>₹{formatMoney(totalAmount)}</Box>
             </Stack>
@@ -2711,7 +2712,7 @@ const LegacyPos = () => {
             ) : (
               Object.entries(productsByBrand).map(([brandName, prods]) => (
                 <Box key={brandName}>
-                  <Box sx={{ px: 1.5, py: 0.75, bgcolor: "action.hover", fontSize: 10.5, fontWeight: 700, color: "text.secondary", textTransform: "uppercase", position: "sticky", top: 0 }}>
+                  <Box sx={{ px: 1.5, py: 0.75, bgcolor: "action.hover", fontSize: 12, fontWeight: 700, color: "text.secondary", textTransform: "uppercase", position: "sticky", top: 0 }}>
                     {brandName}
                   </Box>
                   {prods.map((p) => (
@@ -2765,12 +2766,12 @@ const LegacyPos = () => {
                   </Box>
                 )}
                 {!scannerLoading && scannerError && (
-                  <Box sx={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", color: "common.white", textAlign: "center", fontSize: 10.5, px: 2, bgcolor: "rgba(0,0,0,0.8)" }}>
+                  <Box sx={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", color: "common.white", textAlign: "center", fontSize: TYPE.small, px: 2, bgcolor: "rgba(0,0,0,0.8)" }}>
                     {scannerError}
                   </Box>
                 )}
                 {!scannerLoading && !scannerError && (
-                  <Box sx={{ position: "absolute", left: 0, right: 0, bottom: 0, textAlign: "center", color: "common.white", fontSize: 10.5, py: 0.5, bgcolor: "rgba(0,0,0,0.4)" }}>
+                  <Box sx={{ position: "absolute", left: 0, right: 0, bottom: 0, textAlign: "center", color: "common.white", fontSize: TYPE.small, py: 0.5, bgcolor: "rgba(0,0,0,0.4)" }}>
                     Place barcode inside frame
                   </Box>
                 )}
@@ -2968,11 +2969,11 @@ const LegacyPos = () => {
                   </>
                 ) : null}
               </Stack>
-              <Box component="span" sx={{ fontSize: 10, color: "text.disabled", textTransform: "uppercase", letterSpacing: 0.5 }}>Esc close</Box>
+              <Box component="span" sx={{ fontSize: TYPE.small, color: "text.disabled", textTransform: "uppercase", letterSpacing: 0.5 }}>Esc close</Box>
             </Stack>
             <Stack sx={{ p: 2, gap: 1.5 }}>
               <Box>
-                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 10.5, fontWeight: 700, color: "text.secondary" }}>Bill no. or barcode</Typography>
+                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: TYPE.label, fontWeight: 700, color: "text.secondary" }}>Bill no. or barcode</Typography>
                 <TextField
                   inputRef={returnBillInputRef}
                   type="text"
@@ -3002,7 +3003,7 @@ const LegacyPos = () => {
                 />
               </Box>
               <Box>
-                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 10.5, fontWeight: 700, color: "text.secondary" }}>Selected bill</Typography>
+                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: TYPE.label, fontWeight: 700, color: "text.secondary" }}>Selected bill</Typography>
                 <TextField
                   type="text"
                   slotProps={{ input: { readOnly: true } }}
@@ -3022,7 +3023,7 @@ const LegacyPos = () => {
                 />
               </Box>
               <Box>
-                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 10.5, fontWeight: 700, color: "text.secondary" }}>Reason</Typography>
+                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: TYPE.label, fontWeight: 700, color: "text.secondary" }}>Reason</Typography>
                 <Box
                   ref={returnReasonSelectWrapRef}
                   sx={!returnSourceSale ? { pointerEvents: "none", opacity: 0.55 } : undefined}
@@ -3061,7 +3062,7 @@ const LegacyPos = () => {
               <Box sx={{ bgcolor: "background.paper", borderRadius: "7px", border: 1, borderColor: "divider", boxShadow: 12, width: "100%", maxWidth: 896, maxHeight: "92vh", display: "flex", flexDirection: "column" }}>
                 <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", borderBottom: 1, borderColor: "divider", px: 2, py: 1.5, borderTopLeftRadius: "7px", borderTopRightRadius: "7px", flexShrink: 0 }}>
                   <Typography sx={{ fontSize: 12.25, fontWeight: 600, color: "text.primary" }}>{showExchangeDialog ? "Exchange lines" : "Return lines"}</Typography>
-                  <Box component="span" sx={{ fontSize: 10, color: "text.disabled", textTransform: "uppercase", letterSpacing: 0.5 }}>Esc back</Box>
+                  <Box component="span" sx={{ fontSize: TYPE.small, color: "text.disabled", textTransform: "uppercase", letterSpacing: 0.5 }}>Esc back</Box>
                 </Stack>
                 <Box sx={{ flex: 1, minHeight: 0, overflow: "auto", p: 1.5 }}>
                   <Table sx={{ width: "100%", fontSize: 12.25, borderCollapse: "collapse" }}>
@@ -3097,11 +3098,11 @@ const LegacyPos = () => {
                           return (
                             <TableRow key={line.lineId} hover>
                               <TableCell sx={{ border: 1, borderColor: "divider", textAlign: "center", color: "text.primary" }}>{idx + 1}</TableCell>
-                              <TableCell sx={{ border: 1, borderColor: "divider", fontFamily: "monospace", fontSize: 10.5, color: "text.secondary" }}>{line.barcode || "—"}</TableCell>
+                              <TableCell sx={{ border: 1, borderColor: "divider", fontFamily: "monospace", fontSize: TYPE.small, color: "text.secondary" }}>{line.barcode || "—"}</TableCell>
                               <TableCell sx={{ border: 1, borderColor: "divider", maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "text.primary" }} title={line.productName}>
                                 {line.productName || "—"}
                                 {!line.productName ? null : (
-                                  <Box sx={{ fontSize: 10, color: "text.disabled", whiteSpace: "normal" }}>
+                                  <Box sx={{ fontSize: TYPE.small, color: "text.disabled", whiteSpace: "normal" }}>
                                     {line.standaloneLine
                                       ? "Barcode return (catalogue pricing)"
                                       : `Original ${line.originalQty} · Returned ${line.returnedQty} · Max ${line.maxQty}`}
@@ -3143,7 +3144,7 @@ const LegacyPos = () => {
                 </Box>
                 <Stack sx={{ borderTop: 1, borderColor: "divider", px: 2, py: 1.5, gap: 1.5, flexShrink: 0 }}>
                   <Box>
-                    <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 10.5, fontWeight: 700, color: "text.secondary" }}>Scan / enter barcode</Typography>
+                    <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: TYPE.label, fontWeight: 700, color: "text.secondary" }}>Scan / enter barcode</Typography>
                     <TextField
                       inputRef={returnLinesScanRef}
                       type="text"
@@ -3201,7 +3202,7 @@ const LegacyPos = () => {
             <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", borderBottom: 1, borderColor: "divider", px: 2.5, py: 2 }}>
               <Box>
                 <Typography sx={{ fontSize: 12.25, fontWeight: 600, color: "text.primary" }}>Sale Discount</Typography>
-                <Typography sx={{ fontSize: 10.5, color: "text.secondary" }}>
+                <Typography sx={{ fontSize: TYPE.small, color: "text.secondary" }}>
                   Select sale rows and apply a discount percentage to the current POS Old bill.
                 </Typography>
               </Box>
@@ -3338,7 +3339,7 @@ const LegacyPos = () => {
       )}
 
       {loading && (
-        <Box sx={{ position: "fixed", bottom: 16, left: 16, bgcolor: "background.paper", border: 1, borderColor: "divider", borderRadius: "3.5px", boxShadow: 1, px: 1.5, py: 0.75, fontSize: 10.5, color: "text.secondary" }}>
+        <Box sx={{ position: "fixed", bottom: 16, left: 16, bgcolor: "background.paper", border: 1, borderColor: "divider", borderRadius: "3.5px", boxShadow: 1, px: 1.5, py: 0.75, fontSize: TYPE.small, color: "text.secondary" }}>
           Loading master data...
         </Box>
       )}

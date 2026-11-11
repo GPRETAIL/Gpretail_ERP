@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import PageHeader from "@/shared/components/PageHeader";
 import { masterSearchAreaSx } from "@/shared/theme/erpUi";
 import SearchGridPanel from "@/shared/components/SearchGridPanel";
@@ -654,23 +655,23 @@ const DealerInvoiceReturn = () => {
   const renderEntryPage = () => (
     <Box sx={{ display: "grid", height: { xs: "auto", xl: "100%" }, minHeight: 0, gridTemplateColumns: { xs: "minmax(0, 1fr)", xl: "repeat(12, minmax(0, 1fr))" }, gap: 1.5 }}>
       <Stack spacing={1.5} sx={{ gridColumn: { xl: "span 3" }, height: { xs: "auto", xl: "100%" }, minWidth: 0, minHeight: 0, overflowY: "auto", overflowX: "hidden", borderRadius: "7px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", p: 1.5, boxShadow: 1, fontSize: 12.25 }}>
-        <Box sx={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 0.75, fontSize: 11 }}>
+        <Box sx={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 0.75, fontSize: TYPE.small }}>
           <Box sx={{ borderRadius: "3.5px", border: "1px solid", borderColor: "divider", px: 1, py: 0.75 }}>
-            <Typography sx={{ fontSize: 9, color: "text.secondary" }}>Return No</Typography>
-            <Typography sx={{ fontWeight: 600, fontSize: 11 }}>{returnNo}</Typography>
+            <Typography sx={{ fontSize: TYPE.small, color: "text.secondary" }}>Return No</Typography>
+            <Typography sx={{ fontWeight: 600, fontSize: TYPE.small }}>{returnNo}</Typography>
           </Box>
           <Box sx={{ borderRadius: "3.5px", border: "1px solid", borderColor: "divider", px: 1, py: 0.75 }}>
-            <Typography sx={{ fontSize: 9, color: "text.secondary" }}>Date</Typography>
-            <Typography sx={{ fontWeight: 600, fontSize: 11 }}>{now.toLocaleDateString()}</Typography>
+            <Typography sx={{ fontSize: TYPE.small, color: "text.secondary" }}>Date</Typography>
+            <Typography sx={{ fontWeight: 600, fontSize: TYPE.small }}>{now.toLocaleDateString()}</Typography>
           </Box>
           <Box sx={{ borderRadius: "3.5px", border: "1px solid", borderColor: "divider", px: 1, py: 0.75 }}>
-            <Typography sx={{ fontSize: 9, color: "text.secondary" }}>Time</Typography>
-            <Typography sx={{ fontWeight: 600, fontSize: 11 }}>{now.toLocaleTimeString()}</Typography>
+            <Typography sx={{ fontSize: TYPE.small, color: "text.secondary" }}>Time</Typography>
+            <Typography sx={{ fontWeight: 600, fontSize: TYPE.small }}>{now.toLocaleTimeString()}</Typography>
           </Box>
         </Box>
 
         <Box>
-          <Typography component="label" sx={{ display: "block", mb: 0.5, fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>Customer Name</Typography>
+          <Typography component="label" sx={{ display: "block", mb: 0.5, fontSize: TYPE.label, fontWeight: 500, color: "text.secondary" }}>Customer Name</Typography>
           <AsyncSearchSelect
             name="customerId"
             value={customerId}
@@ -681,7 +682,7 @@ const DealerInvoiceReturn = () => {
             searchPlaceholder="Search customer..."
           />
           {selectedCustomer && (
-            <Typography sx={{ mt: 0.75, borderRadius: "3.5px", border: "1px solid", borderColor: (theme) => alpha(theme.palette.success.main, 0.4), bgcolor: (theme) => alpha(theme.palette.success.main, theme.palette.mode === "dark" ? 0.16 : 0.08), p: 1, fontSize: 11, color: "success.dark" }}>
+            <Typography sx={{ mt: 0.75, borderRadius: "3.5px", border: "1px solid", borderColor: (theme) => alpha(theme.palette.success.main, 0.4), bgcolor: (theme) => alpha(theme.palette.success.main, theme.palette.mode === "dark" ? 0.16 : 0.08), p: 1, fontSize: TYPE.small, color: "success.dark" }}>
               Selected: {selectedCustomer.label}
             </Typography>
           )}
@@ -710,7 +711,7 @@ const DealerInvoiceReturn = () => {
         </Stack>
 
         <Box sx={{ borderRadius: "5.25px", border: "1px solid", borderColor: "divider", p: 1 }}>
-          <Box sx={{ display: "grid", gridTemplateColumns: "minmax(0,1.2fr) minmax(0,0.85fr) minmax(0,0.85fr) minmax(0,0.95fr) 30px", alignItems: "center", gap: 0.75, px: 0.5, fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "error.dark" }}>
+          <Box sx={{ display: "grid", gridTemplateColumns: "minmax(0,1.2fr) minmax(0,0.85fr) minmax(0,0.85fr) minmax(0,0.95fr) 30px", alignItems: "center", gap: 0.75, px: 0.5, fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "error.dark" }}>
             <Box>Type</Box>
             <Box>Cost</Box>
             <Box>Tax</Box>
@@ -769,7 +770,7 @@ const DealerInvoiceReturn = () => {
           </Box>
 
           <Box sx={{ borderRadius: "3.5px", border: "1px solid", borderColor: "divider" }}>
-            <Box sx={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) 30px", gap: 0.75, borderBottom: 1, borderColor: "divider", bgcolor: "background.paper", px: 1, py: 1, fontSize: 11, fontWeight: 600, color: "text.secondary" }}>
+            <Box sx={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) 30px", gap: 0.75, borderBottom: 1, borderColor: "divider", bgcolor: "background.paper", px: 1, py: 1, fontSize: TYPE.small, fontWeight: 600, color: "text.secondary" }}>
               <Box>Type</Box>
               <Box>Cost</Box>
               <Box>Tax</Box>
@@ -779,7 +780,7 @@ const DealerInvoiceReturn = () => {
             <Box sx={{ height: 96, overflowY: "auto" }}>
               {taxRows.length > 0 ? (
                 taxRows.map((line) => (
-                  <Box key={line.id} sx={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) 30px", alignItems: "center", gap: 0.75, borderBottom: 1, borderColor: "divider", "&:last-child": { borderBottom: 0 }, px: 1, py: 1, fontSize: 11, color: "text.primary" }}>
+                  <Box key={line.id} sx={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) 30px", alignItems: "center", gap: 0.75, borderBottom: 1, borderColor: "divider", "&:last-child": { borderBottom: 0 }, px: 1, py: 1, fontSize: TYPE.small, color: "text.primary" }}>
                     <Box sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{line.taxName || "-"}</Box>
                     <Box>{line.taxValue.toFixed(2)}</Box>
                     <Box>{line.taxPerc.toFixed(2)}%</Box>
@@ -801,7 +802,7 @@ const DealerInvoiceReturn = () => {
                 <Box sx={{ display: "flex", height: "100%", alignItems: "center", justifyContent: "center", px: 2, fontSize: 12.25, color: "text.disabled" }}>No tax rows added</Box>
               )}
             </Box>
-            <Box sx={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 0.75, borderTop: 1, borderColor: "divider", bgcolor: "action.hover", px: 1, py: 1, fontSize: 11, fontWeight: 700, color: "text.primary" }}>
+            <Box sx={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 0.75, borderTop: 1, borderColor: "divider", bgcolor: "action.hover", px: 1, py: 1, fontSize: TYPE.small, fontWeight: 700, color: "text.primary" }}>
               <Box>-</Box>
               <Box>{taxSummary.taxable.toFixed(2)}</Box>
               <Box>-</Box>
@@ -856,7 +857,7 @@ const DealerInvoiceReturn = () => {
           <Typography component="h2" sx={{ mb: 1, fontSize: 12.25, fontWeight: 600, color: "text.secondary" }}>Add Product</Typography>
           <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "repeat(12, 1fr)" }, gap: 0.75, alignItems: "end" }}>
             <Box sx={{ gridColumn: { md: "span 4" } }}>
-              <Typography component="label" sx={{ display: "block", mb: 0.5, fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>Barcode</Typography>
+              <Typography component="label" sx={{ display: "block", mb: 0.5, fontSize: TYPE.label, fontWeight: 500, color: "text.secondary" }}>Barcode</Typography>
               <TextField
                 type="text"
                 value={addBarcode}
@@ -868,7 +869,7 @@ const DealerInvoiceReturn = () => {
               />
             </Box>
             <Box sx={{ gridColumn: { md: "span 5" } }}>
-              <Typography component="label" sx={{ display: "block", mb: 0.5, fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>Product (In Stock)</Typography>
+              <Typography component="label" sx={{ display: "block", mb: 0.5, fontSize: TYPE.label, fontWeight: 500, color: "text.secondary" }}>Product (In Stock)</Typography>
               <TextField
                 select
                 value={addProductKey}
@@ -886,7 +887,7 @@ const DealerInvoiceReturn = () => {
               </TextField>
             </Box>
             <Box sx={{ gridColumn: { md: "span 2" } }}>
-              <Typography component="label" sx={{ display: "block", mb: 0.5, fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>Qty</Typography>
+              <Typography component="label" sx={{ display: "block", mb: 0.5, fontSize: TYPE.label, fontWeight: 500, color: "text.secondary" }}>Qty</Typography>
               <TextField
                 type="number"
                 slotProps={{ htmlInput: { min: 1 } }}
@@ -909,7 +910,7 @@ const DealerInvoiceReturn = () => {
               </Button>
             </Box>
           </Box>
-          <Typography sx={{ mt: 0.75, fontSize: 11, color: "text.secondary" }}>{selectedStockHint}</Typography>
+          <Typography sx={{ mt: 0.75, fontSize: TYPE.small, color: "text.secondary" }}>{selectedStockHint}</Typography>
         </Box>
 
         <Stack sx={{ minHeight: 0, flex: 1, overflow: "hidden", borderRadius: "7px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", boxShadow: 1 }}>
@@ -943,7 +944,7 @@ const DealerInvoiceReturn = () => {
                       placeholder="Barcode"
                       size="small"
                       fullWidth
-                      sx={{ "& .MuiInputBase-input": { fontSize: 10.5, fontWeight: 400, py: 0.5 } }}
+                      sx={{ "& .MuiInputBase-input": { fontSize: TYPE.small, fontWeight: 400, py: 0.5 } }}
                     />
                   </TableCell>
                   <TableCell sx={{ border: 1, borderColor: "divider", px: 0.5, py: 0.5 }}>
@@ -955,7 +956,7 @@ const DealerInvoiceReturn = () => {
                       placeholder="Product"
                       size="small"
                       fullWidth
-                      sx={{ "& .MuiInputBase-input": { fontSize: 10.5, fontWeight: 400, py: 0.5 } }}
+                      sx={{ "& .MuiInputBase-input": { fontSize: TYPE.small, fontWeight: 400, py: 0.5 } }}
                     />
                   </TableCell>
                   <TableCell sx={{ border: 1, borderColor: "divider", px: 0.5, py: 0.5 }}>
@@ -967,7 +968,7 @@ const DealerInvoiceReturn = () => {
                       placeholder="Tax"
                       size="small"
                       fullWidth
-                      sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 10.5, fontWeight: 400, py: 0.5 } }}
+                      sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: TYPE.small, fontWeight: 400, py: 0.5 } }}
                     />
                   </TableCell>
                   <TableCell sx={{ border: 1, borderColor: "divider", px: 0.5, py: 0.5 }}>
@@ -979,7 +980,7 @@ const DealerInvoiceReturn = () => {
                       placeholder="MRP"
                       size="small"
                       fullWidth
-                      sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 10.5, fontWeight: 400, py: 0.5 } }}
+                      sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: TYPE.small, fontWeight: 400, py: 0.5 } }}
                     />
                   </TableCell>
                   <TableCell sx={{ border: 1, borderColor: "divider", px: 0.5, py: 0.5 }}>
@@ -991,7 +992,7 @@ const DealerInvoiceReturn = () => {
                       placeholder="Cost"
                       size="small"
                       fullWidth
-                      sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 10.5, fontWeight: 400, py: 0.5 } }}
+                      sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: TYPE.small, fontWeight: 400, py: 0.5 } }}
                     />
                   </TableCell>
                   <TableCell sx={{ border: 1, borderColor: "divider", px: 0.5, py: 0.5 }}>
@@ -1003,7 +1004,7 @@ const DealerInvoiceReturn = () => {
                       placeholder="Price"
                       size="small"
                       fullWidth
-                      sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 10.5, fontWeight: 400, py: 0.5 } }}
+                      sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: TYPE.small, fontWeight: 400, py: 0.5 } }}
                     />
                   </TableCell>
                   <TableCell sx={{ border: 1, borderColor: "divider", px: 0.5, py: 0.5 }}>
@@ -1015,7 +1016,7 @@ const DealerInvoiceReturn = () => {
                       placeholder="Qty"
                       size="small"
                       fullWidth
-                      sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 10.5, fontWeight: 400, py: 0.5 } }}
+                      sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: TYPE.small, fontWeight: 400, py: 0.5 } }}
                     />
                   </TableCell>
                   <TableCell sx={{ border: 1, borderColor: "divider", px: 0.5, py: 0.5 }}>
@@ -1027,7 +1028,7 @@ const DealerInvoiceReturn = () => {
                       placeholder="Discount"
                       size="small"
                       fullWidth
-                      sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 10.5, fontWeight: 400, py: 0.5 } }}
+                      sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: TYPE.small, fontWeight: 400, py: 0.5 } }}
                     />
                   </TableCell>
                   <TableCell sx={{ border: 1, borderColor: "divider", px: 0.5, py: 0.5 }}>
@@ -1039,7 +1040,7 @@ const DealerInvoiceReturn = () => {
                       placeholder="A.D"
                       size="small"
                       fullWidth
-                      sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 10.5, fontWeight: 400, py: 0.5 } }}
+                      sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: TYPE.small, fontWeight: 400, py: 0.5 } }}
                     />
                   </TableCell>
                   <TableCell sx={{ border: 1, borderColor: "divider", px: 0.5, py: 0.5 }}>
@@ -1051,7 +1052,7 @@ const DealerInvoiceReturn = () => {
                       placeholder="%"
                       size="small"
                       fullWidth
-                      sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 10.5, fontWeight: 400, py: 0.5 } }}
+                      sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: TYPE.small, fontWeight: 400, py: 0.5 } }}
                     />
                   </TableCell>
                   <TableCell sx={{ border: 1, borderColor: "divider", px: 0.5, py: 0.5 }}>
@@ -1063,10 +1064,10 @@ const DealerInvoiceReturn = () => {
                       placeholder="Amount"
                       size="small"
                       fullWidth
-                      sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 10.5, fontWeight: 400, py: 0.5 } }}
+                      sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: TYPE.small, fontWeight: 400, py: 0.5 } }}
                     />
                   </TableCell>
-                  <TableCell sx={{ border: 1, borderColor: "divider", px: 0.5, py: 0.5, textAlign: "center", fontSize: 9, fontWeight: 400, color: "text.secondary" }}>Enter</TableCell>
+                  <TableCell sx={{ border: 1, borderColor: "divider", px: 0.5, py: 0.5, textAlign: "center", fontSize: TYPE.small, fontWeight: 400, color: "text.secondary" }}>Enter</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -1079,11 +1080,11 @@ const DealerInvoiceReturn = () => {
                 ) : (
                   filteredCartWithTotals.map((line) => (
                     <TableRow key={line.lineId} sx={{ "&:hover": { bgcolor: "action.hover" } }}>
-                      <TableCell sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", border: 1, borderColor: "divider", px: 0.75, py: 0.75, fontFamily: "monospace", fontSize: 10.5 }}>{line.barcode || "-"}</TableCell>
-                      <TableCell sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", border: 1, borderColor: "divider", px: 0.75, py: 0.75, fontSize: 10.5 }}>{line.productName}</TableCell>
-                      <TableCell sx={{ border: 1, borderColor: "divider", px: 0.75, py: 0.75, textAlign: "right", fontSize: 10.5 }}>{line.tax.toFixed(2)}</TableCell>
-                      <TableCell sx={{ border: 1, borderColor: "divider", px: 0.75, py: 0.75, textAlign: "right", fontSize: 10.5 }}>{formatMoney(line.mrp || 0)}</TableCell>
-                      <TableCell sx={{ border: 1, borderColor: "divider", px: 0.75, py: 0.75, textAlign: "right", fontSize: 10.5 }}>{formatMoney(line.cost)}</TableCell>
+                      <TableCell sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", border: 1, borderColor: "divider", px: 0.75, py: 0.75, fontFamily: "monospace", fontSize: TYPE.small }}>{line.barcode || "-"}</TableCell>
+                      <TableCell sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", border: 1, borderColor: "divider", px: 0.75, py: 0.75, fontSize: TYPE.small }}>{line.productName}</TableCell>
+                      <TableCell sx={{ border: 1, borderColor: "divider", px: 0.75, py: 0.75, textAlign: "right", fontSize: TYPE.small }}>{line.tax.toFixed(2)}</TableCell>
+                      <TableCell sx={{ border: 1, borderColor: "divider", px: 0.75, py: 0.75, textAlign: "right", fontSize: TYPE.small }}>{formatMoney(line.mrp || 0)}</TableCell>
+                      <TableCell sx={{ border: 1, borderColor: "divider", px: 0.75, py: 0.75, textAlign: "right", fontSize: TYPE.small }}>{formatMoney(line.cost)}</TableCell>
                       <TableCell sx={{ border: 1, borderColor: "divider", px: 0.75, py: 0.75 }}>
                         <TextField
                           type="number"
@@ -1092,10 +1093,10 @@ const DealerInvoiceReturn = () => {
                           onChange={(e) => handleLineValueChange(line.lineId, "price", e.target.value)}
                           size="small"
                           fullWidth
-                          sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 10.5, py: 0.25 } }}
+                          sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: TYPE.small, py: 0.25 } }}
                         />
                       </TableCell>
-                      <TableCell sx={{ border: 1, borderColor: "divider", px: 0.75, py: 0.75, textAlign: "center", fontSize: 10.5 }}>{line.qty}</TableCell>
+                      <TableCell sx={{ border: 1, borderColor: "divider", px: 0.75, py: 0.75, textAlign: "center", fontSize: TYPE.small }}>{line.qty}</TableCell>
                       <TableCell sx={{ border: 1, borderColor: "divider", px: 0.75, py: 0.75, textAlign: "right" }}>
                         <TextField
                           type="number"
@@ -1104,7 +1105,7 @@ const DealerInvoiceReturn = () => {
                           onChange={(e) => handleLineValueChange(line.lineId, "discount", e.target.value)}
                           size="small"
                           fullWidth
-                          sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 10.5, py: 0.25 } }}
+                          sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: TYPE.small, py: 0.25 } }}
                         />
                       </TableCell>
                       <TableCell sx={{ border: 1, borderColor: "divider", px: 0.75, py: 0.75, textAlign: "right" }}>
@@ -1115,7 +1116,7 @@ const DealerInvoiceReturn = () => {
                           onChange={(e) => handleLineValueChange(line.lineId, "addlDiscount", e.target.value)}
                           size="small"
                           fullWidth
-                          sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 10.5, py: 0.25 } }}
+                          sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: TYPE.small, py: 0.25 } }}
                         />
                       </TableCell>
                       <TableCell sx={{ border: 1, borderColor: "divider", px: 0.75, py: 0.75, textAlign: "right" }}>
@@ -1126,10 +1127,10 @@ const DealerInvoiceReturn = () => {
                           onChange={(e) => handleLineValueChange(line.lineId, "discountPerc", e.target.value)}
                           size="small"
                           fullWidth
-                          sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: 10.5, py: 0.25 } }}
+                          sx={{ "& .MuiInputBase-input": { textAlign: "right", fontSize: TYPE.small, py: 0.25 } }}
                         />
                       </TableCell>
-                      <TableCell sx={{ border: 1, borderColor: "divider", px: 0.75, py: 0.75, textAlign: "right", fontSize: 10.5, fontWeight: 600 }}>{formatMoney(line.amount)}</TableCell>
+                      <TableCell sx={{ border: 1, borderColor: "divider", px: 0.75, py: 0.75, textAlign: "right", fontSize: TYPE.small, fontWeight: 600 }}>{formatMoney(line.amount)}</TableCell>
                       <TableCell sx={{ border: 1, borderColor: "divider", px: 0.5, py: 0.75, textAlign: "center" }}>
                         <IconButton
                           type="button"
@@ -1244,7 +1245,7 @@ const DealerInvoiceReturn = () => {
 
       <Box sx={showSearchPage ? masterSearchAreaSx : { flex: 1, minHeight: 0, overflow: { xs: "auto", xl: "hidden" }, p: 2 }}>
         {showSearchPage ? renderSearchPage() : renderEntryPage()}
-        {loading && <Typography sx={{ fontSize: 10.5, color: "text.secondary", px: 0.5 }}>Loading master data...</Typography>}
+        {loading && <Typography sx={{ fontSize: TYPE.small, color: "text.secondary", px: 0.5 }}>Loading master data...</Typography>}
       </Box>
     </Box>
   );

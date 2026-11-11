@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import PageHeader from "@/shared/components/PageHeader";
 import useAsyncQuery from "@/shared/hooks/useAsyncQuery";
 import React, { useCallback, useEffect, useState } from "react";
@@ -210,7 +211,7 @@ const CustomerForm = () => {
           />
         </>}
         actions={<>
-          <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", fontSize: 10.5, fontWeight: 500, color: "text.secondary" }}>
+          <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", fontSize: TYPE.small, fontWeight: 500, color: "text.secondary" }}>
           <Button
             className="glass-btn glass-btn-success"
             onClick={handleSave}

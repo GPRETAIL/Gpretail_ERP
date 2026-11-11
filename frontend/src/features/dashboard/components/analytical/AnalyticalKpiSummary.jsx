@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import React from "react";
 import LoadingSkeleton from "@/shared/components/LoadingSkeleton";
 import { useNavigate } from "react-router-dom";
@@ -26,7 +27,7 @@ export function ProductsWithStockCard({ summary = {}, loading, privacyMode }) {
   return (
     <ButtonBase onClick={() => navigate("/analytical/stock-analyzer")} sx={cardSx("primary.main")}>
       <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", color: "text.secondary" }}>
-        <Typography sx={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Products With Stock</Typography>
+        <Typography sx={{ fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Products With Stock</Typography>
         <Box sx={{ color: "primary.main", display: "inline-flex" }}>
           <Boxes size={20} />
         </Box>
@@ -42,7 +43,7 @@ export function BrandsTrackedCard({ summary = {}, loading, privacyMode }) {
   return (
     <Box sx={staticCardSx}>
       <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", color: "text.secondary" }}>
-        <Typography sx={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Brands Tracked</Typography>
+        <Typography sx={{ fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Brands Tracked</Typography>
         <Box sx={{ color: "#6366f1", display: "inline-flex" }}>
           <Tag size={20} />
         </Box>
@@ -58,7 +59,7 @@ export function CategoriesTrackedCard({ summary = {}, loading, privacyMode }) {
   return (
     <Box sx={staticCardSx}>
       <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", color: "text.secondary" }}>
-        <Typography sx={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Categories Tracked</Typography>
+        <Typography sx={{ fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Categories Tracked</Typography>
         <Box sx={{ color: "#9333ea", display: "inline-flex" }}>
           <FolderTree size={20} />
         </Box>
@@ -75,7 +76,7 @@ export function SuppliersWithPurchasesCard({ summary = {}, loading, privacyMode 
   return (
     <ButtonBase onClick={() => navigate("/analytical/purchase-analyzer")} sx={cardSx("success.main")}>
       <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", color: "text.secondary" }}>
-        <Typography sx={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Suppliers With Purchases</Typography>
+        <Typography sx={{ fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Suppliers With Purchases</Typography>
         <Box sx={{ color: "success.main", display: "inline-flex" }}>
           <Truck size={20} />
         </Box>

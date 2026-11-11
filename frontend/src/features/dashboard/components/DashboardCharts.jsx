@@ -142,14 +142,14 @@ export const HourlySalesChart = ({ chart, loading, privacyMode }) => {
               </linearGradient>
             </defs>
             <CartesianGrid stroke={gridStroke} vertical={false} />
-            <XAxis dataKey="label" tick={{ fontSize: 10, fill: tickColor }} interval={2} />
-            <YAxis yAxisId="left" tick={{ fontSize: 11, fill: tickColor }} allowDecimals={false} />
+            <XAxis dataKey="label" tick={{ fontSize: 12, fill: tickColor }} interval={2} />
+            <YAxis yAxisId="left" tick={{ fontSize: 12, fill: tickColor }} allowDecimals={false} />
             <YAxis
               yAxisId="right"
               orientation="right"
-              tick={{ fontSize: 11, fill: tickColor }}
+              tick={{ fontSize: 12, fill: tickColor }}
               tickFormatter={formatScaledValue}
-              label={{ value: salesAxisLabel, angle: 90, position: "insideRight", offset: 10, fontSize: 11, fill: tickColor }}
+              label={{ value: salesAxisLabel, angle: 90, position: "insideRight", offset: 10, fontSize: 12, fill: tickColor }}
             />
             <Tooltip
               contentStyle={tooltipStyle}
@@ -210,19 +210,19 @@ export const DailyTrendChart = ({ chart, loading, privacyMode }) => {
         <ResponsiveContainer width="100%" height={260}>
           <ComposedChart data={rows} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
             <CartesianGrid stroke={gridStroke} vertical={false} />
-            <XAxis dataKey="label" tick={{ fontSize: 11, fill: tickColor }} />
+            <XAxis dataKey="label" tick={{ fontSize: 12, fill: tickColor }} />
             <YAxis
               yAxisId="left"
-              tick={{ fontSize: 11, fill: tickColor }}
+              tick={{ fontSize: 12, fill: tickColor }}
               tickFormatter={formatScaledValue}
-              label={{ value: salesAxisLabel, angle: -90, position: "insideLeft", offset: 10, fontSize: 11, fill: tickColor }}
+              label={{ value: salesAxisLabel, angle: -90, position: "insideLeft", offset: 10, fontSize: 12, fill: tickColor }}
             />
             <YAxis
               yAxisId="right"
               orientation="right"
-              tick={{ fontSize: 11, fill: tickColor }}
+              tick={{ fontSize: 12, fill: tickColor }}
               tickFormatter={formatScaledValue}
-              label={{ value: unitsAxisLabel, angle: 90, position: "insideRight", offset: 10, fontSize: 11, fill: tickColor }}
+              label={{ value: unitsAxisLabel, angle: 90, position: "insideRight", offset: 10, fontSize: 12, fill: tickColor }}
             />
             <Tooltip
               contentStyle={tooltipStyle}

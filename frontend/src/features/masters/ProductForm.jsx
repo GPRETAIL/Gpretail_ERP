@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import React, { useState, useEffect, useRef } from "react";
 import { ArrowLeft, PlusCircle, Save, Search } from "lucide-react";
 import { Box, Stack, Card, Typography, Button, Checkbox } from "@mui/material";
@@ -688,7 +689,7 @@ const ProductForm = () => {
               {/* Reduced horizontal padding */} {/* Header with Checkbox */}
               <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center", mb: 1.5 }}>
                 {/* Reduced vertical margin */}
-                <Typography component="h3" sx={{ fontSize: 10.5, fontWeight: 600, color: "text.primary" }}>
+                <Typography component="h3" sx={{ fontSize: TYPE.small, fontWeight: 600, color: "text.primary" }}>
                   Purchase Entry Attributes (Configure)
                 </Typography>
                 <Stack component="label" direction="row" sx={{ alignItems: "center", gap: 0.5, fontSize: 8.75, color: "text.secondary", cursor: "pointer", userSelect: "none" }}>
@@ -707,7 +708,7 @@ const ProductForm = () => {
                   space a big monitor has" bump, never a risk of clipping shorter content. */}
               <Box sx={{ border: 1, borderColor: "grey.300", borderRadius: "3.5px", overflow: "hidden", height: { xs: 320, md: 380, lg: 420, xl: 520 }, display: "flex", flexDirection: "column" }}>
                 {/* Slight height adjustment */} {/* Table Header */}
-                <Stack direction="row" sx={{ bgcolor: "action.hover", fontSize: 10.5, fontWeight: 600, color: "text.secondary", borderBottom: 1, borderColor: "divider" }}>
+                <Stack direction="row" sx={{ bgcolor: "action.hover", fontSize: TYPE.small, fontWeight: 600, color: "text.secondary", borderBottom: 1, borderColor: "divider" }}>
                   <Box sx={{ width: "75%", px: 1, py: 0.5 }}>Name</Box>
                   <Box sx={{ width: "8.33%", px: 1, py: 0.5, textAlign: "center" }}>Man</Box>
                   <Box sx={{ width: "8.33%", px: 1, py: 0.5, textAlign: "center" }}>Show</Box>
@@ -719,7 +720,7 @@ const ProductForm = () => {
                     <Stack
                       direction="row"
                       key={attr.id}
-                      sx={{ alignItems: "center", borderTop: 1, borderColor: "divider", fontSize: 10.5, "&:hover": { bgcolor: "action.hover" } }}
+                      sx={{ alignItems: "center", borderTop: 1, borderColor: "divider", fontSize: TYPE.small, "&:hover": { bgcolor: "action.hover" } }}
                     >
                       <Box sx={{ width: "75%", px: 1, py: 0.5 }}>{attr.name}</Box>
                       <Box sx={{ width: "8.33%", px: 1, py: 0.5, display: "flex", justifyContent: "center" }}>

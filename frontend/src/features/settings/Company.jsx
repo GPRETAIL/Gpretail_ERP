@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import useAsyncQuery from "@/shared/hooks/useAsyncQuery";
 import React, { useCallback, useEffect, useState } from "react";
 import { LogOut, PlusCircle, RefreshCw, Save, Search, Trash2 } from "lucide-react";
@@ -104,7 +105,7 @@ const resolveAssetUrl = (path) => {
 
 const InputField = ({ label, required = false, children, sx }) => (
   <Box sx={sx}>
-    <Typography component="label" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>
+    <Typography component="label" sx={{ display: "block", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>
       {required && <Box component="span" sx={{ mr: 0.5, color: "error.main" }}>*</Box>}
       {label}
     </Typography>
@@ -522,7 +523,7 @@ const CompanySettings = () => {
       {(overview.stores.length > 0 || overview.warehouses.length > 0) && (
         <Box sx={{ ...cardSx, p: 1.5 }}>
           <Typography component="h2" sx={{ fontSize: 13, fontWeight: 600, color: "text.primary", mb: 1 }}>
-            Stores &amp; Warehouses <Box component="span" sx={{ fontSize: 10.5, fontWeight: 400, color: "text.disabled" }}>(synced from Vynerix Admin)</Box>
+            Stores &amp; Warehouses <Box component="span" sx={{ fontSize: TYPE.small, fontWeight: 400, color: "text.disabled" }}>(synced from Vynerix Admin)</Box>
           </Typography>
           {/* One table rather than two side-by-side lists: a warehouse is a location under the same
               company as the stores, so it belongs in the same list distinguished by Store Type.
@@ -532,10 +533,10 @@ const CompanySettings = () => {
             <Table size="small" sx={{ minWidth: 520, "& th, & td": { fontSize: 12.25 } }}>
               <TableHead>
                 <TableRow>
-                  <TableCell sx={{ borderColor: "divider", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.03em", color: "text.secondary" }}>Name</TableCell>
-                  <TableCell sx={{ borderColor: "divider", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.03em", color: "text.secondary" }}>Store Type</TableCell>
-                  <TableCell sx={{ borderColor: "divider", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.03em", color: "text.secondary" }}>Tagged To</TableCell>
-                  <TableCell sx={{ borderColor: "divider", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.03em", color: "text.secondary" }}>Status</TableCell>
+                  <TableCell sx={{ borderColor: "divider", fontSize: TYPE.small, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.03em", color: "text.secondary" }}>Name</TableCell>
+                  <TableCell sx={{ borderColor: "divider", fontSize: TYPE.small, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.03em", color: "text.secondary" }}>Store Type</TableCell>
+                  <TableCell sx={{ borderColor: "divider", fontSize: TYPE.small, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.03em", color: "text.secondary" }}>Tagged To</TableCell>
+                  <TableCell sx={{ borderColor: "divider", fontSize: TYPE.small, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.03em", color: "text.secondary" }}>Status</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -554,7 +555,7 @@ const CompanySettings = () => {
                         <Box
                           component="span"
                           sx={{
-                            borderRadius: 1, px: 0.75, py: 0.25, fontSize: 11,
+                            borderRadius: 1, px: 0.75, py: 0.25, fontSize: TYPE.small,
                             ...(isWarehouse
                               ? { color: "#6366f1", bgcolor: (theme) => alpha("#6366f1", theme.palette.mode === "dark" ? 0.2 : 0.1) }
                               : { color: "info.main", bgcolor: (theme) => alpha(theme.palette.info.main, theme.palette.mode === "dark" ? 0.2 : 0.1) }),
@@ -563,7 +564,7 @@ const CompanySettings = () => {
                           {row.__type}
                         </Box>
                       </TableCell>
-                      <TableCell sx={{ borderColor: "divider", fontSize: 10.5, color: "text.secondary" }}>
+                      <TableCell sx={{ borderColor: "divider", fontSize: TYPE.small, color: "text.secondary" }}>
                         {isWarehouse
                           ? (tags.length > 0 ? tags.join(", ") : "Not tagged to any store")
                           : "—"}
@@ -572,7 +573,7 @@ const CompanySettings = () => {
                         <Box
                           component="span"
                           sx={{
-                            borderRadius: 1, px: 0.75, py: 0.25, fontSize: 11,
+                            borderRadius: 1, px: 0.75, py: 0.25, fontSize: TYPE.small,
                             ...(row.status === "active"
                               ? { color: "success.main", bgcolor: (theme) => alpha(theme.palette.success.main, theme.palette.mode === "dark" ? 0.2 : 0.1) }
                               : { color: "text.secondary", bgcolor: "action.hover" }),
@@ -688,7 +689,7 @@ const CompanySettings = () => {
             {form.vxAdminManaged ? (
               <Typography
                 sx={{
-                  mb: 1.5, fontSize: 10.5, color: "primary.main", bgcolor: (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.2 : 0.08),
+                  mb: 1.5, fontSize: TYPE.small, color: "primary.main", bgcolor: (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.2 : 0.08),
                   border: "1px solid", borderColor: "primary.main", borderRadius: "4px", px: 1, py: 0.75,
                 }}
               >
@@ -762,7 +763,7 @@ const CompanySettings = () => {
                     })}
                   </Box>
                 ) : (
-                  <Typography sx={{ mt: 0.5, fontSize: 10.5, color: "text.secondary" }}>
+                  <Typography sx={{ mt: 0.5, fontSize: TYPE.small, color: "text.secondary" }}>
                     {form.accessLevel === "core"
                       ? "Core = Sales, Warehouse/Purchase, Masters (+ Dashboard). No Finance, Analytical, CRM, Store or Settings."
                       : "This store gets every module included in the subscription."}

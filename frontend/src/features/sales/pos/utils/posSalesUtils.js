@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 // Extracted POS Sales pure utilities, calculators, receipt helpers, and constants
 
 export const POS_SALE_IMPORT_CONFIG = {
@@ -247,6 +248,7 @@ export const posSalesColCellSx = (key, extra = {}) => ({
   flexShrink: 0,
   borderRight: 1,
   borderColor: "divider",
+  fontSize: TYPE.posRow,
   ...extra,
 });
 export const posSalesFilterInputSx = {
@@ -258,7 +260,7 @@ export const posSalesFilterInputSx = {
   color: "text.primary",
   px: 0.75,
   py: 0.5,
-  fontSize: { xs: 9, md: 10, lg: 10.5 },
+  fontSize: TYPE.posItem,
 };
 export const POS_ADDNL_TYPE_GROUPS = [
   {

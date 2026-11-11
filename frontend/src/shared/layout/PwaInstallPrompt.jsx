@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import React, { useState, useEffect, useRef } from "react";
 import {
   Download,
@@ -232,10 +233,10 @@ export default function PwaInstallPrompt() {
               {/* Text Info */}
               <Box sx={{ flex: 1 }}>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
-                  <Typography component="span" sx={{ borderRadius: "4px", bgcolor: "rgba(99,102,241,0.2)", px: 0.75, py: 0.25, fontSize: 10, fontWeight: 600, letterSpacing: "0.025em", color: "#a5b4fc", textTransform: "uppercase" }}>
+                  <Typography component="span" sx={{ borderRadius: "4px", bgcolor: "rgba(99,102,241,0.2)", px: 0.75, py: 0.25, fontSize: TYPE.small, fontWeight: 600, letterSpacing: "0.025em", color: "#a5b4fc", textTransform: "uppercase" }}>
                     Mobile App
                   </Typography>
-                  <Typography component="span" sx={{ display: "flex", alignItems: "center", gap: 0.5, fontSize: 11, fontWeight: 500, color: "#34d399" }}>
+                  <Typography component="span" sx={{ display: "flex", alignItems: "center", gap: 0.5, fontSize: TYPE.small, fontWeight: 500, color: "#34d399" }}>
                     <Sparkles size={12} /> Fast & Offline
                   </Typography>
                 </Box>
@@ -288,7 +289,7 @@ export default function PwaInstallPrompt() {
                 <Typography component="h4" sx={{ fontSize: 14, fontWeight: 700, color: "#fff" }}>
                   {isIos ? "Install on iPhone / iPad" : isMobile ? "Add to Home Screen" : "Install on This Computer"}
                 </Typography>
-                <Typography sx={{ fontSize: 11, color: "#94a3b8" }}>
+                <Typography sx={{ fontSize: TYPE.small, color: "#94a3b8" }}>
                   {isIos ? "Follow 2 simple steps in Safari" : "Follow these quick steps in your browser"}
                 </Typography>
               </Box>
@@ -296,7 +297,7 @@ export default function PwaInstallPrompt() {
 
             <Box sx={{ display: "flex", flexDirection: "column", gap: 1, borderRadius: "12px", bgcolor: "rgba(30,41,59,0.6)", p: 1.5, fontSize: 12, color: "#e2e8f0" }}>
               <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
-                <Box component="span" sx={{ display: "flex", height: 20, width: 20, flexShrink: 0, alignItems: "center", justifyContent: "center", borderRadius: "50%", bgcolor: "#6366f1", fontSize: 10, fontWeight: 700, color: "#fff" }}>
+                <Box component="span" sx={{ display: "flex", height: 20, width: 20, flexShrink: 0, alignItems: "center", justifyContent: "center", borderRadius: "50%", bgcolor: "#6366f1", fontSize: TYPE.small, fontWeight: 700, color: "#fff" }}>
                   1
                 </Box>
                 <Box component="span">
@@ -310,7 +311,7 @@ export default function PwaInstallPrompt() {
                 </Box>
               </Box>
               <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
-                <Box component="span" sx={{ display: "flex", height: 20, width: 20, flexShrink: 0, alignItems: "center", justifyContent: "center", borderRadius: "50%", bgcolor: "#6366f1", fontSize: 10, fontWeight: 700, color: "#fff" }}>
+                <Box component="span" sx={{ display: "flex", height: 20, width: 20, flexShrink: 0, alignItems: "center", justifyContent: "center", borderRadius: "50%", bgcolor: "#6366f1", fontSize: TYPE.small, fontWeight: 700, color: "#fff" }}>
                   2
                 </Box>
                 <Box component="span">
@@ -322,7 +323,7 @@ export default function PwaInstallPrompt() {
                 </Box>
               </Box>
               <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
-                <Box component="span" sx={{ display: "flex", height: 20, width: 20, flexShrink: 0, alignItems: "center", justifyContent: "center", borderRadius: "50%", bgcolor: "#6366f1", fontSize: 10, fontWeight: 700, color: "#fff" }}>
+                <Box component="span" sx={{ display: "flex", height: 20, width: 20, flexShrink: 0, alignItems: "center", justifyContent: "center", borderRadius: "50%", bgcolor: "#6366f1", fontSize: TYPE.small, fontWeight: 700, color: "#fff" }}>
                   3
                 </Box>
                 <Box component="span">

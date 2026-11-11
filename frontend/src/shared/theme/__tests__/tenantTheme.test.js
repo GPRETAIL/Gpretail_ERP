@@ -52,7 +52,7 @@ describe("createTenantTheme", () => {
       const bare = createTheme();
 
       expect(withTokens.palette.background.default).toBe(bare.palette.background.default);
-      expect(withTokens.palette.text.primary).toBe("#1f2937");
+      expect(withTokens.palette.text.primary).toBe("#111827");
       expect(withTokens.palette.text.secondary).toBe("#4b5563");
       expect(withTokens.palette.success.main).toBe(bare.palette.success.main);
       const dark = createTenantTheme(undefined, "dark");

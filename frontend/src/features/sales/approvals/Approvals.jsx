@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
@@ -78,7 +79,7 @@ function Inbox() {
         <Box>
           <Typography sx={{ fontSize: 12.5, fontWeight: 600 }}>{value}</Typography>
           {(row.payload?.lines || []).slice(0, 3).map((line) => (
-            <Typography key={line.index} sx={{ fontSize: 11, color: "text.secondary" }}>{line.product}: ₹{money(line.reference_price)} → ₹{money(line.unit_price)}</Typography>
+            <Typography key={line.index} sx={{ fontSize: TYPE.small, color: "text.secondary" }}>{line.product}: ₹{money(line.reference_price)} → ₹{money(line.unit_price)}</Typography>
           ))}
         </Box>
       ),
@@ -144,7 +145,7 @@ function Inbox() {
             <Button size="small" color="success" startIcon={<Check size={14} />} onClick={() => openDecision(row, true)}>Approve</Button>
             <Button size="small" color="error" startIcon={<X size={14} />} onClick={() => openDecision(row, false)}>Reject</Button>
           </Stack>
-        ) : <Typography sx={{ fontSize: 11, color: "text.secondary" }}>Above your limit</Typography>)}
+        ) : <Typography sx={{ fontSize: TYPE.small, color: "text.secondary" }}>Above your limit</Typography>)}
         actionsLabel="Decision"
       />
       </SearchGridPanel>

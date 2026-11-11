@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import React from "react";
 import { PieChart } from "lucide-react";
 import { Box, Stack, Typography } from "@mui/material";
@@ -21,7 +22,7 @@ export default function CrmSegmentationBreakdown({ summary = {}, segmentation = 
           </Box>
           Customer Segmentation
         </Typography>
-        <Typography sx={{ fontSize: 11, color: "text.disabled" }}>Total: {summary.total_customers || 0}</Typography>
+        <Typography sx={{ fontSize: TYPE.small, color: "text.disabled" }}>Total: {summary.total_customers || 0}</Typography>
       </Stack>
 
       <Stack spacing={1.5}>

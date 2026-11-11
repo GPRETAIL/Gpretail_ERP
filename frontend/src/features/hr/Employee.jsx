@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import useSearchGrid, { createSearchGridAdapter } from "@/shared/hooks/useSearchGrid";
 import MasterSearchPanel from "@/features/masters/components/MasterSearchPanel";
 import { masterSearchAreaSx } from "@/shared/theme/erpUi";
@@ -108,7 +109,7 @@ const EMPLOYEE_IMPORT_CONFIG = {
 
 const TextInput = ({ label, name, required = false, value, onChange, placeholder = "", type = "text", disabled = false, sx }) => (
   <Stack direction="row" sx={{ alignItems: "center", ...sx }}>
-    <Typography component="label" sx={{ width: "40%", flexShrink: 0, fontSize: 11.5, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5 }}>
+    <Typography component="label" sx={{ width: "40%", flexShrink: 0, fontSize: TYPE.label, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5 }}>
       {required && <Box component="span" sx={{ color: "error.main", mr: 0.5 }}>*</Box>}{label}
     </Typography>
     <Stack direction="row" sx={{ flex: 1, minWidth: 0, alignItems: "center" }}>
@@ -119,7 +120,7 @@ const TextInput = ({ label, name, required = false, value, onChange, placeholder
 
 const SelectInput = ({ label, name, required = false, options = [], value, onChange, disabled = false, sx }) => (
   <Stack direction="row" sx={{ alignItems: "center", ...sx }}>
-    <Typography component="label" sx={{ width: "40%", flexShrink: 0, fontSize: 11.5, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5 }}>
+    <Typography component="label" sx={{ width: "40%", flexShrink: 0, fontSize: TYPE.label, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5 }}>
       {required && <Box component="span" sx={{ color: "error.main", mr: 0.5 }}>*</Box>}{label}
     </Typography>
     <Stack direction="row" sx={{ flex: 1, minWidth: 0, alignItems: "center" }}>
@@ -133,7 +134,7 @@ const SelectInput = ({ label, name, required = false, options = [], value, onCha
 
 const CheckboxInput = ({ label, name, checked, onChange, disabled = false, sx }) => (
   <Stack direction="row" sx={{ alignItems: "center", ...sx }}>
-    <Typography component="label" sx={{ width: "40%", flexShrink: 0, fontSize: 11.5, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5 }}>{label}</Typography>
+    <Typography component="label" sx={{ width: "40%", flexShrink: 0, fontSize: TYPE.label, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5 }}>{label}</Typography>
     <Box sx={{ flex: 1, minWidth: 0 }}>
       <Box component="input" type="checkbox" name={name} checked={checked} onChange={onChange} disabled={disabled} sx={{ width: 14, height: 14, m: 0, accentColor: "#2563eb" }} />
     </Box>
@@ -142,7 +143,7 @@ const CheckboxInput = ({ label, name, checked, onChange, disabled = false, sx })
 
 const CheckboxWithField = ({ label, checkName, checked, fieldName, fieldValue, onChange, fieldType = "text", fieldPlaceholder = "", sx }) => (
   <Stack direction="row" sx={{ alignItems: "center", ...sx }}>
-    <Typography component="label" sx={{ width: "40%", flexShrink: 0, fontSize: 11.5, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5 }}>{label}</Typography>
+    <Typography component="label" sx={{ width: "40%", flexShrink: 0, fontSize: TYPE.label, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5 }}>{label}</Typography>
     <Stack direction="row" sx={{ flex: 1, minWidth: 0, alignItems: "center", gap: 0.75 }}>
       <Box component="input" type="checkbox" name={checkName} checked={checked} onChange={onChange} sx={{ width: 14, height: 14, m: 0, accentColor: "#2563eb" }} />
       <Box component="input" type={fieldType} name={fieldName} value={fieldValue} onChange={onChange} disabled={!checked} placeholder={fieldPlaceholder} sx={{ width: "100%", minWidth: 0, ...fieldBaseSx(!checked) }} />
@@ -153,7 +154,7 @@ const CheckboxWithField = ({ label, checkName, checked, fieldName, fieldValue, o
 // Right side text input with narrower label
 const RTextInput = ({ label, name, required = false, value, onChange, placeholder = "", type = "text", disabled = false }) => (
   <Stack direction="row" sx={{ alignItems: "center" }}>
-    <Typography component="label" sx={{ width: "33%", flexShrink: 0, pr: 1.5, fontSize: 11.5, fontWeight: 500, color: "text.secondary", textAlign: "right" }}>
+    <Typography component="label" sx={{ width: "33%", flexShrink: 0, pr: 1.5, fontSize: TYPE.label, fontWeight: 500, color: "text.secondary", textAlign: "right" }}>
       {required && <Box component="span" sx={{ color: "error.main", mr: 0.5 }}>*</Box>}{label}
     </Typography>
     <Box component="input" type={type} name={name} value={value} onChange={onChange} placeholder={placeholder} disabled={disabled} sx={{ width: "67%", minWidth: 0, ...fieldBaseSx(disabled) }} />
@@ -162,7 +163,7 @@ const RTextInput = ({ label, name, required = false, value, onChange, placeholde
 
 const RSelectInput = ({ label, name, required = false, options = [], value, onChange, disabled = false }) => (
   <Stack direction="row" sx={{ alignItems: "center" }}>
-    <Typography component="label" sx={{ width: "33%", flexShrink: 0, pr: 1.5, fontSize: 11.5, fontWeight: 500, color: "text.secondary", textAlign: "right" }}>
+    <Typography component="label" sx={{ width: "33%", flexShrink: 0, pr: 1.5, fontSize: TYPE.label, fontWeight: 500, color: "text.secondary", textAlign: "right" }}>
       {required && <Box component="span" sx={{ color: "error.main", mr: 0.5 }}>*</Box>}{label}
     </Typography>
     <Box component="select" name={name} value={value} onChange={onChange} disabled={disabled} sx={{ width: "67%", minWidth: 0, ...fieldBaseSx(disabled) }}>
@@ -174,7 +175,7 @@ const RSelectInput = ({ label, name, required = false, options = [], value, onCh
 
 const RCheckboxInput = ({ label, name, checked, onChange }) => (
   <Stack direction="row" sx={{ alignItems: "center" }}>
-    <Typography component="label" sx={{ width: "33%", flexShrink: 0, pr: 1.5, fontSize: 11.5, fontWeight: 500, color: "text.secondary", textAlign: "right" }}>{label}</Typography>
+    <Typography component="label" sx={{ width: "33%", flexShrink: 0, pr: 1.5, fontSize: TYPE.label, fontWeight: 500, color: "text.secondary", textAlign: "right" }}>{label}</Typography>
     <Box component="input" type="checkbox" name={name} checked={checked} onChange={onChange} sx={{ width: 14, height: 14, m: 0, accentColor: "#2563eb" }} />
   </Stack>
 );
@@ -582,7 +583,7 @@ const Employee = () => {
       <TextInput label="Referred By" name="referred_by" value={formData.referred_by} onChange={handleChange} />
       <SelectInput label="Leave Encashment" name="leave_encashment" value={formData.leave_encashment} onChange={handleChange} options={LEAVE_ENCASHMENT_OPTIONS} />
       <Stack direction="row" sx={{ alignItems: "center", pt: 0.25, gridColumn: { md: "span 2" } }}>
-        <Typography component="label" sx={{ width: "40%", flexShrink: 0, fontSize: 11.5, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5 }}>OT / Beta</Typography>
+        <Typography component="label" sx={{ width: "40%", flexShrink: 0, fontSize: TYPE.label, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5 }}>OT / Beta</Typography>
         <Stack direction="row" sx={{ ml: 0.75, flex: 1, alignItems: "center", gap: 1.5 }}>
           <Stack component="label" direction="row" sx={{ alignItems: "center", gap: 0.5, fontSize: 9.625, color: "text.secondary" }}>
             <Box component="input" type="checkbox" name="e_ot" checked={formData.e_ot} onChange={handleChange} sx={{ width: 14, height: 14, m: 0, accentColor: "#2563eb" }} /> E.OT
@@ -683,7 +684,7 @@ const Employee = () => {
             </Button>
             {formData[field] && (
               <Button type="button" variant="text" size="small" onClick={() => openDocument(formData[field])}
-                sx={{ fontSize: 10.5, color: "success.main", mt: 0.5, minWidth: 0, p: 0, textTransform: "none" }}>Uploaded · View</Button>
+                sx={{ fontSize: TYPE.small, color: "success.main", mt: 0.5, minWidth: 0, p: 0, textTransform: "none" }}>Uploaded · View</Button>
             )}
           </Stack>
         ))}
@@ -779,12 +780,12 @@ const Employee = () => {
       <Stack direction="row" sx={{ gap: 1, mb: 1 }}>
         <Button type="button" onClick={() => setEduExpTab("education")}
           variant={eduExpTab === "education" ? "contained" : undefined}
-          sx={eduExpTab === "education" ? { fontSize: 10.5, borderRadius: "3.5px" } : { fontSize: 10.5, borderRadius: "3.5px", bgcolor: "action.hover", color: "text.secondary", "&:hover": { bgcolor: "action.selected" } }}>
+          sx={eduExpTab === "education" ? { fontSize: TYPE.small, borderRadius: "3.5px" } : { fontSize: TYPE.small, borderRadius: "3.5px", bgcolor: "action.hover", color: "text.secondary", "&:hover": { bgcolor: "action.selected" } }}>
           Education
         </Button>
         <Button type="button" onClick={() => setEduExpTab("experience")}
           variant={eduExpTab === "experience" ? "contained" : undefined}
-          sx={eduExpTab === "experience" ? { fontSize: 10.5, borderRadius: "3.5px" } : { fontSize: 10.5, borderRadius: "3.5px", bgcolor: "action.hover", color: "text.secondary", "&:hover": { bgcolor: "action.selected" } }}>
+          sx={eduExpTab === "experience" ? { fontSize: TYPE.small, borderRadius: "3.5px" } : { fontSize: TYPE.small, borderRadius: "3.5px", bgcolor: "action.hover", color: "text.secondary", "&:hover": { bgcolor: "action.selected" } }}>
           Experience
         </Button>
       </Stack>
@@ -1196,7 +1197,7 @@ const Employee = () => {
               onClick={() => handleEdit(row.id)}
               disabled={selectedCount > 1}
               className="glass-btn glass-btn-primary"
-              sx={{ borderRadius: "3.5px", p: 0.75, fontSize: 10.5 }}
+              sx={{ borderRadius: "3.5px", p: 0.75, fontSize: TYPE.small }}
             >
               Edit
             </Button>
@@ -1206,7 +1207,7 @@ const Employee = () => {
                 setConfirmOpen(true);
               }}
               className="glass-btn glass-btn-danger"
-              sx={{ borderRadius: "3.5px", p: 0.75, fontSize: 10.5 }}
+              sx={{ borderRadius: "3.5px", p: 0.75, fontSize: TYPE.small }}
             >
               Delete
             </Button>

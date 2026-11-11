@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import PageHeader from "@/shared/components/PageHeader";
 import useResetOnChange from "@/shared/hooks/useResetOnChange";
 import { useState, useEffect, useCallback, useRef } from "react";
@@ -167,7 +168,7 @@ const AttrSelect = ({
         <Typography
           component="label"
           sx={stacked
-            ? { display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }
+            ? { display: "block", fontSize: TYPE.small, fontWeight: 500, color: "text.secondary", mb: 0.5 }
             : { width: 112, fontSize: 12.25, fontWeight: 500, color: "text.secondary", flexShrink: 0 }}
         >
           {required && <Box component="span" sx={{ color: "error.main" }}>* </Box>}
@@ -201,7 +202,7 @@ const AttrSelect = ({
       <Typography
         component="label"
         sx={stacked
-          ? { display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }
+          ? { display: "block", fontSize: TYPE.small, fontWeight: 500, color: "text.secondary", mb: 0.5 }
           : { width: 112, fontSize: 12.25, fontWeight: 500, color: "text.secondary", flexShrink: 0 }}
       >
         {required && <Box component="span" sx={{ color: "error.main" }}>* </Box>}
@@ -296,7 +297,7 @@ const AttrText = ({
     <Typography
       component="label"
       sx={stacked
-        ? { display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }
+        ? { display: "block", fontSize: TYPE.small, fontWeight: 500, color: "text.secondary", mb: 0.5 }
         : { width: 112, fontSize: 12.25, fontWeight: 500, color: "text.secondary", flexShrink: 0 }}
     >
       {required && <Box component="span" sx={{ color: "error.main" }}>* </Box>}
@@ -500,7 +501,7 @@ const SearchableSizeSelect = ({ value, onChange, sizes, sizeGroups, onJump }) =>
             {groupedDisplay.map((item) => {
               if (item.type === "header") {
                 return (
-                  <Box component="li" key={`hdr-${item.label}`} sx={{ px: 1, py: 0.25, fontSize: 9, fontWeight: 600, color: "text.disabled", textTransform: "uppercase", bgcolor: "action.hover", userSelect: "none" }}>
+                  <Box component="li" key={`hdr-${item.label}`} sx={{ px: 1, py: 0.25, fontSize: TYPE.small, fontWeight: 600, color: "text.disabled", textTransform: "uppercase", bgcolor: "action.hover", userSelect: "none" }}>
                     {item.label}
                   </Box>
                 );
@@ -607,7 +608,7 @@ const JumpSizeDialog = ({ open, onClose, onApply, defaultQty }) => {
           {/* Input Row: Start - Increment - End */}
           <Stack direction="row" spacing={1}>
             <Box sx={{ flex: 1 }}>
-              <Typography component="label" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>Start</Typography>
+              <Typography component="label" sx={{ display: "block", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary" }}>Start</Typography>
               <TextField
                 type="number"
                 value={start}
@@ -620,7 +621,7 @@ const JumpSizeDialog = ({ open, onClose, onApply, defaultQty }) => {
             </Box>
             <Box sx={{ display: "flex", alignItems: "flex-end", pb: 0.5, color: "text.disabled", fontWeight: 700 }}>-</Box>
             <Box sx={{ flex: 1 }}>
-              <Typography component="label" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>Increment</Typography>
+              <Typography component="label" sx={{ display: "block", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary" }}>Increment</Typography>
               <TextField
                 type="number"
                 value={increment}
@@ -633,7 +634,7 @@ const JumpSizeDialog = ({ open, onClose, onApply, defaultQty }) => {
             </Box>
             <Box sx={{ display: "flex", alignItems: "flex-end", pb: 0.5, color: "text.disabled", fontWeight: 700 }}>-</Box>
             <Box sx={{ flex: 1 }}>
-              <Typography component="label" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>End</Typography>
+              <Typography component="label" sx={{ display: "block", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary" }}>End</Typography>
               <TextField
                 type="number"
                 value={end}
@@ -649,7 +650,7 @@ const JumpSizeDialog = ({ open, onClose, onApply, defaultQty }) => {
           {/* Quantity */}
           <Stack direction="row" spacing={1} sx={{ alignItems: "flex-end" }}>
             <Box sx={{ width: 96 }}>
-              <Typography component="label" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>Quantity</Typography>
+              <Typography component="label" sx={{ display: "block", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary" }}>Quantity</Typography>
               <TextField
                 type="number"
                 value={qty}
@@ -671,7 +672,7 @@ const JumpSizeDialog = ({ open, onClose, onApply, defaultQty }) => {
           {/* Generated Sizes Table */}
           {generatedSizes.length > 0 && (
             <Box sx={{ border: "1px solid", borderColor: "divider", borderRadius: "3.5px", maxHeight: 208, overflowY: "auto" }}>
-              <Stack direction="row" sx={{ bgcolor: (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.08), fontSize: 10.5, fontWeight: 600, color: "text.secondary", borderBottom: 1, borderColor: "divider", position: "sticky", top: 0 }}>
+              <Stack direction="row" sx={{ bgcolor: (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.08), fontSize: 12, fontWeight: 600, color: "text.secondary", borderBottom: 1, borderColor: "divider", position: "sticky", top: 0 }}>
                 <Box sx={{ p: 1, width: 64, borderRight: 1, borderColor: "divider", textAlign: "center" }}>S.No</Box>
                 <Box sx={{ p: 1, flex: 1, borderRight: 1, borderColor: "divider" }}>Size</Box>
                 <Box sx={{ p: 1, width: 80, borderRight: 1, borderColor: "divider", textAlign: "center" }}>Qty</Box>
@@ -679,7 +680,7 @@ const JumpSizeDialog = ({ open, onClose, onApply, defaultQty }) => {
               </Stack>
               {generatedSizes.map((item, idx) => (
                 <Stack key={idx} direction="row" sx={{ fontSize: 12.25, borderBottom: 1, borderColor: "divider", "&:hover": { bgcolor: "action.hover" } }}>
-                  <Box sx={{ p: 1, width: 64, borderRight: 1, borderColor: "divider", textAlign: "center", fontSize: 10.5, color: "text.primary" }}>{idx + 1}</Box>
+                  <Box sx={{ p: 1, width: 64, borderRight: 1, borderColor: "divider", textAlign: "center", fontSize: TYPE.small, color: "text.primary" }}>{idx + 1}</Box>
                   <Box sx={{ p: 1, flex: 1, borderRight: 1, borderColor: "divider", fontWeight: 500, color: "text.primary" }}>{item.size}</Box>
                   <Box sx={{ p: 1, width: 80, borderRight: 1, borderColor: "divider", textAlign: "center" }}>
                     <TextField
@@ -688,7 +689,7 @@ const JumpSizeDialog = ({ open, onClose, onApply, defaultQty }) => {
                       onChange={(e) => handleQtyChange(idx, e.target.value)}
                       size="small"
                       fullWidth
-                      sx={{ "& .MuiInputBase-input": { textAlign: "center", fontSize: 10.5, py: 0.25 } }}
+                      sx={{ "& .MuiInputBase-input": { textAlign: "center", fontSize: TYPE.small, py: 0.25 } }}
                     />
                   </Box>
                   <Box sx={{ p: 1, width: 64, textAlign: "center" }}>
@@ -1733,7 +1734,7 @@ const InventoryEntry = () => {
 
             <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", columnGap: 1.5, rowGap: 0.5 }}>
               <Box sx={{ mb: 0.75 }}>
-                <Typography component="label" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>
+                <Typography component="label" sx={{ display: "block", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>
                   <Box component="span" sx={{ color: "error.main" }}>* </Box>Product
                 </Typography>
                 <AsyncSearchSelect
@@ -1746,7 +1747,7 @@ const InventoryEntry = () => {
                 />
               </Box>
               <Box sx={{ mb: 0.75 }}>
-                <Typography component="label" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>
+                <Typography component="label" sx={{ display: "block", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>
                   {mandatoryFields.has("brandId") && <Box component="span" sx={{ color: "error.main" }}>* </Box>}Brand
                 </Typography>
                 <AsyncSearchSelect
@@ -1759,7 +1760,7 @@ const InventoryEntry = () => {
                 />
               </Box>
               {marginMin !== null || marginMax !== null ? (
-                <Box sx={{ gridColumn: "span 2", fontSize: 11, color: "text.secondary", mt: -0.5, mb: 0.5 }}>
+                <Box sx={{ gridColumn: "span 2", fontSize: TYPE.small, color: "text.secondary", mt: -0.5, mb: 0.5 }}>
                   Margin: {marginMin ?? "—"}% - {marginMax ?? "—"}%
                 </Box>
               ) : null}
@@ -1772,7 +1773,7 @@ const InventoryEntry = () => {
               <AttrSelect label="Material" name="materialId" value={attrs.materialId} onChange={handleAttrChange} options={materials} required={mandatoryFields.has("materialId")} stacked searchable searchPlaceholder="Search material..." />
               <AttrSelect label="Color" name="colorId" value={attrs.colorId} onChange={handleAttrChange} options={colors} required={mandatoryFields.has("colorId")} stacked searchable searchPlaceholder="Search color..." />
               <Box sx={{ mb: 0.75 }}>
-                <Typography component="label" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>Tax</Typography>
+                <Typography component="label" sx={{ display: "block", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>Tax</Typography>
                 <AsyncSearchSelect
                   name="taxId"
                   value={attrs.taxId}
@@ -1788,7 +1789,7 @@ const InventoryEntry = () => {
             {visibleDynamicFields.size > 0 && (
               <>
                 <Box component="hr" sx={{ my: 1, border: 0, borderTop: 1, borderColor: "divider" }} />
-                <Typography component="h3" sx={{ fontSize: 11, fontWeight: 600, color: "text.secondary", textTransform: "uppercase", letterSpacing: 0.5, mb: 0.5 }}>
+                <Typography component="h3" sx={{ fontSize: TYPE.small, fontWeight: 600, color: "text.secondary", textTransform: "uppercase", letterSpacing: 0.5, mb: 0.5 }}>
                   Configured Attributes
                 </Typography>
                 <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", columnGap: 1.5, rowGap: 0.5 }}>
@@ -1868,41 +1869,41 @@ const InventoryEntry = () => {
                   <Box sx={{ display: "grid", gap: 1.5, gridTemplateColumns: { xl: "330px minmax(0,1fr)" } }}>
                     <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", columnGap: 2, rowGap: 0.75 }}>
                       <Box>
-                        <Typography sx={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>INV.NO</Typography>
+                        <Typography sx={{ fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>INV.NO</Typography>
                         <Typography sx={{ fontSize: 12.25, color: "text.primary" }}>{invoiceSummary?.invoice_no || "-"}</Typography>
                       </Box>
                       <Box>
-                        <Typography sx={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>Date</Typography>
+                        <Typography sx={{ fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>Date</Typography>
                         <Typography sx={{ fontSize: 12.25, color: "text.primary" }}>{formatDisplayDate(invoiceSummary?.invoice_date)}</Typography>
                       </Box>
                       <Box>
-                        <Typography sx={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>LR NO</Typography>
+                        <Typography sx={{ fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>LR NO</Typography>
                         <Typography sx={{ fontSize: 12.25, color: "text.primary" }}>{transportSummary?.lr_no || "-"}</Typography>
                       </Box>
                       <Box>
-                        <Typography sx={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>Entry No</Typography>
+                        <Typography sx={{ fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>Entry No</Typography>
                         <Typography sx={{ fontSize: 12.25, color: "text.primary" }}>{transportSummary?.lr_entry_no || "-"}</Typography>
                       </Box>
                       <Box>
-                        <Typography sx={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>Bundles</Typography>
+                        <Typography sx={{ fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>Bundles</Typography>
                         <Typography sx={{ fontSize: 12.25, color: "text.primary" }}>
                           {invoiceSummary?.bundles ?? transportSummary?.no_of_bundles ?? "-"}
                         </Typography>
                       </Box>
                       <Box>
-                        <Typography sx={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>Pieces</Typography>
+                        <Typography sx={{ fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>Pieces</Typography>
                         <Typography sx={{ fontSize: 12.25, color: "text.primary" }}>
                           {invoiceSummary?.pieces ?? transportSummary?.no_of_pieces ?? "-"}
                         </Typography>
                       </Box>
                       <Box>
-                        <Typography sx={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>Freight</Typography>
+                        <Typography sx={{ fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>Freight</Typography>
                         <Typography sx={{ fontSize: 12.25, color: "text.primary" }}>
                           {formatMoney(invoiceSummary?.lr_expense ?? transportSummary?.freight_charge_amount ?? 0)}
                         </Typography>
                       </Box>
                       <Box>
-                        <Typography sx={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>Loading</Typography>
+                        <Typography sx={{ fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>Loading</Typography>
                         <Typography sx={{ fontSize: 12.25, color: "text.primary" }}>
                           {formatMoney(transportSummary?.loading_charge_amount ?? 0)}
                         </Typography>
@@ -1962,7 +1963,7 @@ const InventoryEntry = () => {
             <Box sx={{ overflow: "visible", mb: 1, position: "relative", zIndex: 40 }}>
               <Box sx={{ minWidth: 0 }}>
                 {/* Entry Row Header Labels — widths match table columns */}
-                <Stack direction="row" sx={{ fontSize: 11, fontWeight: 600, color: "error.main", alignItems: "center", mb: 0.25 }}>
+                <Stack direction="row" sx={{ fontSize: TYPE.small, fontWeight: 600, color: "error.main", alignItems: "center", mb: 0.25 }}>
                   <Box sx={{ px: 0.5, py: 0.25, width: 40, flexShrink: 0, textAlign: "center" }}>S.No</Box>
                   <Box sx={{ px: 0.5, py: 0.25, width: 80, flexShrink: 0 }}>Size</Box>
                   <Box sx={{ px: 0.5, py: 0.25, width: 80, flexShrink: 0 }}>Design No</Box>
@@ -2118,7 +2119,7 @@ const InventoryEntry = () => {
             {/* Items Table */}
             <Box sx={{ position: "relative", zIndex: 0 }}>
               <Box sx={{ overflow: "hidden", borderRadius: "3.5px 3.5px 0 0", border: "1px solid", borderBottom: 0, borderColor: "divider" }}>
-                <Stack direction="row" sx={{ bgcolor: (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.08), fontSize: 11, fontWeight: 600, color: "text.secondary", borderBottom: 1, borderColor: "divider" }}>
+                <Stack direction="row" sx={{ bgcolor: (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.08), fontSize: TYPE.small, fontWeight: 600, color: "text.secondary", borderBottom: 1, borderColor: "divider" }}>
                   <Box sx={{ px: 1, py: 0.75, width: 40, borderRight: 1, borderColor: "divider", textAlign: "center" }}>S.No</Box>
                   <Box sx={{ px: 1, py: 0.75, width: 80, borderRight: 1, borderColor: "divider" }}>Size</Box>
                   <Box sx={{ px: 1, py: 0.75, width: 80, borderRight: 1, borderColor: "divider" }}>Design</Box>
@@ -2269,7 +2270,7 @@ const InventoryEntry = () => {
                       sx={[muiFieldSx, { "& .MuiInputBase-input": { textAlign: "right" } }]}
                     />
                   </Box>
-                  <Box sx={{ px: 1, py: 0.5, width: 64, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, color: "text.secondary" }}>
+                  <Box sx={{ px: 1, py: 0.5, width: 64, display: "flex", alignItems: "center", justifyContent: "center", fontSize: TYPE.small, color: "text.secondary" }}>
                     Search
                   </Box>
                 </Stack>

@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import {
   Printer,
@@ -269,7 +270,7 @@ export default function DocumentFormatsDesigner({ onDirtyChange }) {
             <Box
               component="span"
               sx={{
-                fontSize: 10.5,
+                fontSize: TYPE.small,
                 px: "8.75px",
                 py: "1.75px",
                 borderRadius: "9999px",
@@ -281,7 +282,7 @@ export default function DocumentFormatsDesigner({ onDirtyChange }) {
               {settings.orientation.toUpperCase()} &bull; {settings.pageSize}
             </Box>
           </Stack>
-          <Typography sx={{ fontSize: 10.5, color: isDark ? "#94a3b8" : "#64748b", mt: "1.75px" }}>
+          <Typography sx={{ fontSize: TYPE.small, color: isDark ? "#94a3b8" : "#64748b", mt: "1.75px" }}>
               Configure A4/A5 and other sheet invoice layouts with live preview and print styling.
           </Typography>
         </Box>
@@ -297,7 +298,7 @@ export default function DocumentFormatsDesigner({ onDirtyChange }) {
               bgcolor: isDark ? "#1e293b" : "#f1f5f9",
               borderRadius: "7px",
               p: "3.5px",
-              fontSize: 10.5,
+              fontSize: TYPE.small,
               border: "1px solid",
               borderColor: isDark ? "#334155" : "#e2e8f0",
               mr: "7px",
@@ -325,7 +326,7 @@ export default function DocumentFormatsDesigner({ onDirtyChange }) {
             <Button
               onClick={() => setZoomLevel(85)}
               title="Reset Zoom"
-              sx={{ px: "5.25px", py: "1.75px", fontSize: 10, color: "#64748b", textTransform: "none", minWidth: "auto" }}
+              sx={{ px: "5.25px", py: "1.75px", fontSize: TYPE.small, color: "#64748b", textTransform: "none", minWidth: "auto" }}
             >
               Fit
             </Button>
@@ -335,7 +336,7 @@ export default function DocumentFormatsDesigner({ onDirtyChange }) {
             onClick={handleReset}
             startIcon={<RotateCcw size={12.25} />}
             sx={{
-              fontSize: 10.5,
+              fontSize: TYPE.small,
               fontWeight: 600,
               color: isDark ? "#e2e8f0" : "#334155",
               bgcolor: isDark ? "#1e293b" : "#f1f5f9",
@@ -353,7 +354,7 @@ export default function DocumentFormatsDesigner({ onDirtyChange }) {
             onClick={handlePrint}
             startIcon={<Printer size={12.25} style={{ color: isDark ? "#818cf8" : "#4f46e5" }} />}
             sx={{
-              fontSize: 10.5,
+              fontSize: TYPE.small,
               fontWeight: 700,
               color: isDark ? "#f1f5f9" : "#1e293b",
               bgcolor: isDark ? "#1e293b" : "#ffffff",
@@ -375,7 +376,7 @@ export default function DocumentFormatsDesigner({ onDirtyChange }) {
             variant="contained"
             startIcon={<Save size={12.25} />}
             sx={{
-              fontSize: 10.5,
+              fontSize: TYPE.small,
               fontWeight: 700,
               bgcolor: "#4f46e5",
               "&:hover": { bgcolor: "#4338ca" },
@@ -413,7 +414,7 @@ export default function DocumentFormatsDesigner({ onDirtyChange }) {
           <Box sx={{ p: "14px", "& > * + *": { mt: "14px" } }}>
             {/* 1. Template Type Dropdown (Swayam Bill Book dynamic template types) */}
             <Box>
-              <Typography component="label" sx={{ display: "block", fontSize: 10.5, fontWeight: 700, color: isDark ? "#cbd5e1" : "#475569", textTransform: "uppercase", letterSpacing: "0.05em", mb: "5.25px" }}>
+              <Typography component="label" sx={{ display: "block", fontSize: TYPE.label, fontWeight: 700, color: isDark ? "#cbd5e1" : "#475569", textTransform: "uppercase", letterSpacing: "0.05em", mb: "5.25px" }}>
                 Template Type
               </Typography>
               <TextField
@@ -429,7 +430,7 @@ export default function DocumentFormatsDesigner({ onDirtyChange }) {
                     orientation: val === "landscape_dual" ? "landscape" : prev.orientation,
                   }));
                 }}
-                sx={{ "& .MuiInputBase-input": { fontSize: 10.5, fontWeight: 500 } }}
+                sx={{ "& .MuiInputBase-input": { fontSize: TYPE.small, fontWeight: 500 } }}
               >
                 {availableTemplates.map((tmpl) => (
                   <MenuItem key={tmpl.id} value={tmpl.id}>
@@ -471,7 +472,7 @@ export default function DocumentFormatsDesigner({ onDirtyChange }) {
                     left: "8.75px",
                     bgcolor: isDark ? "#0f172a" : "#ffffff",
                     px: "5.25px",
-                    fontSize: 10.5,
+                    fontSize: TYPE.small,
                     fontWeight: 700,
                     color: isDark ? "#818cf8" : "#4f46e5",
                   }}
@@ -543,7 +544,7 @@ export default function DocumentFormatsDesigner({ onDirtyChange }) {
 
             {/* 3. PDF Format Dropdown (All 7 Swayam formats: A4, A5, Thermal Print, Landscape A4, Landscape A5, Letter Head, A4 Half) */}
             <Box>
-              <Typography component="label" sx={{ display: "block", fontSize: 10.5, fontWeight: 700, color: isDark ? "#cbd5e1" : "#475569", textTransform: "uppercase", letterSpacing: "0.05em", mb: "5.25px" }}>
+              <Typography component="label" sx={{ display: "block", fontSize: TYPE.label, fontWeight: 700, color: isDark ? "#cbd5e1" : "#475569", textTransform: "uppercase", letterSpacing: "0.05em", mb: "5.25px" }}>
                 PDF Format
               </Typography>
               <TextField
@@ -567,7 +568,7 @@ export default function DocumentFormatsDesigner({ onDirtyChange }) {
                     };
                   });
                 }}
-                sx={{ "& .MuiInputBase-input": { fontSize: 10.5, fontWeight: 500 } }}
+                sx={{ "& .MuiInputBase-input": { fontSize: TYPE.small, fontWeight: 500 } }}
               >
                 {PDF_FORMAT_OPTIONS.filter(opt => !opt.isThermal).map((opt) => (
                   <MenuItem key={opt.id} value={opt.id}>
@@ -579,7 +580,7 @@ export default function DocumentFormatsDesigner({ onDirtyChange }) {
 
             {/* 4. Page Size & Format Buttons */}
             <Box>
-              <Typography component="label" sx={{ display: "block", fontSize: 10.5, fontWeight: 700, color: isDark ? "#cbd5e1" : "#475569", textTransform: "uppercase", letterSpacing: "0.05em", mb: "5.25px" }}>
+              <Typography component="label" sx={{ display: "block", fontSize: TYPE.label, fontWeight: 700, color: isDark ? "#cbd5e1" : "#475569", textTransform: "uppercase", letterSpacing: "0.05em", mb: "5.25px" }}>
                 Page Size
               </Typography>
               <Box sx={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "7px" }}>
@@ -589,7 +590,7 @@ export default function DocumentFormatsDesigner({ onDirtyChange }) {
                     onClick={() => setSettings((prev) => ({ ...prev, pageSize: sz }))}
                     sx={{
                       py: "7px",
-                      fontSize: 10.5,
+                      fontSize: TYPE.small,
                       fontWeight: 700,
                       borderRadius: "7px",
                       border: "1px solid",
@@ -616,10 +617,10 @@ export default function DocumentFormatsDesigner({ onDirtyChange }) {
             {settings.pdfFormat !== "thermal" && (
               <Box>
                 <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center", mb: "5.25px" }}>
-                  <Typography component="label" sx={{ fontSize: 10.5, fontWeight: 700, color: isDark ? "#cbd5e1" : "#475569", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                  <Typography component="label" sx={{ fontSize: TYPE.label, fontWeight: 700, color: isDark ? "#cbd5e1" : "#475569", textTransform: "uppercase", letterSpacing: "0.05em" }}>
                     Orientation
                   </Typography>
-                  <Box component="span" sx={{ fontSize: 10, color: isDark ? "#818cf8" : "#4f46e5", fontWeight: 600 }}>
+                  <Box component="span" sx={{ fontSize: TYPE.small, color: isDark ? "#818cf8" : "#4f46e5", fontWeight: 600 }}>
                     {settings.orientation === "landscape" ? "Wide Layout" : "Vertical Layout"}
                   </Box>
                 </Stack>
@@ -629,7 +630,7 @@ export default function DocumentFormatsDesigner({ onDirtyChange }) {
                     sx={{
                       py: "7px",
                       px: "10.5px",
-                      fontSize: 10.5,
+                      fontSize: TYPE.small,
                       fontWeight: 700,
                       borderRadius: "7px",
                       border: "1px solid",
@@ -657,7 +658,7 @@ export default function DocumentFormatsDesigner({ onDirtyChange }) {
                     sx={{
                       py: "7px",
                       px: "10.5px",
-                      fontSize: 10.5,
+                      fontSize: TYPE.small,
                       fontWeight: 700,
                       borderRadius: "7px",
                       border: "1px solid",
@@ -813,7 +814,7 @@ export default function DocumentFormatsDesigner({ onDirtyChange }) {
               {/* DRAWER 1: TEMPLATE SELECTOR */}
               {activeDrawer === "template" && (
                 <Box sx={{ "& > * + *": { mt: "10.5px" } }}>
-                  <Typography sx={{ fontSize: 10.5, color: isDark ? "#94a3b8" : "#64748b" }}>
+                  <Typography sx={{ fontSize: TYPE.small, color: isDark ? "#94a3b8" : "#64748b" }}>
                     Choose an invoice layout tailored for standard Indian GST tax invoices or high-density retail vouchers:
                   </Typography>
                   {availableTemplates.map((tmpl) => {
@@ -850,13 +851,13 @@ export default function DocumentFormatsDesigner({ onDirtyChange }) {
                         }}
                       >
                         <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "flex-start", mb: "3.5px" }}>
-                          <Box component="span" sx={{ fontWeight: 700, fontSize: 10.5, color: isDark ? "#ffffff" : "#0f172a" }}>
+                          <Box component="span" sx={{ fontWeight: 700, fontSize: TYPE.small, color: isDark ? "#ffffff" : "#0f172a" }}>
                             {tmpl.name}
                           </Box>
                           <Box
                             component="span"
                             sx={{
-                              fontSize: 10,
+                              fontSize: TYPE.small,
                               fontWeight: 700,
                               px: "7px",
                               py: "1.75px",
@@ -868,7 +869,7 @@ export default function DocumentFormatsDesigner({ onDirtyChange }) {
                             {tmpl.badge}
                           </Box>
                         </Stack>
-                        <Typography sx={{ fontSize: 11, color: isDark ? "#94a3b8" : "#64748b", lineHeight: 1.375 }}>
+                        <Typography sx={{ fontSize: TYPE.small, color: isDark ? "#94a3b8" : "#64748b", lineHeight: 1.375 }}>
                           {tmpl.description}
                         </Typography>
 
@@ -883,15 +884,15 @@ export default function DocumentFormatsDesigner({ onDirtyChange }) {
                             borderColor: isDark ? "rgba(51,65,85,0.6)" : "#f1f5f9",
                           }}
                         >
-                          <Box component="span" sx={{ fontSize: 10, fontWeight: 500, color: "#94a3b8" }}>
+                          <Box component="span" sx={{ fontSize: TYPE.small, fontWeight: 500, color: "#94a3b8" }}>
                             {tmpl.id === "landscape_dual" ? "Wide Format" : "Portrait / Landscape"}
                           </Box>
                           {isSelected ? (
-                            <Stack direction="row" sx={{ alignItems: "center", gap: "3.5px", fontSize: 10.5, fontWeight: 700, color: isDark ? "#818cf8" : "#4f46e5" }}>
+                            <Stack direction="row" sx={{ alignItems: "center", gap: "3.5px", fontSize: TYPE.small, fontWeight: 700, color: isDark ? "#818cf8" : "#4f46e5" }}>
                               <Check size={12.25} /> Selected
                             </Stack>
                           ) : (
-                            <Box component="span" className="tmpl-select-label" sx={{ fontSize: 10.5, fontWeight: 600, color: isDark ? "#cbd5e1" : "#475569", transition: "color 0.15s" }}>
+                            <Box component="span" className="tmpl-select-label" sx={{ fontSize: TYPE.small, fontWeight: 600, color: isDark ? "#cbd5e1" : "#475569", transition: "color 0.15s" }}>
                               Select &rarr;
                             </Box>
                           )}
@@ -907,7 +908,7 @@ export default function DocumentFormatsDesigner({ onDirtyChange }) {
                 <Box sx={{ "& > * + *": { mt: "14px" } }}>
                   {/* Accent Colour */}
                   <Box>
-                    <Typography component="label" sx={{ display: "block", fontSize: 10.5, fontWeight: 700, color: isDark ? "#cbd5e1" : "#334155", textTransform: "uppercase", letterSpacing: "0.025em", mb: "7px" }}>
+                    <Typography component="label" sx={{ display: "block", fontSize: TYPE.label, fontWeight: 700, color: isDark ? "#cbd5e1" : "#334155", textTransform: "uppercase", letterSpacing: "0.025em", mb: "7px" }}>
                       Accent Colour
                     </Typography>
                     <Stack direction="row" sx={{ flexWrap: "wrap", gap: "8.75px", alignItems: "center" }}>
@@ -948,7 +949,7 @@ export default function DocumentFormatsDesigner({ onDirtyChange }) {
                           onChange={(e) => setSettings((prev) => ({ ...prev, accentColor: e.target.value }))}
                           sx={{ width: 24.5, height: 24.5, borderRadius: "3.5px", cursor: "pointer", border: "1px solid", borderColor: isDark ? "#475569" : "#cbd5e1" }}
                         />
-                        <Typography component="span" sx={{ fontSize: 11, fontFamily: "monospace", color: isDark ? "#94a3b8" : "#64748b", textTransform: "uppercase" }}>
+                        <Typography component="span" sx={{ fontSize: TYPE.small, fontFamily: "monospace", color: isDark ? "#94a3b8" : "#64748b", textTransform: "uppercase" }}>
                           {settings.accentColor}
                         </Typography>
                       </Stack>
@@ -958,7 +959,7 @@ export default function DocumentFormatsDesigner({ onDirtyChange }) {
                   {/* Watermark Section */}
                   <Box sx={{ borderTop: "1px solid", borderColor: isDark ? "#1e293b" : "#e2e8f0", pt: "10.5px" }}>
                     <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", mb: "7px" }}>
-                      <Box component="span" sx={{ fontSize: 10.5, fontWeight: 700, color: isDark ? "#cbd5e1" : "#334155", textTransform: "uppercase", letterSpacing: "0.025em" }}>
+                      <Box component="span" sx={{ fontSize: TYPE.small, fontWeight: 700, color: isDark ? "#cbd5e1" : "#334155", textTransform: "uppercase", letterSpacing: "0.025em" }}>
                         Show Watermark
                       </Box>
                       <Checkbox
@@ -977,7 +978,7 @@ export default function DocumentFormatsDesigner({ onDirtyChange }) {
                     {settings.watermark?.enabled && (
                       <Box sx={{ "& > * + *": { mt: "8.75px" }, bgcolor: isDark ? "rgba(30,41,59,0.6)" : "#f8fafc", p: "10.5px", borderRadius: "7px", border: "1px solid", borderColor: isDark ? "#334155" : "#e2e8f0" }}>
                         <Box>
-                          <Typography component="label" sx={{ display: "block", fontSize: 11, color: isDark ? "#cbd5e1" : "#475569", fontWeight: 500, mb: "3.5px" }}>
+                          <Typography component="label" sx={{ display: "block", fontSize: TYPE.label, color: isDark ? "#cbd5e1" : "#475569", fontWeight: 500, mb: "3.5px" }}>
                             Watermark Text
                           </Typography>
                           <TextField
@@ -991,12 +992,12 @@ export default function DocumentFormatsDesigner({ onDirtyChange }) {
                               }))
                             }
                             placeholder="e.g. VYNERIX ERP or FIRM NAME"
-                            sx={{ "& .MuiInputBase-input": { fontSize: 10.5, py: "5.25px" } }}
+                            sx={{ "& .MuiInputBase-input": { fontSize: TYPE.small, py: "5.25px" } }}
                           />
                         </Box>
 
                         <Box>
-                          <Stack direction="row" sx={{ justifyContent: "space-between", fontSize: 11, color: isDark ? "#cbd5e1" : "#475569", mb: "3.5px" }}>
+                          <Stack direction="row" sx={{ justifyContent: "space-between", fontSize: TYPE.small, color: isDark ? "#cbd5e1" : "#475569", mb: "3.5px" }}>
                             <span>Opacity</span>
                             <span>{settings.watermark?.opacity || 12}%</span>
                           </Stack>
@@ -1021,12 +1022,12 @@ export default function DocumentFormatsDesigner({ onDirtyChange }) {
 
                   {/* Margins */}
                   <Box sx={{ borderTop: "1px solid", borderColor: isDark ? "#1e293b" : "#e2e8f0", pt: "10.5px" }}>
-                    <Typography component="label" sx={{ display: "block", fontSize: 10.5, fontWeight: 700, color: isDark ? "#cbd5e1" : "#334155", textTransform: "uppercase", letterSpacing: "0.025em", mb: "7px" }}>
+                    <Typography component="label" sx={{ display: "block", fontSize: TYPE.label, fontWeight: 700, color: isDark ? "#cbd5e1" : "#334155", textTransform: "uppercase", letterSpacing: "0.025em", mb: "7px" }}>
                       Print Margins (mm)
                     </Typography>
-                    <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "7px", fontSize: 10.5 }}>
+                    <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "7px", fontSize: TYPE.small }}>
                       <Box>
-                        <Typography component="span" sx={{ fontSize: 11, color: "#64748b" }}>Top:</Typography>
+                        <Typography component="span" sx={{ fontSize: TYPE.small, color: "#64748b" }}>Top:</Typography>
                         <TextField
                           fullWidth
                           size="small"
@@ -1038,11 +1039,11 @@ export default function DocumentFormatsDesigner({ onDirtyChange }) {
                               margins: { ...prev.margins, top: Number(e.target.value) },
                             }))
                           }
-                          sx={{ mt: "3.5px", "& .MuiInputBase-input": { fontSize: 10.5, py: "3.5px" } }}
+                          sx={{ mt: "3.5px", "& .MuiInputBase-input": { fontSize: TYPE.small, py: "3.5px" } }}
                         />
                       </Box>
                       <Box>
-                        <Typography component="span" sx={{ fontSize: 11, color: "#64748b" }}>Bottom:</Typography>
+                        <Typography component="span" sx={{ fontSize: TYPE.small, color: "#64748b" }}>Bottom:</Typography>
                         <TextField
                           fullWidth
                           size="small"
@@ -1054,7 +1055,7 @@ export default function DocumentFormatsDesigner({ onDirtyChange }) {
                               margins: { ...prev.margins, bottom: Number(e.target.value) },
                             }))
                           }
-                          sx={{ mt: "3.5px", "& .MuiInputBase-input": { fontSize: 10.5, py: "3.5px" } }}
+                          sx={{ mt: "3.5px", "& .MuiInputBase-input": { fontSize: TYPE.small, py: "3.5px" } }}
                         />
                       </Box>
                     </Box>
@@ -1066,7 +1067,7 @@ export default function DocumentFormatsDesigner({ onDirtyChange }) {
               {activeDrawer === "header" && (
                 <Box sx={{ "& > * + *": { mt: "10.5px" } }}>
                   <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center" }}>
-                    <Box component="span" sx={{ fontSize: 10.5, fontWeight: 700, color: isDark ? "#cbd5e1" : "#334155", textTransform: "uppercase", letterSpacing: "0.025em" }}>
+                    <Box component="span" sx={{ fontSize: TYPE.small, fontWeight: 700, color: isDark ? "#cbd5e1" : "#334155", textTransform: "uppercase", letterSpacing: "0.025em" }}>
                       Header Elements
                     </Box>
                   </Stack>
@@ -1086,7 +1087,7 @@ export default function DocumentFormatsDesigner({ onDirtyChange }) {
                         component="label"
                         direction="row"
                         key={item.key}
-                        sx={{ alignItems: "center", justifyContent: "space-between", fontSize: 10.5, color: isDark ? "#cbd5e1" : "#334155", py: "3.5px", cursor: "pointer" }}
+                        sx={{ alignItems: "center", justifyContent: "space-between", fontSize: TYPE.small, color: isDark ? "#cbd5e1" : "#334155", py: "3.5px", cursor: "pointer" }}
                       >
                         <span>{item.label}</span>
                         <Checkbox
@@ -1100,7 +1101,7 @@ export default function DocumentFormatsDesigner({ onDirtyChange }) {
                   </Box>
 
                   <Box sx={{ borderTop: "1px solid", borderColor: isDark ? "#1e293b" : "#e2e8f0", pt: "7px" }}>
-                    <Box component="span" sx={{ display: "block", fontSize: 10.5, fontWeight: 700, color: isDark ? "#cbd5e1" : "#334155", textTransform: "uppercase", letterSpacing: "0.025em", mb: "7px" }}>
+                    <Box component="span" sx={{ display: "block", fontSize: TYPE.small, fontWeight: 700, color: isDark ? "#cbd5e1" : "#334155", textTransform: "uppercase", letterSpacing: "0.025em", mb: "7px" }}>
                       Transaction & Dispatch Details
                     </Box>
                     <Box sx={{ "& > * + *": { mt: "7px" }, bgcolor: isDark ? "rgba(30,41,59,0.6)" : "#f8fafc", p: "10.5px", borderRadius: "7px", border: "1px solid", borderColor: isDark ? "#334155" : "#e2e8f0" }}>
@@ -1114,7 +1115,7 @@ export default function DocumentFormatsDesigner({ onDirtyChange }) {
                           component="label"
                           direction="row"
                           key={item.key}
-                          sx={{ alignItems: "center", justifyContent: "space-between", fontSize: 10.5, color: isDark ? "#cbd5e1" : "#334155", py: "3.5px", cursor: "pointer" }}
+                          sx={{ alignItems: "center", justifyContent: "space-between", fontSize: TYPE.small, color: isDark ? "#cbd5e1" : "#334155", py: "3.5px", cursor: "pointer" }}
                         >
                           <span>{item.label}</span>
                           <Checkbox
@@ -1134,10 +1135,10 @@ export default function DocumentFormatsDesigner({ onDirtyChange }) {
               {activeDrawer === "table" && (
                 <Box sx={{ "& > * + *": { mt: "10.5px" } }}>
                   <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center" }}>
-                    <Box component="span" sx={{ fontSize: 10.5, fontWeight: 700, color: isDark ? "#cbd5e1" : "#334155", textTransform: "uppercase", letterSpacing: "0.025em" }}>
+                    <Box component="span" sx={{ fontSize: TYPE.small, fontWeight: 700, color: isDark ? "#cbd5e1" : "#334155", textTransform: "uppercase", letterSpacing: "0.025em" }}>
                       Item Table Columns
                     </Box>
-                    <Stack direction="row" sx={{ gap: "7px", fontSize: 10.5 }}>
+                    <Stack direction="row" sx={{ gap: "7px", fontSize: TYPE.small }}>
                       <Box
                         component="button"
                         type="button"
@@ -1158,7 +1159,7 @@ export default function DocumentFormatsDesigner({ onDirtyChange }) {
                     </Stack>
                   </Stack>
 
-                  <Typography sx={{ fontSize: 11, color: isDark ? "#94a3b8" : "#64748b" }}>
+                  <Typography sx={{ fontSize: TYPE.small, color: isDark ? "#94a3b8" : "#64748b" }}>
                     Enable or disable columns displayed on the printed invoice:
                   </Typography>
 
@@ -1173,7 +1174,7 @@ export default function DocumentFormatsDesigner({ onDirtyChange }) {
                           p: "8.75px",
                           borderRadius: "7px",
                           border: "1px solid",
-                          fontSize: 10.5,
+                          fontSize: TYPE.small,
                           transition: "all 0.15s",
                           ...(col.enabled
                             ? { bgcolor: isDark ? "#1e293b" : "#ffffff", borderColor: isDark ? "#334155" : "#cbd5e1", color: isDark ? "#e2e8f0" : "#1e293b" }
@@ -1193,7 +1194,7 @@ export default function DocumentFormatsDesigner({ onDirtyChange }) {
                               alignItems: "center",
                               justifyContent: "center",
                               fontFamily: "monospace",
-                              fontSize: 10,
+                              fontSize: TYPE.small,
                             }}
                           >
                             {idx + 1}
@@ -1216,7 +1217,7 @@ export default function DocumentFormatsDesigner({ onDirtyChange }) {
               {activeDrawer === "footer" && (
                 <Box sx={{ "& > * + *": { mt: "10.5px" } }}>
                   <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center" }}>
-                    <Box component="span" sx={{ fontSize: 10.5, fontWeight: 700, color: isDark ? "#cbd5e1" : "#334155", textTransform: "uppercase", letterSpacing: "0.025em" }}>
+                    <Box component="span" sx={{ fontSize: TYPE.small, fontWeight: 700, color: isDark ? "#cbd5e1" : "#334155", textTransform: "uppercase", letterSpacing: "0.025em" }}>
                       Footer Elements
                     </Box>
                   </Stack>
@@ -1235,7 +1236,7 @@ export default function DocumentFormatsDesigner({ onDirtyChange }) {
                         component="label"
                         direction="row"
                         key={item.key}
-                        sx={{ alignItems: "center", justifyContent: "space-between", fontSize: 10.5, color: isDark ? "#cbd5e1" : "#334155", py: "3.5px", cursor: "pointer" }}
+                        sx={{ alignItems: "center", justifyContent: "space-between", fontSize: TYPE.small, color: isDark ? "#cbd5e1" : "#334155", py: "3.5px", cursor: "pointer" }}
                       >
                         <span>{item.label}</span>
                         <Checkbox
@@ -1251,7 +1252,7 @@ export default function DocumentFormatsDesigner({ onDirtyChange }) {
                   {/* Terms Textarea */}
                   <Box sx={{ borderTop: "1px solid", borderColor: isDark ? "#1e293b" : "#e2e8f0", pt: "10.5px" }}>
                     <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center", mb: "3.5px" }}>
-                      <Box component="span" sx={{ fontSize: 10.5, fontWeight: 700, color: isDark ? "#cbd5e1" : "#334155", textTransform: "uppercase", letterSpacing: "0.025em" }}>
+                      <Box component="span" sx={{ fontSize: TYPE.small, fontWeight: 700, color: isDark ? "#cbd5e1" : "#334155", textTransform: "uppercase", letterSpacing: "0.025em" }}>
                         Terms & Conditions
                       </Box>
                       <Checkbox
@@ -1274,7 +1275,7 @@ export default function DocumentFormatsDesigner({ onDirtyChange }) {
                           }))
                         }
                         placeholder="Enter terms and conditions..."
-                        sx={{ "& .MuiInputBase-input": { fontSize: 10.5 } }}
+                        sx={{ "& .MuiInputBase-input": { fontSize: TYPE.small } }}
                       />
                     )}
                   </Box>
@@ -1305,7 +1306,7 @@ export default function DocumentFormatsDesigner({ onDirtyChange }) {
                   sx={{
                     px: "17.5px",
                     py: "7px",
-                    fontSize: 10.5,
+                    fontSize: TYPE.small,
                     fontWeight: 700,
                     bgcolor: "#4f46e5",
                     "&:hover": { bgcolor: "#4338ca" },
@@ -1321,7 +1322,7 @@ export default function DocumentFormatsDesigner({ onDirtyChange }) {
                   sx={{
                     px: "17.5px",
                     py: "7px",
-                    fontSize: 10.5,
+                    fontSize: TYPE.small,
                     fontWeight: 600,
                     color: isDark ? "#e2e8f0" : "#334155",
                     bgcolor: isDark ? "#334155" : "#e2e8f0",
@@ -1340,7 +1341,7 @@ export default function DocumentFormatsDesigner({ onDirtyChange }) {
                   type="button"
                   onClick={handleReset}
                   sx={{
-                    fontSize: 10.5,
+                    fontSize: TYPE.small,
                     color: "#64748b",
                     "&:hover": { color: isDark ? "#cbd5e1" : "#334155" },
                     textDecoration: "underline",
@@ -1384,7 +1385,7 @@ export default function DocumentFormatsDesigner({ onDirtyChange }) {
               backdropFilter: "blur(4px)",
               border: "1px solid",
               borderColor: isDark ? "#334155" : "#cbd5e1",
-              fontSize: 10.5,
+              fontSize: TYPE.small,
               fontWeight: 600,
               color: isDark ? "#cbd5e1" : "#475569",
               alignItems: "center",

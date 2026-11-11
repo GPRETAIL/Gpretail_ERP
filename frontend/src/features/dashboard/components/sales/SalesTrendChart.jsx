@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import React from "react";
 import { BarChart3 } from "lucide-react";
 import { Box, Stack, Typography } from "@mui/material";
@@ -45,7 +46,7 @@ export default function SalesTrendChart({ salesTrendChart = [] }) {
                     sx={{ height: `${returnsHeight}%`, width: 10, borderRadius: "2px 2px 0 0", bgcolor: "#f43f5e", transition: "background-color 0.15s ease", "&:hover": { bgcolor: "#e11d48" } }}
                   />
                 </Stack>
-                <Typography sx={{ fontSize: 10, fontWeight: 500, color: "text.secondary" }}>{item.date}</Typography>
+                <Typography sx={{ fontSize: TYPE.small, fontWeight: 500, color: "text.secondary" }}>{item.date}</Typography>
               </Stack>
             );
           })}

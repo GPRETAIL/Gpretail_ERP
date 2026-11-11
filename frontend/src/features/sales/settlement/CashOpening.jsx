@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import PageHeader from "@/shared/components/PageHeader";
 import useAsyncQuery from "@/shared/hooks/useAsyncQuery";
 import { masterSearchAreaSx } from "@/shared/theme/erpUi";
@@ -263,7 +264,7 @@ const CashOpening = () => {
 
   const renderSelect = (label, name, value, optionsList, onChange) => (
     <Stack direction="row" sx={{ alignItems: "center" }}>
-      <Typography component="label" sx={{ width: "40%", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>{label}</Typography>
+      <Typography component="label" sx={{ width: "40%", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary" }}>{label}</Typography>
       <TextField
         select
         name={name}
@@ -297,7 +298,7 @@ const CashOpening = () => {
             )}
 
             <Stack direction="row" sx={{ alignItems: "center" }}>
-              <Typography component="label" sx={{ width: "40%", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>Date / Time</Typography>
+              <Typography component="label" sx={{ width: "40%", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary" }}>Date / Time</Typography>
               <TextField
                 type="text"
                 value={now.toLocaleString()}
@@ -333,7 +334,7 @@ const CashOpening = () => {
             )}
 
             <Stack direction="row" sx={{ alignItems: "center" }}>
-              <Typography component="label" sx={{ width: "40%", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>Amount</Typography>
+              <Typography component="label" sx={{ width: "40%", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary" }}>Amount</Typography>
               <TextField
                 type="text"
                 value={formatCurrency(amount)}
@@ -470,7 +471,7 @@ const CashOpening = () => {
 
       <Stack spacing={2} sx={showSearchPage ? masterSearchAreaSx : { p: 2, pb: 7 }}>
         {showSearchPage ? renderSearchPage() : renderEntryPage()}
-        {loadingMeta && <Typography sx={{ fontSize: 10.5, color: "text.secondary", px: 0.5 }}>Loading options...</Typography>}
+        {loadingMeta && <Typography sx={{ fontSize: TYPE.small, color: "text.secondary", px: 0.5 }}>Loading options...</Typography>}
       </Stack>
     </Box>
   );

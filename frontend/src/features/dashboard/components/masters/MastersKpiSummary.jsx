@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import React from "react";
 import LoadingSkeleton from "@/shared/components/LoadingSkeleton";
 import { useNavigate } from "react-router-dom";
@@ -21,7 +22,7 @@ export function TotalProductsCard({ summary = {}, loading, privacyMode }) {
   return (
     <ButtonBase onClick={() => navigate("/masters/product")} sx={cardSx("primary.main")}>
       <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", color: "text.secondary" }}>
-        <Typography sx={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Total Products</Typography>
+        <Typography sx={{ fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Total Products</Typography>
         <Box sx={{ color: "primary.main", display: "inline-flex" }}>
           <Package size={20} />
         </Box>
@@ -29,7 +30,7 @@ export function TotalProductsCard({ summary = {}, loading, privacyMode }) {
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "text.primary", ...blurSx(privacyMode) }}>
         {loading ? <LoadingSkeleton /> : wholeNumber(summary.total_products)}
       </Typography>
-      <Stack direction="row" sx={{ mt: 0.5, alignItems: "center", justifyContent: "space-between", fontSize: 11, color: "text.secondary", ...blurSx(privacyMode) }}>
+      <Stack direction="row" sx={{ mt: 0.5, alignItems: "center", justifyContent: "space-between", fontSize: TYPE.small, color: "text.secondary", ...blurSx(privacyMode) }}>
         <Typography component="span" sx={{ fontSize: "inherit", color: "inherit" }}>Active: {wholeNumber(summary.active_products)}</Typography>
         <Typography component="span" sx={{ fontSize: "inherit", color: "inherit" }}>Inactive: {wholeNumber(summary.inactive_products)}</Typography>
       </Stack>
@@ -42,7 +43,7 @@ export function BrandsCategoriesCard({ summary = {}, loading, privacyMode }) {
   return (
     <ButtonBase onClick={() => navigate("/masters/brand")} sx={cardSx("#a5b4fc")}>
       <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", color: "text.secondary" }}>
-        <Typography sx={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Brands & Categories</Typography>
+        <Typography sx={{ fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Brands & Categories</Typography>
         <Box sx={{ color: "#6366f1", display: "inline-flex" }}>
           <Tag size={20} />
         </Box>
@@ -50,7 +51,7 @@ export function BrandsCategoriesCard({ summary = {}, loading, privacyMode }) {
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "#6366f1", ...blurSx(privacyMode) }}>
         {loading ? <LoadingSkeleton /> : wholeNumber(summary.total_brands)}
       </Typography>
-      <Stack direction="row" sx={{ mt: 0.5, alignItems: "center", justifyContent: "space-between", fontSize: 11, color: "text.secondary", ...blurSx(privacyMode) }}>
+      <Stack direction="row" sx={{ mt: 0.5, alignItems: "center", justifyContent: "space-between", fontSize: TYPE.small, color: "text.secondary", ...blurSx(privacyMode) }}>
         <Typography component="span" sx={{ fontSize: "inherit", color: "inherit" }}>Brands</Typography>
         <Typography component="span" sx={{ fontSize: "inherit", color: "inherit" }}>{wholeNumber(summary.total_categories)} Categories</Typography>
       </Stack>
@@ -63,7 +64,7 @@ export function SuppliersCard({ summary = {}, loading, privacyMode }) {
   return (
     <ButtonBase onClick={() => navigate("/masters/supplier")} sx={cardSx("success.main")}>
       <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", color: "text.secondary" }}>
-        <Typography sx={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Suppliers</Typography>
+        <Typography sx={{ fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Suppliers</Typography>
         <Box sx={{ color: "success.main", display: "inline-flex" }}>
           <Truck size={20} />
         </Box>
@@ -71,7 +72,7 @@ export function SuppliersCard({ summary = {}, loading, privacyMode }) {
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "text.primary", ...blurSx(privacyMode) }}>
         {loading ? <LoadingSkeleton /> : wholeNumber(summary.total_suppliers)}
       </Typography>
-      <Typography sx={{ mt: 0.5, fontSize: 11, color: "text.secondary", ...blurSx(privacyMode) }}>
+      <Typography sx={{ mt: 0.5, fontSize: TYPE.small, color: "text.secondary", ...blurSx(privacyMode) }}>
         Active: {wholeNumber(summary.active_suppliers)}
       </Typography>
     </ButtonBase>
@@ -83,7 +84,7 @@ export function DataQualityGapsCard({ summary = {}, loading, privacyMode }) {
   return (
     <ButtonBase onClick={() => navigate("/masters/product?filter=missing_hsn")} sx={cardSx("warning.main")}>
       <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", color: "text.secondary" }}>
-        <Typography sx={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Data Quality Gaps</Typography>
+        <Typography sx={{ fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Data Quality Gaps</Typography>
         <Box sx={{ color: "warning.main", display: "inline-flex" }}>
           <FolderTree size={20} />
         </Box>
@@ -91,7 +92,7 @@ export function DataQualityGapsCard({ summary = {}, loading, privacyMode }) {
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "warning.main", ...blurSx(privacyMode) }}>
         {loading ? <LoadingSkeleton /> : wholeNumber(summary.missing_hsn_count)}
       </Typography>
-      <Stack direction="row" sx={{ mt: 0.5, alignItems: "center", justifyContent: "space-between", fontSize: 11, color: "text.secondary", ...blurSx(privacyMode) }}>
+      <Stack direction="row" sx={{ mt: 0.5, alignItems: "center", justifyContent: "space-between", fontSize: TYPE.small, color: "text.secondary", ...blurSx(privacyMode) }}>
         <Typography component="span" sx={{ fontSize: "inherit", color: "inherit" }}>Missing HSN</Typography>
         <Typography component="span" sx={{ fontSize: "inherit", color: "inherit" }}>{wholeNumber(summary.missing_barcode_count)} Missing Barcode</Typography>
       </Stack>

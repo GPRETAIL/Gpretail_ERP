@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import PageHeader from "@/shared/components/PageHeader";
 import React, { useState } from "react";
 import { Search, User } from "lucide-react";
@@ -166,7 +167,7 @@ const ReceiveGoods = () => {
           zIndex: 10,
         }}
       >
-        <Typography component="span" sx={{ fontSize: 10.5, color: "text.secondary", alignSelf: "center" }}>
+        <Typography component="span" sx={{ fontSize: TYPE.small, color: "text.secondary", alignSelf: "center" }}>
           Customer Care **+91 93840 30115 / 6 / 7**
         </Typography>
       </Stack>

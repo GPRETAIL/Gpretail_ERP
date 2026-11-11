@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import PageHeader from "@/shared/components/PageHeader";
 import useAsyncQuery from "@/shared/hooks/useAsyncQuery";
 import { EMPTY_ARRAY } from "@/shared/utils/emptyValues";
@@ -44,7 +45,7 @@ const LoyaltyManagement = () => {
   const totalPoints = toNum(data?.totalPoints, 0);
 
   return (
-    <Box className="master-responsive" sx={{ display: "flex", flexDirection: "column", height: "100%", bgcolor: "background.default", color: "text.primary", fontSize: 11 }}>
+    <Box className="master-responsive" sx={{ display: "flex", flexDirection: "column", height: "100%", bgcolor: "background.default", color: "text.primary", fontSize: TYPE.small }}>
       <PageHeader
         onBack={() => navigate(-1)}
         title={<>

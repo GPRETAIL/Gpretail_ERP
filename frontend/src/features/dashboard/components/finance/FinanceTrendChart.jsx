@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import React from "react";
 import { BarChart3 } from "lucide-react";
 import { Box, Stack, Typography } from "@mui/material";
@@ -33,7 +34,7 @@ export default function FinanceTrendChart({ trendChart = [] }) {
                   <Box title={`Purchases: ${item.purchases}`} sx={{ height: `${purchaseHeight}%`, width: 10, borderRadius: "2px 2px 0 0", bgcolor: "#a855f7" }} />
                   <Box title={`Payments: ${item.payments}`} sx={{ height: `${paymentHeight}%`, width: 10, borderRadius: "2px 2px 0 0", bgcolor: "success.main" }} />
                 </Stack>
-                <Typography sx={{ fontSize: 10, fontWeight: 500, color: "text.secondary" }}>{item.date}</Typography>
+                <Typography sx={{ fontSize: TYPE.small, fontWeight: 500, color: "text.secondary" }}>{item.date}</Typography>
               </Stack>
             );
           })}

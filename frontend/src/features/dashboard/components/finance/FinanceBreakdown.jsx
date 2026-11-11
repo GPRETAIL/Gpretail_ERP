@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import React from "react";
 import LoadingSkeleton from "@/shared/components/LoadingSkeleton";
 import { LayoutGrid } from "lucide-react";
@@ -51,7 +52,7 @@ export default function FinanceBreakdown({ breakdown = {}, loading }) {
             </Typography>
             <Typography sx={{ fontSize: 12, fontWeight: 600, color: "inherit" }}>{tile.label}</Typography>
             {tile.count !== undefined && (
-              <Typography sx={{ fontSize: 11, color: "text.secondary" }}>{tile.count} txns</Typography>
+              <Typography sx={{ fontSize: TYPE.small, color: "text.secondary" }}>{tile.count} txns</Typography>
             )}
           </Box>
         ))}

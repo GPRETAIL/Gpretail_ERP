@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import useSearchGrid, { createSearchGridAdapter } from "@/shared/hooks/useSearchGrid";
 import MasterSearchPanel from "./components/MasterSearchPanel";
 import { masterSearchAreaSx } from "@/shared/theme/erpUi";
@@ -425,7 +426,7 @@ const Agent = () => {
                 <SearchableSelect label="State" name="stateId" options={states} value={formData.stateId} onChange={handleChange} />
                 <TextInput label="Pincode"          name="pincode"          value={formData.pincode}          onChange={handleChange} />
                 <Stack direction="row" sx={{ alignItems: "center", width: "100%" }}>
-                  <Typography component="label" sx={{ width: "40%", flexShrink: 0, fontSize: 10.5, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5 }}>Tax</Typography>
+                  <Typography component="label" sx={{ width: "40%", flexShrink: 0, fontSize: TYPE.label, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5 }}>Tax</Typography>
                   <Box sx={{ flex: 1 }}>
                     <AsyncSearchSelect name="taxId" options={taxes} value={formData.taxId} onChange={handleChange} onAsyncSearch={handleAsyncTaxSearch} searchPlaceholder="Search tax..." />
                   </Box>

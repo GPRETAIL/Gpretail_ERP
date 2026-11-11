@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import PageHeader from "@/shared/components/PageHeader";
 import useAsyncQuery from "@/shared/hooks/useAsyncQuery";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -92,7 +93,7 @@ const initialCustomerDialog = {
 };
 
 const InputLabel = ({ text, required = false }) => (
-  <Typography component="label" sx={{ fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.5, display: "block", lineHeight: 1.2 }}>
+  <Typography component="label" sx={{ fontSize: TYPE.label, fontWeight: 500, color: "text.secondary", mb: 0.5, display: "block", lineHeight: 1.2 }}>
     {required && <Box component="span" sx={{ mr: 0.25, color: "error.main" }}>*</Box>}
     {text}
   </Typography>
@@ -782,7 +783,7 @@ const CustomerOrderForm = () => {
   if (loadingMasters || loadingSource) {
     return (
       <Box sx={{ height: "calc(100vh - 20px)", bgcolor: "background.default", color: "text.primary", p: 1 }}>
-        <Box sx={{ bgcolor: "background.paper", borderRadius: "7px", border: "1px solid", borderColor: "divider", boxShadow: 1, p: 2, textAlign: "center", color: "text.secondary", fontSize: 11 }}>
+        <Box sx={{ bgcolor: "background.paper", borderRadius: "7px", border: "1px solid", borderColor: "divider", boxShadow: 1, p: 2, textAlign: "center", color: "text.secondary", fontSize: TYPE.small }}>
           Loading customer order setup...
         </Box>
       </Box>
@@ -793,7 +794,7 @@ const CustomerOrderForm = () => {
     <Box
       ref={formRootRef}
       onKeyDown={handleEnterToNextField}
-      sx={{ height: "100%", minHeight: 0, bgcolor: "background.default", color: "text.primary", overflow: "hidden", display: "flex", flexDirection: "column", fontSize: 10 }}
+      sx={{ height: "100%", minHeight: 0, bgcolor: "background.default", color: "text.primary", overflow: "hidden", display: "flex", flexDirection: "column", fontSize: TYPE.small }}
     >
       <PageHeader
         onBack={() => navigate(-1)}
@@ -876,7 +877,7 @@ const CustomerOrderForm = () => {
             </Box>
 
             <Box sx={{ bgcolor: "background.paper", boxShadow: 1, borderRadius: "7px", px: 1.5, py: 1, border: "1px solid", borderColor: "divider", flexShrink: 0 }}>
-              <Typography component="h2" sx={{ fontSize: 10.5, fontWeight: 700, color: "text.primary", mb: 1 }}>Customer</Typography>
+              <Typography component="h2" sx={{ fontSize: TYPE.small, fontWeight: 700, color: "text.primary", mb: 1 }}>Customer</Typography>
               <Box sx={{ display: "grid", gap: 1, gridTemplateColumns: { md: "repeat(2, 1fr)" }, alignItems: "end" }}>
                 <Box>
                   <InputLabel text="Mobile No" required />
@@ -945,7 +946,7 @@ const CustomerOrderForm = () => {
             </Box>
 
             <Stack sx={{ bgcolor: "background.paper", boxShadow: 1, borderRadius: "7px", px: 1.5, py: 1, border: "1px solid", borderColor: "divider", minHeight: 0 }}>
-              <Typography component="h2" sx={{ fontSize: 10.5, fontWeight: 700, color: "text.primary", mb: 1 }}>Communication</Typography>
+              <Typography component="h2" sx={{ fontSize: TYPE.small, fontWeight: 700, color: "text.primary", mb: 1 }}>Communication</Typography>
               <Box sx={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1, alignItems: "end" }}>
                 <Box>
                   <InputLabel text="Date" />
@@ -1036,7 +1037,7 @@ const CustomerOrderForm = () => {
 
           <Stack sx={{ minHeight: 0 }}>
             <Stack sx={{ bgcolor: "background.paper", boxShadow: 1, borderRadius: "7px", px: 1.5, py: 1, border: "1px solid", borderColor: "divider", minHeight: 0 }}>
-              <Typography component="h2" sx={{ fontSize: 10.5, fontWeight: 700, color: "text.primary", mb: 1 }}>Items</Typography>
+              <Typography component="h2" sx={{ fontSize: TYPE.small, fontWeight: 700, color: "text.primary", mb: 1 }}>Items</Typography>
               <Box sx={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1, alignItems: "end" }}>
                 <Box>
                   <InputLabel text="Supplier" />
@@ -1211,7 +1212,7 @@ const CustomerOrderForm = () => {
 
           <Stack sx={{ minHeight: 0 }}>
             <Stack sx={{ bgcolor: "background.paper", boxShadow: 1, borderRadius: "7px", px: 1.5, py: 1, border: "1px solid", borderColor: "divider", minHeight: 0 }}>
-              <Typography component="h2" sx={{ fontSize: 10.5, fontWeight: 700, color: "text.primary", mb: 1 }}>Payment Info</Typography>
+              <Typography component="h2" sx={{ fontSize: TYPE.small, fontWeight: 700, color: "text.primary", mb: 1 }}>Payment Info</Typography>
 
               <Box sx={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1 }}>
                 <Box>

@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 /**
  * UploadImportButton — reusable CSV/XLSX bulk-import button.
  *
@@ -277,7 +278,7 @@ export default function UploadImportButton({
               >
                 Download Sample
               </Box>
-              <Typography component="p" sx={{ fontSize: 10.5, color: "text.secondary", mt: 1 }}>
+              <Typography component="p" sx={{ fontSize: TYPE.small, color: "text.secondary", mt: 1 }}>
                 Download the sample, fill it, then upload the file.
               </Typography>
             </Box>
@@ -286,7 +287,7 @@ export default function UploadImportButton({
                 component="button"
                 type="button"
                 onClick={() => setOpen(false)}
-                sx={{ px: 1.5, py: 0.75, fontSize: 10.5, border: "1px solid", borderColor: "divider", borderRadius: "2px", color: "text.secondary", "&:hover": { bgcolor: "action.hover" } }}
+                sx={{ px: 1.5, py: 0.75, fontSize: TYPE.small, border: "1px solid", borderColor: "divider", borderRadius: "2px", color: "text.secondary", "&:hover": { bgcolor: "action.hover" } }}
               >
                 Cancel
               </Box>
@@ -294,7 +295,7 @@ export default function UploadImportButton({
                 component="button"
                 type="button"
                 onClick={() => inputRef.current?.click()}
-                sx={{ px: 1.5, py: 0.75, fontSize: 10.5, bgcolor: "#3b82f6", color: "#fff", borderRadius: "2px", "&:hover": { bgcolor: "#2563eb" } }}
+                sx={{ px: 1.5, py: 0.75, fontSize: TYPE.small, bgcolor: "#3b82f6", color: "#fff", borderRadius: "2px", "&:hover": { bgcolor: "#2563eb" } }}
               >
                 Choose File
               </Box>

@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import PageHeader from "@/shared/components/PageHeader";
 import abortableDelay from "@/shared/utils/abortableDelay";
 import useAsyncQuery from "@/shared/hooks/useAsyncQuery";
@@ -15,7 +16,7 @@ import { getMasterLookups } from "@/features/warehouse/utils/lookupCache";
 import { muiFieldSx } from "@/shared/theme/formControlSizes";
 import { Box, Stack, Typography, TextField, IconButton, Button, Checkbox, alpha } from "@mui/material";
 
-const transportLabelSx = { display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary" };
+const transportLabelSx = { display: "block", fontSize: TYPE.small, fontWeight: 500, color: "text.secondary" };
 const transportControlSx = { mt: 0.25, ...muiFieldSx };
 
 const TextInput = ({
@@ -90,7 +91,7 @@ const CheckboxTextInput = ({
           borderLeftStyle: "solid",
           px: 1,
           py: 0,
-          fontSize: 11.5,
+          fontSize: TYPE.small,
           outline: "none",
           bgcolor: disabled || !checked ? "action.hover" : "transparent",
           color: disabled || !checked ? "text.disabled" : "text.primary",
@@ -665,24 +666,24 @@ const TransportEntry = () => {
           />
         </>}
         actions={<>
-          <Stack direction="row" spacing={0.75} sx={{ flexWrap: "wrap", alignItems: "center", justifyContent: "flex-end", fontSize: 10.5, fontWeight: 500, color: "text.secondary" }}>
-          <Button className="topbar-action-btn topbar-action-new" onClick={handleNew} startIcon={<PlusCircle size={14} />} sx={{ fontSize: 10.5 }}>
+          <Stack direction="row" spacing={0.75} sx={{ flexWrap: "wrap", alignItems: "center", justifyContent: "flex-end", fontSize: TYPE.small, fontWeight: 500, color: "text.secondary" }}>
+          <Button className="topbar-action-btn topbar-action-new" onClick={handleNew} startIcon={<PlusCircle size={14} />} sx={{ fontSize: TYPE.small }}>
             New
           </Button>
           {!isViewMode && (
             <>
               <Box component="span">|</Box>
-              <Button className="glass-btn glass-btn-primary" onClick={handleSaveAndNext} disabled={saving} startIcon={<Save size={14} />} sx={{ fontSize: 10.5 }}>
+              <Button className="glass-btn glass-btn-primary" onClick={handleSaveAndNext} disabled={saving} startIcon={<Save size={14} />} sx={{ fontSize: TYPE.small }}>
                 Save & Next
               </Button>
               <Box component="span">|</Box>
-              <Button className="glass-btn glass-btn-success" onClick={handleSave} disabled={saving} startIcon={<Save size={14} />} sx={{ fontSize: 10.5 }}>
+              <Button className="glass-btn glass-btn-success" onClick={handleSave} disabled={saving} startIcon={<Save size={14} />} sx={{ fontSize: TYPE.small }}>
                 {saving ? "Saving..." : "Save"}
               </Button>
             </>
           )}
           <Box component="span">|</Box>
-          <Button className="glass-btn glass-btn-primary" onClick={handleSearchClick} startIcon={<Search size={14} />} sx={{ fontSize: 10.5 }}>
+          <Button className="glass-btn glass-btn-primary" onClick={handleSearchClick} startIcon={<Search size={14} />} sx={{ fontSize: TYPE.small }}>
             Search
           </Button>
         </Stack>
@@ -844,16 +845,16 @@ const TransportEntry = () => {
               {String(formData.lrNo || "").trim() && (
                 <Box sx={(theme) => ({ borderRadius: "5.25px", border: "1px solid", borderColor: alpha(theme.palette.warning.main, 0.4), bgcolor: alpha(theme.palette.warning.main, theme.palette.mode === "dark" ? 0.16 : 0.1), px: 1.5, py: 1 })}>
                   {duplicateLrLoading ? (
-                    <Box sx={{ fontSize: 11, color: "warning.main" }}>Checking duplicate LR entries...</Box>
+                    <Box sx={{ fontSize: TYPE.small, color: "warning.main" }}>Checking duplicate LR entries...</Box>
                   ) : duplicateLrEntries.length > 0 ? (
                     <Stack spacing={1}>
-                      <Box sx={{ fontSize: 11, fontWeight: 600, color: "warning.main" }}>
+                      <Box sx={{ fontSize: TYPE.small, fontWeight: 600, color: "warning.main" }}>
                         {duplicateLrEntries.length} Duplicate LR {duplicateLrEntries.length === 1 ? "Entry" : "Entries"} Found
                       </Box>
                       {duplicateLrEntries.map((entry) => (
                         <Box
                           key={entry.id}
-                          sx={(theme) => ({ borderRadius: "3.5px", border: "1px solid", borderColor: alpha(theme.palette.warning.main, 0.3), bgcolor: "background.paper", px: 1.25, py: 1, fontSize: 11, color: "text.secondary" })}
+                          sx={(theme) => ({ borderRadius: "3.5px", border: "1px solid", borderColor: alpha(theme.palette.warning.main, 0.3), bgcolor: "background.paper", px: 1.25, py: 1, fontSize: TYPE.small, color: "text.secondary" })}
                         >
                           <Box sx={{ display: "grid", gridTemplateColumns: "88px 1fr", columnGap: 1.5, rowGap: 0.5 }}>
                             <Box sx={{ fontWeight: 500, color: "text.secondary" }}>LR Info</Box>
@@ -1015,7 +1016,7 @@ const TransportEntry = () => {
 
               {/* File Attachments */}
               <Box sx={{ pt: 1 }}>
-                <Typography component="h3" sx={{ mb: 0.75, fontSize: 10.5, fontWeight: 600, color: "text.primary" }}>
+                <Typography component="h3" sx={{ mb: 0.75, fontSize: TYPE.small, fontWeight: 600, color: "text.primary" }}>
                   File Attachments
                 </Typography>
                 <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 1.25 }}>
@@ -1035,7 +1036,7 @@ const TransportEntry = () => {
                     <Box
                       component="label"
                       htmlFor="fileUpload"
-                      sx={{ display: "flex", cursor: "pointer", alignItems: "center", justifyContent: "center", borderRadius: "1.75px", bgcolor: "#22c55e", px: 1.5, py: 0.5, fontSize: 11, color: "#fff", transition: "background-color 0.15s", "&:hover": { bgcolor: "#16a34a" } }}
+                      sx={{ display: "flex", cursor: "pointer", alignItems: "center", justifyContent: "center", borderRadius: "1.75px", bgcolor: "#22c55e", px: 1.5, py: 0.5, fontSize: TYPE.small, color: "#fff", transition: "background-color 0.15s", "&:hover": { bgcolor: "#16a34a" } }}
                     >
                       <Upload size={14} style={{ marginRight: 4 }} /> Upload Files
                     </Box>
@@ -1052,13 +1053,13 @@ const TransportEntry = () => {
                 </Box>
 
                 <Box sx={{ mt: 2, border: "1px solid", borderColor: "divider", borderRadius: "1.75px" }}>
-                  <Stack direction="row" sx={{ bgcolor: "action.hover", borderBottom: 1, borderColor: "divider", fontSize: 10.5, fontWeight: 600, color: "text.secondary" }}>
+                  <Stack direction="row" sx={{ bgcolor: "action.hover", borderBottom: 1, borderColor: "divider", fontSize: TYPE.small, fontWeight: 600, color: "text.secondary" }}>
                     <Box sx={{ width: "33.33%", px: 1.5, py: 0.5 }}>Type</Box>
                     <Box sx={{ width: "33.33%", px: 1.5, py: 0.5 }}>File Name</Box>
                     <Box sx={{ width: "33.33%", px: 1.5, py: 0.5 }}>Action</Box>
                   </Stack>
                   {attachments.length === 0 ? (
-                    <Box sx={{ color: "text.secondary", fontSize: 10.5, fontStyle: "italic", p: 1.5 }}>
+                    <Box sx={{ color: "text.secondary", fontSize: TYPE.small, fontStyle: "italic", p: 1.5 }}>
                       No files uploaded
                     </Box>
                   ) : (
@@ -1066,7 +1067,7 @@ const TransportEntry = () => {
                       <Stack
                         key={att.id}
                         direction="row"
-                        sx={{ alignItems: "center", borderBottom: 1, borderColor: "divider", fontSize: 10.5, "&:last-of-type": { borderBottom: 0 } }}
+                        sx={{ alignItems: "center", borderBottom: 1, borderColor: "divider", fontSize: TYPE.small, "&:last-of-type": { borderBottom: 0 } }}
                       >
                         <Box sx={{ width: "33.33%", px: 1.5, py: 1 }}>
                           {att.file_type || "Other"}
@@ -1100,7 +1101,7 @@ const TransportEntry = () => {
                     ))
                   )}
                   <Stack direction="row" sx={{ justifyContent: "flex-end", p: 1, bgcolor: "action.hover", borderTop: 1, borderColor: "divider" }}>
-                    <Box component="span" sx={{ fontSize: 11, fontWeight: 600, color: "text.primary" }}>
+                    <Box component="span" sx={{ fontSize: TYPE.small, fontWeight: 600, color: "text.primary" }}>
                       {attachments.length} file(s)
                     </Box>
                   </Stack>

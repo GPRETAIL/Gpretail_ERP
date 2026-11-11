@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import { Badge, Chip, IconButton } from "@mui/material";
 import { ClipboardDocumentCheckIcon } from "@heroicons/react/24/outline";
 import useSubscriptionStatus from "@/features/licence/hooks/useSubscriptionStatus";
@@ -23,5 +24,5 @@ export function HeaderRenewalNotice() {
     title={`${description}. Open the company portal to review or renew.`}
     aria-label={`${description}. Review subscription`}
     onClick={() => window.open(status?.subscription_portal_url || "https://company.gpsoftware.in/login", "_blank", "noopener,noreferrer")}
-    sx={{ height: 24, fontWeight: 700, fontSize: 11, flexShrink: 0 }} />;
+    sx={{ height: 24, fontWeight: 700, fontSize: TYPE.small, flexShrink: 0 }} />;
 }

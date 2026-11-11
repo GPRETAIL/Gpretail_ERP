@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import PageHeader from "@/shared/components/PageHeader";
 import React, { useState, useEffect, useMemo, useCallback as _useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
@@ -1026,7 +1027,7 @@ export default function PurchaseInvoiceImport() {
                     <Typography sx={{ fontSize: { xs: 13, sm: 14 }, fontWeight: 600, color: "text.primary" }}>
                       Drop purchase invoice here or browse
                     </Typography>
-                    <Typography sx={{ mt: 0.5, fontSize: 11.5, color: "text.secondary" }}>
+                    <Typography sx={{ mt: 0.5, fontSize: TYPE.small, color: "text.secondary" }}>
                       PDF, JPG, PNG or WEBP (Up to 15 MB)
                     </Typography>
 
@@ -1077,7 +1078,7 @@ export default function PurchaseInvoiceImport() {
                       <Typography sx={{ fontSize: 12.5, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         {file?.name || "Sample Invoice Loaded"}
                       </Typography>
-                      <Typography sx={{ fontSize: 10.5, color: "text.secondary" }}>
+                      <Typography sx={{ fontSize: TYPE.small, color: "text.secondary" }}>
                         {file ? `${(file.size / 1024 / 1024).toFixed(2)} MB` : "Demo Verification"}
                       </Typography>
                     </Box>
@@ -1085,7 +1086,7 @@ export default function PurchaseInvoiceImport() {
                       size="small"
                       variant="text"
                       onClick={() => fileInputRef.current?.click()}
-                      sx={{ textTransform: "none", fontSize: 11.5, color: INDIGO, fontWeight: 600 }}
+                      sx={{ textTransform: "none", fontSize: TYPE.small, color: INDIGO, fontWeight: 600 }}
                     >
                       Change File
                     </Button>
@@ -1112,7 +1113,7 @@ export default function PurchaseInvoiceImport() {
                         <Typography sx={{ fontSize: 13.5, fontWeight: 700, color: "text.primary" }}>
                           Invoice Ready for Analysis
                         </Typography>
-                        <Typography sx={{ fontSize: 11.5, color: "text.secondary" }}>
+                        <Typography sx={{ fontSize: TYPE.small, color: "text.secondary" }}>
                           Extracts GSTIN, supplier, carrier, LR, line items & taxes automatically.
                         </Typography>
                       </Box>
@@ -1165,7 +1166,7 @@ export default function PurchaseInvoiceImport() {
                             fontWeight: 700,
                             bgcolor: INDIGO,
                             color: "#fff",
-                            fontSize: 11,
+                            fontSize: TYPE.small,
                           }}
                         />
                       </Stack>
@@ -1247,7 +1248,7 @@ export default function PurchaseInvoiceImport() {
                       <Typography sx={{ fontSize: 13, fontWeight: 600 }}>
                         Sample Verification Mode
                       </Typography>
-                      <Typography sx={{ fontSize: 11, color: "text.secondary", mt: 0.5, textAlign: "center" }}>
+                      <Typography sx={{ fontSize: TYPE.small, color: "text.secondary", mt: 0.5, textAlign: "center" }}>
                         Extracted fields populated across all review tabs for verification.
                       </Typography>
                     </Box>
@@ -1632,7 +1633,7 @@ export default function PurchaseInvoiceImport() {
                         variant="outlined"
                         onClick={recalculateTotalsFromItems}
                         startIcon={<RotateCcw size={14} />}
-                        sx={{ textTransform: "none", fontSize: 11.5, flexShrink: 0 }}
+                        sx={{ textTransform: "none", fontSize: TYPE.small, flexShrink: 0 }}
                       >
                         Recalculate Totals
                       </Button>
@@ -1642,15 +1643,15 @@ export default function PurchaseInvoiceImport() {
                       <Table size="small" sx={{ minWidth: 720 }}>
                         <TableHead sx={{ bgcolor: "action.hover" }}>
                           <TableRow>
-                            <TableCell sx={{ fontSize: 11, fontWeight: 700, width: 40 }}>#</TableCell>
-                            <TableCell sx={{ fontSize: 11, fontWeight: 700, minWidth: 200 }}>
+                            <TableCell sx={{ fontSize: TYPE.small, fontWeight: 700, width: 40 }}>#</TableCell>
+                            <TableCell sx={{ fontSize: TYPE.small, fontWeight: 700, minWidth: 200 }}>
                               Description (OCR)
                             </TableCell>
-                            <TableCell sx={{ fontSize: 11, fontWeight: 700, width: 90 }}>Qty</TableCell>
-                            <TableCell sx={{ fontSize: 11, fontWeight: 700, width: 110 }}>Rate (₹)</TableCell>
-                            <TableCell sx={{ fontSize: 11, fontWeight: 700, width: 90 }}>Tax %</TableCell>
-                            <TableCell sx={{ fontSize: 11, fontWeight: 700, width: 120 }}>Total (₹)</TableCell>
-                            <TableCell sx={{ fontSize: 11, fontWeight: 700, minWidth: 260 }}>
+                            <TableCell sx={{ fontSize: TYPE.small, fontWeight: 700, width: 90 }}>Qty</TableCell>
+                            <TableCell sx={{ fontSize: TYPE.small, fontWeight: 700, width: 110 }}>Rate (₹)</TableCell>
+                            <TableCell sx={{ fontSize: TYPE.small, fontWeight: 700, width: 90 }}>Tax %</TableCell>
+                            <TableCell sx={{ fontSize: TYPE.small, fontWeight: 700, width: 120 }}>Total (₹)</TableCell>
+                            <TableCell sx={{ fontSize: TYPE.small, fontWeight: 700, minWidth: 260 }}>
                               Product Assignment (Existing vs New)
                             </TableCell>
                           </TableRow>
@@ -1658,7 +1659,7 @@ export default function PurchaseInvoiceImport() {
                         <TableBody>
                           {items.map((item, index) => (
                             <TableRow key={item.id} hover>
-                              <TableCell sx={{ fontSize: 11 }}>{index + 1}</TableCell>
+                              <TableCell sx={{ fontSize: TYPE.small }}>{index + 1}</TableCell>
 
                               {/* Description */}
                               <TableCell>
@@ -1667,10 +1668,10 @@ export default function PurchaseInvoiceImport() {
                                   fullWidth
                                   value={item.description}
                                   onChange={(e) => updateItem(index, "description", e.target.value)}
-                                  sx={{ "& .MuiInputBase-input": { fontSize: 11.5, py: 0.5 } }}
+                                  sx={{ "& .MuiInputBase-input": { fontSize: TYPE.small, py: 0.5 } }}
                                 />
                                 {item.hsn && (
-                                  <Typography variant="caption" sx={{ color: "text.secondary", fontSize: 10 }}>
+                                  <Typography variant="caption" sx={{ color: "text.secondary", fontSize: TYPE.small }}>
                                     HSN: {item.hsn}
                                   </Typography>
                                 )}
@@ -1683,7 +1684,7 @@ export default function PurchaseInvoiceImport() {
                                   size="small"
                                   value={item.quantity}
                                   onChange={(e) => updateItem(index, "quantity", e.target.value)}
-                                  sx={{ width: 80, "& .MuiInputBase-input": { fontSize: 11.5, py: 0.5 } }}
+                                  sx={{ width: 80, "& .MuiInputBase-input": { fontSize: TYPE.small, py: 0.5 } }}
                                 />
                               </TableCell>
 
@@ -1694,7 +1695,7 @@ export default function PurchaseInvoiceImport() {
                                   size="small"
                                   value={item.rate}
                                   onChange={(e) => updateItem(index, "rate", e.target.value)}
-                                  sx={{ width: 100, "& .MuiInputBase-input": { fontSize: 11.5, py: 0.5 } }}
+                                  sx={{ width: 100, "& .MuiInputBase-input": { fontSize: TYPE.small, py: 0.5 } }}
                                 />
                               </TableCell>
 
@@ -1705,7 +1706,7 @@ export default function PurchaseInvoiceImport() {
                                   size="small"
                                   value={item.tax_percent}
                                   onChange={(e) => updateItem(index, "tax_percent", e.target.value)}
-                                  sx={{ width: 80, "& .MuiInputBase-input": { fontSize: 11.5, py: 0.5 } }}
+                                  sx={{ width: 80, "& .MuiInputBase-input": { fontSize: TYPE.small, py: 0.5 } }}
                                 />
                               </TableCell>
 
@@ -1723,7 +1724,7 @@ export default function PurchaseInvoiceImport() {
                                       label={item.is_new_product ? "New Product" : "Existing"}
                                       color={item.is_new_product ? "warning" : "success"}
                                       variant={item.is_new_product ? "filled" : "outlined"}
-                                      sx={{ fontSize: 10, height: 20 }}
+                                      sx={{ fontSize: TYPE.small, height: 20 }}
                                     />
                                     <FormControlLabel
                                       control={
@@ -1734,7 +1735,7 @@ export default function PurchaseInvoiceImport() {
                                         />
                                       }
                                       label={
-                                        <Typography sx={{ fontSize: 11, color: "text.secondary" }}>
+                                        <Typography sx={{ fontSize: TYPE.small, color: "text.secondary" }}>
                                           Create as New
                                         </Typography>
                                       }
@@ -1749,7 +1750,7 @@ export default function PurchaseInvoiceImport() {
                                       fullWidth
                                       value={item.product_id || ""}
                                       onChange={(e) => updateItem(index, "product_id", e.target.value)}
-                                      sx={{ "& .MuiInputBase-input": { fontSize: 11.5, py: 0.5 } }}
+                                      sx={{ "& .MuiInputBase-input": { fontSize: TYPE.small, py: 0.5 } }}
                                     >
                                       <MenuItem value="">-- Select Existing Product --</MenuItem>
                                       {/* Preloaded catalog options */}
@@ -1780,7 +1781,7 @@ export default function PurchaseInvoiceImport() {
                                           size="small"
                                           value={item.new_product_data?.name || ""}
                                           onChange={(e) => updateNewProductField(index, "name", e.target.value)}
-                                          sx={{ "& .MuiInputBase-input": { fontSize: 11, py: 0.5 } }}
+                                          sx={{ "& .MuiInputBase-input": { fontSize: TYPE.small, py: 0.5 } }}
                                         />
 
                                         <Stack direction="row" spacing={1}>
@@ -1793,7 +1794,7 @@ export default function PurchaseInvoiceImport() {
                                               updateItem(index, "selling_price", Number(e.target.value));
                                               updateNewProductField(index, "selling_price", Number(e.target.value));
                                             }}
-                                            sx={{ "& .MuiInputBase-input": { fontSize: 11, py: 0.5 } }}
+                                            sx={{ "& .MuiInputBase-input": { fontSize: TYPE.small, py: 0.5 } }}
                                           />
                                           <TextField
                                             label="MRP (₹)"
@@ -1804,7 +1805,7 @@ export default function PurchaseInvoiceImport() {
                                               updateItem(index, "mrp", Number(e.target.value));
                                               updateNewProductField(index, "mrp", Number(e.target.value));
                                             }}
-                                            sx={{ "& .MuiInputBase-input": { fontSize: 11, py: 0.5 } }}
+                                            sx={{ "& .MuiInputBase-input": { fontSize: TYPE.small, py: 0.5 } }}
                                           />
                                         </Stack>
                                       </Stack>

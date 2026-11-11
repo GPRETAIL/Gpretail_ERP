@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import PageHeader from "@/shared/components/PageHeader";
 import SearchGridPanel from "@/shared/components/SearchGridPanel";
 import useSearchGrid from "@/shared/hooks/useSearchGrid";
@@ -122,7 +123,7 @@ const ItemLocator = () => {
         key: "barcode",
         label: "Barcode",
         render: (value) => (
-          <Box component="span" sx={{ fontFamily: "monospace", fontSize: 11 }}>
+          <Box component="span" sx={{ fontFamily: "monospace", fontSize: TYPE.small }}>
             {value || "-"}
           </Box>
         ),
@@ -433,7 +434,7 @@ const ItemLocator = () => {
               color="inherit"
               size="small"
               startIcon={filtersCollapsed ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
-              sx={{ borderRadius: "3.5px", fontSize: 10.5, fontWeight: 500 }}
+              sx={{ borderRadius: "3.5px", fontSize: TYPE.small, fontWeight: 500 }}
             >
               {filtersCollapsed ? "Expand" : "Collapse"}
             </Button>
@@ -446,7 +447,7 @@ const ItemLocator = () => {
                 <Typography sx={{ fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Mode</Typography>
                 <Stack direction="row" spacing={2} sx={{ flexWrap: "wrap", alignItems: "center" }}>
                   {modeOptions.map((option) => (
-                    <Stack key={option.value} component="label" direction="row" spacing={0.75} sx={{ alignItems: "center", fontSize: 11.5, color: "text.secondary" }}>
+                    <Stack key={option.value} component="label" direction="row" spacing={0.75} sx={{ alignItems: "center", fontSize: TYPE.label, color: "text.secondary" }}>
                       <Radio
                         name="locator-mode"
                         checked={filters.mode === option.value}
@@ -685,7 +686,7 @@ const ItemLocator = () => {
               disabled={searching}
               variant="outlined"
               color="inherit"
-              sx={{ borderRadius: "3.5px", fontSize: 10.5, px: 1.5, py: 1, opacity: searching ? 0.6 : 1 }}
+              sx={{ borderRadius: "3.5px", fontSize: TYPE.small, px: 1.5, py: 1, opacity: searching ? 0.6 : 1 }}
             >
               Refresh
             </Button>

@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import PageHeader from "@/shared/components/PageHeader";
 import useResetOnChange from "@/shared/hooks/useResetOnChange";
 import useStoreDisplayName from "@/shared/hooks/useStoreDisplayName";
@@ -967,7 +968,7 @@ const saleItemColumns = [
   {
     key: "barcode",
     label: "Barcode",
-    render: (value) => <Box component="span" sx={{ fontFamily: "monospace", fontSize: 11 }}>{value || "-"}</Box>,
+    render: (value) => <Box component="span" sx={{ fontFamily: "monospace", fontSize: TYPE.small }}>{value || "-"}</Box>,
   },
   { key: "product_name", label: "Product" },
   { key: "salesman_name", label: "Salesman" },
@@ -1397,7 +1398,7 @@ const stockColumns = [
   {
     key: "barcode",
     label: "Barcode",
-    render: (value) => <Box component="span" sx={{ fontFamily: "monospace", fontSize: 11 }}>{value || "-"}</Box>,
+    render: (value) => <Box component="span" sx={{ fontFamily: "monospace", fontSize: TYPE.small }}>{value || "-"}</Box>,
   },
   { key: "product_name", label: "Product" },
   { key: "batch", label: "Batch" },
@@ -1424,7 +1425,7 @@ const salesVsStockColumns = [
   {
     key: "barcode",
     label: "Barcode",
-    render: (value) => <Box component="span" sx={{ fontFamily: "monospace", fontSize: 11 }}>{value || "-"}</Box>,
+    render: (value) => <Box component="span" sx={{ fontFamily: "monospace", fontSize: TYPE.small }}>{value || "-"}</Box>,
   },
   { key: "product_name", label: "Product" },
   {
@@ -1779,7 +1780,7 @@ const BILL_DETAIL_LINE_COLUMNS = [
   {
     key: "barcode",
     label: "Barcode",
-    render: (value) => <Box component="span" sx={{ fontFamily: "monospace", fontSize: 11 }}>{value}</Box>,
+    render: (value) => <Box component="span" sx={{ fontFamily: "monospace", fontSize: TYPE.small }}>{value}</Box>,
   },
   { key: "product_name", label: "Product" },
   {
@@ -2678,7 +2679,7 @@ const SalesReports = () => {
                         "&:hover": implemented && !active ? { bgcolor: "action.hover" } : undefined,
                       }}
                     >
-                      <Typography component="span" sx={{ pt: 0.25, fontSize: 10.5, fontWeight: 700, color: implemented ? "primary.main" : "text.disabled" }}>
+                      <Typography component="span" sx={{ pt: 0.25, fontSize: TYPE.small, fontWeight: 700, color: implemented ? "primary.main" : "text.disabled" }}>
                         {"◈"}
                       </Typography>
                       <Typography
@@ -2764,12 +2765,12 @@ const SalesReports = () => {
                 {selectedReport.title}
               </Typography>
               {appliedSalesSummary ? (
-                <Typography sx={{ mt: 0.5, fontSize: 10.5, color: "text.secondary" }}>
+                <Typography sx={{ mt: 0.5, fontSize: TYPE.small, color: "text.secondary" }}>
                   Showing <Box component="strong">{appliedSalesSummary.label}</Box>
                   {appliedSalesSummary.from ? <> for {appliedSalesSummary.from} → {appliedSalesSummary.to}</> : null}
                 </Typography>
               ) : summaryAvailable ? (
-                <Typography sx={{ mt: 0.5, fontSize: 11, color: "text.secondary" }}>
+                <Typography sx={{ mt: 0.5, fontSize: TYPE.small, color: "text.secondary" }}>
                   Open <Box component="strong">Summary layouts</Box> for {isSalesReportTab ? "location / company / day / bill-style" : summaryOptions.slice(0, 4).map((opt) => opt.label.toLowerCase()).join(" / ")} breakdowns.
                 </Typography>
               ) : null}

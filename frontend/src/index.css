@@ -958,3 +958,11 @@ main > .p-6 {
 @media screen and (max-width: 650px) {
   html[data-text-size] body:not(:has(.vy-login)) :is(input:not([type=checkbox]):not([type=radio]), select, textarea) { font-size: max(16px, var(--erp-font-body)) !important; }
 }
+
+/* POS billing: larger item, cart and button text with touch-size buttons (Themes > Text size scales these). */
+@media screen {
+  html[data-text-size] :is(.pos-sale-page, .pos-billing) :is(input:not([type=checkbox]):not([type=radio]), select, textarea, .MuiInputBase-root) { font-size: var(--erp-font-pos-item) !important; }
+  html[data-text-size] :is(.pos-sale-page, .pos-billing) :is(td, th, .MuiTableCell-root) { font-size: var(--erp-font-pos-row) !important; }
+  html[data-text-size] :is(.pos-sale-page, .pos-billing) .MuiButton-root { font-size: var(--erp-font-pos-button) !important; min-height: 44px; }
+  html[data-text-size] :is(.pos-sale-page, .pos-billing) { font-variant-numeric: tabular-nums; }
+}

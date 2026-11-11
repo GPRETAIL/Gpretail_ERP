@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import PageHeader from "@/shared/components/PageHeader";
 import useAsyncQuery from "@/shared/hooks/useAsyncQuery";
 import React, { useState, useEffect, useCallback } from "react";
@@ -14,7 +15,7 @@ import { toast } from "react-toastify";
 import { muiFieldSx } from "@/shared/theme/formControlSizes";
 
 const fieldSx = muiFieldSx;
-const labelSx = { display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.5 };
+const labelSx = { display: "block", fontSize: TYPE.small, fontWeight: 500, color: "text.secondary", mb: 0.5 };
 
 const ROW_BY_OPTIONS = [
   { value: "product", label: "Product (rows) × Supplier (columns)" },
@@ -106,7 +107,7 @@ const SupplierProductAnalyzer = () => {
             <Typography component="label" sx={labelSx}>Purchase To</Typography>
             <TextField type="date" size="small" fullWidth sx={fieldSx} value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
           </Box>
-          <Typography sx={{ fontSize: 11, color: "text.secondary", lineHeight: 1.6, pt: 1, borderTop: 1, borderColor: "divider" }}>
+          <Typography sx={{ fontSize: TYPE.small, color: "text.secondary", lineHeight: 1.6, pt: 1, borderTop: 1, borderColor: "divider" }}>
             Sourced from Direct Purchases + Purchase Invoices. GRNs are not included to avoid
             double-counting the same receipt.
           </Typography>

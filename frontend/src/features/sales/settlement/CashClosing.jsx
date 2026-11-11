@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import PageHeader from "@/shared/components/PageHeader";
 import useAsyncQuery from "@/shared/hooks/useAsyncQuery";
 import { masterSearchAreaSx } from "@/shared/theme/erpUi";
@@ -564,7 +565,7 @@ const CashClosing = () => {
           <Typography component="h2" sx={{ fontSize: 12.25, fontWeight: 600, color: "text.secondary", mb: 1.5 }}>Cash Closing Details</Typography>
           <Stack spacing={1.5} sx={{ maxWidth: 576 }}>
             <Stack direction="row" sx={{ alignItems: "center" }}>
-              <Typography component="label" sx={{ width: "40%", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>Date / Time</Typography>
+              <Typography component="label" sx={{ width: "40%", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary" }}>Date / Time</Typography>
               <TextField
                 type="text"
                 value={now.toLocaleString()}
@@ -576,7 +577,7 @@ const CashClosing = () => {
             </Stack>
 
             <Stack direction="row" sx={{ alignItems: "center" }}>
-              <Typography component="label" sx={{ width: "40%", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>Counter</Typography>
+              <Typography component="label" sx={{ width: "40%", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary" }}>Counter</Typography>
               <Box sx={{ flex: 1, ml: 1 }}>
                 {renderSelect(
                   "Counter",
@@ -589,7 +590,7 @@ const CashClosing = () => {
             </Stack>
 
             <Stack direction="row" sx={{ alignItems: "center" }}>
-              <Typography component="label" sx={{ width: "40%", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>Received By</Typography>
+              <Typography component="label" sx={{ width: "40%", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary" }}>Received By</Typography>
               <Box sx={{ flex: 1, ml: 1 }}>
                 {renderSelect(
                   "Received By",
@@ -602,7 +603,7 @@ const CashClosing = () => {
             </Stack>
 
             <Stack direction="row" sx={{ alignItems: "center" }}>
-              <Typography component="label" sx={{ width: "40%", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>Cashier</Typography>
+              <Typography component="label" sx={{ width: "40%", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary" }}>Cashier</Typography>
               <Box sx={{ flex: 1, ml: 1 }}>
                 {renderSelect(
                   "Cashier",
@@ -615,7 +616,7 @@ const CashClosing = () => {
             </Stack>
 
             <Stack direction="row" sx={{ alignItems: "center" }}>
-              <Typography component="label" sx={{ width: "40%", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>Opening</Typography>
+              <Typography component="label" sx={{ width: "40%", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary" }}>Opening</Typography>
               <TextField
                 type="text"
                 value={loadingOpening ? "Loading..." : formatCurrency(openingAmount)}
@@ -627,7 +628,7 @@ const CashClosing = () => {
             </Stack>
 
             <Stack direction="row" sx={{ alignItems: "center" }}>
-              <Typography component="label" sx={{ width: "40%", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>Closing Bill No</Typography>
+              <Typography component="label" sx={{ width: "40%", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary" }}>Closing Bill No</Typography>
               <TextField
                 type="text"
                 value={closingBillNo}
@@ -639,7 +640,7 @@ const CashClosing = () => {
             </Stack>
 
             <Stack direction="row" sx={{ alignItems: "center" }}>
-              <Typography component="label" sx={{ width: "40%", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>Counter Expenses</Typography>
+              <Typography component="label" sx={{ width: "40%", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary" }}>Counter Expenses</Typography>
               <TextField
                 type="number"
                 slotProps={{ htmlInput: { min: 0, step: 0.01 } }}
@@ -651,7 +652,7 @@ const CashClosing = () => {
             </Stack>
 
             <Stack direction="row" sx={{ alignItems: "flex-start" }}>
-              <Typography component="label" sx={{ width: "40%", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mt: 0.5 }}>Notes</Typography>
+              <Typography component="label" sx={{ width: "40%", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary", mt: 0.5 }}>Notes</Typography>
               <TextField
                 value={formData.notes}
                 onChange={(e) => setFormData((prev) => ({ ...prev, notes: e.target.value }))}
@@ -663,7 +664,7 @@ const CashClosing = () => {
             </Stack>
 
             <Stack direction="row" sx={{ alignItems: "center" }}>
-              <Typography component="label" sx={{ width: "40%", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>Closing</Typography>
+              <Typography component="label" sx={{ width: "40%", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary" }}>Closing</Typography>
               <TextField
                 type="text"
                 value={formatCurrency(closingAmount)}
@@ -676,7 +677,7 @@ const CashClosing = () => {
 
             <Box>
               <Stack direction="row" sx={{ alignItems: "center" }}>
-                <Typography component="label" sx={{ width: "40%", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>Difference</Typography>
+                <Typography component="label" sx={{ width: "40%", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary" }}>Difference</Typography>
                 <TextField
                   type="text"
                   value={formatCurrency(difference)}
@@ -686,7 +687,7 @@ const CashClosing = () => {
                   sx={[muiFieldSx, { flex: 1, ml: 1, "& .MuiInputBase-root": { bgcolor: "action.hover" }, "& .MuiInputBase-input": { fontWeight: 600 } }]}
                 />
               </Stack>
-              <Typography sx={{ ml: "40%", pl: 1, mt: 0.5, fontSize: 10.5, color: "text.secondary" }}>
+              <Typography sx={{ ml: "40%", pl: 1, mt: 0.5, fontSize: TYPE.small, color: "text.secondary" }}>
                 {`${formatCurrency(closingAmount)} - ${formatCurrency(openingAmount)} = ${formatCurrency(
                   difference
                 )}`}
@@ -825,7 +826,7 @@ const CashClosing = () => {
 
       <Stack spacing={2} sx={showSearchPage ? masterSearchAreaSx : { p: 2, pb: 7 }}>
         {showSearchPage ? renderSearchPage() : renderEntryPage()}
-        {loadingMeta && <Typography sx={{ fontSize: 10.5, color: "text.secondary", px: 0.5 }}>Loading options...</Typography>}
+        {loadingMeta && <Typography sx={{ fontSize: TYPE.small, color: "text.secondary", px: 0.5 }}>Loading options...</Typography>}
       </Stack>
     </Box>
   );

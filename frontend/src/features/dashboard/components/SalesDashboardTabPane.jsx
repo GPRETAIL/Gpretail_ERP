@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import { EMPTY_ARRAY, EMPTY_OBJECT } from "@/shared/utils/emptyValues.js";
 import React, { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
@@ -188,7 +189,7 @@ export default function SalesDashboardTabPane({ active, fromDate, toDate, compan
     <Stack spacing={3}>
       {/* Quick Workflows Bar -- a toolbar, not a data widget, so it stays fixed above the grid */}
       <Stack direction="row" spacing={1} sx={{ alignItems: "center", flexWrap: "wrap", borderBottom: 1, borderColor: "divider", pb: 1.5, rowGap: 1 }}>
-        <Typography sx={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "text.secondary" }}>
+        <Typography sx={{ fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "text.secondary" }}>
           Quick Actions:
         </Typography>
         {QUICK_ACTIONS.map((action) => (

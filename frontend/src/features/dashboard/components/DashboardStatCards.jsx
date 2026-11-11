@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import React from "react";
 import LoadingSkeleton from "@/shared/components/LoadingSkeleton";
 import { TrendingDown, TrendingUp } from "lucide-react";
@@ -8,12 +9,12 @@ import { Box, Typography } from "@mui/material";
 export const TrendBadge = ({ trend }) => {
   if (!trend) return null;
   if (["unavailable", "new"].includes(trend.direction)) {
-    return <Typography sx={{ fontSize: 10, lineHeight: 1.2, color: "text.secondary", mt: 0.5 }}>{trend.message}</Typography>;
+    return <Typography sx={{ fontSize: TYPE.small, lineHeight: 1.2, color: "text.secondary", mt: 0.5 }}>{trend.message}</Typography>;
   }
   const label = trend.label || "vs previous period";
   if (trend.direction === "flat") {
     return (
-      <Typography sx={{ fontSize: 10, lineHeight: 1.2, color: "text.secondary", mt: 0.5 }}>
+      <Typography sx={{ fontSize: TYPE.small, lineHeight: 1.2, color: "text.secondary", mt: 0.5 }}>
         No change {label}
       </Typography>
     );
@@ -26,7 +27,7 @@ export const TrendBadge = ({ trend }) => {
     <Typography
       component="p"
       sx={{
-        fontSize: 10, lineHeight: 1.2, mt: 0.5, display: "inline-flex", alignItems: "center", gap: 0.5,
+        fontSize: TYPE.small, lineHeight: 1.2, mt: 0.5, display: "inline-flex", alignItems: "center", gap: 0.5,
         color: isUp ? "success.main" : "error.main",
       }}
     >
@@ -48,7 +49,7 @@ export const MetricCard = ({ eyebrow, title, value, valueSubheading, subtitle, t
         bgcolor: "background.paper", px: 1.5, py: 1,
       }}
     >
-      <Typography sx={{ fontSize: 11, lineHeight: 1.2, color: "text.secondary" }}>{eyebrow}</Typography>
+      <Typography sx={{ fontSize: TYPE.small, lineHeight: 1.2, color: "text.secondary" }}>{eyebrow}</Typography>
       {title ? (
         <Typography sx={{ mt: 0.25, fontSize: 12, lineHeight: 1.2, fontWeight: 500, color: "text.primary" }}>
           {title}
@@ -58,19 +59,19 @@ export const MetricCard = ({ eyebrow, title, value, valueSubheading, subtitle, t
         {value}
       </Typography>
       {valueSubheading ? (
-        <Typography sx={{ mt: 0.25, fontSize: 11, lineHeight: 1.2, color: "text.secondary" }}>
+        <Typography sx={{ mt: 0.25, fontSize: TYPE.small, lineHeight: 1.2, color: "text.secondary" }}>
           {valueSubheading}
         </Typography>
       ) : null}
       <Box sx={{ mt: "auto", "& > * + *": { mt: 0.25 } }}>
-        <Typography sx={{ minHeight: 14, fontSize: 11, lineHeight: 1.2, color: "text.secondary", ...blurSx }}>
+        <Typography sx={{ minHeight: 14, fontSize: TYPE.small, lineHeight: 1.2, color: "text.secondary", ...blurSx }}>
           {subtitle || " "}
         </Typography>
         <Box sx={{ minHeight: 16 }}>
           {trend ? (
             <TrendBadge trend={trend} />
           ) : (
-            <Typography sx={{ fontSize: 10, lineHeight: 1.2, visibility: "hidden" }}>0% from last month</Typography>
+            <Typography sx={{ fontSize: TYPE.small, lineHeight: 1.2, visibility: "hidden" }}>0% from last month</Typography>
           )}
         </Box>
       </Box>

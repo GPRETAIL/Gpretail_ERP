@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { Cake } from "lucide-react";
@@ -34,19 +35,19 @@ export default function CrmCelebrationsTable({ upcomingEvents = [] }) {
         <Table size="small" sx={{ "& td, & th": { border: 0, fontSize: 12 } }}>
           <TableHead>
             <TableRow sx={{ borderBottom: "1px solid", borderColor: "divider" }}>
-              <TableCell sx={{ pb: 1, fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>
+              <TableCell sx={{ pb: 1, fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>
                 Customer
               </TableCell>
-              <TableCell sx={{ pb: 1, fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>
+              <TableCell sx={{ pb: 1, fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>
                 Contact
               </TableCell>
-              <TableCell sx={{ pb: 1, fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>
+              <TableCell sx={{ pb: 1, fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>
                 Occasion
               </TableCell>
-              <TableCell align="right" sx={{ pb: 1, fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>
+              <TableCell align="right" sx={{ pb: 1, fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>
                 Points
               </TableCell>
-              <TableCell align="center" sx={{ pb: 1, fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>
+              <TableCell align="center" sx={{ pb: 1, fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>
                 Action
               </TableCell>
             </TableRow>
@@ -64,7 +65,7 @@ export default function CrmCelebrationsTable({ upcomingEvents = [] }) {
                     <Box
                       component="span"
                       sx={{
-                        display: "inline-flex", borderRadius: 1, px: 0.75, py: 0.25, fontSize: 10, fontWeight: 700,
+                        display: "inline-flex", borderRadius: 1, px: 0.75, py: 0.25, fontSize: TYPE.small, fontWeight: 700,
                         bgcolor: (theme) => alpha("#e11d48", theme.palette.mode === "dark" ? 0.24 : 0.15),
                         color: "#e11d48",
                       }}

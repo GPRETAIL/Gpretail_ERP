@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import { browserPrintHtml } from "./utils/posSalesUtils";
 import ApprovalDialog from "@/features/sales/approvals/components/ApprovalDialog";
 import { approvalRequirementFrom, isApprovalRequired } from "@/features/sales/approvals/utils/approvals";
@@ -949,7 +950,7 @@ const PosReturn = () => {
           <Box sx={{ borderBottom: 1, borderColor: "divider", bgcolor: "background.paper", px: 1.5, py: 1.5 }}>
             <Box sx={{ display: "grid", gap: 1, gridTemplateColumns: { md: "minmax(0,1fr) 150px minmax(0,1fr)" } }}>
               <Box sx={{ minWidth: 0 }}>
-                <Typography component="label" sx={{ display: "block", mb: 0.5, fontSize: 11.5, fontWeight: 700, color: "error.dark" }}>Bill no. / barcode</Typography>
+                <Typography component="label" sx={{ display: "block", mb: 0.5, fontSize: TYPE.label, fontWeight: 700, color: "error.dark" }}>Bill no. / barcode</Typography>
                 <TextField
                   inputRef={billInputRef}
                   type="text"
@@ -964,7 +965,7 @@ const PosReturn = () => {
               </Box>
 
               <Box sx={{ minWidth: 0 }}>
-                <Typography component="label" sx={{ display: "block", mb: 0.5, fontSize: 11.5, fontWeight: 700, color: "text.secondary" }}>Selected Bill</Typography>
+                <Typography component="label" sx={{ display: "block", mb: 0.5, fontSize: TYPE.label, fontWeight: 700, color: "text.secondary" }}>Selected Bill</Typography>
                 <TextField
                   type="text"
                   value={
@@ -983,7 +984,7 @@ const PosReturn = () => {
               </Box>
 
               <Box sx={{ minWidth: 0 }}>
-                <Typography component="label" sx={{ display: "block", mb: 0.5, fontSize: 11.5, fontWeight: 700, color: "text.secondary" }}>Reason</Typography>
+                <Typography component="label" sx={{ display: "block", mb: 0.5, fontSize: TYPE.label, fontWeight: 700, color: "text.secondary" }}>Reason</Typography>
                 <TextField
                   select
                   value={selectedReturnReasonId}
@@ -1115,7 +1116,7 @@ const PosReturn = () => {
           </Stack>
 
           <Stack spacing={1} sx={{ borderBottom: 1, borderColor: "divider", py: 1 }}>
-            <Typography sx={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>
+            <Typography sx={{ fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>
               Source Bill:{" "}
               {sourceSale?.billNo
                 ? formatSaleBillNo(sourceSale.billNo)
@@ -1124,7 +1125,7 @@ const PosReturn = () => {
                   : "-"}
             </Typography>
             <Box>
-              <Typography component="label" sx={{ display: "block", mb: 0.5, fontSize: 11.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>Customer Number</Typography>
+              <Typography component="label" sx={{ display: "block", mb: 0.5, fontSize: TYPE.label, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>Customer Number</Typography>
               <TextField
                 type="text"
                 value={newCustomer.mobileNo}
@@ -1136,7 +1137,7 @@ const PosReturn = () => {
               />
             </Box>
             <Box>
-              <Typography component="label" sx={{ display: "block", mb: 0.5, fontSize: 11.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>Customer Name</Typography>
+              <Typography component="label" sx={{ display: "block", mb: 0.5, fontSize: TYPE.label, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>Customer Name</Typography>
               <TextField
                 type="text"
                 value={newCustomer.name}
@@ -1151,7 +1152,7 @@ const PosReturn = () => {
 
           <Box sx={{ borderTop: 1, borderColor: "divider", py: 1.5 }}>
             <Box sx={{ overflow: "hidden", borderRadius: "3.5px", border: "1px solid", borderColor: "divider" }}>
-              <Box sx={{ display: "grid", gridTemplateColumns: "1.1fr 0.7fr 72px", borderBottom: 1, borderColor: "divider", bgcolor: "action.hover", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>
+              <Box sx={{ display: "grid", gridTemplateColumns: "1.1fr 0.7fr 72px", borderBottom: 1, borderColor: "divider", bgcolor: "action.hover", fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>
                 <Box sx={{ px: 1, py: 1 }}>Last Doc</Box>
                 <Box sx={{ borderLeft: 1, borderColor: "divider", px: 1, py: 1, textAlign: "right" }}>Amount</Box>
                 <Box sx={{ borderLeft: 1, borderColor: "divider", px: 1, py: 1, textAlign: "center" }}>Action</Box>
@@ -1345,7 +1346,7 @@ const PosReturn = () => {
       <Stack spacing={2} sx={showSearchPage ? masterSearchAreaSx : { flex: 1, minHeight: 0, p: 2, pb: { xs: 7, xl: 2 }, display: "flex", flexDirection: "column" }}>
         {showSearchPage ? renderSearchPage() : renderEntryPage()}
 
-        {loading && <Typography sx={{ fontSize: 10.5, color: "text.secondary", px: 0.5 }}>Loading master data...</Typography>}
+        {loading && <Typography sx={{ fontSize: TYPE.small, color: "text.secondary", px: 0.5 }}>Loading master data...</Typography>}
       </Stack>
       {approvalRequirement && (
         <ApprovalDialog

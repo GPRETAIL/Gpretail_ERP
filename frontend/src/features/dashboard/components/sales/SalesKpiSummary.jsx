@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import React from "react";
 import LoadingSkeleton from "@/shared/components/LoadingSkeleton";
 import { useNavigate } from "react-router-dom";
@@ -21,7 +22,7 @@ export function TodaysSalesCard({ summary = {}, loading, privacyMode }) {
   return (
     <ButtonBase onClick={() => navigate("/sales/pos-sales")} sx={cardSx("primary.main")}>
       <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", color: "text.secondary" }}>
-        <Typography sx={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+        <Typography sx={{ fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
           Today's Sales
         </Typography>
         <ShoppingCart size={20} style={{ color: "inherit" }} />
@@ -29,7 +30,7 @@ export function TodaysSalesCard({ summary = {}, loading, privacyMode }) {
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "text.primary", ...blurSx(privacyMode) }}>
         {loading ? <LoadingSkeleton /> : formatCurrency(summary.today_sales_amount)}
       </Typography>
-      <Stack direction="row" sx={{ mt: 0.5, alignItems: "center", justifyContent: "space-between", fontSize: 11, color: "text.secondary", ...blurSx(privacyMode) }}>
+      <Stack direction="row" sx={{ mt: 0.5, alignItems: "center", justifyContent: "space-between", fontSize: TYPE.small, color: "text.secondary", ...blurSx(privacyMode) }}>
         <Typography component="span" sx={{ fontSize: "inherit", color: "inherit" }}>
           Bills: {Number(summary.today_bills_count || 0).toLocaleString()}
         </Typography>
@@ -46,7 +47,7 @@ export function NetSalesCard({ summary = {}, loading, privacyMode }) {
   return (
     <ButtonBase onClick={() => navigate("/sales/reports")} sx={cardSx("success.main")}>
       <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", color: "text.secondary" }}>
-        <Typography sx={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+        <Typography sx={{ fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
           Net Sales (Period)
         </Typography>
         <Wallet size={20} style={{ color: "inherit" }} />
@@ -54,7 +55,7 @@ export function NetSalesCard({ summary = {}, loading, privacyMode }) {
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "success.main", ...blurSx(privacyMode) }}>
         {loading ? <LoadingSkeleton /> : formatCurrency(summary.net_sales_amount)}
       </Typography>
-      <Stack direction="row" sx={{ mt: 0.5, alignItems: "center", justifyContent: "space-between", fontSize: 11, color: "text.secondary", ...blurSx(privacyMode) }}>
+      <Stack direction="row" sx={{ mt: 0.5, alignItems: "center", justifyContent: "space-between", fontSize: TYPE.small, color: "text.secondary", ...blurSx(privacyMode) }}>
         <Typography component="span" sx={{ fontSize: "inherit", color: "inherit" }}>
           Gross: {formatCurrency(summary.range_sales_amount)}
         </Typography>
@@ -71,7 +72,7 @@ export function ReturnsCard({ summary = {}, performance = {}, loading, privacyMo
   return (
     <ButtonBase onClick={() => navigate("/sales/pos-sales-return")} sx={cardSx("error.main")}>
       <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", color: "text.secondary" }}>
-        <Typography sx={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+        <Typography sx={{ fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
           Returns (Period)
         </Typography>
         <RotateCcw size={20} style={{ color: "inherit" }} />
@@ -79,7 +80,7 @@ export function ReturnsCard({ summary = {}, performance = {}, loading, privacyMo
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "text.primary", ...blurSx(privacyMode) }}>
         {loading ? <LoadingSkeleton /> : formatCurrency(summary.returns_amount)}
       </Typography>
-      <Stack direction="row" sx={{ mt: 0.5, alignItems: "center", justifyContent: "space-between", fontSize: 11, color: "text.secondary", ...blurSx(privacyMode) }}>
+      <Stack direction="row" sx={{ mt: 0.5, alignItems: "center", justifyContent: "space-between", fontSize: TYPE.small, color: "text.secondary", ...blurSx(privacyMode) }}>
         <Typography component="span" sx={{ fontSize: "inherit", color: "inherit" }}>{summary.returns_count || 0} Returns</Typography>
         <Typography component="span" sx={{ fontSize: "inherit", color: "inherit" }}>Rate: {performance.return_rate || "0%"}</Typography>
       </Stack>
@@ -92,7 +93,7 @@ export function CreditPendingCard({ summary = {}, performance = {}, loading, pri
   return (
     <ButtonBase onClick={() => navigate("/sales/pos-sales?filter=credit")} sx={cardSx("warning.main")}>
       <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", color: "text.secondary" }}>
-        <Typography sx={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+        <Typography sx={{ fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
           Credit Pending
         </Typography>
         <CreditCard size={20} style={{ color: "inherit" }} />
@@ -100,7 +101,7 @@ export function CreditPendingCard({ summary = {}, performance = {}, loading, pri
       <Typography sx={{ mt: 1, fontSize: 21, fontWeight: 800, color: "warning.main", ...blurSx(privacyMode) }}>
         {loading ? <LoadingSkeleton /> : formatCurrency(summary.credit_pending_amount)}
       </Typography>
-      <Stack direction="row" sx={{ mt: 0.5, alignItems: "center", justifyContent: "space-between", fontSize: 11, color: "text.secondary", ...blurSx(privacyMode) }}>
+      <Stack direction="row" sx={{ mt: 0.5, alignItems: "center", justifyContent: "space-between", fontSize: TYPE.small, color: "text.secondary", ...blurSx(privacyMode) }}>
         <Typography component="span" sx={{ fontSize: "inherit", color: "inherit" }}>Ratio: {performance.credit_sales_ratio || "0%"}</Typography>
         <Typography component="span" sx={{ fontSize: "inherit", color: "inherit" }}>Open Registers: {summary.open_registers_count || 0}</Typography>
       </Stack>

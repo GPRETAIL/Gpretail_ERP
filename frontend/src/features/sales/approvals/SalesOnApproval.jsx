@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import { masterSearchAreaSx } from "@/shared/theme/erpUi";
 import SearchGridPanel from "@/shared/components/SearchGridPanel";
 import useSearchGrid, { createSearchGridAdapter } from "@/shared/hooks/useSearchGrid";
@@ -1273,10 +1274,10 @@ const SalesOnApproval = () => {
           }}
         >
           <Box sx={{ borderBottom: 1, borderColor: "divider", bgcolor: "background.paper", px: 1.5, py: 1.5 }}>
-            <Typography sx={{ mb: 1, fontSize: 10.5, fontWeight: 600, color: "text.primary" }}>Add Product</Typography>
+            <Typography sx={{ mb: 1, fontSize: TYPE.small, fontWeight: 600, color: "text.primary" }}>Add Product</Typography>
             <Stack direction="row" sx={{ flexWrap: "wrap", alignItems: "flex-end", gap: 1 }}>
               <Box sx={{ width: "100%", minWidth: { md: 220 }, flex: 1 }}>
-                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 10.5, fontWeight: 700, color: "error.main" }}>Barcode</Typography>
+                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: TYPE.label, fontWeight: 700, color: "error.main" }}>Barcode</Typography>
                 <TextField
                   inputRef={barcodeInputRef}
                   type="text"
@@ -1286,18 +1287,18 @@ const SalesOnApproval = () => {
                   placeholder="Scan / enter barcode"
                   size="small"
                   fullWidth
-                  sx={{ "& .MuiInputBase-input": { fontSize: 10.5, py: 0.75 } }}
+                  sx={{ "& .MuiInputBase-input": { fontSize: TYPE.small, py: 0.75 } }}
                 />
               </Box>
               <Box sx={{ width: "100%", minWidth: { md: 280 }, flex: 1.3 }}>
-                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 10.5, fontWeight: 700, color: "error.main" }}>Product (In Stock)</Typography>
+                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: TYPE.label, fontWeight: 700, color: "error.main" }}>Product (In Stock)</Typography>
                 <TextField
                   select
                   value={addProductKey}
                   onChange={(e) => setAddProductKey(e.target.value)}
                   size="small"
                   fullWidth
-                  sx={{ "& .MuiInputBase-input": { fontSize: 10.5, py: 0.75 } }}
+                  sx={{ "& .MuiInputBase-input": { fontSize: TYPE.small, py: 0.75 } }}
                 >
                   <MenuItem value="">Select product</MenuItem>
                   {productOptions.map((row) => (
@@ -1308,7 +1309,7 @@ const SalesOnApproval = () => {
                 </TextField>
               </Box>
               <Box sx={{ width: 112 }}>
-                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 10.5, fontWeight: 700, color: "error.main" }}>Qty</Typography>
+                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: TYPE.label, fontWeight: 700, color: "error.main" }}>Qty</Typography>
                 <TextField
                   type="number"
                   slotProps={{ htmlInput: { min: 1 } }}
@@ -1322,7 +1323,7 @@ const SalesOnApproval = () => {
                   }}
                   size="small"
                   fullWidth
-                  sx={{ "& .MuiInputBase-input": { fontSize: 10.5, py: 0.75 } }}
+                  sx={{ "& .MuiInputBase-input": { fontSize: TYPE.small, py: 0.75 } }}
                 />
               </Box>
               <Box sx={{ width: 40 }}>
@@ -1336,7 +1337,7 @@ const SalesOnApproval = () => {
                 </Button>
               </Box>
             </Stack>
-            <Typography sx={{ mt: 1, fontSize: 10.5, color: "text.secondary" }}>{selectedStockHint}</Typography>
+            <Typography sx={{ mt: 1, fontSize: TYPE.small, color: "text.secondary" }}>{selectedStockHint}</Typography>
           </Box>
 
           <Box sx={{ flex: 1, minHeight: 0, overflowX: "auto" }}>
@@ -1387,7 +1388,7 @@ const SalesOnApproval = () => {
 
               <Box sx={{ flex: 1, minHeight: 0, overflowY: "auto" }} style={{ scrollbarGutter: "stable" }}>
                 {cartWithTotals.length === 0 ? (
-                  <Box sx={{ display: "flex", height: "100%", alignItems: "center", justifyContent: "center", py: 8, textAlign: "center", fontSize: 10.5, color: "text.disabled" }}>
+                  <Box sx={{ display: "flex", height: "100%", alignItems: "center", justifyContent: "center", py: 8, textAlign: "center", fontSize: TYPE.small, color: "text.disabled" }}>
                     No products added yet.
                   </Box>
                 ) : (
@@ -1508,7 +1509,7 @@ const SalesOnApproval = () => {
       <Box sx={{ width: "100%", display: { xl: "flex" }, minHeight: { xl: 0 } }}>
         <Box sx={{ width: "100%", borderRadius: "7px", border: 1, borderColor: "grey.300", bgcolor: "background.paper", p: 1.5, boxShadow: 1, display: { xl: "flex" }, height: { xl: "100%" }, flexDirection: { xl: "column" } }}>
           <Box sx={{ borderBottom: 1, borderColor: "divider", pb: 1 }}>
-            <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", gap: 1.5, fontSize: 10.5 }}>
+            <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", gap: 1.5, fontSize: TYPE.small }}>
               <Stack direction="row" sx={{ alignItems: "center", gap: 0.75 }}>
                 <Box component="span" sx={{ fontWeight: 600, color: "text.secondary" }}>Date</Box>
                 <Box component="span" sx={{ color: "text.primary" }}>{now.toLocaleDateString()}</Box>
@@ -1524,7 +1525,7 @@ const SalesOnApproval = () => {
             <Box sx={{ display: "grid", gap: 1, gridTemplateColumns: { md: "minmax(0,1fr) 96px" } }}>
               <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
                 <Box>
-                  <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>Customer Number</Typography>
+                  <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: TYPE.label, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>Customer Number</Typography>
                   <TextField
                     inputRef={customerNumberInputRef}
                     type="text"
@@ -1539,11 +1540,11 @@ const SalesOnApproval = () => {
                     placeholder="Write customer number and press Enter"
                     size="small"
                     fullWidth
-                    sx={{ "& .MuiInputBase-input": { fontSize: 10.5, py: 0.75 } }}
+                    sx={{ "& .MuiInputBase-input": { fontSize: TYPE.small, py: 0.75 } }}
                   />
                 </Box>
                 <Box>
-                  <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>Customer Name</Typography>
+                  <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: TYPE.label, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>Customer Name</Typography>
                   <TextField
                     type="text"
                     value={newCustomer.name}
@@ -1551,13 +1552,13 @@ const SalesOnApproval = () => {
                     placeholder="Customer name"
                     size="small"
                     fullWidth
-                    sx={{ "& .MuiInputBase-input": { fontSize: 10.5, py: 0.75 } }}
+                    sx={{ "& .MuiInputBase-input": { fontSize: TYPE.small, py: 0.75 } }}
                   />
                 </Box>
               </Box>
 
               <Box sx={{ display: "flex", flexDirection: "column", gap: 1, pt: { xs: 0, md: 3 } }}>
-                <Stack component="label" direction="row" sx={{ alignItems: "center", justifyContent: "space-between", gap: 1, fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>
+                <Stack component="label" direction="row" sx={{ alignItems: "center", justifyContent: "space-between", gap: 1, fontSize: TYPE.label, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>
                   <Box component="span">Credit</Box>
                   <Checkbox
                     checked={creditEnabled}
@@ -1566,7 +1567,7 @@ const SalesOnApproval = () => {
                     sx={{ p: 0 }}
                   />
                 </Stack>
-                <Stack component="label" direction="row" sx={{ alignItems: "center", justifyContent: "space-between", gap: 1, fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>
+                <Stack component="label" direction="row" sx={{ alignItems: "center", justifyContent: "space-between", gap: 1, fontSize: TYPE.label, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>
                   <Box component="span">IGST</Box>
                   <Checkbox
                     checked={igstEnabled}
@@ -1584,7 +1585,7 @@ const SalesOnApproval = () => {
 
             {igstEnabled ? (
               <Box>
-                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>
+                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: TYPE.label, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>
                   Place Of Supply
                 </Typography>
                 <TextField
@@ -1593,7 +1594,7 @@ const SalesOnApproval = () => {
                   onChange={(event) => setPlaceOfSupplyStateId(event.target.value)}
                   size="small"
                   fullWidth
-                  sx={{ "& .MuiInputBase-input": { fontSize: 10.5, py: 0.75 } }}
+                  sx={{ "& .MuiInputBase-input": { fontSize: TYPE.small, py: 0.75 } }}
                 >
                   <MenuItem value="">Select state</MenuItem>
                   {customerConfigOptions.states.map((row) => (
@@ -1608,14 +1609,14 @@ const SalesOnApproval = () => {
 
           <Box sx={{ borderTop: 1, borderColor: "divider", py: 1.5 }}>
             <Box sx={{ overflow: "hidden", borderRadius: "3.5px", border: 1, borderColor: "divider" }}>
-              <Box sx={{ display: "grid", gridTemplateColumns: "1.1fr 0.9fr 72px", borderBottom: 1, borderColor: "divider", bgcolor: "action.hover", fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>
+              <Box sx={{ display: "grid", gridTemplateColumns: "1.1fr 0.9fr 72px", borderBottom: 1, borderColor: "divider", bgcolor: "action.hover", fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>
                 <Box sx={{ px: 1, py: 1 }}>Last Doc</Box>
                 <Box sx={{ borderLeft: 1, borderColor: "divider", px: 1, py: 1, textAlign: "right" }}>Amount</Box>
                 <Box sx={{ borderLeft: 1, borderColor: "divider", px: 1, py: 1, textAlign: "center" }}>Action</Box>
               </Box>
               <Box sx={{ height: 112, overflowY: "auto" }}>
                 {latestApprovalDoc ? (
-                  <Box sx={{ display: "grid", gridTemplateColumns: "1.1fr 0.9fr 72px", alignItems: "center", fontSize: 10.5, color: "text.secondary" }}>
+                  <Box sx={{ display: "grid", gridTemplateColumns: "1.1fr 0.9fr 72px", alignItems: "center", fontSize: TYPE.small, color: "text.secondary" }}>
                     <Box sx={{ px: 1, py: 1, fontWeight: 600 }}>{formatApprovalNo(latestApprovalDoc.approval_no || latestApprovalDoc.id)}</Box>
                     <Box sx={{ borderLeft: 1, borderColor: "divider", px: 1, py: 1, textAlign: "right", fontWeight: 600 }}>
                       {formatMoney(latestApprovalDoc.amount || 0)}
@@ -1633,7 +1634,7 @@ const SalesOnApproval = () => {
                     </Box>
                   </Box>
                 ) : (
-                  <Box sx={{ display: "flex", height: "100%", alignItems: "center", justifyContent: "center", px: 1, textAlign: "center", fontSize: 10.5, color: "text.disabled" }}>
+                  <Box sx={{ display: "flex", height: "100%", alignItems: "center", justifyContent: "center", px: 1, textAlign: "center", fontSize: TYPE.small, color: "text.disabled" }}>
                     No saved approval yet
                   </Box>
                 )}
@@ -1641,7 +1642,7 @@ const SalesOnApproval = () => {
             </Box>
           </Box>
 
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 1, borderTop: 1, borderColor: "divider", pt: 1.5, fontSize: 10.5 }}>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 1, borderTop: 1, borderColor: "divider", pt: 1.5, fontSize: TYPE.small }}>
             <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between" }}>
               <Box component="span" sx={{ fontWeight: 600, color: "text.secondary" }}>Amount</Box>
               <Box component="span" sx={{ fontWeight: 700, color: "text.primary" }}>{formatMoney(summary.amount)}</Box>
@@ -1758,7 +1759,7 @@ const SalesOnApproval = () => {
       <Box sx={showSearchPage ? masterSearchAreaSx : { flex: 1, minHeight: 0, p: 2, display: "flex", flexDirection: "column", gap: 2, pb: { xs: 14, xl: 2 } }}>
         {showSearchPage ? renderSearchPage() : renderEntryPage()}
 
-        {loading && <Typography sx={{ fontSize: 10.5, color: "text.secondary", px: 0.5 }}>Loading master data...</Typography>}
+        {loading && <Typography sx={{ fontSize: TYPE.small, color: "text.secondary", px: 0.5 }}>Loading master data...</Typography>}
       </Box>
 
       {salesManDialog.open && (
@@ -1835,7 +1836,7 @@ const SalesOnApproval = () => {
             <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", borderBottom: 1, borderColor: "divider", px: 2.5, py: 2 }}>
               <Box>
                 <Typography sx={{ fontSize: 12.25, fontWeight: 600, color: "text.primary" }}>Quick Customer</Typography>
-                <Typography sx={{ fontSize: 10.5, color: "text.secondary" }}>
+                <Typography sx={{ fontSize: TYPE.small, color: "text.secondary" }}>
                   Press Enter to move to next field. On mobile number Enter, existing customers appear below.
                 </Typography>
               </Box>
@@ -2108,7 +2109,7 @@ const SalesOnApproval = () => {
             <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", borderBottom: 1, borderColor: "divider", px: 2.5, py: 2 }}>
               <Box>
                 <Typography sx={{ fontSize: 12.25, fontWeight: 600, color: "text.primary" }}>Sale Discount</Typography>
-                <Typography sx={{ fontSize: 10.5, color: "text.secondary" }}>
+                <Typography sx={{ fontSize: TYPE.small, color: "text.secondary" }}>
                   Select sale rows and apply a discount percentage to the current approval bill.
                 </Typography>
               </Box>
@@ -2197,15 +2198,15 @@ const SalesOnApproval = () => {
                 </Box>
                 <Box sx={{ display: "grid", minWidth: 260, flex: 1, gridTemplateColumns: "repeat(3, 1fr)", gap: 1.5, fontSize: 12.25 }}>
                   <Box sx={{ borderRadius: "3.5px", border: 1, borderColor: "divider", bgcolor: "action.hover", px: 1.5, py: 1 }}>
-                    <Box sx={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>Selected Amount</Box>
+                    <Box sx={{ fontSize: TYPE.small, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>Selected Amount</Box>
                     <Box sx={{ mt: 0.5, fontWeight: 600, color: "text.primary" }}>{formatMoney(discountDialogSummary.selectedAmount)}</Box>
                   </Box>
                   <Box sx={{ borderRadius: "3.5px", border: 1, borderColor: "divider", bgcolor: "action.hover", px: 1.5, py: 1 }}>
-                    <Box sx={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>Discount Value</Box>
+                    <Box sx={{ fontSize: TYPE.small, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>Discount Value</Box>
                     <Box sx={{ mt: 0.5, fontWeight: 600, color: "text.primary" }}>{formatMoney(discountDialogSummary.previewDiscountValue)}</Box>
                   </Box>
                   <Box sx={{ borderRadius: "3.5px", border: 1, borderColor: "divider", bgcolor: "action.hover", px: 1.5, py: 1 }}>
-                    <Box sx={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>Net Amount</Box>
+                    <Box sx={{ fontSize: TYPE.small, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>Net Amount</Box>
                     <Box sx={{ mt: 0.5, fontWeight: 600, color: "text.primary" }}>{formatMoney(discountDialogSummary.previewNetAmount)}</Box>
                   </Box>
                 </Box>

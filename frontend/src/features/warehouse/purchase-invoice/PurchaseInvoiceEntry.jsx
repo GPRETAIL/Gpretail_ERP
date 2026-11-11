@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import PageHeader from "@/shared/components/PageHeader";
 import { calculatePurchaseInvoiceTotals } from "./utils/purchaseInvoiceTotals";
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
@@ -14,7 +15,7 @@ import { getMasterLookups } from "@/features/warehouse/utils/lookupCache";
 import { Box, Stack, Typography, TextField, MenuItem, IconButton, Button, Checkbox, Table, TableHead, TableBody, TableRow, TableCell, alpha } from "@mui/material";
 import { muiFieldSx } from "@/shared/theme/formControlSizes";
 
-const invoiceFieldLabelSx = { width: 112, flexShrink: 0, fontSize: 11.5, fontWeight: 500, color: "text.secondary" };
+const invoiceFieldLabelSx = { width: 112, flexShrink: 0, fontSize: TYPE.small, fontWeight: 500, color: "text.secondary" };
 const invoiceControlSx = muiFieldSx;
 
 const TYPE_OPTIONS = [
@@ -1180,7 +1181,7 @@ const PurchaseInvoiceEntry = () => {
             {/* Top Form */}
             <Box sx={{ p: 0.75, flexShrink: 0 }}>
               {!hasLinkedTransportEntry && !selectedInvoiceId && (
-                <Box sx={(theme) => ({ mb: 1, borderRadius: "3.5px", border: "1px solid", borderColor: alpha(theme.palette.warning.main, 0.4), bgcolor: alpha(theme.palette.warning.main, theme.palette.mode === "dark" ? 0.16 : 0.1), px: 1.5, py: 1, fontSize: 10.5, color: "warning.main" })}>
+                <Box sx={(theme) => ({ mb: 1, borderRadius: "3.5px", border: "1px solid", borderColor: alpha(theme.palette.warning.main, 0.4), bgcolor: alpha(theme.palette.warning.main, theme.palette.mode === "dark" ? 0.16 : 0.1), px: 1.5, py: 1, fontSize: TYPE.small, color: "warning.main" })}>
                   This invoice must be linked to a transport entry. Open it from Warehouse Dashboard,
                   Transport Receipt, or with a `transport_entry_id` in the URL.
                 </Box>
@@ -1276,7 +1277,7 @@ const PurchaseInvoiceEntry = () => {
                 </Stack>
                 <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
                   <Typography component="span" sx={invoiceFieldLabelSx}>Flags</Typography>
-                  <Stack direction="row" spacing={1.5} sx={{ flexWrap: "wrap", alignItems: "center", fontSize: 10.5 }}>
+                  <Stack direction="row" spacing={1.5} sx={{ flexWrap: "wrap", alignItems: "center", fontSize: TYPE.small }}>
                     <Stack component="label" direction="row" spacing={0.5} sx={{ alignItems: "center", cursor: "pointer" }}>
                       <Checkbox name="interstate" checked={formData.interstate} onChange={handleFormChange} size="small" sx={{ p: 0 }} />
                       <Box component="span">Interstate</Box>
@@ -1294,7 +1295,7 @@ const PurchaseInvoiceEntry = () => {
             <Box sx={{ borderTop: 1, borderColor: "divider", px: 0.75, py: 0.5, flexShrink: 0 }}>
               <Stack direction="row" spacing={0.75} sx={{ alignItems: "flex-end" }}>
                 <Box sx={{ width: 144, flexShrink: 0 }}>
-                  <Typography sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.25 }}>Type</Typography>
+                  <Typography sx={{ display: "block", fontSize: TYPE.small, fontWeight: 500, color: "text.secondary", mb: 0.25 }}>Type</Typography>
                   <Box>
                     <SearchableSelect
                       name="type"
@@ -1307,7 +1308,7 @@ const PurchaseInvoiceEntry = () => {
                   </Box>
                 </Box>
                 <Box sx={{ width: 112, flexShrink: 0 }}>
-                  <Typography sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.25 }}>Amount On</Typography>
+                  <Typography sx={{ display: "block", fontSize: TYPE.small, fontWeight: 500, color: "text.secondary", mb: 0.25 }}>Amount On</Typography>
                   <TextField
                     slotProps={{ htmlInput: { inputMode: "decimal" } }}
                     name="amountOn"
@@ -1320,7 +1321,7 @@ const PurchaseInvoiceEntry = () => {
                   />
                 </Box>
                 <Box sx={{ width: 64, flexShrink: 0 }}>
-                  <Typography sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.25 }}>Dist %</Typography>
+                  <Typography sx={{ display: "block", fontSize: TYPE.small, fontWeight: 500, color: "text.secondary", mb: 0.25 }}>Dist %</Typography>
                   <TextField
                     slotProps={{ htmlInput: { inputMode: "decimal" } }}
                     name="disPerc"
@@ -1333,7 +1334,7 @@ const PurchaseInvoiceEntry = () => {
                   />
                 </Box>
                 <Box sx={{ width: 80, flexShrink: 0 }}>
-                  <Typography sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.25 }}>Discount</Typography>
+                  <Typography sx={{ display: "block", fontSize: TYPE.small, fontWeight: 500, color: "text.secondary", mb: 0.25 }}>Discount</Typography>
                   <TextField
                     slotProps={{ htmlInput: { inputMode: "decimal" } }}
                     name="discount"
@@ -1346,7 +1347,7 @@ const PurchaseInvoiceEntry = () => {
                   />
                 </Box>
                 <Box sx={{ width: 176, flexShrink: 0 }}>
-                  <Typography sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.25 }}>Tax</Typography>
+                  <Typography sx={{ display: "block", fontSize: TYPE.small, fontWeight: 500, color: "text.secondary", mb: 0.25 }}>Tax</Typography>
                   <Box>
                     <AsyncSearchSelect
                       name="taxId"
@@ -1360,7 +1361,7 @@ const PurchaseInvoiceEntry = () => {
                   </Box>
                 </Box>
                 <Box sx={{ width: 112, flexShrink: 0 }}>
-                  <Typography sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.25 }}>T-Value</Typography>
+                  <Typography sx={{ display: "block", fontSize: TYPE.small, fontWeight: 500, color: "text.secondary", mb: 0.25 }}>T-Value</Typography>
                   <TextField
                     value={`${Number(currentItem.taxValue || 0).toFixed(2)} @ ${parseFloat(currentItem.taxPerc) || 0}%`}
                     slotProps={{ input: { readOnly: true } }}
@@ -1370,7 +1371,7 @@ const PurchaseInvoiceEntry = () => {
                   />
                 </Box>
                 <Box sx={{ width: 112, flexShrink: 0 }}>
-                  <Typography sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.25 }}>Nett Amount</Typography>
+                  <Typography sx={{ display: "block", fontSize: TYPE.small, fontWeight: 500, color: "text.secondary", mb: 0.25 }}>Nett Amount</Typography>
                   <TextField
                     value={Number(currentItem.netAmount || 0).toFixed(2)}
                     slotProps={{ input: { readOnly: true } }}
@@ -1395,7 +1396,7 @@ const PurchaseInvoiceEntry = () => {
             <Box sx={{ borderTop: 1, borderColor: "divider", flex: { xs: "none", xl: 1 }, height: { xs: 200, xl: "auto" }, minHeight: 0, overflow: "hidden" }}>
               <Box sx={{ overflowX: "auto", height: "100%" }}>
                 <Box sx={{ minWidth: 860, height: "100%", display: "flex", flexDirection: "column" }}>
-                  <Stack direction="row" sx={{ bgcolor: "action.hover", fontSize: 9, fontWeight: 600, color: "text.secondary", borderBottom: 1, borderColor: "divider", flexShrink: 0 }}>
+                  <Stack direction="row" sx={{ bgcolor: "action.hover", fontSize: TYPE.small, fontWeight: 600, color: "text.secondary", borderBottom: 1, borderColor: "divider", flexShrink: 0 }}>
                     <Box sx={{ px: 0.75, py: 0.5, width: 96, borderRight: 1, borderColor: "divider" }}>Type</Box>
                     <Box sx={{ px: 0.75, py: 0.5, flex: 1, borderRight: 1, borderColor: "divider", textAlign: "right" }}>Amount</Box>
                     <Box sx={{ px: 0.75, py: 0.5, width: 64, borderRight: 1, borderColor: "divider", textAlign: "right" }}>Dist %</Box>
@@ -1410,7 +1411,7 @@ const PurchaseInvoiceEntry = () => {
                       <Box sx={{ height: "100%" }} />
                     ) : (
                       items.map((item, index) => (
-                        <Stack key={item.id} direction="row" sx={{ fontSize: 9, color: "text.primary", borderBottom: 1, borderColor: "divider", "&:last-of-type": { borderBottom: 0 }, "&:hover": { bgcolor: "action.hover" } }}>
+                        <Stack key={item.id} direction="row" sx={{ fontSize: TYPE.small, color: "text.primary", borderBottom: 1, borderColor: "divider", "&:last-of-type": { borderBottom: 0 }, "&:hover": { bgcolor: "action.hover" } }}>
                           <Box sx={{ px: 0.75, py: 0.5, width: 96, borderRight: 1, borderColor: "divider", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.type}</Box>
                           <Box sx={{ px: 0.75, py: 0.5, flex: 1, borderRight: 1, borderColor: "divider", textAlign: "right" }}>{parseFloat(item.amountOn).toFixed(2)}</Box>
                           <Box sx={{ px: 0.75, py: 0.5, width: 64, borderRight: 1, borderColor: "divider", textAlign: "right" }}>{item.disPerc || 0}%</Box>
@@ -1439,63 +1440,63 @@ const PurchaseInvoiceEntry = () => {
                 <Stack direction="row" spacing={1} sx={{ alignItems: "flex-end", flexWrap: "wrap" }}>
                   <Stack direction="row" spacing={0.75} sx={{ alignItems: "flex-end", flexShrink: 0 }}>
                     <Box sx={{ width: 80 }}>
-                      <Typography sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.25 }}>Bill Value</Typography>
+                      <Typography sx={{ display: "block", fontSize: TYPE.small, fontWeight: 500, color: "text.secondary", mb: 0.25 }}>Bill Value</Typography>
                       <TextField
                         slotProps={{ htmlInput: { inputMode: "decimal" } }}
                         value={billInfo.billValue}
                         onChange={(e) => setBillInfo((p) => ({ ...p, billValue: parseFloat(e.target.value) || 0 }))}
                         size="small"
                         fullWidth
-                        sx={{ "& .MuiInputBase-input": { fontSize: 10.5, py: 0.5, textAlign: "right" } }}
+                        sx={{ "& .MuiInputBase-input": { fontSize: TYPE.small, py: 0.5, textAlign: "right" } }}
                       />
                     </Box>
                     <Box sx={{ width: 70 }}>
-                      <Typography sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.25 }}>Expense %</Typography>
+                      <Typography sx={{ display: "block", fontSize: TYPE.small, fontWeight: 500, color: "text.secondary", mb: 0.25 }}>Expense %</Typography>
                       <TextField
                         slotProps={{ htmlInput: { inputMode: "decimal" } }}
                         value={billInfo.expensePerc}
                         onChange={(e) => setBillInfo((p) => ({ ...p, expensePerc: parseFloat(e.target.value) || 0 }))}
                         size="small"
                         fullWidth
-                        sx={{ "& .MuiInputBase-input": { fontSize: 10.5, py: 0.5, textAlign: "right" } }}
+                        sx={{ "& .MuiInputBase-input": { fontSize: TYPE.small, py: 0.5, textAlign: "right" } }}
                       />
                     </Box>
                     <Box sx={{ width: 80 }}>
-                      <Typography sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.25 }}>Expense ₹</Typography>
+                      <Typography sx={{ display: "block", fontSize: TYPE.small, fontWeight: 500, color: "text.secondary", mb: 0.25 }}>Expense ₹</Typography>
                       <TextField
                         slotProps={{ htmlInput: { inputMode: "decimal" } }}
                         value={billInfo.expenseAmt}
                         onChange={(e) => setBillInfo((p) => ({ ...p, expenseAmt: parseFloat(e.target.value) || 0 }))}
                         size="small"
                         fullWidth
-                        sx={{ "& .MuiInputBase-input": { fontSize: 10.5, py: 0.5, textAlign: "right" } }}
+                        sx={{ "& .MuiInputBase-input": { fontSize: TYPE.small, py: 0.5, textAlign: "right" } }}
                       />
                     </Box>
                     <Box sx={{ width: 60 }}>
-                      <Typography sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.25 }}>Pieces</Typography>
+                      <Typography sx={{ display: "block", fontSize: TYPE.small, fontWeight: 500, color: "text.secondary", mb: 0.25 }}>Pieces</Typography>
                       <TextField
                         slotProps={{ htmlInput: { inputMode: "numeric" }, input: { readOnly: hasLinkedTransportEntry } }}
                         value={billInfo.pieces}
                         onChange={(e) => !hasLinkedTransportEntry && setBillInfo((p) => ({ ...p, pieces: parseInt(e.target.value) || 0 }))}
                         size="small"
                         fullWidth
-                        sx={{ "& .MuiInputBase-input": { fontSize: 10.5, py: 0.5, textAlign: "right" }, "& .MuiOutlinedInput-root": hasLinkedTransportEntry ? { bgcolor: "action.hover" } : undefined }}
+                        sx={{ "& .MuiInputBase-input": { fontSize: TYPE.small, py: 0.5, textAlign: "right" }, "& .MuiOutlinedInput-root": hasLinkedTransportEntry ? { bgcolor: "action.hover" } : undefined }}
                       />
                     </Box>
                     <Box sx={{ width: 60 }}>
-                      <Typography sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.25 }}>Bundles</Typography>
+                      <Typography sx={{ display: "block", fontSize: TYPE.small, fontWeight: 500, color: "text.secondary", mb: 0.25 }}>Bundles</Typography>
                       <TextField
                         slotProps={{ htmlInput: { inputMode: "numeric" }, input: { readOnly: hasLinkedTransportEntry } }}
                         value={billInfo.bundles}
                         onChange={(e) => !hasLinkedTransportEntry && setBillInfo((p) => ({ ...p, bundles: parseInt(e.target.value) || 0 }))}
                         size="small"
                         fullWidth
-                        sx={{ "& .MuiInputBase-input": { fontSize: 10.5, py: 0.5, textAlign: "right" }, "& .MuiOutlinedInput-root": hasLinkedTransportEntry ? { bgcolor: "action.hover" } : undefined }}
+                        sx={{ "& .MuiInputBase-input": { fontSize: TYPE.small, py: 0.5, textAlign: "right" }, "& .MuiOutlinedInput-root": hasLinkedTransportEntry ? { bgcolor: "action.hover" } : undefined }}
                       />
                     </Box>
                   </Stack>
 
-                  <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", columnGap: 1.5, rowGap: 0.25, fontSize: 9.5, flexShrink: 0 }}>
+                  <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", columnGap: 1.5, rowGap: 0.25, fontSize: TYPE.small, flexShrink: 0 }}>
                     {[
                       { name: "taxIncluded", label: "Tax Included On Price" },
                       { name: "discountOnTotal", label: "Discount on Total Value" },
@@ -1527,8 +1528,8 @@ const PurchaseInvoiceEntry = () => {
             <Box sx={{ borderTop: 1, borderColor: "divider", flex: 1, minHeight: 0, overflowY: "auto" }}>
               <Box sx={{ overflowX: "auto" }}>
                 <Table sx={{ minWidth: 860 }}>
-                  <TableHead sx={{ "& .MuiTableCell-head": { fontSize: 11.5, fontWeight: 600, color: "text.secondary", lineHeight: 1.4 } }}>
-                    <TableRow sx={(theme) => ({ bgcolor: alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.08), fontSize: 9, fontWeight: 600, color: "text.secondary", textTransform: "uppercase" })}>
+                  <TableHead sx={{ "& .MuiTableCell-head": { fontSize: TYPE.small, fontWeight: 600, color: "text.secondary", lineHeight: 1.4 } }}>
+                    <TableRow sx={(theme) => ({ bgcolor: alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.08), fontSize: TYPE.small, fontWeight: 600, color: "text.secondary", textTransform: "uppercase" })}>
                       <TableCell sx={{ px: 1, py: 0.5, textAlign: "left" }}>Company</TableCell>
                       <TableCell sx={{ px: 1, py: 0.5, textAlign: "left" }}>Invoice No</TableCell>
                       <TableCell sx={{ px: 1, py: 0.5, textAlign: "left" }}>Date</TableCell>
@@ -1542,13 +1543,13 @@ const PurchaseInvoiceEntry = () => {
                   <TableBody>
                     {invoices.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={8} sx={{ textAlign: "center", py: 3, color: "text.disabled", fontSize: 10.5 }}>
+                        <TableCell colSpan={8} sx={{ textAlign: "center", py: 3, color: "text.disabled", fontSize: TYPE.small }}>
                           No invoices added yet. Fill the form and click "Add Invoice".
                         </TableCell>
                       </TableRow>
                     ) : (
                       invoices.map((inv, index) => (
-                        <TableRow key={index} sx={{ "&:hover": { bgcolor: "action.hover" }, fontSize: 10.5, color: "text.primary" }}>
+                        <TableRow key={index} sx={{ "&:hover": { bgcolor: "action.hover" }, fontSize: TYPE.small, color: "text.primary" }}>
                           <TableCell sx={{ px: 1, py: 0.5 }}>{inv.companyName || "-"}</TableCell>
                           <TableCell sx={{ px: 1, py: 0.5 }}>{inv.invoiceNo}</TableCell>
                           <TableCell sx={{ px: 1, py: 0.5 }}>{inv.invoiceDate}</TableCell>
@@ -1581,9 +1582,9 @@ const PurchaseInvoiceEntry = () => {
             {/* Inverse Calculation Section */}
             <Box sx={{ borderTop: 1, borderColor: "divider", p: 0.75, flexShrink: 0 }}>
               <Stack direction="row" spacing={0.75} sx={{ alignItems: "flex-end" }}>
-                <Typography sx={{ fontSize: 10.5, fontWeight: 600, color: "text.secondary", alignSelf: "center", whiteSpace: "nowrap" }}>Inverse Calc</Typography>
+                <Typography sx={{ fontSize: TYPE.small, fontWeight: 600, color: "text.secondary", alignSelf: "center", whiteSpace: "nowrap" }}>Inverse Calc</Typography>
                 <Box sx={{ width: 128, flexShrink: 0 }}>
-                  <Typography sx={{ display: "block", fontSize: 9, fontWeight: 500, color: "text.secondary", mb: 0.25 }}>Tax</Typography>
+                  <Typography sx={{ display: "block", fontSize: TYPE.small, fontWeight: 500, color: "text.secondary", mb: 0.25 }}>Tax</Typography>
                   <TextField
                     select
                     value={inverseCalc.taxId}
@@ -1599,7 +1600,7 @@ const PurchaseInvoiceEntry = () => {
                   </TextField>
                 </Box>
                 <Box sx={{ width: 80, flexShrink: 0 }}>
-                  <Typography sx={{ display: "block", fontSize: 9, fontWeight: 500, color: "text.secondary", mb: 0.25 }}>Tax Value</Typography>
+                  <Typography sx={{ display: "block", fontSize: TYPE.small, fontWeight: 500, color: "text.secondary", mb: 0.25 }}>Tax Value</Typography>
                   <TextField
                     slotProps={{ htmlInput: { inputMode: "decimal" } }}
                     value={inverseCalc.taxValue}
@@ -1611,7 +1612,7 @@ const PurchaseInvoiceEntry = () => {
                   />
                 </Box>
                 <Box sx={{ width: 96, flexShrink: 0 }}>
-                  <Typography sx={{ display: "block", fontSize: 9, fontWeight: 500, color: "text.secondary", mb: 0.25 }}>Bill Value</Typography>
+                  <Typography sx={{ display: "block", fontSize: TYPE.small, fontWeight: 500, color: "text.secondary", mb: 0.25 }}>Bill Value</Typography>
                   <TextField
                     value={inverseCalc.billValue.toFixed(2)}
                     slotProps={{ input: { readOnly: true } }}
@@ -1622,7 +1623,7 @@ const PurchaseInvoiceEntry = () => {
                   />
                 </Box>
                 <Box sx={{ width: 64, flexShrink: 0 }}>
-                  <Typography sx={{ display: "block", fontSize: 9, fontWeight: 500, color: "text.secondary", mb: 0.25 }}>Disc %</Typography>
+                  <Typography sx={{ display: "block", fontSize: TYPE.small, fontWeight: 500, color: "text.secondary", mb: 0.25 }}>Disc %</Typography>
                   <TextField
                     slotProps={{ htmlInput: { inputMode: "decimal" } }}
                     value={inverseCalc.discPerc}
@@ -1634,7 +1635,7 @@ const PurchaseInvoiceEntry = () => {
                   />
                 </Box>
                 <Box sx={{ width: 96, flexShrink: 0 }}>
-                  <Typography sx={{ display: "block", fontSize: 9, fontWeight: 500, color: "text.secondary", mb: 0.25 }}>Discount</Typography>
+                  <Typography sx={{ display: "block", fontSize: TYPE.small, fontWeight: 500, color: "text.secondary", mb: 0.25 }}>Discount</Typography>
                   <TextField
                     value={inverseCalc.discountValue.toFixed(2)}
                     slotProps={{ input: { readOnly: true } }}
@@ -1787,7 +1788,7 @@ const PurchaseInvoiceEntry = () => {
 
               <Stack spacing={0.75} sx={{ pt: 0.75, borderTop: 1, borderColor: "divider" }}>
                 <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-                  <Typography component="label" sx={{ width: 64, flexShrink: 0, fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>PO Type</Typography>
+                  <Typography component="label" sx={{ width: 64, flexShrink: 0, fontSize: TYPE.label, fontWeight: 500, color: "text.secondary" }}>PO Type</Typography>
                   <TextField
                     value={poType}
                     onChange={(e) => setPoType(e.target.value)}
@@ -1798,7 +1799,7 @@ const PurchaseInvoiceEntry = () => {
                   />
                 </Stack>
                 <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-                  <Typography component="label" sx={{ width: 64, flexShrink: 0, fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>PO No</Typography>
+                  <Typography component="label" sx={{ width: 64, flexShrink: 0, fontSize: TYPE.label, fontWeight: 500, color: "text.secondary" }}>PO No</Typography>
                   <TextField
                     value={poNo}
                     onChange={(e) => setPoNo(e.target.value)}

@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { History } from "lucide-react";
@@ -30,11 +31,11 @@ export default function SettingsRecentBackupsTable({ recentBackups = [] }) {
         <Table size="small" sx={{ "& td, & th": { border: 0, fontSize: 12 } }}>
           <TableHead>
             <TableRow sx={{ borderBottom: "1px solid", borderColor: "divider" }}>
-              <TableCell sx={{ pb: 1, fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>File</TableCell>
-              <TableCell sx={{ pb: 1, fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>Type</TableCell>
-              <TableCell align="right" sx={{ pb: 1, fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>Size</TableCell>
-              <TableCell align="center" sx={{ pb: 1, fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>Status</TableCell>
-              <TableCell align="right" sx={{ pb: 1, fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>Completed</TableCell>
+              <TableCell sx={{ pb: 1, fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>File</TableCell>
+              <TableCell sx={{ pb: 1, fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>Type</TableCell>
+              <TableCell align="right" sx={{ pb: 1, fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>Size</TableCell>
+              <TableCell align="center" sx={{ pb: 1, fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>Status</TableCell>
+              <TableCell align="right" sx={{ pb: 1, fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>Completed</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -56,7 +57,7 @@ export default function SettingsRecentBackupsTable({ recentBackups = [] }) {
                         const token = STATUS_TOKEN[row.status];
                         return {
                           display: "inline-flex", borderRadius: 1, px: 0.75, py: 0.25,
-                          fontSize: 10, fontWeight: 700, textTransform: "uppercase",
+                          fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase",
                           ...(token
                             ? { bgcolor: alpha(theme.palette[token].main, theme.palette.mode === "dark" ? 0.24 : 0.15), color: `${token}.main` }
                             : { bgcolor: "action.selected", color: "text.secondary" }),

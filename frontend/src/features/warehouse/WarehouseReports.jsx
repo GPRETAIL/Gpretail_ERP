@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import PageHeader from "@/shared/components/PageHeader";
 import useStoreDisplayName from "@/shared/hooks/useStoreDisplayName";
 import SearchGridPanel from "@/shared/components/SearchGridPanel";
@@ -769,7 +770,7 @@ const stockReportColumns = [
   {
     key: "barcode",
     label: "Barcode",
-    render: (value) => <Box component="span" sx={{ fontFamily: "monospace", fontSize: 11 }}>{value || "-"}</Box>,
+    render: (value) => <Box component="span" sx={{ fontFamily: "monospace", fontSize: TYPE.small }}>{value || "-"}</Box>,
   },
   { key: "batch", label: "Batch" },
   { key: "company", label: "Company" },
@@ -822,7 +823,7 @@ const warehouseStockAnalysisColumns = [
   {
     key: "barcode",
     label: "Barcode",
-    render: (value) => <Box component="span" sx={{ fontFamily: "monospace", fontSize: 11 }}>{value || "-"}</Box>,
+    render: (value) => <Box component="span" sx={{ fontFamily: "monospace", fontSize: TYPE.small }}>{value || "-"}</Box>,
   },
   { key: "product", label: "Product" },
   { key: "brand", label: "Brand" },
@@ -854,7 +855,7 @@ const stockTransactionColumns = [
   {
     key: "barcode",
     label: "Barcode",
-    render: (value) => <Box component="span" sx={{ fontFamily: "monospace", fontSize: 11 }}>{value || "-"}</Box>,
+    render: (value) => <Box component="span" sx={{ fontFamily: "monospace", fontSize: TYPE.small }}>{value || "-"}</Box>,
   },
   { key: "source", label: "Source" },
   { key: "company", label: "Company" },
@@ -888,7 +889,7 @@ const productMasterColumns = [
   {
     key: "barcode",
     label: "Barcode",
-    render: (value) => <Box component="span" sx={{ fontFamily: "monospace", fontSize: 11 }}>{value || "-"}</Box>,
+    render: (value) => <Box component="span" sx={{ fontFamily: "monospace", fontSize: TYPE.small }}>{value || "-"}</Box>,
   },
   { key: "product", label: "Product" },
   { key: "brand", label: "Brand" },
@@ -1443,7 +1444,7 @@ const WarehouseReports = () => {
                       "&:hover": implemented ? { bgcolor: active ? undefined : "action.hover" } : undefined,
                     })}
                   >
-                    <Typography component="span" sx={{ pt: 0.25, fontSize: 10.5, fontWeight: 700, color: implemented ? "primary.main" : "text.disabled" }}>
+                    <Typography component="span" sx={{ pt: 0.25, fontSize: TYPE.small, fontWeight: 700, color: implemented ? "primary.main" : "text.disabled" }}>
                       ◈
                     </Typography>
                     <Typography
@@ -1497,7 +1498,7 @@ const WarehouseReports = () => {
             {summaryOptions.length ? (
               <SummaryLayoutsButtons onOpen={openSummary} applied={Boolean(appliedSummary)} onReset={() => setAppliedSummary(null)} />
             ) : null}
-            <Box sx={{ display: { xs: "none", md: "block" }, fontSize: 10.5, color: "text.secondary" }}>
+            <Box sx={{ display: { xs: "none", md: "block" }, fontSize: TYPE.small, color: "text.secondary" }}>
               {reportLoading ? "Loading report..." : `${appliedSummary ? appliedSummary.rows.length : reportRows.length} row(s)`}
             </Box>
           </Stack>
@@ -1513,7 +1514,7 @@ const WarehouseReports = () => {
                 {selectedReport.title}
               </Typography>
               {appliedSummary ? (
-                <Typography sx={{ mt: 0.5, fontSize: 10.5, color: "text.secondary" }}>
+                <Typography sx={{ mt: 0.5, fontSize: TYPE.small, color: "text.secondary" }}>
                   Showing <Box component="strong">{appliedSummary.label}</Box>
                   {appliedSummary.from ? <> for {appliedSummary.from} → {appliedSummary.to}</> : null}
                 </Typography>

@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
@@ -105,7 +106,7 @@ function OrderEditor({ uuid, suppliers, storeName, onClose, onChanged }) {
                 {lines.length === 0 && <TableRow><TableCell colSpan={receiving ? 8 : 6} sx={{ color: "text.secondary" }}>No items yet.</TableCell></TableRow>}
                 {lines.map((line) => (
                   <TableRow key={line.key}>
-                    <TableCell><Typography sx={{ fontSize: 12.5, fontWeight: 600 }}>{lineLabel(line)}</Typography><Typography sx={{ fontSize: 11, color: "text.secondary" }}>{line.product?.code}</Typography></TableCell>
+                    <TableCell><Typography sx={{ fontSize: 12.5, fontWeight: 600 }}>{lineLabel(line)}</Typography><Typography sx={{ fontSize: TYPE.small, color: "text.secondary" }}>{line.product?.code}</Typography></TableCell>
                     <TableCell align="right">{line.stock_at_order == null ? "-" : qty(line.stock_at_order)}</TableCell>
                     <TableCell><TextField size="small" type="number" value={line.quantity} disabled={!draft} error={!(Number(line.quantity) > 0)} onChange={(e) => setLine(line.key, "quantity", e.target.value)} slotProps={{ htmlInput: { min: 0, step: "any", "aria-label": `Quantity ${lineLabel(line)}` } }} sx={{ width: 100 }} /></TableCell>
                     {receiving && <TableCell align="right" sx={{ fontWeight: 600, color: Number(line.received_qty) >= Number(line.quantity) ? "success.main" : "text.primary" }}>{qty(line.received_qty || 0)}</TableCell>}

@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import PageHeader from "@/shared/components/PageHeader";
 import SearchGridPanel from "@/shared/components/SearchGridPanel";
 import useSearchGrid from "@/shared/hooks/useSearchGrid";
@@ -172,7 +173,7 @@ const SalesComparer = () => {
             <Stack spacing={1}>
               <StoreFilterSelect value={storeFilter} onChange={setStoreFilter} />
               <Box>
-                <Typography component="label" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>
+                <Typography component="label" sx={{ display: "block", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>
                   From Date
                 </Typography>
                 <TextField
@@ -185,7 +186,7 @@ const SalesComparer = () => {
                 />
               </Box>
               <Box>
-                <Typography component="label" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>
+                <Typography component="label" sx={{ display: "block", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>
                   To Date
                 </Typography>
                 <TextField
@@ -229,7 +230,7 @@ const SalesComparer = () => {
                 key={f.key}
                 onClick={() => handleFieldClick(f.key)}
                 sx={{
-                  display: "block", width: "100%", textAlign: "left", px: 1.5, py: 0.75, fontSize: 10.5, fontWeight: 500,
+                  display: "block", width: "100%", textAlign: "left", px: 1.5, py: 0.75, fontSize: TYPE.small, fontWeight: 500,
                   border: 0, borderLeft: "2px solid", cursor: "pointer", fontFamily: "inherit", bgcolor: "transparent",
                   ...(activeField === f.key
                     ? { borderLeftColor: "#6366f1", color: "#6366f1", bgcolor: (theme) => alpha("#6366f1", theme.palette.mode === "dark" ? 0.2 : 0.08) }
@@ -247,7 +248,7 @@ const SalesComparer = () => {
           <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", mb: 0.75 }}>
             <Box>
               <Typography component="h2" sx={{ fontSize: 14, fontWeight: 700, color: "text.primary" }}>Sales Comparer</Typography>
-              <Typography sx={{ fontSize: 10.5, color: "text.secondary", mt: 0.25 }}>
+              <Typography sx={{ fontSize: TYPE.small, color: "text.secondary", mt: 0.25 }}>
                 Grouped by: <Box component="span" sx={{ fontWeight: 500, color: "#6366f1" }}>{activeLabel}</Box>
                 {saleFromDate || saleToDate ? (
                   <Box component="span">
@@ -277,7 +278,7 @@ const SalesComparer = () => {
               direction="row"
               spacing={3}
               sx={{
-                mb: 0.75, flexWrap: "wrap", rowGap: 0.5, px: 1.5, py: 1, fontSize: 10.5,
+                mb: 0.75, flexWrap: "wrap", rowGap: 0.5, px: 1.5, py: 1, fontSize: TYPE.small,
                 bgcolor: "action.hover", border: "1px solid", borderColor: "divider", borderRadius: "5.25px",
                 fontWeight: 600, color: "text.primary",
               }}

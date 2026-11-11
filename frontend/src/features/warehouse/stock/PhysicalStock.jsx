@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import PageHeader from "@/shared/components/PageHeader";
 import SearchGridPanel from "@/shared/components/SearchGridPanel";
 import { masterSearchAreaSx } from "@/shared/theme/erpUi";
@@ -25,7 +26,7 @@ const PhysicalStock = () => {
         key: "barcode",
         label: "Barcode",
         render: (value) => (
-          <Box component="span" sx={{ fontFamily: "monospace", fontSize: 11 }}>
+          <Box component="span" sx={{ fontFamily: "monospace", fontSize: TYPE.small }}>
             {value || "-"}
           </Box>
         ),
@@ -131,7 +132,7 @@ const PhysicalStock = () => {
           <Box sx={{ color: "text.secondary" }}>
             Total Net: <Box component="span" sx={{ color: "success.main" }}>{stats.net.toFixed(2)}</Box>
           </Box>
-          <Typography sx={{ fontSize: 10.5, color: "text.secondary" }}>
+          <Typography sx={{ fontSize: TYPE.small, color: "text.secondary" }}>
             Source: Completed transport entries and direct purchases.
           </Typography>
         </Stack>

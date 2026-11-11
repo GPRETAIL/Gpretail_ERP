@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import React, { useEffect, useMemo, useState } from "react";
 import { Eye, RotateCcw, Save, Minus, Plus, X } from "lucide-react";
 import { useSelector } from "react-redux";
@@ -50,7 +51,7 @@ import {
 import { Box, Stack, Typography, TextField, Button, IconButton, Switch, Table, TableHead, TableBody, TableRow, TableCell, Dialog, DialogTitle, DialogContent, Tabs, Tab, alpha } from "@mui/material";
 import { FIELD_HEIGHT, muiFieldSx } from "@/shared/theme/formControlSizes";
 
-const fieldLabelSx = { mb: 0.5, display: "block", fontSize: 11.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" };
+const fieldLabelSx = { mb: 0.5, display: "block", fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" };
 const baseCardSx = { borderRadius: "14px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", boxShadow: 1 };
 const radioPillSx = (active) => ({
   display: "flex",
@@ -297,7 +298,7 @@ const ToggleCard = ({ label, hint, checked, onChange }) => (
   >
     <Box sx={{ minWidth: 0 }}>
       <Typography sx={{ fontSize: 12.25, fontWeight: 600, color: "text.primary" }}>{label}</Typography>
-      <Typography sx={{ mt: 0.5, fontSize: 10.5, lineHeight: 1.4, color: "text.secondary" }}>{hint}</Typography>
+      <Typography sx={{ mt: 0.5, fontSize: TYPE.small, lineHeight: 1.4, color: "text.secondary" }}>{hint}</Typography>
     </Box>
     <Box sx={{ pt: 0.25 }}>
       <Switch checked={checked} onChange={(event) => onChange(event.target.checked)} size="small" />
@@ -325,7 +326,7 @@ const SizeOption = ({ option, selected, onSelect }) => (
     }}
   >
     <Typography sx={{ fontSize: 12.25, fontWeight: 600, color: "inherit" }}>{option.label}</Typography>
-    <Typography sx={{ mt: 0.5, fontSize: 10.5, color: selected ? "primary.main" : "text.secondary" }}>Receipt size</Typography>
+    <Typography sx={{ mt: 0.5, fontSize: TYPE.small, color: selected ? "primary.main" : "text.secondary" }}>Receipt size</Typography>
   </Button>
 );
 
@@ -538,7 +539,7 @@ const ReceiptPreview = ({ companyInfo, settings }) => {
         <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", gap: 1.5 }}>
           <Box>
             <Typography sx={{ fontSize: 12.25, fontWeight: 600, color: "text.primary" }}>Receipt Preview</Typography>
-            <Typography sx={{ fontSize: 10.5, color: "text.secondary" }}>
+            <Typography sx={{ fontSize: TYPE.small, color: "text.secondary" }}>
               Sample bill at {settings.receiptWidthInches || "default"} size
             </Typography>
           </Box>
@@ -572,7 +573,7 @@ const ReceiptPreview = ({ companyInfo, settings }) => {
               <Box
                 key={row.key}
                 sx={{
-                  fontSize: 11,
+                  fontSize: TYPE.small,
                   lineHeight: "14px",
                   color: "#4b5563",
                   textAlign:
@@ -594,7 +595,7 @@ const ReceiptPreview = ({ companyInfo, settings }) => {
                       borderRadius: "7px",
                       border: "1px dashed #d1d5db",
                       px: "14px",
-                      fontSize: 10,
+                      fontSize: TYPE.small,
                       fontWeight: 600,
                       letterSpacing: "0.18em",
                       color: "#6b7280",
@@ -617,17 +618,17 @@ const ReceiptPreview = ({ companyInfo, settings }) => {
               </Box>
             ) : null}
             {!topGeneralRows.some((row) => row.key === "address") ? (
-              <Box sx={{ textAlign: "center", fontSize: 11, lineHeight: "14px", color: "#6b7280" }}>{sampleAddress}</Box>
+              <Box sx={{ textAlign: "center", fontSize: TYPE.small, lineHeight: "14px", color: "#6b7280" }}>{sampleAddress}</Box>
             ) : null}
             {!topGeneralRows.some((row) => row.key === "gst") ? (
-              <Box sx={{ textAlign: "center", fontSize: 11, lineHeight: "14px", color: "#6b7280" }}>GST No: {sampleGst}</Box>
+              <Box sx={{ textAlign: "center", fontSize: TYPE.small, lineHeight: "14px", color: "#6b7280" }}>GST No: {sampleGst}</Box>
             ) : null}
-            <Box sx={{ textAlign: "center", fontSize: 11, lineHeight: "14px", color: "#6b7280" }}>Contact: {samplePhone}</Box>
+            <Box sx={{ textAlign: "center", fontSize: TYPE.small, lineHeight: "14px", color: "#6b7280" }}>Contact: {samplePhone}</Box>
           </Box>
 
           <Box className="line" />
 
-          <Box sx={{ "& > * + *": { mt: "3.5px" }, fontSize: 11, color: "#374151" }}>
+          <Box sx={{ "& > * + *": { mt: "3.5px" }, fontSize: TYPE.small, color: "#374151" }}>
             {groupedGeneralLines.map((line) => (
               <PreviewMetaLine key={line.lineNumber} line={line} />
             ))}
@@ -641,7 +642,7 @@ const ReceiptPreview = ({ companyInfo, settings }) => {
                 sx={{
                   display: "grid",
                   bgcolor: "#f9fafb",
-                  fontSize: 10,
+                  fontSize: TYPE.small,
                   fontWeight: 700,
                   textTransform: "uppercase",
                   letterSpacing: "0.025em",
@@ -662,7 +663,7 @@ const ReceiptPreview = ({ companyInfo, settings }) => {
                 sx={{
                   display: "grid",
                   borderTop: "1px solid #f3f4f6",
-                  fontSize: 11,
+                  fontSize: TYPE.small,
                   color: "#374151",
                   gridTemplateColumns: `repeat(${Math.max(visibleProductColumns.length, 1)}, minmax(0, 1fr))`,
                 }}
@@ -685,7 +686,7 @@ const ReceiptPreview = ({ companyInfo, settings }) => {
             ))}
           </Box>
 
-          <Box sx={{ my: "10.5px", "& > * + *": { mt: "3.5px" }, fontSize: 11, color: "#374151" }}>
+          <Box sx={{ my: "10.5px", "& > * + *": { mt: "3.5px" }, fontSize: TYPE.small, color: "#374151" }}>
             {previewTotals.map((row) => (
               <Box
                 key={row.key}
@@ -706,7 +707,7 @@ const ReceiptPreview = ({ companyInfo, settings }) => {
                 sx={{
                   display: "grid",
                   bgcolor: "#f9fafb",
-                  fontSize: 10,
+                  fontSize: TYPE.small,
                   fontWeight: 700,
                   textTransform: "uppercase",
                   letterSpacing: "0.025em",
@@ -726,7 +727,7 @@ const ReceiptPreview = ({ companyInfo, settings }) => {
                   sx={{
                     display: "grid",
                     borderTop: "1px solid #f3f4f6",
-                    fontSize: 11,
+                    fontSize: TYPE.small,
                     color: "#374151",
                     gridTemplateColumns: `repeat(${visibleTaxColumns.length}, minmax(0, 1fr))`,
                   }}
@@ -788,7 +789,7 @@ const ReceiptPreview = ({ companyInfo, settings }) => {
             </>
           ) : null}
 
-          <Box sx={{ mt: "14px", whiteSpace: "pre-line", textAlign: "center", fontSize: 11, fontWeight: 500, lineHeight: "17.5px", color: "#374151" }}>
+          <Box sx={{ mt: "14px", whiteSpace: "pre-line", textAlign: "center", fontSize: TYPE.small, fontWeight: 500, lineHeight: "17.5px", color: "#374151" }}>
             {settings.thankYouMessage}
           </Box>
         </Box>
@@ -1081,7 +1082,7 @@ export default function SalesSettingsEditor({ section = "sales", onDirtyChange }
               ))}
             </Stack>
             <Box sx={{ mt: 2 }}>
-              <Typography component="label" htmlFor="sales-number-override" sx={{ mb: 0.5, display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>
+              <Typography component="label" htmlFor="sales-number-override" sx={{ mb: 0.5, display: "block", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary" }}>
                 Custom next sales number (optional)
               </Typography>
               <TextField
@@ -1094,7 +1095,7 @@ export default function SalesSettingsEditor({ section = "sales", onDirtyChange }
                 size="small"
                 sx={[muiFieldSx, { width: "100%", maxWidth: 320 }]}
               />
-              <Typography sx={{ mt: 0.5, fontSize: 10.5, lineHeight: 1.4, color: "text.secondary" }}>
+              <Typography sx={{ mt: 0.5, fontSize: TYPE.small, lineHeight: 1.4, color: "text.secondary" }}>
                 Set the next new sale to start from this number (e.g. continuing from another system). Leave blank for normal numbering.
               </Typography>
             </Box>
@@ -1128,7 +1129,7 @@ export default function SalesSettingsEditor({ section = "sales", onDirtyChange }
               ))}
             </Stack>
             <Box sx={{ mt: 2 }}>
-              <Typography component="label" htmlFor="settlement-number-override" sx={{ mb: 0.5, display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary" }}>
+              <Typography component="label" htmlFor="settlement-number-override" sx={{ mb: 0.5, display: "block", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary" }}>
                 Custom next settlement number (optional)
               </Typography>
               <TextField
@@ -1141,7 +1142,7 @@ export default function SalesSettingsEditor({ section = "sales", onDirtyChange }
                 size="small"
                 sx={[muiFieldSx, { width: "100%", maxWidth: 320 }]}
               />
-              <Typography sx={{ mt: 0.5, fontSize: 10.5, lineHeight: 1.4, color: "text.secondary" }}>
+              <Typography sx={{ mt: 0.5, fontSize: TYPE.small, lineHeight: 1.4, color: "text.secondary" }}>
                 Set the next new settlement to start from this sequence number within the current period. Leave blank for normal numbering.
               </Typography>
             </Box>
@@ -1209,7 +1210,7 @@ export default function SalesSettingsEditor({ section = "sales", onDirtyChange }
                 />
               ))}
             </Box>
-            <Typography sx={{ mt: 1.5, borderRadius: "10.5px", border: "1px dashed", borderColor: "divider", bgcolor: "action.hover", px: 2, py: 1.5, fontSize: 10.5, lineHeight: 1.4, color: "text.secondary" }}>
+            <Typography sx={{ mt: 1.5, borderRadius: "10.5px", border: "1px dashed", borderColor: "divider", bgcolor: "action.hover", px: 2, py: 1.5, fontSize: TYPE.small, lineHeight: 1.4, color: "text.secondary" }}>
               Leave all sizes unselected to keep the current default receipt size.
             </Typography>
           </Box>
@@ -1225,7 +1226,7 @@ export default function SalesSettingsEditor({ section = "sales", onDirtyChange }
                   component="label"
                   key={option.value}
                   spacing={0.5}
-                  sx={{ cursor: "pointer", borderRadius: "7px", border: "1px solid", borderColor: settings.receiptFormat === option.value ? "primary.main" : "divider", bgcolor: settings.receiptFormat === option.value ? (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.08) : "background.paper", color: settings.receiptFormat === option.value ? "primary.main" : "text.secondary", px: 2, py: 1.5, fontSize: 11.5 }}
+                  sx={{ cursor: "pointer", borderRadius: "7px", border: "1px solid", borderColor: settings.receiptFormat === option.value ? "primary.main" : "divider", bgcolor: settings.receiptFormat === option.value ? (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.08) : "background.paper", color: settings.receiptFormat === option.value ? "primary.main" : "text.secondary", px: 2, py: 1.5, fontSize: TYPE.small }}
                 >
                   <Stack direction="row" spacing={1} sx={{ alignItems: "center", fontWeight: 500 }}>
                     <Box
@@ -1239,7 +1240,7 @@ export default function SalesSettingsEditor({ section = "sales", onDirtyChange }
                     />
                     {option.label}
                   </Stack>
-                  <Box component="span" sx={{ fontSize: 10.5, lineHeight: 1.4, color: "text.secondary" }}>{option.description}</Box>
+                  <Box component="span" sx={{ fontSize: TYPE.small, lineHeight: 1.4, color: "text.secondary" }}>{option.description}</Box>
                 </Stack>
               ))}
             </Box>
@@ -1285,7 +1286,7 @@ export default function SalesSettingsEditor({ section = "sales", onDirtyChange }
                       {option.label}
                     </Typography>
                   </Stack>
-                  <Typography sx={{ mt: 1, fontSize: 10.5, lineHeight: 1.4, color: "text.secondary" }}>
+                  <Typography sx={{ mt: 1, fontSize: TYPE.small, lineHeight: 1.4, color: "text.secondary" }}>
                     {option.description}
                   </Typography>
                 </Stack>
@@ -1484,7 +1485,7 @@ export default function SalesSettingsEditor({ section = "sales", onDirtyChange }
                   >
                     <Plus size={16} />
                   </IconButton>
-                  <Typography sx={{ fontSize: 10.5, color: "text.secondary" }}>
+                  <Typography sx={{ fontSize: TYPE.small, color: "text.secondary" }}>
                     Recommended: {PAYMENT_QR_SIZE_MIN}-{PAYMENT_QR_SIZE_MAX}px
                   </Typography>
                 </Stack>
@@ -1506,7 +1507,7 @@ export default function SalesSettingsEditor({ section = "sales", onDirtyChange }
                   sx={[muiFieldSx, { width: "100%", maxWidth: 448 }]}
                 />
                 {settings.paymentUpiId.trim() ? null : (
-                  <Typography sx={{ mt: 1, fontSize: 10.5, lineHeight: 1.4, color: "warning.dark" }}>
+                  <Typography sx={{ mt: 1, fontSize: TYPE.small, lineHeight: 1.4, color: "warning.dark" }}>
                     Enter your store’s UPI ID to display and print a payment QR.
                   </Typography>
                 )}
@@ -1538,18 +1539,18 @@ export default function SalesSettingsEditor({ section = "sales", onDirtyChange }
                       <Button
                         type="button"
                         onClick={() => updateSetting({ paymentQrImageUrl: "" })}
-                        sx={{ borderRadius: "7px", border: "1px solid", borderColor: "divider", px: 1.5, py: 0.75, fontSize: 10.5, fontWeight: 500, color: "text.secondary", textTransform: "none" }}
+                        sx={{ borderRadius: "7px", border: "1px solid", borderColor: "divider", px: 1.5, py: 0.75, fontSize: TYPE.small, fontWeight: 500, color: "text.secondary", textTransform: "none" }}
                       >
                         Remove
                       </Button>
                     </Stack>
                   ) : (
-                    <Typography sx={{ fontSize: 10.5, lineHeight: 1.4, color: "warning.dark" }}>
+                    <Typography sx={{ fontSize: TYPE.small, lineHeight: 1.4, color: "warning.dark" }}>
                       Upload a QR image -- without one, no QR is printed and this setting saves as &ldquo;None&rdquo;.
                     </Typography>
                   )}
                 </Stack>
-                <Typography sx={{ mt: 1.5, borderRadius: "10.5px", border: "1px dashed", borderColor: "divider", bgcolor: "action.hover", px: 2, py: 1.5, fontSize: 10.5, lineHeight: 1.4, color: "text.secondary" }}>
+                <Typography sx={{ mt: 1.5, borderRadius: "10.5px", border: "1px dashed", borderColor: "divider", bgcolor: "action.hover", px: 2, py: 1.5, fontSize: TYPE.small, lineHeight: 1.4, color: "text.secondary" }}>
                   The image is resized to 512px and stored with these settings. Thermal printers render QR codes best in plain black on white.
                 </Typography>
               </Box>
@@ -1571,7 +1572,7 @@ export default function SalesSettingsEditor({ section = "sales", onDirtyChange }
               placeholder="Enter the closing message shown at the end of the receipt"
               sx={muiFieldSx}
             />
-            <Typography sx={{ mt: 1.5, borderRadius: "10.5px", border: "1px dashed", borderColor: "divider", bgcolor: "action.hover", px: 2, py: 1.5, fontSize: 10.5, lineHeight: 1.4, color: "text.secondary" }}>
+            <Typography sx={{ mt: 1.5, borderRadius: "10.5px", border: "1px dashed", borderColor: "divider", bgcolor: "action.hover", px: 2, py: 1.5, fontSize: TYPE.small, lineHeight: 1.4, color: "text.secondary" }}>
               This message is printed at the end of the POS receipt. Line breaks entered here are preserved in the preview and on print.
             </Typography>
           </Box>

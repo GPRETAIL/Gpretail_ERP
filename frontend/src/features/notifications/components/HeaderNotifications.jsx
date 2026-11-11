@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import { useCallback, useState } from "react";
 import { useSelector } from "react-redux";
 import { Alert, Badge, Box, Button, Chip, Divider, IconButton, Popover, Skeleton, Stack, Tab, Tabs, Tooltip, Typography } from "@mui/material";
@@ -40,7 +41,7 @@ export default function HeaderNotifications({ onNavigate, onOpenInbox }) {
           <IconButton size="small" aria-label="Close notifications" onClick={close}><X size={18} /></IconButton>
         </Stack>
         <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", mt: 1 }}>
-          <Tabs value={filter} onChange={(_, value) => setFilter(value)} aria-label="Recent notification filter" sx={{ minHeight: 38, "& .MuiTab-root": { minWidth: 65, minHeight: 38, px: 1.25, fontSize: 12 } }}><Tab label="All" value="all" /><Tab label={<Stack direction="row" spacing={0.75} sx={{ alignItems: "center" }}><span>Unread</span>{count > 0 && <Chip label={count > 99 ? "99+" : count} size="small" sx={{ height: 19, fontSize: 10 }} />}</Stack>} value="unread" /></Tabs>
+          <Tabs value={filter} onChange={(_, value) => setFilter(value)} aria-label="Recent notification filter" sx={{ minHeight: 38, "& .MuiTab-root": { minWidth: 65, minHeight: 38, px: 1.25, fontSize: 12 } }}><Tab label="All" value="all" /><Tab label={<Stack direction="row" spacing={0.75} sx={{ alignItems: "center" }}><span>Unread</span>{count > 0 && <Chip label={count > 99 ? "99+" : count} size="small" sx={{ height: 19, fontSize: TYPE.small }} />}</Stack>} value="unread" /></Tabs>
           <Stack direction="row" spacing={0.25}>
             <Tooltip title="Mark all as read"><span><IconButton size="small" aria-label="Mark all as read" disabled={feed.pending !== null || count === 0 || feed.loading} onClick={() => feed.markRead()}><CheckCheck size={18} /></IconButton></span></Tooltip>
             <Tooltip title="Refresh notifications"><IconButton size="small" aria-label="Refresh notifications" disabled={feed.loading} onClick={() => { feed.reload(); countQuery.reload({ silent: true }); }}><RefreshCw size={17} /></IconButton></Tooltip>

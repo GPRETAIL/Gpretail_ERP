@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import PageHeader from "@/shared/components/PageHeader";
 import useAsyncQuery from "@/shared/hooks/useAsyncQuery";
 import React, { useCallback, useMemo, useState } from "react";
@@ -215,7 +216,7 @@ const ApprovalInbox = () => {
         <Box sx={{ bgcolor: "background.paper", border: "1px solid", borderColor: "divider", borderRadius: "7px", boxShadow: 1, p: 2 }}>
           <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "repeat(12, 1fr)" }, gap: 1, alignItems: "end" }}>
             <Box sx={{ gridColumn: { md: "span 4" } }}>
-              <Typography component="label" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>Product</Typography>
+              <Typography component="label" sx={{ display: "block", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>Product</Typography>
               <TextField
                 select
                 value={filters.product}
@@ -235,7 +236,7 @@ const ApprovalInbox = () => {
             </Box>
 
             <Box sx={{ gridColumn: { md: "span 4" } }}>
-              <Typography component="label" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>Customer</Typography>
+              <Typography component="label" sx={{ display: "block", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>Customer</Typography>
               <AsyncSearchSelect
                 name="customerId"
                 value={filters.customerId}
@@ -248,7 +249,7 @@ const ApprovalInbox = () => {
             </Box>
 
             <Box sx={{ gridColumn: { md: "span 2" } }}>
-              <Typography component="label" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>Status</Typography>
+              <Typography component="label" sx={{ display: "block", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>Status</Typography>
               <TextField
                 select
                 value={filters.status}

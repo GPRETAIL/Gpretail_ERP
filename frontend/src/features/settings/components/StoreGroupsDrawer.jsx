@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import SearchGridPanel from "@/shared/components/SearchGridPanel";
 import useSearchGrid from "@/shared/hooks/useSearchGrid";
 import { useState } from "react";
@@ -117,7 +118,7 @@ const StoreGroupsDrawer = ({
               {view === "list" ? "Store Groups (which stores)" : editingId ? "Edit Store Group" : "New Store Group"}
             </Typography>
             {view === "list" ? (
-              <Typography sx={{ fontSize: 10.5, color: "text.secondary" }}>
+              <Typography sx={{ fontSize: TYPE.small, color: "text.secondary" }}>
                 Group your own stores together, then assign the group to a user so they can access every
                 store in it at once. This is separate from Access Groups, which control what a user can do.
               </Typography>

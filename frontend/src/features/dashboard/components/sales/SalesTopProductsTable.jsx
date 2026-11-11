@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { Trophy } from "lucide-react";
@@ -29,9 +30,9 @@ export default function SalesTopProductsTable({ topProducts = [] }) {
         <Table size="small" sx={{ "& td, & th": { border: 0, fontSize: 12 } }}>
           <TableHead>
             <TableRow sx={{ borderBottom: "1px solid", borderColor: "divider" }}>
-              <TableCell sx={{ pb: 1, fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>Product</TableCell>
-              <TableCell align="right" sx={{ pb: 1, fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>Qty Sold</TableCell>
-              <TableCell align="right" sx={{ pb: 1, fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>Revenue</TableCell>
+              <TableCell sx={{ pb: 1, fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>Product</TableCell>
+              <TableCell align="right" sx={{ pb: 1, fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>Qty Sold</TableCell>
+              <TableCell align="right" sx={{ pb: 1, fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>Revenue</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>

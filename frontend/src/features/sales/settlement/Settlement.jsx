@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import PageHeader from "@/shared/components/PageHeader";
 import useAsyncQuery from "@/shared/hooks/useAsyncQuery";
 import { masterSearchAreaSx } from "@/shared/theme/erpUi";
@@ -586,7 +587,7 @@ const Settlement = () => {
         render: (_, row) => {
           const no = String(row?.settlement_no || "").trim();
           return (
-            <Box component="span" sx={{ fontFamily: "monospace", fontSize: 11, letterSpacing: "-0.01em", color: "text.primary" }}>
+            <Box component="span" sx={{ fontFamily: "monospace", fontSize: TYPE.small, letterSpacing: "-0.01em", color: "text.primary" }}>
               {no || (["PAID", "COMPLETED"].includes(String(row?.status).toUpperCase()) && toNum(row?.remaining_amount, 0) <= 0 ? "Paid at checkout" : "Pending")}
             </Box>
           );
@@ -650,7 +651,7 @@ const Settlement = () => {
                 px: 1,
                 py: 0.25,
                 borderRadius: 999,
-                fontSize: 11,
+                fontSize: TYPE.small,
                 fontWeight: 500,
                 bgcolor: (theme) => alpha(theme.palette[statusColor].main, theme.palette.mode === "dark" ? 0.16 : 0.08),
                 color: `${statusColor}.main`,
@@ -969,7 +970,7 @@ const Settlement = () => {
         onPreviousCursor={searchGrid.navigateCursor}
         fillHeight
       />
-      <Typography sx={{ fontSize: 10.5, color: "text.secondary", mt: 1 }}>Awaiting settlement shows open unsettled and credit invoices. All invoices includes closed invoices for reference; they cannot be settled again.</Typography>
+      <Typography sx={{ fontSize: TYPE.small, color: "text.secondary", mt: 1 }}>Awaiting settlement shows open unsettled and credit invoices. All invoices includes closed invoices for reference; they cannot be settled again.</Typography>
     </SearchGridPanel>
   );
 
@@ -1043,7 +1044,7 @@ const Settlement = () => {
             <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", borderBottom: 1, borderColor: "divider", px: 2, py: 1.5 }}>
               <Box>
                 <Typography sx={{ fontSize: 12.25, fontWeight: 600, color: "text.primary" }}>Mark Bill As Credit</Typography>
-                <Typography sx={{ fontSize: 10.5, color: "text.secondary" }}>Search customer by mobile number and assign this open bill as credit.</Typography>
+                <Typography sx={{ fontSize: TYPE.small, color: "text.secondary" }}>Search customer by mobile number and assign this open bill as credit.</Typography>
               </Box>
               <IconButton
                 type="button"

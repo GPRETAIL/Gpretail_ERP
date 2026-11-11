@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import PageHeader from "@/shared/components/PageHeader";
 import { useEffect, useMemo, useState } from "react";
 import { Save, Search, Plus } from "lucide-react";
@@ -293,17 +294,17 @@ const TransportIssueEntry = () => {
         <Box sx={{ width: "34rem", maxWidth: "36%", minWidth: 320, bgcolor: "background.paper", border: "1px solid", borderColor: "divider", borderRadius: "7px", boxShadow: 1, p: 2, overflowY: "auto" }}>
           <Stack spacing={2} sx={{ fontSize: 12.25 }}>
             <Box>
-              <Typography sx={{ fontSize: 10.5, fontWeight: 600, color: "text.secondary", textTransform: "uppercase" }}>Booking Office</Typography>
+              <Typography sx={{ fontSize: TYPE.small, fontWeight: 600, color: "text.secondary", textTransform: "uppercase" }}>Booking Office</Typography>
               <Typography sx={{ mt: 0.5, fontSize: 21, fontWeight: 600, color: "error.main" }}>{form.bookingOffice}</Typography>
             </Box>
 
             <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 2 }}>
               <Box>
-                <Typography sx={{ fontSize: 10.5, fontWeight: 600, color: "text.secondary", textTransform: "uppercase" }}>Company</Typography>
+                <Typography sx={{ fontSize: TYPE.small, fontWeight: 600, color: "text.secondary", textTransform: "uppercase" }}>Company</Typography>
                 <Typography sx={{ mt: 0.5, fontSize: 21, fontWeight: 600, color: "error.main" }}>{form.companyName}</Typography>
               </Box>
               <Box component="label" sx={{ display: "block" }}>
-                <Typography component="span" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>
+                <Typography component="span" sx={{ display: "block", fontSize: TYPE.small, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>
                   <Box component="span" sx={{ color: "error.main" }}>*</Box> Issue Number
                 </Typography>
                 <TextField value={form.issueNumber} slotProps={{ input: { readOnly: true } }} size="small" fullWidth sx={[muiFieldSx, { "& .MuiOutlinedInput-root": { bgcolor: "action.hover" } }]} />
@@ -311,7 +312,7 @@ const TransportIssueEntry = () => {
             </Box>
 
             <Box>
-              <Typography component="label" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>
+              <Typography component="label" sx={{ display: "block", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>
                 <Box component="span" sx={{ color: "error.main" }}>*</Box> Collected By
               </Typography>
               <AsyncSearchSelect
@@ -326,7 +327,7 @@ const TransportIssueEntry = () => {
             </Box>
 
             <Box>
-              <Typography component="label" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>
+              <Typography component="label" sx={{ display: "block", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>
                 <Box component="span" sx={{ color: "error.main" }}>*</Box> Issue Date
               </Typography>
               <TextField
@@ -341,18 +342,18 @@ const TransportIssueEntry = () => {
 
             <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 2 }}>
               <Box>
-                <Typography sx={{ fontSize: 10.5, fontWeight: 600, color: "text.secondary", textTransform: "uppercase" }}>From Location</Typography>
+                <Typography sx={{ fontSize: TYPE.small, fontWeight: 600, color: "text.secondary", textTransform: "uppercase" }}>From Location</Typography>
                 <Typography sx={{ mt: 0.5, fontSize: 21, fontWeight: 600, color: "error.main" }}>{form.fromLocation}</Typography>
               </Box>
               <Box>
-                <Typography sx={{ fontSize: 10.5, fontWeight: 600, color: "text.secondary", textTransform: "uppercase" }}>Receiving Location</Typography>
+                <Typography sx={{ fontSize: TYPE.small, fontWeight: 600, color: "text.secondary", textTransform: "uppercase" }}>Receiving Location</Typography>
                 <Typography sx={{ mt: 0.5, fontSize: 21, fontWeight: 600, color: "error.main" }}>{form.receivingLocation}</Typography>
               </Box>
             </Box>
 
             <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 2 }}>
               <Box>
-                <Typography component="label" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>
+                <Typography component="label" sx={{ display: "block", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>
                   <Box component="span" sx={{ color: "error.main" }}>*</Box> LR Number
                 </Typography>
                 <Stack direction="row">
@@ -373,7 +374,7 @@ const TransportIssueEntry = () => {
                 </Stack>
               </Box>
               <Box>
-                <Typography component="label" sx={{ display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>
+                <Typography component="label" sx={{ display: "block", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>
                   <Box component="span" sx={{ color: "error.main" }}>*</Box> Entry Number
                 </Typography>
                 <Stack direction="row">
@@ -414,12 +415,12 @@ const TransportIssueEntry = () => {
                   {columns.map((column) => (
                     <TableCell
                       key={column.key}
-                      sx={{ border: "1px solid", borderColor: "divider", fontSize: 10.5, fontWeight: 600, color: "text.secondary", textAlign: column.align === "right" ? "right" : "left" }}
+                      sx={{ border: "1px solid", borderColor: "divider", fontSize: TYPE.small, fontWeight: 600, color: "text.secondary", textAlign: column.align === "right" ? "right" : "left" }}
                     >
                       {column.label}
                     </TableCell>
                   ))}
-                  <TableCell sx={{ border: "1px solid", borderColor: "divider", fontSize: 10.5, fontWeight: 600, color: "text.secondary", textAlign: "center" }}>Action</TableCell>
+                  <TableCell sx={{ border: "1px solid", borderColor: "divider", fontSize: TYPE.small, fontWeight: 600, color: "text.secondary", textAlign: "center" }}>Action</TableCell>
                 </TableRow>
                 <TableRow sx={(theme) => ({ bgcolor: alpha(SKY, theme.palette.mode === "dark" ? 0.16 : 0.1) })}>
                   {columns.map((column) => (
@@ -429,7 +430,7 @@ const TransportIssueEntry = () => {
                         onChange={(e) => setFilters((prev) => ({ ...prev, [column.key]: e.target.value }))}
                         size="small"
                         fullWidth
-                        sx={{ "& .MuiInputBase-input": { fontSize: 10.5, py: 0.5, px: 1 } }}
+                        sx={{ "& .MuiInputBase-input": { fontSize: TYPE.small, py: 0.5, px: 1 } }}
                       />
                     </TableCell>
                   ))}
@@ -466,7 +467,7 @@ const TransportIssueEntry = () => {
                         <Button
                           type="button"
                           onClick={() => handleRemoveRow(row.transportEntryId)}
-                          sx={{ borderRadius: "3.5px", bgcolor: SKY, color: "#fff", fontSize: 10.5, px: 1.5, py: 0.5, minWidth: "auto", "&:hover": { bgcolor: SKY_HOVER } }}
+                          sx={{ borderRadius: "3.5px", bgcolor: SKY, color: "#fff", fontSize: TYPE.small, px: 1.5, py: 0.5, minWidth: "auto", "&:hover": { bgcolor: SKY_HOVER } }}
                         >
                           Remove
                         </Button>
@@ -492,7 +493,7 @@ const TransportIssueEntry = () => {
 
 const Metric = ({ label, value }) => (
   <Box>
-    <Typography sx={{ fontSize: 10.5, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>{label}</Typography>
+    <Typography sx={{ fontSize: TYPE.small, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>{label}</Typography>
     <TextField value={value} slotProps={{ input: { readOnly: true } }} size="small" fullWidth sx={[muiFieldSx, { "& .MuiOutlinedInput-root": { bgcolor: "action.hover" } }]} />
   </Box>
 );

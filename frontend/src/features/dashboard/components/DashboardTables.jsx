@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import React from "react";
 import LoadingSkeleton from "@/shared/components/LoadingSkeleton";
 import { useNavigate } from "react-router-dom";
@@ -282,7 +283,7 @@ export const SupplierPaymentsTable = ({ table, loading, privacyMode }) => {
         </Box>
       )}
       {rows.length > 0 && (
-        <Typography sx={{ mt: 1, fontSize: 11, color: "text.secondary" }}>
+        <Typography sx={{ mt: 1, fontSize: TYPE.small, color: "text.secondary" }}>
           Overdue = invoice date older than {overdueDays} days.
         </Typography>
       )}

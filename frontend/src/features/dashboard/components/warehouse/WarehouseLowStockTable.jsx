@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { ShieldAlert } from "lucide-react";
@@ -38,25 +39,25 @@ export default function WarehouseLowStockTable({ alerts = [] }) {
         <Table size="small" sx={{ "& td, & th": { border: 0, fontSize: 12 } }}>
           <TableHead>
             <TableRow sx={{ borderBottom: "1px solid", borderColor: "divider" }}>
-              <TableCell sx={{ pb: 1, fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>
+              <TableCell sx={{ pb: 1, fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>
                 Product Name
               </TableCell>
-              <TableCell sx={{ pb: 1, fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>
+              <TableCell sx={{ pb: 1, fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>
                 Size / Color
               </TableCell>
-              <TableCell sx={{ pb: 1, fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>
+              <TableCell sx={{ pb: 1, fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>
                 Barcode
               </TableCell>
-              <TableCell sx={{ pb: 1, fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>
+              <TableCell sx={{ pb: 1, fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>
                 Store
               </TableCell>
-              <TableCell align="right" sx={{ pb: 1, fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>
+              <TableCell align="right" sx={{ pb: 1, fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>
                 Available
               </TableCell>
-              <TableCell align="right" sx={{ pb: 1, fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>
+              <TableCell align="right" sx={{ pb: 1, fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>
                 Reorder Level
               </TableCell>
-              <TableCell align="center" sx={{ pb: 1, fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>
+              <TableCell align="center" sx={{ pb: 1, fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>
                 Status
               </TableCell>
             </TableRow>
@@ -91,7 +92,7 @@ export default function WarehouseLowStockTable({ alerts = [] }) {
                         <Box
                           component="span"
                           sx={{
-                            display: "inline-flex", borderRadius: 1, px: 0.75, py: 0.25, fontSize: 10, fontWeight: 700,
+                            display: "inline-flex", borderRadius: 1, px: 0.75, py: 0.25, fontSize: TYPE.small, fontWeight: 700,
                             bgcolor: (theme) => alpha(theme.palette.error.main, theme.palette.mode === "dark" ? 0.24 : 0.15),
                             color: "error.main",
                           }}
@@ -102,7 +103,7 @@ export default function WarehouseLowStockTable({ alerts = [] }) {
                         <Box
                           component="span"
                           sx={{
-                            display: "inline-flex", borderRadius: 1, px: 0.75, py: 0.25, fontSize: 10, fontWeight: 700,
+                            display: "inline-flex", borderRadius: 1, px: 0.75, py: 0.25, fontSize: TYPE.small, fontWeight: 700,
                             bgcolor: (theme) => alpha(theme.palette.warning.main, theme.palette.mode === "dark" ? 0.24 : 0.15),
                             color: "warning.main",
                           }}

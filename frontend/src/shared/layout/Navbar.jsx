@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import { refreshStoreSelection } from "@/shared/utils/storeSelection";
 import useErpFullscreen from "@/shared/hooks/useErpFullscreen";
 import { EMPTY_ARRAY } from "@/shared/utils/emptyValues";
@@ -783,7 +784,7 @@ const Navbar = ({ sidebarExpanded, isMobile = false, toggleSidebar }) => {
           ) : (
             <Stack spacing={1}>
               <Typography sx={{ fontSize: 13, fontWeight: 600 }}>Active Store Location</Typography>
-              <Typography sx={{ fontSize: 11.5, color: "text.secondary" }}>
+              <Typography sx={{ fontSize: TYPE.small, color: "text.secondary" }}>
                 Pick one store to create or edit data there. All Stores shows combined data across your authorised stores.
               </Typography>
               <Box sx={{ maxHeight: 256, overflowY: "auto", border: 1, borderColor: "divider", borderRadius: 1.5, p: 1 }}>

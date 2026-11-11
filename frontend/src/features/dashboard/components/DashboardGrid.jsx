@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import React, { useCallback, useMemo } from "react";
 import { Responsive, useContainerWidth } from "react-grid-layout";
 import "react-grid-layout/css/styles.css";
@@ -145,7 +146,7 @@ export default function DashboardGrid({ tabKey, widgets }) {
                   <GripVertical size={14} />
                 </Box>
                 <Typography
-                  sx={{ flex: 1, fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "primary.dark" }}
+                  sx={{ flex: 1, fontSize: TYPE.small, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "primary.dark" }}
                 >
                   {w.title}
                 </Typography>
@@ -170,7 +171,7 @@ export default function DashboardGrid({ tabKey, widgets }) {
 
       {editMode && hiddenWidgets.length > 0 && (
         <Box sx={{ mt: 2, borderRadius: "10.5px", border: "1px dashed", borderColor: "divider", bgcolor: "action.hover", p: 1.5 }}>
-          <Typography sx={{ mb: 1, fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "text.secondary" }}>
+          <Typography sx={{ mb: 1, fontSize: TYPE.small, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "text.secondary" }}>
             Removed from this dashboard ({hiddenWidgets.length})
           </Typography>
           <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>

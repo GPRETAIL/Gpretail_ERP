@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import PageHeader from "@/shared/components/PageHeader";
 import useAsyncQuery from "@/shared/hooks/useAsyncQuery";
 import React, { useState, useEffect, useCallback } from "react";
@@ -14,7 +15,7 @@ import { toast } from "react-toastify";
 import { muiFieldSx } from "@/shared/theme/formControlSizes";
 
 const fieldSx = muiFieldSx;
-const labelSx = { display: "block", fontSize: 11.5, fontWeight: 500, color: "text.secondary", mb: 0.5 };
+const labelSx = { display: "block", fontSize: TYPE.small, fontWeight: 500, color: "text.secondary", mb: 0.5 };
 
 const DIMENSION_OPTIONS = [
   { value: "store", label: "Store" },
@@ -99,7 +100,7 @@ const StockValuationAnalyzer = () => {
               ))}
             </TextField>
             {sameDimension && (
-              <Typography sx={{ fontSize: 11, color: "error.main", mt: 0.5 }}>Rows and columns must differ.</Typography>
+              <Typography sx={{ fontSize: TYPE.small, color: "error.main", mt: 0.5 }}>Rows and columns must differ.</Typography>
             )}
           </Box>
           <Box>
@@ -110,7 +111,7 @@ const StockValuationAnalyzer = () => {
               ))}
             </TextField>
           </Box>
-          <Typography sx={{ fontSize: 11, color: "text.secondary", lineHeight: 1.6, pt: 1, borderTop: 1, borderColor: "divider" }}>
+          <Typography sx={{ fontSize: TYPE.small, color: "text.secondary", lineHeight: 1.6, pt: 1, borderTop: 1, borderColor: "divider" }}>
             Current on-hand stock, valued at cost and retail price. A point-in-time
             snapshot -- no date range applies.
           </Typography>

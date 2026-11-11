@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import React from "react";
 import { BarChart3 } from "lucide-react";
 import { Box, Stack, Typography } from "@mui/material";
@@ -61,7 +62,7 @@ export default function CrmGrowthChart({ timelineChart = [] }) {
                     title={`Orders: ${item.orders_count}`}
                   />
                 </Stack>
-                <Typography sx={{ fontSize: 10, fontWeight: 500, color: "text.secondary" }}>{item.date}</Typography>
+                <Typography sx={{ fontSize: TYPE.small, fontWeight: 500, color: "text.secondary" }}>{item.date}</Typography>
               </Stack>
             );
           })}

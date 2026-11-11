@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import { useState } from "react";
 import { Box, Button, IconButton, Radio, Stack, TextField, Tooltip, Typography } from "@mui/material";
 import { alpha } from "@mui/material/styles";
@@ -67,10 +68,10 @@ export default function SummaryLayoutsDrawer({
       <Box sx={{ borderBottom: 1, borderColor: "divider", px: 2, py: 1.5 }}>
         <Stack direction="row" sx={{ alignItems: "flex-start", justifyContent: "space-between", gap: 1 }}>
           <Box>
-            <Typography sx={{ fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>
+            <Typography sx={{ fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>
               Summary layouts
             </Typography>
-            <Typography sx={{ mt: 0.5, fontSize: 11, color: "text.secondary" }}>{description}</Typography>
+            <Typography sx={{ mt: 0.5, fontSize: TYPE.small, color: "text.secondary" }}>{description}</Typography>
           </Box>
           <Stack direction="row" spacing={0.25} sx={{ flexShrink: 0 }}>
             <Tooltip title={pinned ? "Unpin panel" : "Pin panel beside the table"}>
@@ -87,7 +88,7 @@ export default function SummaryLayoutsDrawer({
         </Stack>
       </Box>
 
-      <Stack sx={{ flex: 1, minHeight: 0, gap: 2, overflowY: "auto", px: 2, py: 1.5, fontSize: 10.5 }}>
+      <Stack sx={{ flex: 1, minHeight: 0, gap: 2, overflowY: "auto", px: 2, py: 1.5, fontSize: TYPE.small }}>
         {topContent}
         <Box>
           <Typography sx={{ mb: 1, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" }}>Breakdown type</Typography>
@@ -105,7 +106,7 @@ export default function SummaryLayoutsDrawer({
                 }}
               >
                 <Radio name={name} size="small" sx={{ flexShrink: 0, p: 0 }} checked={mode === opt.value} onChange={() => onModeChange(opt.value)} />
-                <Box component="span" sx={{ fontWeight: 500, fontSize: 11, lineHeight: 1.2, color: "text.primary" }}>{opt.label}</Box>
+                <Box component="span" sx={{ fontWeight: 500, fontSize: TYPE.small, lineHeight: 1.2, color: "text.primary" }}>{opt.label}</Box>
               </Stack>
             ))}
           </Stack>
@@ -120,7 +121,7 @@ export default function SummaryLayoutsDrawer({
       </Stack>
 
       <Box sx={{ borderTop: 1, borderColor: "divider", p: 2 }}>
-        <Button type="button" disabled={loading || !mode} onClick={apply} variant="contained" fullWidth sx={{ py: 1, fontSize: 10.5, fontWeight: 700 }}>
+        <Button type="button" disabled={loading || !mode} onClick={apply} variant="contained" fullWidth sx={{ py: 1, fontSize: TYPE.small, fontWeight: 700 }}>
           {loading ? "Loading…" : "Apply breakdown"}
         </Button>
       </Box>
@@ -178,7 +179,7 @@ export function SummaryPanelRow({ panel, children }) {
 export function SummaryLayoutsButtons({ onOpen, applied, onReset }) {
   return (
     <>
-      <Button type="button" onClick={onOpen} variant="outlined" size="small" startIcon={<Layers size={14} />} sx={{ fontSize: 10.5, fontWeight: 600 }}>
+      <Button type="button" onClick={onOpen} variant="outlined" size="small" startIcon={<Layers size={14} />} sx={{ fontSize: TYPE.small, fontWeight: 600 }}>
         Summary layouts
       </Button>
       {applied ? (
@@ -187,7 +188,7 @@ export function SummaryLayoutsButtons({ onOpen, applied, onReset }) {
           onClick={onReset}
           size="small"
           sx={{
-            fontSize: 10.5, fontWeight: 600, border: 1, borderColor: (theme) => alpha(theme.palette.warning.main, 0.4), color: "warning.dark",
+            fontSize: TYPE.small, fontWeight: 600, border: 1, borderColor: (theme) => alpha(theme.palette.warning.main, 0.4), color: "warning.dark",
             bgcolor: (theme) => alpha(theme.palette.warning.main, theme.palette.mode === "dark" ? 0.16 : 0.08),
             "&:hover": { bgcolor: (theme) => alpha(theme.palette.warning.main, theme.palette.mode === "dark" ? 0.24 : 0.16) },
           }}

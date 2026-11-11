@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { Clock } from "lucide-react";
@@ -28,10 +29,10 @@ export default function MastersRecentProductsTable({ recentProducts = [] }) {
         <Table size="small" sx={{ "& td, & th": { border: 0, fontSize: 12 } }}>
           <TableHead>
             <TableRow sx={{ borderBottom: "1px solid", borderColor: "divider" }}>
-              <TableCell sx={{ pb: 1, fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>Product</TableCell>
-              <TableCell sx={{ pb: 1, fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>Brand</TableCell>
-              <TableCell align="right" sx={{ pb: 1, fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>Price</TableCell>
-              <TableCell align="center" sx={{ pb: 1, fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>Status</TableCell>
+              <TableCell sx={{ pb: 1, fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>Product</TableCell>
+              <TableCell sx={{ pb: 1, fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>Brand</TableCell>
+              <TableCell align="right" sx={{ pb: 1, fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>Price</TableCell>
+              <TableCell align="center" sx={{ pb: 1, fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", color: "text.secondary" }}>Status</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -50,7 +51,7 @@ export default function MastersRecentProductsTable({ recentProducts = [] }) {
                       component="span"
                       sx={{
                         display: "inline-flex", borderRadius: 1, px: 0.75, py: 0.25,
-                        fontSize: 10, fontWeight: 700, textTransform: "uppercase",
+                        fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase",
                         ...(row.is_active
                           ? { bgcolor: (theme) => alpha(theme.palette.success.main, theme.palette.mode === "dark" ? 0.24 : 0.15), color: "success.main" }
                           : { bgcolor: "action.selected", color: "text.secondary" }),

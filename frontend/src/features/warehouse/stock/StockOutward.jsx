@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import { useEffect, useRef, useState } from "react";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
@@ -122,7 +123,7 @@ export default function StockOutward() {
                 const problem = lineProblem(line);
                 return (
                   <TableRow key={line.key}>
-                    <TableCell><Typography sx={{ fontSize: 12.5, fontWeight: 600 }}>{line.name}</Typography><Typography sx={{ fontSize: 11, color: "text.secondary" }}>{line.code}</Typography></TableCell>
+                    <TableCell><Typography sx={{ fontSize: 12.5, fontWeight: 600 }}>{line.name}</Typography><Typography sx={{ fontSize: TYPE.small, color: "text.secondary" }}>{line.code}</Typography></TableCell>
                     <TableCell>{line.barcode || "-"}</TableCell>
                     <TableCell align="right">{line.stock}</TableCell>
                     <TableCell><TextField size="small" type="number" value={line.quantity} error={Boolean(problem)} helperText={problem || " "} onChange={(e) => setQty(line.key, e.target.value)}

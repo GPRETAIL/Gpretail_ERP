@@ -54,7 +54,7 @@ const TabBar = () => {
                   : { color: "text.secondary", "&:hover": { bgcolor: "action.selected" } }),
               }}
             >
-              <Typography component="span" noWrap sx={{ fontSize: 11, fontWeight: 500, flex: 1, minWidth: 0 }}>{tab.name}</Typography>
+              <Typography component="span" noWrap sx={{ fontSize: TYPE.small, fontWeight: 500, flex: 1, minWidth: 0 }}>{tab.name}</Typography>
               {!isDashboard && (
                 <IconButton
                   type="button"

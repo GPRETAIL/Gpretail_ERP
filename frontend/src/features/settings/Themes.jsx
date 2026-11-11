@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "react-toastify";
@@ -123,7 +124,7 @@ function ThemeEditor({ snapshot, prefix, companyScope, mode, reload, token, onBu
                       </Stack>
                       <Typography sx={{ fontSize: 13, fontWeight: 600, color: "text.primary" }}>{theme.name}</Typography>
                       <Typography sx={{ fontSize: 12, color: "text.secondary" }}>{theme.description}</Typography>
-                      <Typography sx={{ fontSize: 11, color: "text.secondary" }}>{style} · {font} · {config.border_radius}px corners</Typography>
+                      <Typography sx={{ fontSize: TYPE.small, color: "text.secondary" }}>{style} · {font} · {config.border_radius}px corners</Typography>
                     </Stack>
                   </Button>;
                 })}
@@ -147,7 +148,7 @@ function ThemeEditor({ snapshot, prefix, companyScope, mode, reload, token, onBu
                 {TEXT_SIZE_OPTIONS.map(option => <Button key={option.id} aria-pressed={draft.text_size === option.id} variant={draft.text_size === option.id ? "outlined" : "text"} disabled={!editable || busy} onClick={() => change("text_size", option.id)}>{option.label}{option.id === "comfortable" ? " (recommended)" : ""}</Button>)}
               </Stack>
               <Typography sx={{ fontSize: 12 }}>Preview the heading, fields and table before applying. Receipt, invoice and barcode print sizes are unchanged.</Typography>
-              <Button disabled={!editable || busy} onClick={() => setDraft(previous => ({ ...previous, font_family: "inter", text_size: "comfortable" }))}>Reset typography to recommended</Button>
+              <Button disabled={!editable || busy} onClick={() => setDraft(previous => ({ ...previous, font_family: "system", text_size: "comfortable" }))}>Reset typography to recommended</Button>
               <Typography component="h3" sx={{ fontSize: 13, fontWeight: 600 }}>Font family</Typography>
               {FONT_OPTIONS.filter(font => font.id !== "playfair" || original.font_family === "playfair").map(font => <Button key={font.id} aria-label={font.label} aria-pressed={draft.font_family === font.id} variant={draft.font_family === font.id ? "outlined" : "text"} disabled={!editable || busy} onClick={() => change("font_family", font.id)} sx={{ justifyContent: "flex-start", textAlign: "left", p: 1.25 }}><Box><Typography sx={{ fontSize: 13, fontWeight: 600 }}>{font.label}</Typography>{font.description && <Typography sx={{ fontSize: 12, color: "text.secondary", mt: 0.25 }}>{font.description}</Typography>}</Box></Button>)}
             </>}
@@ -168,7 +169,7 @@ function ThemeEditor({ snapshot, prefix, companyScope, mode, reload, token, onBu
               <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", flexWrap: "wrap" }}><Typography component="h2" sx={{ fontSize: 13, fontWeight: 700 }}>Revision History</Typography><Button color="error" disabled={busy || libraryLoading || !editable || !(library?.history?.length || olderHistory.length)} onClick={() => setHistoryRemoval({ all: true })}>Clear history</Button></Stack>
               <Typography sx={{ fontSize: 12 }}>Restoring creates a new revision and validates the saved colors again.</Typography>
               {!libraryLoading && !library?.history?.length && !olderHistory.length && <Typography>No saved revisions. Applying a theme creates a new revision.</Typography>}
-              {[...(library?.history || []), ...olderHistory].map(revision => <Stack key={revision.id} direction="row" spacing={1} sx={{ alignItems: "center", flexWrap: "wrap" }}><Box sx={{ flex: 1 }}><Typography sx={{ fontSize: 12 }}>Revision {revision.revision} · {revision.operation}</Typography><Typography sx={{ fontSize: 11, color: "text.secondary" }}>{revision.author || "Deleted user"} · {revision.created_at} UTC</Typography></Box><Button disabled={busy || !editable || revision.revision === meta.revision} onClick={() => setPublish({ restore: revision })}>Restore</Button><Button color="error" aria-label={`Delete revision ${revision.revision}`} disabled={busy || libraryLoading || !editable} onClick={() => setHistoryRemoval({ revision })}>Delete</Button></Stack>)}
+              {[...(library?.history || []), ...olderHistory].map(revision => <Stack key={revision.id} direction="row" spacing={1} sx={{ alignItems: "center", flexWrap: "wrap" }}><Box sx={{ flex: 1 }}><Typography sx={{ fontSize: 12 }}>Revision {revision.revision} · {revision.operation}</Typography><Typography sx={{ fontSize: TYPE.small, color: "text.secondary" }}>{revision.author || "Deleted user"} · {revision.created_at} UTC</Typography></Box><Button disabled={busy || !editable || revision.revision === meta.revision} onClick={() => setPublish({ restore: revision })}>Restore</Button><Button color="error" aria-label={`Delete revision ${revision.revision}`} disabled={busy || libraryLoading || !editable} onClick={() => setHistoryRemoval({ revision })}>Delete</Button></Stack>)}
               {(olderCursor === undefined ? library?.nextBefore : olderCursor) && <Button disabled={busy} onClick={loadOlder}>Load Earlier Revisions</Button>}
             </>}
           </Stack>

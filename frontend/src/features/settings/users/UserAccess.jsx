@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import PageHeader from "@/shared/components/PageHeader";
 import useAsyncQuery from "@/shared/hooks/useAsyncQuery";
 import SearchGridPanel from "@/shared/components/SearchGridPanel";
@@ -771,7 +772,7 @@ const UserAccess = () => {
                             sx={{
                               ml: "33%", borderRadius: "4px", border: "1px solid", borderColor: "warning.main",
                               bgcolor: (theme) => alpha(theme.palette.warning.main, theme.palette.mode === "dark" ? 0.2 : 0.08),
-                              px: 1, py: 0.75, fontSize: 10.5, color: "warning.dark",
+                              px: 1, py: 0.75, fontSize: TYPE.small, color: "warning.dark",
                             }}
                           >
                             These stores don’t offer the same modules — the grid below shows only modules common to all of
@@ -791,7 +792,7 @@ const UserAccess = () => {
                         <Typography sx={{ fontSize: 12.25, fontWeight: 600, color: "info.dark" }}>
                           Store admin — {userForm.name || userForm.email}
                         </Typography>
-                        <Typography sx={{ fontSize: 10.5, color: "info.dark" }}>
+                        <Typography sx={{ fontSize: TYPE.small, color: "info.dark" }}>
                           This account was created with its store, so its name, sign-in details and store
                           cannot be changed here. It is already limited to this store and to the modules the
                           store subscribes to — below you choose what it may do inside them.
@@ -807,7 +808,7 @@ const UserAccess = () => {
                           }
                           label="Full access to this store"
                         />
-                        <Typography sx={{ fontSize: 10.5, color: "info.dark" }}>
+                        <Typography sx={{ fontSize: TYPE.small, color: "info.dark" }}>
                           {storeAdminFullAccess
                             ? "Covers every page, including ones added in future updates. Uncheck to choose page by page."
                             : "Set page by page below. Re-check to go back to covering every page automatically."}

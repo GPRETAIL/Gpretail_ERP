@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import { Trash2 } from "lucide-react";
 import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Stack, Typography } from "@mui/material";
 
@@ -34,7 +35,7 @@ const ConfirmDialog = ({
       </Stack>
     </DialogTitle>
     <DialogContent sx={{ py: 1.5 }}>
-      <Typography sx={{ fontSize: 11.5, color: "text.secondary", lineHeight: 1.6 }}>{message}</Typography>
+      <Typography sx={{ fontSize: TYPE.small, color: "text.secondary", lineHeight: 1.6 }}>{message}</Typography>
     </DialogContent>
     <DialogActions sx={{ px: 2, py: 1.5 }}>
       <Button className="glass-btn glass-btn-secondary" onClick={onCancel}>

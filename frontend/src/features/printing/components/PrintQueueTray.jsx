@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import React from "react";
 import { Printer, X, Loader2, CheckCircle2, AlertCircle, RotateCcw, Settings } from "lucide-react";
 import { Box, IconButton, Typography } from "@mui/material";
@@ -39,7 +40,7 @@ const JobRow = ({ job, STATUS, onCancel, onRetry, onBrowserPrint }) => (
           <Typography sx={{ fontSize: 12, fontWeight: 500, color: "text.primary", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {getPrintJobLabel(job)}
           </Typography>
-          <Box sx={{ fontSize: 11, color: "text.secondary", display: "flex", alignItems: "center", gap: 0.75 }}>
+          <Box sx={{ fontSize: TYPE.small, color: "text.secondary", display: "flex", alignItems: "center", gap: 0.75 }}>
             <Box component="span" sx={{ textTransform: "capitalize" }}>{job.statusUnknown ? "Awaiting confirmation" : job.status}</Box>
             <Box component="span">&middot;</Box>
             <Box component="span">{formatRelativeTime(job.createdAt)}</Box>
@@ -51,7 +52,7 @@ const JobRow = ({ job, STATUS, onCancel, onRetry, onBrowserPrint }) => (
             )}
           </Box>
           {job.error && (
-            <Typography sx={{ fontSize: 11, color: "error.main", mt: 0.25, wordBreak: "break-word" }}>{job.error}</Typography>
+            <Typography sx={{ fontSize: TYPE.small, color: "error.main", mt: 0.25, wordBreak: "break-word" }}>{job.error}</Typography>
           )}
         </Box>
       </Box>
@@ -73,14 +74,14 @@ const JobRow = ({ job, STATUS, onCancel, onRetry, onBrowserPrint }) => (
           onClick={() => onRetry(job.id)}
           title="Retry this print job"
           sx={{
-            display: "flex", alignItems: "center", gap: 0.5, fontSize: 11, color: "primary.main",
+            display: "flex", alignItems: "center", gap: 0.5, fontSize: TYPE.small, color: "primary.main",
             flexShrink: 0, border: 0, bgcolor: "transparent", cursor: "pointer", "&:hover": { textDecoration: "underline" },
           }}
         >
           <RotateCcw size={12} /> Check printer / Reprint
         </Box>
       )}
-      {job.status === STATUS.FAILED && job.html && <Box component="button" type="button" onClick={() => onBrowserPrint(job.id)} sx={{ border: 0, bgcolor: "transparent", color: "primary.main", cursor: "pointer", fontSize: 11 }}>Print using browser</Box>}
+      {job.status === STATUS.FAILED && job.html && <Box component="button" type="button" onClick={() => onBrowserPrint(job.id)} sx={{ border: 0, bgcolor: "transparent", color: "primary.main", cursor: "pointer", fontSize: TYPE.small }}>Print using browser</Box>}
     </Box>
 
     {job.totalCopies > 1 && job.status === STATUS.PRINTING && (
@@ -139,7 +140,7 @@ const PrintQueueTray = ({
             }}
             title="Printer settings"
             sx={{
-              display: "flex", alignItems: "center", gap: 0.5, fontSize: 11, color: "text.secondary",
+              display: "flex", alignItems: "center", gap: 0.5, fontSize: TYPE.small, color: "text.secondary",
               border: 0, bgcolor: "transparent", cursor: "pointer", "&:hover": { color: "primary.main" },
             }}
           >
@@ -165,7 +166,7 @@ const PrintQueueTray = ({
               component="button"
               type="button"
               onClick={onClearFinished}
-              sx={{ fontSize: 11, color: "primary.main", border: 0, bgcolor: "transparent", cursor: "pointer", "&:hover": { textDecoration: "underline" } }}
+              sx={{ fontSize: TYPE.small, color: "primary.main", border: 0, bgcolor: "transparent", cursor: "pointer", "&:hover": { textDecoration: "underline" } }}
             >
               Clear finished
             </Box>
