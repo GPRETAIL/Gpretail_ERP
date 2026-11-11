@@ -1,3 +1,4 @@
+import { serverUrlProblem } from "./serverUrlCheck";
 const CLOUD_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
 const STORAGE_KEY = "erp_runtime_routing";
 const LOCAL_POLL_INTERVAL_MS = 5000;
@@ -258,10 +259,11 @@ const resolveFromCloudRuntime = async ({ token, storeId } = {}) => {
     const data = payload?.data || {};
     const localRoot = stripTrailingSlash(data.local_server_url || "");
     const cloudBaseUrl = toApiBase(data.cloud_server_url) || CLOUD_BASE_URL;
-    if (!data.enabled || !isAbsoluteUrl(localRoot)) {
+    const invalidLocalServer = isAbsoluteUrl(localRoot) && Boolean(serverUrlProblem(localRoot, { local: true }));
+    if (!data.enabled || !isAbsoluteUrl(localRoot) || invalidLocalServer) {
       return {
         enabled: false,
-        blockedReason: normalize(data.local_server_url) ? "" : "Local server is not configured for this company.",
+        blockedReason: invalidLocalServer ? "The saved local server is a frontend or loopback address. Configure a reachable backend LAN address." : normalize(data.local_server_url) ? "" : "Local server is not configured for this company.",
         currentTarget: "cloud",
         localBaseUrl: "",
         cloudBaseUrl: CLOUD_BASE_URL,
@@ -272,9 +274,11 @@ const resolveFromCloudRuntime = async ({ token, storeId } = {}) => {
     }
 
     const localHealthUrl = `${localRoot}/api/connector/web-config`;
-    const localHealthy = await fetchJsonWithTimeout(localHealthUrl, { timeoutMs: 1200 })
-      .then((webConfig) => Boolean(webConfig?.data?.local_healthy ?? webConfig?.success))
-      .catch(() => false);
+    const webConfig = await fetchJsonWithTimeout(localHealthUrl, { timeoutMs: 1200 }).catch(() => null);
+    if (webConfig?.data?.enabled === false) {
+      return { ...DEFAULT_STATE, blockedReason: "The saved backend is not configured as a local sync connector." };
+    }
+    const localHealthy = Boolean(webConfig?.data?.local_healthy ?? webConfig?.success);
 
     return {
       enabled: true,
@@ -363,6 +367,14 @@ export const prepareRoutingForRequest = async (config = {}) => {
   };
 
   const path = pathFromRequestConfig(next);
+  // Keep credentials/session checks on the deployment which issued the session.
+  // A saved failover destination is not an authentication authority.
+  if (/^\/(?:api\/)?(?:auth\/|local-server-config(?:\/|$))/.test(path)) {
+    next.baseURL = CLOUD_BASE_URL;
+    next.__routingTarget = "deployment";
+    return next;
+  }
+
   if (isBackupPath(next) && ["local", "cloud"].includes(next.__backupTarget)) {
     if (next.__backupTarget === "local" && !runtimeState.localBaseUrl) throw new Error("Reconnect the local server or reopen Backup Center before accessing its archives.");
     next.__routingTarget = next.__backupTarget;

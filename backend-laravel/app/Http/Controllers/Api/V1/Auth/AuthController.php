@@ -283,6 +283,12 @@ class AuthController extends Controller
         $cloudServerUrl = trim((string) $request->input('cloud_server_url', ''));
 
         $request->validate(['local_server_url' => 'nullable|url:http,https|max:2048', 'cloud_server_url' => 'nullable|url:http,https|max:2048']);
+        $request->validate(['disable_failover' => 'sometimes|boolean']);
+        if (! $request->boolean('disable_failover') && $localServerUrl === '') {
+            throw \Illuminate\Validation\ValidationException::withMessages(['local_server_url' => 'Enter the local server URL before saving. Use Disable local failover to turn it off.']);
+        }
+        abort_if($request->boolean('disable_failover') && ($localServerUrl !== '' || $cloudServerUrl !== ''), 422, 'Clear both server URLs when disabling local failover.');
+
         foreach ([$localServerUrl, $cloudServerUrl] as $url) {
             if ($url === '') {
                 continue;
@@ -290,7 +296,10 @@ class AuthController extends Controller
             $parts = parse_url($url);
             abort_unless(is_array($parts) && ! isset($parts['user']) && ! isset($parts['pass']) && ! isset($parts['query']) && ! isset($parts['fragment'])
                 && in_array($parts['path'] ?? '', ['', '/', '/api', '/api/'], true), 422, 'Use a server URL without credentials, query or fragment.');
+            abort_if(in_array((int) ($parts['port'] ?? 0), [5173, 5174, 4173, 4174], true), 422, 'This is a frontend preview port. Enter the ERP backend address, not the browser app URL.');
         }
+        $localHost = strtolower(trim((string) parse_url($localServerUrl, PHP_URL_HOST), '[]'));
+        abort_if($localHost === 'localhost' || (filter_var($localHost, FILTER_VALIDATE_IP) && \Symfony\Component\HttpFoundation\IpUtils::checkIp($localHost, ['127.0.0.0/8', '::1/128'])), 422, 'Use the backend LAN address. Loopback addresses cannot provide store-wide failover.');
         $localServerUrl = preg_replace('~/api/?$~', '', $localServerUrl);
 
         if ($cloudServerUrl !== '' && ! preg_match('#^https?://#i', $cloudServerUrl)) {
@@ -301,6 +310,11 @@ class AuthController extends Controller
         }
 
         $node = StoreLocalNode::where('store_id', $storeId)->first();
+        if (! $node && $localServerUrl === '') {
+            // Turning failover off for a store that never had it: nothing to save, no sync identity to create.
+            return response()->json(['success' => true, 'message' => 'Local server failover is off for this store.',
+                'data' => $this->presentLocalServerNode(null, $storeId)]);
+        }
         if (! $node) {
             $node = new StoreLocalNode(['store_id' => $storeId]);
             $node->tenant_key = (string) Str::uuid();
@@ -319,15 +333,31 @@ class AuthController extends Controller
         ]);
     }
 
+    /** Same scheme, host and port, compared the way the connection probe normalizes them (case, default port, /api). */
+    private function sameServerOrigin(string $one, string $two): bool
+    {
+        try {
+            $probe = app(\App\Services\Platform\RegisteredServerProbe::class);
+
+            return $one !== '' && $probe->normalize($one) === $probe->normalize($two);
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpException) {
+            return false; // normalize() rejects addresses on ports a store server may not use.
+        }
+    }
+
     public function localServerConfigRuntime(Request $request)
     {
         $storeId = (int) $request->attributes->get('store_context_id', 0);
         $node = StoreLocalNode::where('store_id', $storeId)->where('enabled', true)->first();
 
+        $developmentOnly = $node && app()->environment('local') && config('sync.node_role') !== 'local'
+            && config('sync.development_server_origin') && $this->sameServerOrigin((string) $node->local_server_url, (string) config('sync.development_server_origin'));
+
         return response()->json([
             'success' => true,
             'data' => [
-                'enabled' => (bool) $node,
+                'enabled' => (bool) $node && ! $developmentOnly,
+                'blocked_reason' => $developmentOnly ? 'The development backend is not configured as a local sync connector.' : null,
                 'tenant_key' => $node->tenant_key ?? null,
                 'local_server_url' => $node->local_server_url ?? null,
                 'cloud_server_url' => $node->cloud_server_url ?? null,

@@ -14,6 +14,7 @@ use App\Models\PosPayment;
 use App\Models\PosReturn;
 use App\Models\PosSale;
 use App\Models\Product;
+use App\Models\ProductVariant;
 use App\Models\Stock;
 use App\Models\Store;
 use App\Models\User;
@@ -164,23 +165,52 @@ class PosSaleController extends Controller
         $search = $request->input('search') ?? $request->input('q') ?? '';
         $storeId = $this->resolveStoreId($request, 1);
 
+        $allowWithoutStock = StockRules::allowsSaleWithoutStock((int) $storeId);
+        // Active products matching the search (name, code or barcode); used for stock rows and, below, for items with no stock row yet.
+        $matchSearch = function ($q) use ($search) {
+            $q->where('is_active', true);
+            if ($search) {
+                $q->where(fn ($match) => $match->where('name', 'like', "%{$search}%")
+                    ->orWhere('code', 'like', "%{$search}%")->orWhere('barcode', 'like', "%{$search}%"));
+            }
+        };
         $query = Stock::with(['product.brand', 'product.category', 'product.tax', 'variant:id,barcode'])
             ->where('store_id', $storeId)
-            ->where('quantity', '>', 0)
-            ->whereHas('product', function ($q) use ($search) {
-                if ($search) {
-                    $q->where('name', 'like', "%{$search}%")
-                        ->orWhere('code', 'like', "%{$search}%")
-                        ->orWhere('barcode', 'like', "%{$search}%");
-                }
-            });
+            ->when(! $allowWithoutStock, fn ($q) => $q->where('quantity', '>', 0))
+            ->whereHas('product', $matchSearch);
 
         // POSSales.jsx does live search-as-you-type (small, frequent
         // requests - the 50 cap keeps those fast); POSOld.jsx instead
         // pre-loads the whole in-stock catalog once for client-side
         // filtering, so it needs the same all=true escape hatch every
         // other list endpoint in this app already supports.
-        $stocks = $request->boolean('all') ? $query->limit(2000)->get() : $query->limit(50)->get();
+        $limit = $request->boolean('all') ? 2000 : 50;
+        $stocks = $query->orderBy('id')->limit($limit)->get();
+
+        if ($allowWithoutStock && $stocks->count() < $limit) {
+            // Catalog reads must not create stock rows. Checkout opens them transactionally.
+            $matchProduct = function ($q) use ($matchSearch, $storeId) {
+                $q->where('company_id', $storeId);
+                $matchSearch($q);
+            };
+            $variants = ProductVariant::with(['product.brand', 'product.category', 'product.tax'])
+                ->whereHas('product', $matchProduct)
+                ->whereDoesntHave('stock', fn ($q) => $q->where('store_id', $storeId))
+                ->orderBy('id')->limit($limit - $stocks->count())->get();
+            foreach ($variants as $variant) {
+                $stocks->push((new Stock(['product_id' => $variant->product_id, 'variant_id' => $variant->id, 'quantity' => 0]))
+                    ->setRelation('product', $variant->product)->setRelation('variant', $variant));
+            }
+            if ($stocks->count() < $limit) {
+                $products = Product::with(['brand', 'category', 'tax'])->where($matchProduct)
+                    ->whereDoesntHave('variants')->whereDoesntHave('stocks', fn ($q) => $q->where('store_id', $storeId))
+                    ->orderBy('id')->limit($limit - $stocks->count())->get();
+                foreach ($products as $product) {
+                    $stocks->push((new Stock(['product_id' => $product->id, 'quantity' => 0]))
+                        ->setRelation('product', $product)->setRelation('variant', null));
+                }
+            }
+        }
 
         $data = $stocks->map(function ($s) {
             $sellingMode = strtoupper((string) ($s->product?->selling_mode ?: 'PIECE'));

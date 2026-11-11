@@ -400,3 +400,6 @@ export const posSalesDialogNativeSelectSx = {
   fontSize: 12.25,
   color: "text.primary",
 };
+
+/** Stock rows the cashier may bill: everything when the store sells without stock, else only rows with stock left. */
+export const sellableStockRows = (rows, allowSaleWithoutStock) => (allowSaleWithoutStock ? rows : rows.filter(row => Number(row.qty) > 0));

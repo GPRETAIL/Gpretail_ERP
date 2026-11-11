@@ -1,11 +1,11 @@
 import { Box, Stack, Typography } from "@mui/material";
 import VynerixLogo from "./VynerixLogo";
 
-export default function VynerixLoginBrand({ onLight = false }) {
+export default function VynerixLoginBrand({ onLight = false, titleComponent = "h1" }) {
   return <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
     <VynerixLogo />
     <Box>
-      <Typography component="h1" sx={{ fontSize: 27, fontWeight: 800, letterSpacing: "-0.035em", lineHeight: 1.15 }}>
+      <Typography component={titleComponent} sx={{ fontSize: 27, fontWeight: 800, letterSpacing: "-0.035em", lineHeight: 1.15 }}>
         <Box component="span" sx={{ color: "#3a6ea5" }}>Vyn</Box>
         <Box component="span" sx={{ color: onLight ? "#0f172a" : "text.primary" }}>erix</Box>
       </Typography>

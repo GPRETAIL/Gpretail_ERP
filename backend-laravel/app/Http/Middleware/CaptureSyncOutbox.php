@@ -28,6 +28,7 @@ class CaptureSyncOutbox
      */
     private const EXCLUDED_PATH_FRAGMENTS = [
         'auth/',
+        'realtime/', // Socket subscription signatures belong to this browser/node, not replicated business data.
         'remote-support/',
         'sync/',
         'local-server-config',

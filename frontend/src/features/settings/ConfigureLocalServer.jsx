@@ -1,4 +1,6 @@
+import { serverUrlProblem } from "@/shared/api/serverUrlCheck";
 import { TYPE } from "@/shared/theme/typeScale";
+import LoadingSkeleton from "@/shared/components/LoadingSkeleton";
 import useAsyncQuery from "@/shared/hooks/useAsyncQuery";
 import { Fragment, useCallback, useEffect, useEffectEvent, useRef, useState } from "react";
 import {
@@ -15,7 +17,7 @@ import {
 } from "lucide-react";
 import { toast } from "react-toastify";
 import { alpha } from "@mui/material/styles";
-import { Box, Button, Stack, Table, TableBody, TableCell, TableHead, TableRow, TextField, Typography } from "@mui/material";
+import { Box, Button, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Stack, Table, TableBody, TableCell, TableHead, TableRow, TextField, Typography } from "@mui/material";
 import api from "@/shared/api/apiClient";
 import { fetchAndApplyRuntimeRoutingConfig } from "@/shared/api/runtimeRouting";
 import { muiFieldSx } from "@/shared/theme/formControlSizes";
@@ -39,10 +41,13 @@ const formatDateTime = (value) => {
   return date.toLocaleString();
 };
 
+const serverUrlError = (value, local = false) => serverUrlProblem(value, { local });
+
 export default function ConfigureLocalServer() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [disableDialogOpen, setDisableDialogOpen] = useState(false);
   const [testing, setTesting] = useState(false);
   const [testingCloud, setTestingCloud] = useState(false);
   const [config, setConfig] = useState(null);
@@ -54,6 +59,11 @@ export default function ConfigureLocalServer() {
   const draftDirty = useRef(false);
   const [retryingId, setRetryingId] = useState(null);
   const [retryingAllStoreId, setRetryingAllStoreId] = useState(null);
+
+  const localUrlError = localServerUrl.trim() ? serverUrlError(localServerUrl, true) : "Enter the local server URL before saving.";
+  const cloudUrlError = serverUrlError(cloudServerUrl);
+  const unsavedUrls = localServerUrl.trim() !== String(config?.local_server_url || "").trim()
+    || cloudServerUrl.trim() !== String(config?.cloud_server_url || "").trim();
 
   const fetchConfig = useCallback(async ({ signal } = {}) => {
     const res = await api.get("/local-server-config", { signal });
@@ -141,16 +151,19 @@ export default function ConfigureLocalServer() {
     };
   }, []);
 
-  const handleSave = async () => {
+  const handleSave = async (disable = false) => {
+    if (saving || (!disable && (localUrlError || cloudUrlError))) return;
     try {
       setSaving(true);
       const payload = {
-        local_server_url: String(localServerUrl || "").trim(),
-        cloud_server_url: String(cloudServerUrl || "").trim(),
+        local_server_url: disable ? "" : String(localServerUrl || "").trim(),
+        cloud_server_url: disable ? "" : String(cloudServerUrl || "").trim(),
+        ...(disable ? { disable_failover: true } : {}),
       };
       const res = await api.put("/local-server-config", payload);
       const saved = res.data?.data || {};
       setConfig((prev) => ({ ...(prev || {}), ...saved }));
+      setDisableDialogOpen(false);
       setLocalServerUrl(String(saved.local_server_url ?? "").trim());
       setCloudServerUrl(String(saved.cloud_server_url ?? "").trim());
       draftLoaded.current = true;
@@ -173,7 +186,8 @@ export default function ConfigureLocalServer() {
         local_server_url: String(localServerUrl || "").trim(),
       });
       const message = res.data?.message || "Connection successful";
-      if (res.data?.success === false) toast.error(message);
+      if (res.data?.data?.status === "SETUP_REQUIRED") toast.info(message);
+      else if (res.data?.success === false) toast.error(message);
       else toast.success(message);
       await loadConfig({ silent: true });
     } catch (err) {
@@ -201,9 +215,13 @@ export default function ConfigureLocalServer() {
 
   if (loading) {
     return (
-      <Stack direction="row" spacing={1.5} sx={{ p: 3, alignItems: "center", fontSize: 12.25, color: "text.secondary" }}>
-        <Loader2 size={16} style={{ animation: "app-spin 1s linear infinite" }} />
-        <Box component="span">Loading local server configuration...</Box>
+      <Stack role="status" aria-label="Loading local server configuration" aria-busy="true" spacing={3} sx={{ p: { xs: 2, md: 3 } }}>
+        <Box aria-hidden="true"><LoadingSkeleton width="240px" sx={{ height: 26 }} /><Box sx={{ mt: 1 }}><LoadingSkeleton width="70%" /></Box></Box>
+        <Box aria-hidden="true" sx={{ ...cardSx, p: 2 }}><LoadingSkeleton width="140px" /><Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "repeat(3, 1fr)" }, gap: 2, mt: 2 }}>{[0, 1, 2].map(key => <LoadingSkeleton key={key} width="70%" sx={{ height: 32 }} />)}</Box></Box>
+        <Box aria-hidden="true" sx={{ display: "grid", gap: 3, gridTemplateColumns: { xs: "1fr", xl: "1.1fr 0.9fr" } }}>
+          <Stack spacing={2} sx={{ ...cardSx, p: 2.5 }}><LoadingSkeleton width="180px" />{[0, 1].map(key => <Box key={key}><LoadingSkeleton width="120px" /><Box sx={{ mt: 1 }}><LoadingSkeleton width="100%" sx={{ height: 38 }} /></Box></Box>)}<LoadingSkeleton width="60%" sx={{ height: 36 }} /></Stack>
+          <Box sx={{ ...cardSx, p: 2.5 }}><LoadingSkeleton width="150px" /><LoadingSkeleton variant="list" rows={3} /></Box>
+        </Box>
       </Stack>
     );
   }
@@ -281,12 +299,15 @@ export default function ConfigureLocalServer() {
                 size="small"
                 fullWidth
                 value={localServerUrl}
+                error={Boolean(localUrlError)}
+                helperText={localUrlError || undefined}
+                slotProps={{ htmlInput: { "aria-label": "Local Server URL" } }}
                 onChange={(e) => { draftDirty.current = true; setLocalServerUrl(e.target.value); }}
                 placeholder="http://192.168.1.25:8000"
                 sx={muiFieldSx}
               />
               <Typography sx={{ mt: 0.5, fontSize: TYPE.small, color: "text.secondary" }}>
-                The LAN address of this store's local server, e.g. http://192.168.1.25:8000. Leave blank to disable local-server failover for this store.
+                The LAN address of this store's local server, e.g. http://192.168.1.25:8000. Required to save. Use Disable local failover to turn it off explicitly.
               </Typography>
             </Box>
 
@@ -299,6 +320,9 @@ export default function ConfigureLocalServer() {
                 size="small"
                 fullWidth
                 value={cloudServerUrl}
+                error={Boolean(cloudUrlError)}
+                helperText={cloudUrlError || undefined}
+                slotProps={{ htmlInput: { "aria-label": "Cloud Server URL" } }}
                 onChange={(e) => { draftDirty.current = true; setCloudServerUrl(e.target.value); }}
                 placeholder={config?.effective_cloud_server_url || "https://yourcompany.gpsoftware.in"}
                 sx={muiFieldSx}
@@ -312,19 +336,21 @@ export default function ConfigureLocalServer() {
             <Stack direction={{ xs: "column", md: "row" }} spacing={1.5}>
               <Button
                 type="button"
-                onClick={handleSave}
-                disabled={saving}
+                onClick={() => handleSave()}
+                disabled={saving || Boolean(localUrlError || cloudUrlError)}
                 variant="contained"
                 color="success"
                 startIcon={saving ? <Loader2 size={16} style={{ animation: "app-spin 1s linear infinite" }} /> : <Save size={16} />}
               >
-                Save URLs
+                {saving ? "Saving..." : "Save URLs"}
               </Button>
+
+              {config?.local_server_url && <Button type="button" color="warning" variant="outlined" disabled={saving || testing || testingCloud} onClick={() => setDisableDialogOpen(true)}>Disable local failover</Button>}
 
               <Button
                 type="button"
                 onClick={handleTest}
-                disabled={testing}
+                disabled={testing || saving || unsavedUrls || !config?.local_server_url}
                 variant="outlined"
                 color="inherit"
                 startIcon={testing ? <Loader2 size={16} style={{ animation: "app-spin 1s linear infinite" }} /> : <Wifi size={16} />}
@@ -335,7 +361,7 @@ export default function ConfigureLocalServer() {
               <Button
                 type="button"
                 onClick={handleTestCloud}
-                disabled={testingCloud}
+                disabled={testingCloud || saving || unsavedUrls || !config?.tenant_key}
                 variant="outlined"
                 color="inherit"
                 startIcon={testingCloud ? <Loader2 size={16} style={{ animation: "app-spin 1s linear infinite" }} /> : <Wifi size={16} />}
@@ -343,6 +369,7 @@ export default function ConfigureLocalServer() {
                 Test Cloud
               </Button>
             </Stack>
+            {(unsavedUrls || !config?.tenant_key) && <Typography role="status" sx={{ fontSize: 12, color: "text.secondary" }}>Save the server URLs before testing. Use your ERP backend address, not a frontend page URL. Other devices need the server's LAN address rather than 127.0.0.1. The server administrator must approve the backend endpoint before connection testing.</Typography>}
           </Stack>
         </Box>
 
@@ -379,7 +406,7 @@ export default function ConfigureLocalServer() {
         <Box component="section" sx={{ ...cardSx, p: { xs: 2, md: 2.5 } }}>
           <Typography component="h2" sx={{ fontSize: 14, fontWeight: 600, color: "text.primary" }}>All Stores — Sync Health</Typography>
           <Typography sx={{ mt: 0.5, fontSize: 12.25, color: "text.secondary" }}>
-            Every store with local-server failover configured, and whether its local install has checked in recently.
+            Heartbeat status is separate from server reachability. Not connected means no heartbeat has arrived; Stale means an earlier heartbeat is overdue.
           </Typography>
 
           <Box sx={{ mt: 2, overflowX: "auto" }}>
@@ -396,7 +423,11 @@ export default function ConfigureLocalServer() {
               </TableHead>
               <TableBody>
                 {nodes.map((node) => {
-                  const nodeTone = node.is_stale
+                  const nodeTone = !node.enabled
+                    ? { label: "Disabled", token: null, Icon: WifiOff }
+                    : !node.last_heartbeat_at
+                      ? { label: "Not connected", token: "warning", Icon: WifiOff }
+                      : node.is_stale
                     ? { label: "Stale", token: "warning", Icon: AlertCircle }
                     : node.local_healthy
                       ? { label: "Healthy", token: "success", Icon: CheckCircle2 }
@@ -530,6 +561,14 @@ export default function ConfigureLocalServer() {
           </Box>
         </Box>
       )}
+      <Dialog open={disableDialogOpen} onClose={() => { if (!saving) setDisableDialogOpen(false); }} aria-labelledby="disable-failover-title" aria-describedby="disable-failover-description" maxWidth="xs" fullWidth>
+        <DialogTitle id="disable-failover-title">Disable local failover?</DialogTitle>
+        <DialogContent><DialogContentText id="disable-failover-description">Devices in this store will use the cloud server. You can enable local failover again by saving a local server address.</DialogContentText></DialogContent>
+        <DialogActions>
+          <Button disabled={saving} onClick={() => setDisableDialogOpen(false)}>Cancel</Button>
+          <Button variant="contained" color="warning" disabled={saving} onClick={() => handleSave(true)}>{saving ? "Disabling..." : "Disable failover"}</Button>
+        </DialogActions>
+      </Dialog>
     </Stack>
   );
 }

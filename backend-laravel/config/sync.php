@@ -1,6 +1,8 @@
 <?php
 
 return [
+    // Explicit self-instance marker for local development diagnostics only.
+    'development_server_origin' => env('DEV_SERVER_ORIGIN'),
     // 'local' on a store's on-prem install, 'cloud' on the shared dev.gpsoftware.in install.
     'probe_allowed_endpoints' => array_values(array_filter(array_map('trim', explode(',', env('SERVER_PROBE_ALLOWED_ENDPOINTS', ''))))),
 

@@ -1,11 +1,11 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import ConfigureLocalServer from "@/features/settings/ConfigureLocalServer";
-const { get, put, post, toast, initialize } = vi.hoisted(() => ({ get: vi.fn(), put: vi.fn(), post: vi.fn(), toast: { error: vi.fn(), success: vi.fn() }, initialize: vi.fn().mockResolvedValue(null) }));
+const { get, put, post, toast, initialize } = vi.hoisted(() => ({ get: vi.fn(), put: vi.fn(), post: vi.fn(), toast: { error: vi.fn(), success: vi.fn(), info: vi.fn() }, initialize: vi.fn().mockResolvedValue(null) }));
 vi.mock("@/shared/api/apiClient", () => ({ default: { get, put, post } }));
 vi.mock("@/shared/api/runtimeRouting", () => ({ fetchAndApplyRuntimeRoutingConfig: initialize }));
 vi.mock("react-toastify", () => ({ toast }));
-const saved = { local_server_url: "http://192.168.1.25:8000", cloud_server_url: "https://cloud.example", connector_status: "offline" };
+const saved = { tenant_key: "test-node", local_server_url: "http://192.168.1.25:8000", cloud_server_url: "https://cloud.example", connector_status: "offline" };
 beforeEach(() => { vi.clearAllMocks(); get.mockImplementation(async path => ({ data: { data: path === "/local-server-config" ? saved : { nodes: [] } } })); });
 afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks(); });
 
@@ -36,12 +36,68 @@ it("reports an unhealthy HTTP 200 connection test as an error", async () => {
   expect(toast.success).not.toHaveBeenCalled();
 });
 
-it("preserves explicitly cleared URLs after save and refreshes runtime routing", async () => {
-  put.mockResolvedValue({ data: { data: { local_server_url: null, cloud_server_url: null } } });
+it("requires a local address for Save and uses an explicit disable action", async () => {
+  put.mockResolvedValue({ data: { data: { local_server_url: null, cloud_server_url: null, enabled: false } } });
   render(<ConfigureLocalServer />);
   const field = await screen.findByPlaceholderText("http://192.168.1.25:8000");
   fireEvent.change(field, { target: { value: "" } });
+  fireEvent.change(screen.getByLabelText("Cloud Server URL"), { target: { value: "" } });
+  expect(screen.getByRole("button", { name: "Save URLs" })).toBeDisabled();
   fireEvent.click(screen.getByRole("button", { name: "Save URLs" }));
+  expect(put).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole("button", { name: "Disable local failover" }));
+  expect(screen.getByRole("dialog", { name: "Disable local failover?" })).toBeInTheDocument();
+  expect(put).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole("button", { name: "Cancel", exact: true }));
+  await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+  fireEvent.click(screen.getByRole("button", { name: "Disable local failover" }));
+  fireEvent.click(screen.getByRole("button", { name: "Disable failover", exact: true }));
+  await waitFor(() => expect(put).toHaveBeenCalledWith("/local-server-config", { local_server_url: "", cloud_server_url: "", disable_failover: true }));
   await waitFor(() => expect(initialize).toHaveBeenCalledTimes(1));
-  expect(field).toHaveValue("");
+});
+
+it("blocks page URLs and tests until valid addresses are saved", async () => {
+  render(<ConfigureLocalServer />);
+  const field = await screen.findByLabelText("Local Server URL");
+  fireEvent.change(field, { target: { value: "http://192.168.1.25:8000/dashboard" } });
+  expect(screen.getByText(/without \/login, \/dashboard/)).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Save URLs" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Test Local" })).toBeDisabled();
+  fireEvent.change(field, { target: { value: "http://192.168.1.99:8000" } });
+  expect(screen.getByRole("button", { name: "Save URLs" })).toBeEnabled();
+  expect(screen.getByRole("button", { name: "Test Local" })).toBeDisabled();
+  expect(post).not.toHaveBeenCalled();
+});
+
+it("rejects Vite frontend ports even when no page path is present", async () => {
+  render(<ConfigureLocalServer />);
+  const field = await screen.findByLabelText("Local Server URL");
+  fireEvent.change(field, { target: { value: "http://127.0.0.1:5173/" } });
+  expect(screen.getByText(/This is a frontend preview port/)).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Save URLs" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Test Local" })).toBeDisabled();
+});
+
+it("explains why loopback cannot serve other store devices", async () => {
+  render(<ConfigureLocalServer />);
+  const field = await screen.findByLabelText("Local Server URL");
+  fireEvent.change(field, { target: { value: "http://127.0.0.1:8000" } });
+  expect(screen.getByText(/Loopback addresses only reach this PC/)).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Save URLs" })).toBeDisabled();
+});
+
+it("shows development connector setup as information rather than a failed connection", async () => {
+  post.mockResolvedValue({ data: { success: false, message: "Local sync needs configuration", data: { status: "SETUP_REQUIRED" } } });
+  render(<ConfigureLocalServer />);
+  fireEvent.click(await screen.findByRole("button", { name: "Test Local" }));
+  await waitFor(() => expect(toast.info).toHaveBeenCalledWith("Local sync needs configuration"));
+  expect(toast.error).not.toHaveBeenCalled();
+});
+
+it("distinguishes never connected nodes from overdue heartbeats", async () => {
+  get.mockImplementation(async path => ({ data: { data: path === "/local-server-config" ? saved : { nodes: [{ store_id: 1, store_name: "Heartbeat QA", enabled: true, is_stale: true, last_heartbeat_at: null }] } } }));
+  render(<ConfigureLocalServer />);
+  await screen.findByText("Heartbeat QA");
+  expect(screen.queryByText("Stale", { exact: true })).not.toBeInTheDocument();
+  expect(screen.getAllByText("Not connected", { exact: true }).length).toBeGreaterThan(1);
 });

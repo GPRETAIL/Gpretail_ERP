@@ -243,4 +243,65 @@ class SyncCycleServiceTest extends TestCase
             && $request->hasHeader('X-Tenant-Key', 'tenant-abc')
             && $request->hasHeader('X-Sync-Token', 'token-xyz'));
     }
+
+    public function test_worker_does_not_report_a_stopped_local_http_server_as_healthy(): void
+    {
+        $this->fakeIdlePullAndHeartbeat([
+            rtrim(url('/'), '/').'/api/connector/web-config' => Http::failedConnection(),
+        ]);
+
+        $this->assertTrue(app(SyncCycleService::class)->run()['heartbeat_ok']);
+
+        Http::assertSent(fn ($request) => str_ends_with($request->url(), '/sync/heartbeat')
+            && $request['local_healthy'] === false);
+    }
+
+    public function test_worker_checks_the_store_servers_own_address_not_app_url(): void
+    {
+        // A store install served on port 8080 while APP_URL is still the default.
+        config(['app.url' => 'http://localhost:8000']);
+        $this->node->update(['advertised_local_server_url' => 'http://192.168.1.25:8080/api', 'local_server_url' => 'http://192.168.1.25:8080']);
+        $this->fakeIdlePullAndHeartbeat([
+            'http://localhost:8000/*' => Http::failedConnection(),
+            '192.168.1.25:8080/api/connector/web-config' => Http::response([
+                'success' => true, 'data' => ['enabled' => true, 'tenant_key' => $this->node->tenant_key],
+            ]),
+        ]);
+
+        app(SyncCycleService::class)->run();
+
+        Http::assertSent(fn ($request) => $request->url() === 'http://192.168.1.25:8080/api/connector/web-config');
+        Http::assertSent(fn ($request) => str_ends_with($request->url(), '/sync/heartbeat') && $request['local_healthy'] === true);
+    }
+
+    public function test_pulled_cloud_writes_are_replayed_on_the_store_servers_own_address(): void
+    {
+        config(['app.url' => 'http://localhost:8000']);
+        $this->node->update(['local_server_url' => 'http://192.168.1.25:8080']);
+        Http::fake([
+            'cloud.example.test/api/sync/outbound/next*' => Http::response(['success' => true, 'data' => [
+                'events' => [['id' => 7, 'method' => 'POST', 'path' => '/pos-sales', 'payload' => [], 'headers' => []]],
+            ]]),
+            'cloud.example.test/api/sync/outbound/ack' => Http::response(['success' => true]),
+            'cloud.example.test/api/sync/heartbeat' => Http::response(['success' => true]),
+            '192.168.1.25:8080/api/*' => Http::response(['success' => true], 201),
+        ]);
+
+        $this->assertSame(1, app(SyncCycleService::class)->run()['pulled']['applied']);
+        Http::assertSent(fn ($request) => $request->url() === 'http://192.168.1.25:8080/api/pos-sales');
+    }
+
+    public function test_worker_reports_health_only_for_its_own_enabled_connector(): void
+    {
+        $this->fakeIdlePullAndHeartbeat([
+            rtrim(url('/'), '/').'/api/connector/web-config' => Http::response([
+                'success' => true, 'data' => ['enabled' => true, 'tenant_key' => $this->node->tenant_key],
+            ]),
+        ]);
+
+        app(SyncCycleService::class)->run();
+
+        Http::assertSent(fn ($request) => str_ends_with($request->url(), '/sync/heartbeat')
+            && $request['local_healthy'] === true);
+    }
 }

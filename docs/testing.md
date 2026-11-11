@@ -29,3 +29,9 @@ Moving files must not change behaviour. These checks prove it:
   Comparing `--sort=definition` dumps also shows that overlapping routes did not change order.
 - PHPStan shows the same findings.
 - The full PHPUnit and Vitest suites, lint and `npm run build` all pass.
+
+## Stock catalog and local-server regression checks
+
+See [6 November 2026 QA cases and results](reports/2026-11-06-stock-and-local-server-qa.md) for the stock-switch matrix, explicit failover disabling, validation cases and remaining browser checks.
+
+See [Coffee 1 live failover and invoice sync QA](reports/2026-11-06-coffee1-live-failover-qa.md) for the real two-database shutdown/restart test, fixes, and remaining browser authentication blocker.

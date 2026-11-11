@@ -3,6 +3,7 @@ import { render, screen } from "@testing-library/react";
 import { Provider } from "react-redux";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { ThemeContext } from "@/shared/theme/themeContext";
 import authReducer, { logout } from "@/features/auth/authSlice";
 import checkAuth from "@/features/auth/utils/checkAuth";
 
@@ -93,7 +94,7 @@ const renderApp = (path, { authenticated = true, user = AUTHED_USER } = {}) => {
   return render(
     <Provider store={store}>
       <MemoryRouter initialEntries={[path]}>
-        <App />
+        <ThemeContext.Provider value={{ theme: "light", setTheme: vi.fn() }}><App /></ThemeContext.Provider>
       </MemoryRouter>
     </Provider>
   );
@@ -137,7 +138,7 @@ describe("App route shape", () => {
     vi.mocked(checkAuth).mockImplementationOnce(async dispatch => { dispatch(logout()); });
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => ({ data: { activated: false } }) }));
     renderApp("/login");
-    expect(await screen.findByRole("heading", { name: "Welcome back", exact: true })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: /A fresh start\.\s*A familiar workspace\./, exact: true })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Activate this deployment" })).not.toBeInTheDocument();
     expect(localStorage.getItem("token")).toBeNull();
   });
@@ -168,7 +169,7 @@ describe("App route shape", () => {
   it("still serves the public /login route rather than the splat layout", async () => {
     renderApp("/login", { authenticated: false });
 
-    expect(await screen.findByRole("heading", { name: "Welcome back", exact: true })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: /A fresh start\.\s*A familiar workspace\./, exact: true })).toBeInTheDocument();
     expect(screen.queryByText(/^LAYOUT@/)).not.toBeInTheDocument();
   });
 });

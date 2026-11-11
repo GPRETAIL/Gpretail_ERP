@@ -155,7 +155,7 @@ class SyncCycleService
 
         $events = $response->json('data.events') ?? [];
         $ackIds = [];
-        $localBase = rtrim(url('/'), '/');
+        $localBase = $this->localBaseUrl($node);
 
         foreach ($events as $event) {
             try {
@@ -195,12 +195,44 @@ class SyncCycleService
     {
         try {
             $response = Http::withHeaders($this->authHeaders($node))->timeout(10)->post($cloudApi.'/sync/heartbeat', [
-                'local_healthy' => true,
+                'local_healthy' => $this->localServerHealthy($node),
                 'advertised_local_server_url' => $node->advertised_local_server_url,
             ]);
 
             return $response->successful();
         } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
+    /**
+     * Where this store's local backend answers: the address it advertises to the store's devices, else the
+     * saved local server address. APP_URL is only the last resort: on a store install it is often the
+     * default (http://localhost:8000) while the backend runs elsewhere, e.g. on port 8080.
+     */
+    private function localBaseUrl(StoreLocalNode $node): string
+    {
+        $base = trim((string) ($node->advertised_local_server_url ?: $node->local_server_url)) ?: url('/');
+
+        return (string) preg_replace('~/api/?$~', '', rtrim($base, '/'));
+    }
+
+    private function localServerHealthy(StoreLocalNode $node): bool
+    {
+        // An HTTP-triggered cycle is already running inside the responding backend.
+        // A CLI worker can remain alive after that backend stops, so its heartbeat
+        // must separately verify the local HTTP server and paired connector identity.
+        if (! app()->runningInConsole()) {
+            return true;
+        }
+
+        try {
+            $response = Http::timeout(3)->get($this->localBaseUrl($node).'/api/connector/web-config');
+
+            return $response->successful()
+                && $response->json('data.enabled') === true
+                && hash_equals($node->tenant_key, (string) $response->json('data.tenant_key'));
+        } catch (\Throwable) {
             return false;
         }
     }

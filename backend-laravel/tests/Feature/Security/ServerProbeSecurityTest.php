@@ -16,6 +16,101 @@ class ServerProbeSecurityTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_probing_before_first_save_returns_actionable_validation_without_network_access(): void
+    {
+        Http::fake();
+        $node = $this->setupNode();
+        $node->delete();
+        foreach (['test', 'test-cloud'] as $action) {
+            $this->postJson('/api/local-server-config/'.$action)->assertUnprocessable()
+                ->assertJsonPath('message', 'Save the server URLs before testing the connection.');
+        }
+        Http::assertNothingSent();
+    }
+
+    public function test_empty_save_is_rejected_and_disabling_requires_explicit_intent(): void
+    {
+        $node = $this->setupNode();
+        $this->putJson('/api/local-server-config', ['local_server_url' => '', 'cloud_server_url' => ''])
+            ->assertUnprocessable()->assertJsonValidationErrors('local_server_url');
+        $this->assertTrue($node->fresh()->enabled);
+        $this->putJson('/api/local-server-config', ['local_server_url' => '', 'cloud_server_url' => '', 'disable_failover' => true])
+            ->assertOk()->assertJsonPath('data.enabled', false);
+    }
+
+    public function test_frontend_ports_cannot_be_saved_as_backend_addresses(): void
+    {
+        $node = $this->setupNode();
+        $this->putJson('/api/local-server-config', ['local_server_url' => 'http://127.0.0.1:5173/'])
+            ->assertUnprocessable()->assertJsonPath('message', 'This is a frontend preview port. Enter the ERP backend address, not the browser app URL.');
+        $this->assertSame('http://192.168.10.15', $node->fresh()->local_server_url);
+    }
+
+    public function test_loopback_cannot_be_saved_as_a_store_wide_failover_server(): void
+    {
+        $node = $this->setupNode();
+        foreach (['http://127.0.0.1:8000', 'http://localhost:8000', 'http://[::1]:8000'] as $url) {
+            $this->putJson('/api/local-server-config', ['local_server_url' => $url])->assertUnprocessable();
+        }
+        $this->assertSame('http://192.168.10.15', $node->fresh()->local_server_url);
+    }
+
+    public function test_local_development_self_probe_reports_setup_required_without_deadlocking_or_claiming_sync_health(): void
+    {
+        $this->setupNode('http://192.168.10.15:8001');
+        $this->app['env'] = 'local';
+        config(['sync.probe_allowed_endpoints' => ['http://192.168.10.15:8001'], 'sync.development_server_origin' => 'http://192.168.10.15:8001']);
+        Http::fake();
+        $result = app(RegisteredServerProbe::class)->check('http://192.168.10.15:8001', '', true);
+        $this->assertFalse($result['healthy']);
+        $this->assertTrue($result['reachable']);
+        Http::assertNothingSent();
+    }
+
+    public function test_production_never_uses_the_development_self_probe_shortcut(): void
+    {
+        $this->setupNode('http://192.168.10.15:8001');
+        $this->app['env'] = 'production';
+        config(['sync.probe_allowed_endpoints' => ['http://192.168.10.15:8001'], 'sync.development_server_origin' => 'http://192.168.10.15:8001']);
+        Http::fake(['*' => Http::response(['data' => ['enabled' => true]])]);
+        $this->assertTrue(app(RegisteredServerProbe::class)->check('http://192.168.10.15:8001', '', true)['healthy']);
+        Http::assertSentCount(1);
+    }
+
+    public function test_development_backend_does_not_advertise_itself_as_a_sync_connector(): void
+    {
+        $this->setupNode('http://192.168.10.15:8001');
+        $this->app['env'] = 'local';
+        config(['sync.node_role' => 'cloud', 'sync.development_server_origin' => 'http://192.168.10.15:8001']);
+        $this->getJson('/api/local-server-config/runtime')->assertOk()->assertJsonPath('data.enabled', false);
+        config(['sync.node_role' => 'local']);
+        $this->getJson('/api/local-server-config/runtime')->assertOk()->assertJsonPath('data.enabled', true);
+    }
+
+    public function test_disabling_failover_for_a_store_that_never_had_it_creates_no_sync_identity(): void
+    {
+        $node = $this->setupNode();
+        $storeId = $node->store_id;
+        $node->delete();
+        $this->putJson('/api/local-server-config', ['local_server_url' => '', 'cloud_server_url' => '', 'disable_failover' => true])
+            ->assertOk()->assertJsonPath('data.enabled', false)->assertJsonPath('data.tenant_key', null);
+        $this->assertSame(0, StoreLocalNode::where('store_id', $storeId)->count());
+    }
+
+    public function test_an_address_parse_url_rejects_gets_a_validation_message_not_a_server_error(): void
+    {
+        $this->setupNode();
+        $this->putJson('/api/local-server-config', ['local_server_url' => 'http:///192.168.10.15:8000'])->assertUnprocessable();
+    }
+
+    public function test_development_origin_matches_regardless_of_trailing_slash_case_or_default_port(): void
+    {
+        $this->setupNode('http://Dev-Box.local');
+        $this->app['env'] = 'local';
+        config(['sync.node_role' => 'cloud', 'sync.development_server_origin' => 'http://dev-box.local:80/']);
+        $this->getJson('/api/local-server-config/runtime')->assertOk()->assertJsonPath('data.enabled', false);
+    }
+
     private function setupNode(string $local = 'http://192.168.10.15'): StoreLocalNode
     {
         $store = Store::create(['name' => 'Security branch', 'code' => 'SEC-'.Str::random(10)]);

@@ -34,7 +34,7 @@ import {
   WAREHOUSE_PRINT_MODE_OPTIONS,
   WAREHOUSE_LABEL_FORMAT_OPTIONS,
 } from "./utils/barcodeCustomisation";
-import { Box, Stack, Typography, TextField, MenuItem, Button, Radio, Switch, Table, TableHead, TableBody, TableRow, TableCell, alpha } from "@mui/material";
+import { Box, Stack, Typography, TextField, MenuItem, Button, Radio, Switch, Table, TableHead, TableBody, TableRow, TableCell, CircularProgress, alpha } from "@mui/material";
 import { muiFieldSx } from "@/shared/theme/formControlSizes";
 
 const settingsCardSx = { borderRadius: "10.5px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", boxShadow: 1, p: 2.5 };
@@ -607,6 +607,7 @@ export default function BarcodeCustomisation() {
   };
 
   const handleSave = async () => {
+    if (saving || loading) return;
     const next = normalizeWarehouseBarcodeCustomization(settings);
     const targetCompany = companyId || authUser?.company_id;
     setSaving(true);
@@ -666,9 +667,11 @@ export default function BarcodeCustomisation() {
                 <Button
                   type="button"
                   onClick={handleSave}
+                  variant="contained"
+                  aria-busy={saving}
                   disabled={saving || loading}
-                  startIcon={<Save size={16} />}
-                  sx={{ borderRadius: "7px", fontSize: 12.25, fontWeight: 500, opacity: saving || loading ? 0.6 : 1 }}
+                  startIcon={saving ? <CircularProgress size={16} color="inherit" /> : <Save size={16} />}
+                  sx={{ borderRadius: "7px", fontSize: 12.25, fontWeight: 600, minWidth: 132, px: 2, boxShadow: 1 }}
                 >
                   {saving ? "Saving..." : "Save"}
                 </Button>

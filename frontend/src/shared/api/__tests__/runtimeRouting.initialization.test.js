@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { applyRuntimeRoutingConfig, clearRuntimeRoutingConfig, fetchAndApplyRuntimeRoutingConfig, getRuntimeRoutingSnapshot } from "@/shared/api/runtimeRouting";
+import { applyRuntimeRoutingConfig, clearRuntimeRoutingConfig, fetchAndApplyRuntimeRoutingConfig, getRuntimeRoutingSnapshot, prepareRoutingForRequest } from "@/shared/api/runtimeRouting";
 
 const response = data => ({ ok: true, json: async () => ({ data }) });
 beforeEach(() => { localStorage.clear(); sessionStorage.clear(); clearRuntimeRoutingConfig(); });
@@ -72,4 +72,24 @@ it("ignores a previous server's pending health response after configuration chan
   resolve(response({ local_healthy: true }));
   await vi.advanceTimersByTimeAsync(0);
   expect(getRuntimeRoutingSnapshot()).toMatchObject({ currentTarget: "cloud", localHealthy: false, localBaseUrl: "http://127.0.0.1:8140/api" });
+});
+
+it("ignores an old frontend failover address instead of sending local sessions to the hosted ERP", async () => {
+  const fetch = vi.fn().mockResolvedValueOnce(response({})).mockResolvedValueOnce(response({ enabled: true, local_server_url: "http://127.0.0.1:5173", cloud_server_url: "https://dev.gpsoftware.in" }));
+  vi.stubGlobal("fetch", fetch);
+  await fetchAndApplyRuntimeRoutingConfig({ token: "local-session" });
+  expect(getRuntimeRoutingSnapshot()).toMatchObject({ enabled: false, cloudBaseUrl: "/api", localBaseUrl: "" });
+  expect(fetch).toHaveBeenCalledTimes(2);
+});
+
+it("does not enable failover when a reachable backend explicitly reports connector disabled", async () => {
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(response({})).mockResolvedValueOnce(response({ enabled: true, local_server_url: "http://192.168.31.246:8001", cloud_server_url: "https://dev.gpsoftware.in" })).mockResolvedValueOnce(response({ enabled: false })));
+  await fetchAndApplyRuntimeRoutingConfig({ token: "local-session" });
+  expect(getRuntimeRoutingSnapshot()).toMatchObject({ enabled: false, cloudBaseUrl: "/api" });
+});
+it("keeps authentication and routing configuration on the issuing deployment", async () => {
+  applyRuntimeRoutingConfig({ enabled: true, currentTarget: "cloud", cloudBaseUrl: "https://other.example/api" });
+  for (const url of ["/auth/login", "/auth/me", "/local-server-config/runtime"]) {
+    expect(await prepareRoutingForRequest({ url })).toMatchObject({ baseURL: "/api", __routingTarget: "deployment" });
+  }
 });

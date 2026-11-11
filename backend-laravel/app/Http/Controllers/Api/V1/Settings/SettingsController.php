@@ -114,7 +114,8 @@ class SettingsController extends Controller
         abort_unless(in_array($request->user()?->role, ['admin', 'super_admin'], true), 403);
         $storeId = (int) $request->attributes->get('store_context_id', 0);
         abort_unless($storeId > 0, 422, 'Select a store first.');
-        $node = StoreLocalNode::where('store_id', $storeId)->firstOrFail();
+        $node = StoreLocalNode::where('store_id', $storeId)->first();
+        abort_unless($node, 422, 'Save the server URLs before testing the connection.');
         $key = $local ? 'local_server_url' : 'cloud_server_url';
         $request->validate([$key => 'nullable|string|max:2048']);
         $started = microtime(true);
@@ -130,7 +131,7 @@ class SettingsController extends Controller
             $node->update(['local_healthy' => $healthy, 'last_health_check_at' => now()]);
         }
 
-        return response()->json(['success' => $healthy, 'message' => $healthy ? 'Server is reachable and healthy.' : 'Server did not report healthy.', 'data' => ['status' => $healthy ? 'ONLINE' : 'OFFLINE', 'latency' => (int) ((microtime(true) - $started) * 1000).'ms']]);
+        return response()->json(['success' => $healthy, 'message' => $result['message'] ?? ($healthy ? 'Server is reachable and healthy.' : 'Server did not report healthy.'), 'data' => ['status' => $healthy ? 'ONLINE' : (! empty($result['reachable']) ? 'SETUP_REQUIRED' : 'OFFLINE'), 'latency' => (int) ((microtime(true) - $started) * 1000).'ms']]);
     }
 
     // Sales Customization

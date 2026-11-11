@@ -8,6 +8,7 @@ use App\Models\Store;
 use App\Models\StoreLocalNode;
 use App\Models\SyncOutboxEvent;
 use App\Models\User;
+use App\Services\Notifications\RealtimeService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -136,6 +137,20 @@ class CaptureSyncOutboxTest extends TestCase
         config(['sync.node_role' => 'local']);
 
         $this->postJson('/api/auth/logout')->assertOk();
+
+        $this->assertSame(0, SyncOutboxEvent::count());
+    }
+
+    public function test_realtime_channel_authentication_is_not_a_replicated_business_write(): void
+    {
+        config(['sync.node_role' => 'local']);
+        $this->mock(RealtimeService::class)
+            ->shouldReceive('authorize')->once()->andReturn('{"auth":"test-signature"}');
+
+        $this->withHeader('X-Company-Scope-Id', (string) $this->store->id)
+            ->postJson('/api/realtime/auth', [
+                'socket_id' => '123.456', 'channel_name' => 'private-user-'.$this->user->id,
+            ])->assertOk();
 
         $this->assertSame(0, SyncOutboxEvent::count());
     }

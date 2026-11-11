@@ -257,8 +257,7 @@ const LegacyPos = () => {
           taxType: row.taxType || "",
           brandId: row.brandId || null,
           brandName: row.brandName || "",
-        }))
-        .filter((r) => r.qty > 0);
+        }));
 
       setStockRows(stock);
 

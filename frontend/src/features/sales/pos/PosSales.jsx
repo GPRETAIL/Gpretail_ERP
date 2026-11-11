@@ -93,6 +93,7 @@ import {
   POS_TABLE_COLS,
   POS_TABLE_MIN_WIDTH,
   posSalesColCellSx,
+  sellableStockRows,
   posSalesFilterInputSx,
   POS_ADDNL_TYPE_GROUPS,
   POS_ADDNL_TYPE_LABELS,
@@ -371,7 +372,7 @@ const PosSales = () => {
       setCustomers(customerRows.map((row) => mapCustomerRow(row, areaMap)));
       setCustomerConfigOptions({ cities, states, customerCategories, areas });
 
-      const stock = (stockProductsRes.data?.data || []).map(mapPosStockRow).filter(row => row.qty > 0);
+      const stock = (stockProductsRes.data?.data || []).map(mapPosStockRow);
       setStockRows(stock);
       setProductOptions(posStockOptions(stock));
     } catch {
@@ -392,11 +393,12 @@ const PosSales = () => {
       markOffline();
       found = await searchOfflineItems(offlineScope, search);
     }
-    const rows = found.map(mapPosStockRow).filter(row => row.qty > 0);
+    // The offline catalog keeps items whose stock has since run out; offer them only when the store sells without stock.
+    const rows = sellableStockRows(found.map(mapPosStockRow), allowSaleWithoutStock);
     setStockRows(previous => mergePosStockRows(previous, rows));
     setProductOptions(previous => Array.from(new Map([...previous, ...posStockOptions(rows)].map(row => [row.value, row])).values()));
     return posStockOptions(rows);
-  }, [isOffline, offlineScope, markOffline]);
+  }, [isOffline, offlineScope, markOffline, allowSaleWithoutStock]);
 
   const loadPaymentOptions = useCallback(async () => {
     try {
@@ -2468,7 +2470,7 @@ const PosSales = () => {
                 />
               </Box>
               <Box sx={{ width: "100%", minWidth: { md: 280 }, flex: 1.3 }}>
-                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: TYPE.label, fontWeight: 700, color: "error.main" }}>Product (In Stock)</Typography>
+                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: TYPE.label, fontWeight: 700, color: "error.main" }}>{allowSaleWithoutStock ? "Product (All Stock Levels)" : "Product (In Stock)"}</Typography>
                 <AsyncSearchSelect
                   name="posProduct"
                   value={addProductKey}

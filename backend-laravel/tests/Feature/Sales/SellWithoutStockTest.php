@@ -29,6 +29,38 @@ class SellWithoutStockTest extends TestCase
         $this->item = $this->fixture['items'][0];
     }
 
+    public function test_catalog_includes_empty_and_negative_stock_only_when_enabled(): void
+    {
+        foreach ([0, -2] as $quantity) {
+            DB::table('stocks')->where('variant_id', $this->item['variantId'])->update(['quantity' => $quantity, 'available_quantity' => $quantity]);
+            $this->switchTo(false);
+            $this->getJson('/api/pos-sales/stock-products?search=TEMP-PERF')->assertOk()->assertJsonCount(0, 'data');
+            $this->switchTo(true);
+            $response = $this->getJson('/api/pos-sales/stock-products?search=TEMP-PERF')->assertOk()->assertJsonCount(1, 'data');
+            $this->assertSame((float) $quantity, (float) $response->json('data.0.qty'));
+        }
+    }
+
+    public function test_catalog_can_find_an_item_that_has_never_been_stocked(): void
+    {
+        DB::table('stocks')->where('variant_id', $this->item['variantId'])->delete();
+        $this->switchTo(true);
+        $this->getJson('/api/pos-sales/stock-products?search=TEMP-PERF')->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.variantId', $this->item['variantId']);
+    }
+
+    public function test_unstocked_catalog_remains_store_scoped_and_excludes_inactive_items(): void
+    {
+        $other = \App\Models\Store::create(['name' => 'Other Catalog Store', 'code' => 'OTHER-CATALOG']);
+        foreach ([[$other->id, true], [$this->fixture['store']->id, false]] as [$companyId, $active]) {
+            \App\Models\Product::create(['company_id' => $companyId, 'name' => 'Hidden Catalog Item', 'code' => 'HIDDEN-'.$companyId, 'mrp' => 100, 'selling_price' => 100, 'is_active' => $active]);
+        }
+        $this->switchTo(true);
+        $this->getJson('/api/pos-sales/stock-products?search=Hidden')->assertOk()->assertJsonCount(0, 'data');
+        $before = DB::table('stocks')->count();
+        $this->getJson('/api/pos-sales/stock-products')->assertOk();
+        $this->assertSame($before, DB::table('stocks')->count(), 'Catalog reads must not create inventory.');
+    }
+
     private function stock(): float
     {
         return (float) DB::table('stocks')->where('variant_id', $this->item['variantId'])->value('quantity');
