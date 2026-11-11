@@ -41,14 +41,14 @@ export default function StaffSignIn({ onSignedIn }) {
     <Box sx={{ minHeight: "100dvh", bgcolor: STAFF_COLOR.page, display: "flex", flexDirection: "column", alignItems: "center", px: 2, pt: "max(32px, env(safe-area-inset-top))", pb: 3 }}>
       <Box sx={{ width: "100%", maxWidth: 400 }}>
         <Box sx={{ textAlign: "center", mb: 3 }}>
-          <Box sx={{ width: 64, height: 64, borderRadius: "20px", bgcolor: STAFF_COLOR.primary, color: "#fff", display: "inline-flex", alignItems: "center", justifyContent: "center", mb: 1.5 }}>
+          <Box sx={{ width: 64, height: 64, borderRadius: "20px", bgcolor: "#0d9488", color: "#fff", display: "inline-flex", alignItems: "center", justifyContent: "center", mb: 1.5 }}>
             <Smartphone size={30} />
           </Box>
           <Typography component="h1" sx={{ fontSize: 24, fontWeight: 800, color: STAFF_COLOR.text }}>Vynerix Staff</Typography>
           <Typography sx={{ fontSize: STAFF_TEXT.body, color: STAFF_COLOR.muted }}>Attendance, leave, pay and requests</Typography>
         </Box>
 
-        {error && <Box role="alert" sx={{ ...card, mb: 2, bgcolor: STAFF_COLOR.dangerSoft, borderColor: "#fecdd3", color: STAFF_COLOR.danger, fontSize: STAFF_TEXT.body, fontWeight: 600 }}>{error}</Box>}
+        {error && <Box role="alert" sx={{ ...card, mb: 2, bgcolor: STAFF_COLOR.dangerSoft, borderColor: STAFF_COLOR.dangerBorder, color: STAFF_COLOR.danger, fontSize: STAFF_TEXT.body, fontWeight: 600 }}>{error}</Box>}
 
         {stores ? (
           <Box sx={card}>
@@ -65,7 +65,7 @@ export default function StaffSignIn({ onSignedIn }) {
           <Box component="form" onSubmit={(e) => { e.preventDefault(); if (digits.length >= 10) setStep("pin"); }} sx={card}>
             <Typography component="label" htmlFor="staff-phone" sx={{ display: "block", fontSize: STAFF_TEXT.body, fontWeight: 700, color: STAFF_COLOR.text, mb: 1 }}>Your mobile number</Typography>
             <Box component="input" id="staff-phone" type="tel" inputMode="numeric" autoComplete="tel" autoFocus value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="98765 43210"
-              sx={{ width: "100%", boxSizing: "border-box", minHeight: TOUCH + 4, px: 1.75, borderRadius: "12px", border: `1px solid #d1d5db`, fontSize: 20, fontFamily: "inherit", color: STAFF_COLOR.text, letterSpacing: "0.04em",
+              sx={{ width: "100%", boxSizing: "border-box", minHeight: TOUCH + 4, px: 1.75, borderRadius: "12px", border: `1px solid ${STAFF_COLOR.inputLine}`, bgcolor: STAFF_COLOR.surface, fontSize: 20, fontFamily: "inherit", color: STAFF_COLOR.text, letterSpacing: "0.04em",
                 "&:focus": { outline: `2px solid ${STAFF_COLOR.primary}`, borderColor: "transparent" } }} />
             <Typography sx={{ fontSize: STAFF_TEXT.small, color: STAFF_COLOR.faint, mt: 1 }}>The number HR has on your employee record.</Typography>
             <Box component="button" type="submit" disabled={digits.length < 10} sx={{ ...primaryButton, width: "100%", mt: 2 }}>Next</Box>

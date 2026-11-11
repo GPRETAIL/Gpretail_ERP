@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { isStaffAppPath, readStaffSession, STAFF_STORE_KEY, STAFF_TOKEN_KEY } from "@/shared/api/staffSession";
 import { suggestPin } from "@/features/hr/staffApp/staffAppPin";
@@ -6,6 +6,8 @@ import StaffSignIn from "../StaffSignIn";
 import ChangePin from "../ChangePin";
 import ApprovalsTab from "../tabs/ApprovalsTab";
 import HomeTab from "../tabs/HomeTab";
+import SalaryTab from "../tabs/SalaryTab";
+import StaffApp from "../StaffApp";
 
 const { get, post } = vi.hoisted(() => ({ get: vi.fn(), post: vi.fn() }));
 vi.mock("@/shared/api/apiClient", () => ({ default: { get, post } }));
@@ -130,10 +132,50 @@ describe("home", () => {
     expect(screen.getByText("Needs your approval")).toBeInTheDocument();
     expect(screen.getByText("Leave · 2")).toBeInTheDocument();
     expect(screen.getByText("3 of 4 in your team checked in today")).toBeInTheDocument();
-    expect(screen.getByText("₹18,500")).toBeInTheDocument();
+    expect(screen.queryByText("₹18,500")).not.toBeInTheDocument(); // Hidden until revealed.
     fireEvent.click(screen.getByRole("button", { name: "My tax" }));
     expect(go).toHaveBeenCalledWith("salary", "tax");
     fireEvent.click(screen.getByRole("button", { name: "Apply leave" }));
     expect(go).toHaveBeenCalledWith("leave");
+  });
+});
+
+describe("hidden salary", () => {
+  it("shows amounts for 15 seconds after the switch, then hides them again", () => {
+    vi.useFakeTimers();
+    try {
+      render(<HomeTab go={vi.fn()} home={{ pay: { latest: { month: "2026-10", net_pay: 18500 }, year_net: 74000 }, money: {} }} />);
+      expect(screen.getByText("₹ ••••••")).toBeInTheDocument();
+      fireEvent.click(screen.getByRole("switch", { name: "Show amounts" }));
+      expect(screen.getByText("₹18,500")).toBeInTheDocument();
+      expect(screen.getByText("Take-home this FY ₹74,000")).toBeInTheDocument();
+      act(() => { vi.advanceTimersByTime(5000); });
+      expect(screen.getByRole("switch", { name: "Hide amounts · 10s" })).toBeChecked();
+      act(() => { vi.advanceTimersByTime(10000); });
+      expect(screen.queryByText("₹18,500")).not.toBeInTheDocument();
+      expect(screen.getByRole("switch", { name: "Show amounts" })).not.toBeChecked();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("masks the payslip list on the Salary tab too", async () => {
+    get.mockResolvedValue({ data: { data: { employee: { id: 1 }, payslips: [{ id: 5, month: "2026-10", net_pay: 18500, status: "PAID" }] } } });
+    render(<SalaryTab home={{ pay: { financial_year: "2026-27", year_net: 74000, year_gross: 90000 } }} view="slips" setView={vi.fn()} />);
+    await waitFor(() => expect(screen.getAllByText("₹ ••••••")).toHaveLength(2)); // FY take-home and the October slip.
+    expect(screen.getByText("Gross earned ₹ ••••••")).toBeInTheDocument();
+    expect(screen.queryByText(/18,500/)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("switch", { name: "Show amounts" }));
+    expect(screen.getByText("₹74,000")).toBeInTheDocument();
+    expect(screen.getByText(/^₹18,500/)).toBeInTheDocument();
+  });
+});
+
+describe("dark mode", () => {
+  it("follows the choice saved on this phone", () => {
+    localStorage.setItem("vx_staff_theme", "dark");
+    const { container } = render(<StaffApp />);
+    expect(container.querySelector("[data-staff-theme]")).toHaveAttribute("data-staff-theme", "dark");
+    expect(document.documentElement.style.colorScheme).toBe("dark");
   });
 });

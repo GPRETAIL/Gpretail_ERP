@@ -68,12 +68,12 @@ function Item({ item, onDone }) {
       )}
       {item.type !== "overtime" && (
         <Box component="input" value={note} onChange={(e) => setNote(e.target.value)} maxLength={255} placeholder="Note (optional)" aria-label={`Note for ${item.employee_name}`}
-          sx={{ width: "100%", boxSizing: "border-box", mt: 1.25, minHeight: 40, px: 1.25, borderRadius: "10px", border: "1px solid #d1d5db", fontSize: STAFF_TEXT.label, fontFamily: "inherit", color: STAFF_COLOR.text }} />
+          sx={{ width: "100%", boxSizing: "border-box", mt: 1.25, minHeight: 40, px: 1.25, borderRadius: "10px", border: `1px solid ${STAFF_COLOR.inputLine}`, bgcolor: STAFF_COLOR.surface, fontSize: STAFF_TEXT.label, fontFamily: "inherit", color: STAFF_COLOR.text }} />
       )}
       {error && <Typography role="alert" sx={{ fontSize: STAFF_TEXT.label, color: STAFF_COLOR.danger, fontWeight: 600, mt: 1 }}>{error}</Typography>}
       <Box sx={{ display: "flex", gap: 1, mt: 1.25 }}>
         <Box component="button" type="button" disabled={busy} onClick={() => act(true)} sx={{ ...primaryButton, flex: 1, bgcolor: "#059669" }}><Check size={18} /> {item.type === "resignation" ? "Accept" : "Approve"}</Box>
-        <Box component="button" type="button" disabled={busy} onClick={() => act(false)} sx={{ ...secondaryButton, flex: 1, color: STAFF_COLOR.danger, borderColor: "#fecdd3" }}><X size={18} /> Reject</Box>
+        <Box component="button" type="button" disabled={busy} onClick={() => act(false)} sx={{ ...secondaryButton, flex: 1, color: STAFF_COLOR.danger, borderColor: STAFF_COLOR.dangerBorder }}><X size={18} /> Reject</Box>
       </Box>
     </Box>
   );
@@ -104,13 +104,13 @@ export default function ApprovalsTab({ onChanged }) {
       <Box sx={{ display: "flex", gap: 0.75, overflowX: "auto", pb: 0.5, mx: -2, px: 2, scrollbarWidth: "none" }}>
         {FILTERS.filter(([key]) => key === "all" || counts[key]).map(([key, label]) => (
           <Box key={key} component="button" type="button" onClick={() => setFilter(key)} aria-pressed={filter === key}
-            sx={{ flex: "0 0 auto", minHeight: 36, px: 1.5, borderRadius: "999px", border: `1px solid ${filter === key ? STAFF_COLOR.primary : STAFF_COLOR.line}`, bgcolor: filter === key ? STAFF_COLOR.primary : "#fff",
+            sx={{ flex: "0 0 auto", minHeight: 36, px: 1.5, borderRadius: "999px", border: `1px solid ${filter === key ? "#0d9488" : STAFF_COLOR.line}`, bgcolor: filter === key ? "#0d9488" : STAFF_COLOR.surface,
               color: filter === key ? "#fff" : STAFF_COLOR.text, fontSize: STAFF_TEXT.label, fontWeight: 700, fontFamily: "inherit", cursor: "pointer" }}>
             {label}{key === "all" ? ` · ${(items || []).length}` : ` · ${counts[key]}`}
           </Box>
         ))}
       </Box>
-      {message && <Box role="status" sx={{ ...card, bgcolor: STAFF_COLOR.primarySoft, borderColor: "#99f6e4", color: STAFF_COLOR.primaryDark, fontSize: STAFF_TEXT.label, fontWeight: 700 }}>{message}</Box>}
+      {message && <Box role="status" sx={{ ...card, bgcolor: STAFF_COLOR.primarySoft, borderColor: STAFF_COLOR.primaryBorder, color: STAFF_COLOR.primaryDark, fontSize: STAFF_TEXT.label, fontWeight: 700 }}>{message}</Box>}
       {items === null && <Box sx={card}><Typography sx={{ fontSize: STAFF_TEXT.body, color: STAFF_COLOR.faint }}>Loading…</Typography></Box>}
       {items && shown.length === 0 && <Box sx={card}><Typography sx={{ fontSize: STAFF_TEXT.body, color: STAFF_COLOR.muted }}>Nothing is waiting for your approval.</Typography></Box>}
       {shown.map((item) => (

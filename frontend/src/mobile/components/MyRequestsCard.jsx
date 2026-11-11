@@ -5,8 +5,8 @@ import api from "@/shared/api/apiClient";
 import { LEAVE_STATUS, REQUEST_STATUS_LABEL, errorMessage, requestSummary } from "@/features/hr/utils/hrStatus";
 import MyResignationCard from "./MyResignationCard";
 
-const input = { width: "100%", p: 1.1, borderRadius: "10px", border: "1px solid #cbd5e1", fontSize: 13, bgcolor: "#fff", boxSizing: "border-box" };
-const label = { fontSize: 10.5, fontWeight: 800, color: "#64748b", textTransform: "uppercase", mb: 0.5 };
+const input = { width: "100%", p: 1.1, borderRadius: "10px", border: "1px solid var(--hr-border-strong, #cbd5e1)", fontSize: 13, bgcolor: "var(--hr-surface, #fff)", boxSizing: "border-box" };
+const label = { fontSize: 10.5, fontWeight: 800, color: "var(--hr-muted, #64748b)", textTransform: "uppercase", mb: 0.5 };
 const today = () => new Date().toLocaleDateString("en-CA");
 
 function RequestSheet({ type, shifts, onClose }) {
@@ -30,7 +30,7 @@ function RequestSheet({ type, shifts, onClose }) {
   };
   return (
     <Box sx={{ position: "fixed", inset: 0, zIndex: 80, display: "flex", flexDirection: "column", justifyContent: "flex-end", bgcolor: "rgba(15,23,42,0.6)" }} onClick={() => onClose(false)}>
-      <Box onClick={(e) => e.stopPropagation()} sx={{ width: "100%", maxWidth: 480, mx: "auto", bgcolor: "#fff", borderTopLeftRadius: "24px", borderTopRightRadius: "24px", p: 2, display: "flex", flexDirection: "column", gap: 1.25 }}>
+      <Box onClick={(e) => e.stopPropagation()} sx={{ width: "100%", maxWidth: 480, mx: "auto", bgcolor: "var(--hr-surface, #fff)", borderTopLeftRadius: "24px", borderTopRightRadius: "24px", p: 2, display: "flex", flexDirection: "column", gap: 1.25 }}>
         <Typography sx={{ fontSize: 15, fontWeight: 900 }}>{type === "ATTENDANCE" ? "Fix attendance" : "Change shift"}</Typography>
         {type === "ATTENDANCE" ? (
           <>
@@ -63,9 +63,9 @@ function RequestSheet({ type, shifts, onClose }) {
           </>
         )}
         <Box><Typography sx={label}>Reason</Typography><Box component="textarea" rows={2} value={form.reason} onChange={set("reason")} sx={{ ...input, resize: "none" }} /></Box>
-        {error && <Box sx={{ p: 1, borderRadius: "10px", bgcolor: "#fff1f2", color: "#be123c", fontSize: 12, fontWeight: 700 }}>{error}</Box>}
+        {error && <Box sx={{ p: 1, borderRadius: "10px", bgcolor: "var(--hr-danger-bg, #fff1f2)", color: "var(--hr-danger, #be123c)", fontSize: 12, fontWeight: 700 }}>{error}</Box>}
         <Box sx={{ display: "flex", gap: 1 }}>
-          <Box component="button" type="button" onClick={() => onClose(false)} sx={{ flex: 1, py: 1.25, borderRadius: "12px", border: "1px solid #cbd5e1", bgcolor: "#fff", fontWeight: 800 }}>Cancel</Box>
+          <Box component="button" type="button" onClick={() => onClose(false)} sx={{ flex: 1, py: 1.25, borderRadius: "12px", border: "1px solid var(--hr-border-strong, #cbd5e1)", bgcolor: "var(--hr-surface, #fff)", fontWeight: 800 }}>Cancel</Box>
           <Box component="button" type="button" disabled={saving} onClick={submit} sx={{ flex: 1, py: 1.25, borderRadius: "12px", border: 0, bgcolor: "#0d9488", color: "#fff", fontWeight: 900 }}>Send</Box>
         </Box>
       </Box>
@@ -90,18 +90,18 @@ export default function MyRequestsCard() {
     return () => clearTimeout(timer);
   }, [load]);
   if (!data?.employee) return null;
-  const button = { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 0.75, py: 1.1, borderRadius: "12px", border: "1px solid #99f6e4", bgcolor: "#f0fdfa", color: "#0f766e", fontWeight: 800, fontSize: 12.5 };
+  const button = { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 0.75, py: 1.1, borderRadius: "12px", border: "1px solid var(--hr-teal-border, #99f6e4)", bgcolor: "var(--hr-teal-bg, #f0fdfa)", color: "var(--hr-teal-text, #0f766e)", fontWeight: 800, fontSize: 12.5 };
   return (
     <Box sx={{ mb: 1.5 }}>
       <Box sx={{ display: "flex", gap: 1 }}>
         <Box component="button" type="button" onClick={() => setAsking("ATTENDANCE")} sx={button}><Clock size={15} /> Fix attendance</Box>
         <Box component="button" type="button" onClick={() => setAsking("SHIFT")} sx={button}><CalendarClock size={15} /> Change shift</Box>
       </Box>
-      {message && <Box sx={{ mt: 1, p: 1, borderRadius: "10px", bgcolor: "#eef2ff", color: "#3730a3", fontSize: 12, fontWeight: 700 }}>{message}</Box>}
+      {message && <Box sx={{ mt: 1, p: 1, borderRadius: "10px", bgcolor: "var(--hr-info-bg, #eef2ff)", color: "var(--hr-info-text, #3730a3)", fontSize: 12, fontWeight: 700 }}>{message}</Box>}
       {(data.requests || []).slice(0, 3).map((r) => (
-        <Box key={r.id} sx={{ mt: 1, p: 1.25, borderRadius: "12px", bgcolor: "#fff", border: "1px solid rgba(226,232,240,0.8)", display: "flex", justifyContent: "space-between", gap: 1 }}>
-          <Typography sx={{ fontSize: 12, color: "#0f172a" }}>{r.from_date} · {requestSummary(r)}</Typography>
-          <Typography sx={{ fontSize: 11, fontWeight: 800, color: "#64748b" }}>{LEAVE_STATUS[r.status]?.label}</Typography>
+        <Box key={r.id} sx={{ mt: 1, p: 1.25, borderRadius: "12px", bgcolor: "var(--hr-surface, #fff)", border: "1px solid var(--hr-border, rgba(226,232,240,0.8))", display: "flex", justifyContent: "space-between", gap: 1 }}>
+          <Typography sx={{ fontSize: 12, color: "var(--hr-text, #0f172a)" }}>{r.from_date} · {requestSummary(r)}</Typography>
+          <Typography sx={{ fontSize: 11, fontWeight: 800, color: "var(--hr-muted, #64748b)" }}>{LEAVE_STATUS[r.status]?.label}</Typography>
         </Box>
       ))}
       <MyResignationCard />

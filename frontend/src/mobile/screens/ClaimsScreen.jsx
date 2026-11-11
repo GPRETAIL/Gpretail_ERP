@@ -4,23 +4,23 @@ import { Camera, HandCoins, Paperclip, Receipt } from "lucide-react";
 import api from "@/shared/api/apiClient";
 import { CLAIM_CATEGORY, LOAN_TYPE, MONEY_STATUS, claimPayLabel, errorMessage } from "@/features/hr/utils/hrStatus";
 
-const STATUS_COLORS = { REQUESTED: "#b45309", PENDING: "#b45309", APPROVED: "#0369a1", ACTIVE: "#4338ca", CLOSED: "#047857", PAID: "#047857", REJECTED: "#be123c", CANCELLED: "#64748b" };
-const card = { p: 1.5, borderRadius: "16px", bgcolor: "#fff", border: "1px solid rgba(226,232,240,0.8)" };
-const input = { width: "100%", p: 1.1, borderRadius: "10px", border: "1px solid #cbd5e1", fontSize: 13, bgcolor: "#fff", boxSizing: "border-box" };
-const label = { fontSize: 10.5, fontWeight: 800, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.04em", mb: 0.5 };
-const heading = { fontSize: 11, fontWeight: 900, color: "#0f172a", textTransform: "uppercase", letterSpacing: "0.05em", mb: 1, px: 0.5 };
+const STATUS_COLORS = { REQUESTED: "var(--hr-amber-text, #b45309)", PENDING: "var(--hr-amber-text, #b45309)", APPROVED: "var(--hr-sky-text, #0369a1)", ACTIVE: "var(--hr-accent-text, #4338ca)", CLOSED: "var(--hr-green-text, #047857)", PAID: "var(--hr-green-text, #047857)", REJECTED: "var(--hr-danger, #be123c)", CANCELLED: "var(--hr-muted, #64748b)" };
+const card = { p: 1.5, borderRadius: "16px", bgcolor: "var(--hr-surface, #fff)", border: "1px solid var(--hr-border, rgba(226,232,240,0.8))" };
+const input = { width: "100%", p: 1.1, borderRadius: "10px", border: "1px solid var(--hr-border-strong, #cbd5e1)", fontSize: 13, bgcolor: "var(--hr-surface, #fff)", boxSizing: "border-box" };
+const label = { fontSize: 10.5, fontWeight: 800, color: "var(--hr-muted, #64748b)", textTransform: "uppercase", letterSpacing: "0.04em", mb: 0.5 };
+const heading = { fontSize: 11, fontWeight: 900, color: "var(--hr-text, #0f172a)", textTransform: "uppercase", letterSpacing: "0.05em", mb: 1, px: 0.5 };
 const money = (n) => `₹${Number(n || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
 const today = () => new Date().toLocaleDateString("en-CA");
 
 function Sheet({ title, children, error, saving, canSave, onSave, onClose, saveLabel }) {
   return (
     <Box sx={{ position: "fixed", inset: 0, zIndex: 80, display: "flex", flexDirection: "column", justifyContent: "flex-end", bgcolor: "rgba(15,23,42,0.6)" }} onClick={onClose}>
-      <Box onClick={(e) => e.stopPropagation()} sx={{ width: "100%", maxWidth: 480, mx: "auto", bgcolor: "#fff", borderTopLeftRadius: "24px", borderTopRightRadius: "24px", p: 2, display: "flex", flexDirection: "column", gap: 1.25, maxHeight: "92vh", overflowY: "auto" }}>
-        <Typography sx={{ fontSize: 15, fontWeight: 900, color: "#0f172a" }}>{title}</Typography>
+      <Box onClick={(e) => e.stopPropagation()} sx={{ width: "100%", maxWidth: 480, mx: "auto", bgcolor: "var(--hr-surface, #fff)", borderTopLeftRadius: "24px", borderTopRightRadius: "24px", p: 2, display: "flex", flexDirection: "column", gap: 1.25, maxHeight: "92vh", overflowY: "auto" }}>
+        <Typography sx={{ fontSize: 15, fontWeight: 900, color: "var(--hr-text, #0f172a)" }}>{title}</Typography>
         {children}
-        {error && <Box sx={{ p: 1, borderRadius: "10px", bgcolor: "#fff1f2", color: "#be123c", fontSize: 12, fontWeight: 700 }}>{error}</Box>}
+        {error && <Box sx={{ p: 1, borderRadius: "10px", bgcolor: "var(--hr-danger-bg, #fff1f2)", color: "var(--hr-danger, #be123c)", fontSize: 12, fontWeight: 700 }}>{error}</Box>}
         <Box sx={{ display: "flex", gap: 1 }}>
-          <Box component="button" type="button" onClick={onClose} sx={{ flex: 1, py: 1.25, borderRadius: "12px", border: "1px solid #cbd5e1", bgcolor: "#fff", fontWeight: 800 }}>Cancel</Box>
+          <Box component="button" type="button" onClick={onClose} sx={{ flex: 1, py: 1.25, borderRadius: "12px", border: "1px solid var(--hr-border-strong, #cbd5e1)", bgcolor: "var(--hr-surface, #fff)", fontWeight: 800 }}>Cancel</Box>
           <Box component="button" type="button" disabled={saving || !canSave} onClick={onSave} sx={{ flex: 1, py: 1.25, borderRadius: "12px", border: 0, bgcolor: "#0d9488", color: "#fff", fontWeight: 900, "&:disabled": { opacity: 0.6 } }}>{saving ? "Sending…" : saveLabel}</Box>
         </Box>
       </Box>
@@ -65,16 +65,16 @@ function ClaimSheet({ onClose }) {
       <Box>
         <Typography sx={label}>Bill</Typography>
         <Box sx={{ display: "flex", gap: 1 }}>
-          <Box component="label" sx={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 0.75, py: 1.1, borderRadius: "10px", border: "1px dashed #94a3b8", fontSize: 12.5, fontWeight: 800, color: "#334155" }}>
+          <Box component="label" sx={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 0.75, py: 1.1, borderRadius: "10px", border: "1px dashed var(--hr-faint, #94a3b8)", fontSize: 12.5, fontWeight: 800, color: "var(--hr-muted-strong, #334155)" }}>
             <Camera size={15} /> Take photo
             <input hidden type="file" accept="image/*" capture="environment" onChange={pick} />
           </Box>
-          <Box component="label" sx={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 0.75, py: 1.1, borderRadius: "10px", border: "1px dashed #94a3b8", fontSize: 12.5, fontWeight: 800, color: "#334155" }}>
+          <Box component="label" sx={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 0.75, py: 1.1, borderRadius: "10px", border: "1px dashed var(--hr-faint, #94a3b8)", fontSize: 12.5, fontWeight: 800, color: "var(--hr-muted-strong, #334155)" }}>
             <Paperclip size={15} /> Choose file
             <input hidden type="file" accept="image/*,application/pdf" onChange={pick} />
           </Box>
         </Box>
-        {bill && <Typography sx={{ fontSize: 11.5, color: "#047857", fontWeight: 700, mt: 0.5 }}>Attached: {bill.name}</Typography>}
+        {bill && <Typography sx={{ fontSize: 11.5, color: "var(--hr-green-text, #047857)", fontWeight: 700, mt: 0.5 }}>Attached: {bill.name}</Typography>}
       </Box>
     </Sheet>
   );
@@ -102,14 +102,14 @@ function AdvanceSheet({ onClose }) {
       <Box sx={{ display: "flex", gap: 1 }}>
         {Object.entries(LOAN_TYPE).map(([value, text]) => (
           <Box key={value} component="button" type="button" onClick={() => setForm({ ...form, type: value })}
-            sx={{ flex: 1, py: 1, borderRadius: "10px", fontSize: 12.5, fontWeight: 800, border: form.type === value ? "2px solid #0d9488" : "1px solid #cbd5e1", bgcolor: form.type === value ? "#f0fdfa" : "#fff", color: "#0f172a" }}>{text}</Box>
+            sx={{ flex: 1, py: 1, borderRadius: "10px", fontSize: 12.5, fontWeight: 800, border: form.type === value ? "2px solid var(--hr-primary, #0d9488)" : "1px solid var(--hr-border-strong, #cbd5e1)", bgcolor: form.type === value ? "var(--hr-teal-bg, #f0fdfa)" : "var(--hr-surface, #fff)", color: "var(--hr-text, #0f172a)" }}>{text}</Box>
         ))}
       </Box>
       <Box sx={{ display: "flex", gap: 1 }}>
         <Box sx={{ flex: 1 }}><Typography sx={label}>Amount ₹</Typography><Box component="input" type="number" inputMode="decimal" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} sx={input} /></Box>
         {form.type === "LOAN" && <Box sx={{ flex: 1 }}><Typography sx={label}>Months to repay</Typography><Box component="input" type="number" min={1} max={60} value={form.instalments} onChange={(e) => setForm({ ...form, instalments: e.target.value })} sx={input} /></Box>}
       </Box>
-      {Number(form.amount) > 0 && <Typography sx={{ fontSize: 12, color: "#475569" }}>{money(Math.ceil((Number(form.amount) / instalments) * 100) / 100)} from {instalments === 1 ? "your next salary" : `each of ${instalments} salaries`}. No interest.</Typography>}
+      {Number(form.amount) > 0 && <Typography sx={{ fontSize: 12, color: "var(--hr-muted-strong, #475569)" }}>{money(Math.ceil((Number(form.amount) / instalments) * 100) / 100)} from {instalments === 1 ? "your next salary" : `each of ${instalments} salaries`}. No interest.</Typography>}
       <Box><Typography sx={label}>Reason</Typography><Box component="textarea" rows={2} value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })} sx={{ ...input, resize: "none" }} /></Box>
     </Sheet>
   );
@@ -147,49 +147,49 @@ export default function ClaimsScreen() {
   const button = { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 0.75, py: 1.3, borderRadius: "14px", border: 0, color: "#fff", fontSize: 13.5, fontWeight: 900 };
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
-      {message && <Box sx={{ p: 1.25, borderRadius: "12px", bgcolor: "#eef2ff", color: "#3730a3", fontSize: 12, fontWeight: 700 }}>{message}</Box>}
+      {message && <Box sx={{ p: 1.25, borderRadius: "12px", bgcolor: "var(--hr-info-bg, #eef2ff)", color: "var(--hr-info-text, #3730a3)", fontSize: 12, fontWeight: 700 }}>{message}</Box>}
       {mine && !mine.employee ? (
-        <Box sx={card}><Typography sx={{ fontSize: 12.5, color: "#64748b" }}>Your login is not linked to an employee yet. Ask HR to link it on your employee record.</Typography></Box>
+        <Box sx={card}><Typography sx={{ fontSize: 12.5, color: "var(--hr-muted, #64748b)" }}>Your login is not linked to an employee yet. Ask HR to link it on your employee record.</Typography></Box>
       ) : (
         <Box sx={{ display: "flex", gap: 1 }}>
           <Box component="button" type="button" onClick={() => setSheet("claim")} sx={{ ...button, bgcolor: "#0d9488" }}><Receipt size={16} /> New claim</Box>
           <Box component="button" type="button" onClick={() => setSheet("advance")} sx={{ ...button, bgcolor: "#4338ca" }}><HandCoins size={16} /> Ask for advance</Box>
         </Box>
       )}
-      {owed > 0 && <Box sx={{ ...card, bgcolor: "#fffbeb", borderColor: "#fde68a" }}><Typography sx={{ fontSize: 12.5, fontWeight: 800, color: "#92400e" }}>{money(owed)} still to be recovered from your salary</Typography></Box>}
+      {owed > 0 && <Box sx={{ ...card, bgcolor: "var(--hr-warn-bg, #fffbeb)", borderColor: "var(--hr-warn-border, #fde68a)" }}><Typography sx={{ fontSize: 12.5, fontWeight: 800, color: "var(--hr-warn-text, #92400e)" }}>{money(owed)} still to be recovered from your salary</Typography></Box>}
 
       {mine?.employee && (
         <>
           <Box>
             <Typography sx={heading}>My claims</Typography>
-            {(mine.claims || []).length === 0 && <Box sx={card}><Typography sx={{ fontSize: 12.5, color: "#94a3b8" }}>No claims yet.</Typography></Box>}
+            {(mine.claims || []).length === 0 && <Box sx={card}><Typography sx={{ fontSize: 12.5, color: "var(--hr-faint, #94a3b8)" }}>No claims yet.</Typography></Box>}
             <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
               {(mine.claims || []).map((row) => (
                 <Box key={row.id} sx={{ ...card, display: "flex", alignItems: "center", gap: 1 }}>
                   <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Typography sx={{ fontSize: 12.5, fontWeight: 800, color: "#0f172a" }}>{money(row.amount)} · {CLAIM_CATEGORY[row.category] || row.category}</Typography>
-                    <Typography sx={{ fontSize: 11, color: "#64748b" }}>{row.claim_date}{row.description ? ` · ${row.description}` : ""}{claimPayLabel(row) ? ` · ${claimPayLabel(row)}` : ""}{row.decision_note ? ` · ${row.decision_note}` : ""}</Typography>
+                    <Typography sx={{ fontSize: 12.5, fontWeight: 800, color: "var(--hr-text, #0f172a)" }}>{money(row.amount)} · {CLAIM_CATEGORY[row.category] || row.category}</Typography>
+                    <Typography sx={{ fontSize: 11, color: "var(--hr-muted, #64748b)" }}>{row.claim_date}{row.description ? ` · ${row.description}` : ""}{claimPayLabel(row) ? ` · ${claimPayLabel(row)}` : ""}{row.decision_note ? ` · ${row.decision_note}` : ""}</Typography>
                   </Box>
                   <Status status={row.status} />
-                  {row.status === "PENDING" && <Box component="button" type="button" onClick={() => withdraw(`/expense-claims/${row.id}/cancel`)} sx={{ fontSize: 11, fontWeight: 800, color: "#64748b", border: 0, bgcolor: "transparent" }}>Withdraw</Box>}
+                  {row.status === "PENDING" && <Box component="button" type="button" onClick={() => withdraw(`/expense-claims/${row.id}/cancel`)} sx={{ fontSize: 11, fontWeight: 800, color: "var(--hr-muted, #64748b)", border: 0, bgcolor: "transparent" }}>Withdraw</Box>}
                 </Box>
               ))}
             </Box>
           </Box>
           <Box>
             <Typography sx={heading}>Advances and loans</Typography>
-            {(mine.loans || []).length === 0 && <Box sx={card}><Typography sx={{ fontSize: 12.5, color: "#94a3b8" }}>None.</Typography></Box>}
+            {(mine.loans || []).length === 0 && <Box sx={card}><Typography sx={{ fontSize: 12.5, color: "var(--hr-faint, #94a3b8)" }}>None.</Typography></Box>}
             <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
               {(mine.loans || []).map((row) => (
                 <Box key={row.id} sx={{ ...card, display: "flex", alignItems: "center", gap: 1 }}>
                   <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Typography sx={{ fontSize: 12.5, fontWeight: 800, color: "#0f172a" }}>{LOAN_TYPE[row.type]} · {money(row.amount)}</Typography>
-                    <Typography sx={{ fontSize: 11, color: "#64748b" }}>
+                    <Typography sx={{ fontSize: 12.5, fontWeight: 800, color: "var(--hr-text, #0f172a)" }}>{LOAN_TYPE[row.type]} · {money(row.amount)}</Typography>
+                    <Typography sx={{ fontSize: 11, color: "var(--hr-muted, #64748b)" }}>
                       {row.instalments} × {money(row.instalment_amount)} from {row.first_month}{["ACTIVE", "CLOSED"].includes(row.status) ? ` · balance ${money(row.balance)}` : ""}
                     </Typography>
                   </Box>
                   <Status status={row.status} />
-                  {["REQUESTED", "APPROVED"].includes(row.status) && <Box component="button" type="button" onClick={() => withdraw(`/staff-loans/${row.id}/cancel`)} sx={{ fontSize: 11, fontWeight: 800, color: "#64748b", border: 0, bgcolor: "transparent" }}>Withdraw</Box>}
+                  {["REQUESTED", "APPROVED"].includes(row.status) && <Box component="button" type="button" onClick={() => withdraw(`/staff-loans/${row.id}/cancel`)} sx={{ fontSize: 11, fontWeight: 800, color: "var(--hr-muted, #64748b)", border: 0, bgcolor: "transparent" }}>Withdraw</Box>}
                 </Box>
               ))}
             </Box>

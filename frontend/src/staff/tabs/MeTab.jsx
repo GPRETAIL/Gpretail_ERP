@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Box, Typography } from "@mui/material";
-import { KeyRound, LogOut } from "lucide-react";
+import { KeyRound, LogOut, Monitor, Moon, Sun } from "lucide-react";
 import api from "@/shared/api/apiClient";
 import MyRequestsCard from "@/mobile/components/MyRequestsCard";
 import ChangePin from "../ChangePin";
@@ -10,7 +10,7 @@ const ROWS = [["code", "Employee code"], ["designation", "Designation"], ["depar
   ["phone", "Mobile"], ["email", "Email"], ["date_of_birth", "Date of birth"], ["blood_group", "Blood group"], ["bank_account", "Salary account"], ["pan", "PAN"]];
 
 /** Me: my details, attendance and shift requests, resigning, PIN and signing out. */
-export default function MeTab({ onSignOut }) {
+export default function MeTab({ onSignOut, theme }) {
   const [profile, setProfile] = useState(null);
   const [changing, setChanging] = useState(false);
   const [message, setMessage] = useState("");
@@ -23,7 +23,7 @@ export default function MeTab({ onSignOut }) {
   if (changing) return <ChangePin onDone={() => { setChanging(false); setMessage("Your PIN is changed."); }} onCancel={() => setChanging(false)} />;
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-      {message && <Box role="status" sx={{ ...card, bgcolor: STAFF_COLOR.primarySoft, borderColor: "#99f6e4", color: STAFF_COLOR.primaryDark, fontSize: STAFF_TEXT.label, fontWeight: 700 }}>{message}</Box>}
+      {message && <Box role="status" sx={{ ...card, bgcolor: STAFF_COLOR.primarySoft, borderColor: STAFF_COLOR.primaryBorder, color: STAFF_COLOR.primaryDark, fontSize: STAFF_TEXT.label, fontWeight: 700 }}>{message}</Box>}
       <Box sx={card}>
         <Typography sx={{ fontSize: STAFF_TEXT.heading, fontWeight: 800, color: STAFF_COLOR.text }}>{profile?.name || "…"}</Typography>
         <Typography sx={{ fontSize: STAFF_TEXT.label, color: STAFF_COLOR.muted }}>{profile?.store?.name}</Typography>
@@ -42,6 +42,22 @@ export default function MeTab({ onSignOut }) {
         <Typography sx={sectionTitle}>Attendance and shift requests</Typography>
         <MyRequestsCard />
       </Box>
+
+      {theme && (
+        <Box>
+          <Typography sx={sectionTitle}>Appearance</Typography>
+          <Box role="radiogroup" aria-label="Appearance" sx={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 0.5, p: 0.5, borderRadius: "14px", bgcolor: STAFF_COLOR.surfaceAlt }}>
+            {[["system", "Phone", Monitor], ["light", "Light", Sun], ["dark", "Dark", Moon]].map(([key, label, Icon]) => (
+              <Box key={key} component="button" type="button" role="radio" aria-checked={theme.preference === key} onClick={() => theme.setPreference(key)}
+                sx={{ minHeight: 44, display: "flex", alignItems: "center", justifyContent: "center", gap: 0.75, borderRadius: "10px", border: 0, fontFamily: "inherit", cursor: "pointer",
+                  bgcolor: theme.preference === key ? STAFF_COLOR.surface : "transparent", color: STAFF_COLOR.text, fontSize: STAFF_TEXT.label, fontWeight: 800,
+                  boxShadow: theme.preference === key ? "0 1px 2px rgba(0,0,0,0.12)" : "none" }}>
+                <Icon size={16} /> {label}
+              </Box>
+            ))}
+          </Box>
+        </Box>
+      )}
 
       <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
         <Box component="button" type="button" onClick={() => setChanging(true)} sx={{ ...secondaryButton, justifyContent: "flex-start" }}><KeyRound size={18} /> Change my PIN</Box>

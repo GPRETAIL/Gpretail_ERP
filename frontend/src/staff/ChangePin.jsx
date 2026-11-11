@@ -55,12 +55,12 @@ export default function ChangePin({ currentPin = "", forced = false, onDone, onC
       <Box sx={{ width: "100%", maxWidth: 400 }}>
         {forced && (
           <Box sx={{ textAlign: "center", mb: 2.5 }}>
-            <Box sx={{ width: 56, height: 56, borderRadius: "18px", bgcolor: STAFF_COLOR.primary, color: "#fff", display: "inline-flex", alignItems: "center", justifyContent: "center", mb: 1 }}><KeyRound size={26} /></Box>
+            <Box sx={{ width: 56, height: 56, borderRadius: "18px", bgcolor: "#0d9488", color: "#fff", display: "inline-flex", alignItems: "center", justifyContent: "center", mb: 1 }}><KeyRound size={26} /></Box>
             <Typography component="h1" sx={{ fontSize: 22, fontWeight: 800, color: STAFF_COLOR.text }}>Set your own PIN</Typography>
             <Typography sx={{ fontSize: STAFF_TEXT.body, color: STAFF_COLOR.muted }}>HR gave you a starting PIN. Pick one only you know.</Typography>
           </Box>
         )}
-        {error && <Box role="alert" sx={{ ...card, mb: 2, bgcolor: STAFF_COLOR.dangerSoft, borderColor: "#fecdd3", color: STAFF_COLOR.danger, fontSize: STAFF_TEXT.body, fontWeight: 600 }}>{error}</Box>}
+        {error && <Box role="alert" sx={{ ...card, mb: 2, bgcolor: STAFF_COLOR.dangerSoft, borderColor: STAFF_COLOR.dangerBorder, color: STAFF_COLOR.danger, fontSize: STAFF_TEXT.body, fontWeight: 600 }}>{error}</Box>}
         <Box sx={card}>
           <PinPad key={step} value={pad.value} onChange={pad.set} label={pad.label} disabled={busy} />
           <Box component="button" type="button" disabled={busy || pad.value.length < 4} onClick={pad.go} sx={{ ...primaryButton, width: "100%", mt: 2.5 }}>

@@ -1,8 +1,10 @@
 import { Box, Typography } from "@mui/material";
-import { CalendarDays, CalendarPlus, ClipboardCheck, Clock, HandCoins, Landmark, Receipt, Users, Wallet } from "lucide-react";
+import { CalendarDays, CalendarPlus, ChevronRight, ClipboardCheck, Clock, HandCoins, Landmark, Receipt, Users, Wallet } from "lucide-react";
 import MyAttendanceCard from "@/mobile/components/MyAttendanceCard";
 import { monthLabel } from "@/features/hr/payroll/payslipPrint";
 import { STAFF_COLOR, STAFF_TEXT, TOUCH, card, rupee, sectionTitle } from "../staffUi";
+import RevealToggle from "../RevealToggle";
+import useReveal, { MASKED_AMOUNT } from "../useReveal";
 
 const APPROVAL_LABEL = { leave: "Leave", attendance: "Attendance", shift: "Shift", overtime: "Overtime", loan: "Advance / loan", claim: "Expense", resignation: "Resignation" };
 
@@ -12,7 +14,7 @@ function Tile({ icon: Icon, label, onClick }) {
   return (
     <Box component="button" type="button" onClick={onClick}
       sx={{ minHeight: TOUCH + 32, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 0.75, borderRadius: "16px", border: `1px solid ${STAFF_COLOR.line}`,
-        bgcolor: "#fff", color: STAFF_COLOR.text, fontSize: STAFF_TEXT.small, fontWeight: 700, fontFamily: "inherit", cursor: "pointer", px: 0.5, textAlign: "center", "&:active": { bgcolor: STAFF_COLOR.primarySoft } }}>
+        bgcolor: STAFF_COLOR.surface, color: STAFF_COLOR.text, fontSize: STAFF_TEXT.small, fontWeight: 700, fontFamily: "inherit", cursor: "pointer", px: 0.5, textAlign: "center", "&:active": { bgcolor: STAFF_COLOR.primarySoft } }}>
       <Box sx={{ color: STAFF_COLOR.primary }}><Icon size={22} /></Box>
       {label}
     </Box>
@@ -21,6 +23,7 @@ function Tile({ icon: Icon, label, onClick }) {
 
 /** Home: check in, quick links, what waits for me (and my approval), leave left, pay and holidays. */
 export default function HomeTab({ home, go }) {
+  const reveal = useReveal();
   const pending = home?.my_pending || {};
   const myPending = (pending.leave || 0) + (pending.requests || 0) + (pending.loans || 0) + (pending.claims || 0);
   const approvals = Object.entries(home?.approvals || {});
@@ -42,15 +45,15 @@ export default function HomeTab({ home, go }) {
 
       {home?.can_approve && (
         <Box component="button" type="button" onClick={() => go("approvals")}
-          sx={{ ...card, textAlign: "left", width: "100%", fontFamily: "inherit", cursor: "pointer", borderColor: approvalTotal ? "#fcd34d" : STAFF_COLOR.line, bgcolor: approvalTotal ? "#fffbeb" : "#fff" }}>
+          sx={{ ...card, textAlign: "left", width: "100%", fontFamily: "inherit", cursor: "pointer", borderColor: approvalTotal ? STAFF_COLOR.warnBorder : STAFF_COLOR.line, bgcolor: approvalTotal ? STAFF_COLOR.warnSoft : STAFF_COLOR.surface }}>
           <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: approvalTotal ? 1 : 0 }}>
-            <ClipboardCheck size={20} color="#b45309" />
+            <ClipboardCheck size={20} color={STAFF_COLOR.amber} />
             <Typography sx={{ fontSize: STAFF_TEXT.body, fontWeight: 800, color: STAFF_COLOR.text, flex: 1 }}>Needs your approval</Typography>
-            <Typography sx={{ fontSize: STAFF_TEXT.heading, fontWeight: 800, color: "#b45309" }}>{approvalTotal}</Typography>
+            <Typography sx={{ fontSize: STAFF_TEXT.heading, fontWeight: 800, color: STAFF_COLOR.amber }}>{approvalTotal}</Typography>
           </Box>
           {approvalTotal === 0 ? <Typography sx={{ fontSize: STAFF_TEXT.label, color: STAFF_COLOR.muted, mt: 0.5 }}>Nothing waiting. Well done.</Typography> : (
             <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.75 }}>
-              {approvals.map(([type, n]) => <Box key={type} sx={{ px: 1.25, py: 0.5, borderRadius: "999px", bgcolor: "#fff", border: "1px solid #fde68a", fontSize: STAFF_TEXT.small, fontWeight: 700, color: "#92400e" }}>{APPROVAL_LABEL[type] || type} · {n}</Box>)}
+              {approvals.map(([type, n]) => <Box key={type} sx={{ px: 1.25, py: 0.5, borderRadius: "999px", bgcolor: STAFF_COLOR.surface, border: `1px solid ${STAFF_COLOR.warnBorder}`, fontSize: STAFF_TEXT.small, fontWeight: 700, color: STAFF_COLOR.warnText }}>{APPROVAL_LABEL[type] || type} · {n}</Box>)}
             </Box>
           )}
           {home.team?.size > 0 && (
@@ -84,17 +87,32 @@ export default function HomeTab({ home, go }) {
         </Box>
       )}
 
-      <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1 }}>
-        <Box component="button" type="button" onClick={() => go("salary")} sx={{ ...card, textAlign: "left", fontFamily: "inherit", cursor: "pointer" }}>
-          <Typography sx={{ display: "flex", alignItems: "center", gap: 0.5, fontSize: STAFF_TEXT.small, fontWeight: 700, color: STAFF_COLOR.muted }}><Wallet size={15} /> Last salary</Typography>
-          <Typography sx={{ fontSize: STAFF_TEXT.heading, fontWeight: 800, color: STAFF_COLOR.text, mt: 0.5 }}>{home?.pay?.latest ? rupee(home.pay.latest.net_pay) : "-"}</Typography>
-          <Typography sx={{ fontSize: STAFF_TEXT.small, color: STAFF_COLOR.faint }}>{home?.pay?.latest ? monthLabel(home.pay.latest.month) : "No payslip yet"}</Typography>
+      <Box sx={card}>
+        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1 }}>
+          <Typography sx={{ display: "flex", alignItems: "center", gap: 0.5, fontSize: STAFF_TEXT.small, fontWeight: 700, color: STAFF_COLOR.muted }}>
+            <Wallet size={15} /> Last salary{home?.pay?.latest ? ` · ${monthLabel(home.pay.latest.month)}` : ""}
+          </Typography>
+          {home?.pay?.latest && <RevealToggle reveal={reveal} />}
         </Box>
-        <Box component="button" type="button" onClick={() => go("expenses")} sx={{ ...card, textAlign: "left", fontFamily: "inherit", cursor: "pointer" }}>
+        <Typography aria-live="polite" sx={{ fontSize: STAFF_TEXT.big, fontWeight: 800, color: STAFF_COLOR.text, mt: 0.5, fontVariantNumeric: "tabular-nums", letterSpacing: reveal.shown ? 0 : "0.06em" }}>
+          {home?.pay?.latest ? (reveal.shown ? rupee(home.pay.latest.net_pay) : MASKED_AMOUNT) : "-"}
+        </Typography>
+        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1, mt: 0.5 }}>
+          <Typography sx={{ fontSize: STAFF_TEXT.small, color: STAFF_COLOR.faint }}>
+            {home?.pay?.latest ? `Take-home this FY ${reveal.shown ? rupee(home.pay.year_net) : MASKED_AMOUNT}` : "No payslip yet"}
+          </Typography>
+          <Box component="button" type="button" onClick={() => go("salary")} sx={{ display: "inline-flex", alignItems: "center", gap: 0.25, minHeight: 36, p: 0, border: 0, bgcolor: "transparent", color: STAFF_COLOR.primaryDark, fontSize: STAFF_TEXT.small, fontWeight: 700, fontFamily: "inherit", cursor: "pointer" }}>
+            Payslips <ChevronRight size={16} />
+          </Box>
+        </Box>
+      </Box>
+
+      <Box component="button" type="button" onClick={() => go("expenses")} sx={{ ...card, textAlign: "left", fontFamily: "inherit", cursor: "pointer", display: "flex", alignItems: "center", gap: 1.5 }}>
+        <Box sx={{ flex: 1 }}>
           <Typography sx={{ display: "flex", alignItems: "center", gap: 0.5, fontSize: STAFF_TEXT.small, fontWeight: 700, color: STAFF_COLOR.muted }}><HandCoins size={15} /> Advance to repay</Typography>
           <Typography sx={{ fontSize: STAFF_TEXT.heading, fontWeight: 800, color: STAFF_COLOR.text, mt: 0.5 }}>{rupee(home?.money?.loan_balance)}</Typography>
-          <Typography sx={{ fontSize: STAFF_TEXT.small, color: STAFF_COLOR.faint }}>{home?.money?.claims_waiting ? `${home.money.claims_waiting} claim(s) waiting` : "No claims waiting"}</Typography>
         </Box>
+        <Typography sx={{ fontSize: STAFF_TEXT.small, color: STAFF_COLOR.faint }}>{home?.money?.claims_waiting ? `${home.money.claims_waiting} claim(s) waiting` : "No claims waiting"}</Typography>
       </Box>
 
       {(home?.holidays || []).length > 0 && (

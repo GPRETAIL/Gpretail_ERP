@@ -11,7 +11,8 @@ import HomeTab from "./tabs/HomeTab";
 import ApprovalsTab from "./tabs/ApprovalsTab";
 import SalaryTab from "./tabs/SalaryTab";
 import MeTab from "./tabs/MeTab";
-import { STAFF_COLOR, STAFF_TEXT, TOUCH, card } from "./staffUi";
+import { STAFF_COLOR, STAFF_TEXT, STAFF_THEMES, TOUCH, card, staffThemeVars } from "./staffUi";
+import useStaffTheme from "./useStaffTheme";
 
 const TABS = [
   { key: "home", label: "Home", icon: Home },
@@ -27,17 +28,31 @@ const TITLES = { home: "Home", leave: "Leave", expenses: "Expenses and advances"
 function useStaffManifest() {
   useEffect(() => {
     const link = document.querySelector('link[rel="manifest"]');
-    const theme = document.querySelector('meta[name="theme-color"]');
-    const before = { href: link?.getAttribute("href"), theme: theme?.getAttribute("content"), title: document.title };
+    const before = { href: link?.getAttribute("href"), title: document.title };
     link?.setAttribute("href", "/manifest-staff.webmanifest");
-    theme?.setAttribute("content", STAFF_COLOR.primary);
     document.title = "Vynerix Staff";
     return () => {
       if (link && before.href) link.setAttribute("href", before.href);
-      if (theme && before.theme) theme.setAttribute("content", before.theme);
       document.title = before.title;
     };
   }, []);
+}
+
+/** The phone's status bar and the page behind overscroll follow the staff app's light or dark theme. */
+function useStaffChrome(mode) {
+  useEffect(() => {
+    const colors = STAFF_THEMES[mode];
+    const meta = document.querySelector('meta[name="theme-color"]');
+    const before = { theme: meta?.getAttribute("content"), background: document.body.style.backgroundColor, scheme: document.documentElement.style.colorScheme };
+    meta?.setAttribute("content", colors.surface);
+    document.body.style.backgroundColor = colors.page;
+    document.documentElement.style.colorScheme = mode;
+    return () => {
+      if (meta && before.theme) meta.setAttribute("content", before.theme);
+      document.body.style.backgroundColor = before.background;
+      document.documentElement.style.colorScheme = before.scheme;
+    };
+  }, [mode]);
 }
 
 function NotificationsSheet({ onClose }) {
@@ -51,7 +66,7 @@ function NotificationsSheet({ onClose }) {
     return () => { active = false; };
   }, []);
   return (
-    <Box role="dialog" aria-modal="true" aria-label="Notifications" sx={{ position: "fixed", inset: 0, zIndex: 1300, bgcolor: "rgba(17,24,39,0.45)", display: "flex", alignItems: "flex-end" }} onClick={onClose}>
+    <Box role="dialog" aria-modal="true" aria-label="Notifications" sx={{ position: "fixed", inset: 0, zIndex: 1300, bgcolor: STAFF_COLOR.scrim, display: "flex", alignItems: "flex-end" }} onClick={onClose}>
       <Box onClick={(e) => e.stopPropagation()} sx={{ width: "100%", maxHeight: "80dvh", overflowY: "auto", bgcolor: STAFF_COLOR.page, borderRadius: "20px 20px 0 0", p: 2, pb: "max(16px, env(safe-area-inset-bottom))" }}>
         <Box sx={{ display: "flex", alignItems: "center", mb: 1.5 }}>
           <Typography sx={{ flex: 1, fontSize: STAFF_TEXT.heading, fontWeight: 800, color: STAFF_COLOR.text }}>Notifications</Typography>
@@ -61,7 +76,7 @@ function NotificationsSheet({ onClose }) {
         {rows?.length === 0 && <Box sx={card}><Typography sx={{ fontSize: STAFF_TEXT.body, color: STAFF_COLOR.muted }}>No notifications yet.</Typography></Box>}
         <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
           {(rows || []).map((n) => (
-            <Box key={n.id} sx={{ ...card, borderColor: n.read_at ? STAFF_COLOR.line : "#99f6e4" }}>
+            <Box key={n.id} sx={{ ...card, borderColor: n.read_at ? STAFF_COLOR.line : STAFF_COLOR.primaryBorder }}>
               <Typography sx={{ fontSize: STAFF_TEXT.body, fontWeight: 800, color: STAFF_COLOR.text }}>{n.title}</Typography>
               <Typography sx={{ fontSize: STAFF_TEXT.label, color: STAFF_COLOR.muted }}>{n.message}</Typography>
               {n.created_at && <Typography sx={{ fontSize: STAFF_TEXT.small, color: STAFF_COLOR.faint, mt: 0.5 }}>{new Date(n.created_at).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })}</Typography>}
@@ -73,7 +88,7 @@ function NotificationsSheet({ onClose }) {
   );
 }
 
-function Shell({ session, onSignOut }) {
+function Shell({ session, onSignOut, theme }) {
   const [tab, setTab] = useState("home");
   const [salaryView, setSalaryView] = useState("slips");
   const [home, setHome] = useState(null);
@@ -110,7 +125,7 @@ function Shell({ session, onSignOut }) {
 
   return (
     <Box sx={{ minHeight: "100dvh", bgcolor: STAFF_COLOR.page, color: STAFF_COLOR.text, fontSize: STAFF_TEXT.body }}>
-      <Box component="header" sx={{ position: "sticky", top: 0, zIndex: 10, bgcolor: "#fff", borderBottom: `1px solid ${STAFF_COLOR.line}`, px: 2, pt: "max(10px, env(safe-area-inset-top))", pb: 1.25, display: "flex", alignItems: "center", gap: 1 }}>
+      <Box component="header" sx={{ position: "sticky", top: 0, zIndex: 10, bgcolor: STAFF_COLOR.surface, borderBottom: `1px solid ${STAFF_COLOR.line}`, px: 2, pt: "max(10px, env(safe-area-inset-top))", pb: 1.25, display: "flex", alignItems: "center", gap: 1 }}>
         <Box sx={{ flex: 1, minWidth: 0 }}>
           <Typography component="h1" sx={{ fontSize: STAFF_TEXT.heading, fontWeight: 800, color: STAFF_COLOR.text, lineHeight: 1.2 }}>
             {tab === "home" ? `Hello, ${firstName}` : TITLES[tab]}
@@ -120,23 +135,23 @@ function Shell({ session, onSignOut }) {
           </Typography>
         </Box>
         <Box component="button" type="button" onClick={() => setBell(true)} aria-label={unread ? `Notifications, ${unread} unread` : "Notifications"}
-          sx={{ position: "relative", width: TOUCH, height: TOUCH, borderRadius: "12px", border: `1px solid ${STAFF_COLOR.line}`, bgcolor: "#fff", color: STAFF_COLOR.text, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+          sx={{ position: "relative", width: TOUCH, height: TOUCH, borderRadius: "12px", border: `1px solid ${STAFF_COLOR.line}`, bgcolor: STAFF_COLOR.surface, color: STAFF_COLOR.text, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
           <Bell size={20} />
-          {unread > 0 && <Box sx={{ position: "absolute", top: 4, right: 4, minWidth: 18, height: 18, px: 0.5, borderRadius: "999px", bgcolor: STAFF_COLOR.danger, color: "#fff", fontSize: 11, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{unread > 9 ? "9+" : unread}</Box>}
+          {unread > 0 && <Box sx={{ position: "absolute", top: 4, right: 4, minWidth: 18, height: 18, px: 0.5, borderRadius: "999px", bgcolor: "#e11d48", color: "#fff", fontSize: 11, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{unread > 9 ? "9+" : unread}</Box>}
         </Box>
       </Box>
 
       <Box component="main" sx={{ px: 2, pt: 2, pb: "calc(88px + env(safe-area-inset-bottom))", maxWidth: 640, mx: "auto" }}>
-        {error && <Box role="alert" sx={{ ...card, mb: 2, bgcolor: STAFF_COLOR.dangerSoft, borderColor: "#fecdd3", color: STAFF_COLOR.danger, fontSize: STAFF_TEXT.body, fontWeight: 600 }}>{error}</Box>}
+        {error && <Box role="alert" sx={{ ...card, mb: 2, bgcolor: STAFF_COLOR.dangerSoft, borderColor: STAFF_COLOR.dangerBorder, color: STAFF_COLOR.danger, fontSize: STAFF_TEXT.body, fontWeight: 600 }}>{error}</Box>}
         {tab === "home" && <HomeTab home={home} go={go} />}
         {tab === "leave" && <LeaveScreen showApprovals={false} />}
         {tab === "expenses" && <ClaimsScreen />}
         {tab === "salary" && <SalaryTab home={home} view={salaryView} setView={setSalaryView} />}
         {tab === "approvals" && <ApprovalsTab onChanged={loadHome} />}
-        {tab === "me" && <MeTab onSignOut={onSignOut} />}
+        {tab === "me" && <MeTab onSignOut={onSignOut} theme={theme} />}
       </Box>
 
-      <Box component="nav" aria-label="Staff app" sx={{ position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 10, bgcolor: "#fff", borderTop: `1px solid ${STAFF_COLOR.line}`, display: "grid", gridTemplateColumns: `repeat(${tabs.length}, 1fr)`, pb: "env(safe-area-inset-bottom)" }}>
+      <Box component="nav" aria-label="Staff app" sx={{ position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 10, bgcolor: STAFF_COLOR.surface, borderTop: `1px solid ${STAFF_COLOR.line}`, display: "grid", gridTemplateColumns: `repeat(${tabs.length}, 1fr)`, pb: "env(safe-area-inset-bottom)" }}>
         {tabs.map(({ key, label, icon: Icon }) => (
           <Box key={key} component="button" type="button" onClick={() => go(key)} aria-current={tab === key ? "page" : undefined}
             sx={{ position: "relative", minHeight: TOUCH + 18, border: 0, bgcolor: "transparent", color: tab === key ? STAFF_COLOR.primary : STAFF_COLOR.faint, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 0.25,
@@ -155,6 +170,8 @@ function Shell({ session, onSignOut }) {
 /** The staff app at /hr: a separate employee app (own sign-in with mobile number + PIN, own install). */
 export default function StaffApp() {
   useStaffManifest();
+  const theme = useStaffTheme();
+  useStaffChrome(theme.mode);
   const [session, setSession] = useState(() => readStaffSession());
   const [signInPin, setSignInPin] = useState("");
 
@@ -175,9 +192,15 @@ export default function StaffApp() {
     return () => window.removeEventListener("vx-staff-auth-expired", expired);
   }, []);
 
-  if (!session) return <StaffSignIn onSignedIn={(s, pin) => { setSignInPin(pin); setSession(s); }} />;
-  if (session.must_change_pin) {
-    return <ChangePin forced currentPin={signInPin} onDone={() => { setSignInPin(""); setSession(updateStaffSession({ must_change_pin: false })); }} onCancel={signOut} />;
-  }
-  return <Shell session={session} onSignOut={signOut} />;
+  let screen;
+  if (!session) screen = <StaffSignIn onSignedIn={(s, pin) => { setSignInPin(pin); setSession(s); }} />;
+  else if (session.must_change_pin) {
+    screen = <ChangePin forced currentPin={signInPin} onDone={() => { setSignInPin(""); setSession(updateStaffSession({ must_change_pin: false })); }} onCancel={signOut} />;
+  } else screen = <Shell session={session} onSignOut={signOut} theme={theme} />;
+  // Every colour in the app (and in the reused phone HR screens) reads these --hr-* variables.
+  return (
+    <Box data-staff-theme={theme.mode} sx={{ ...staffThemeVars(theme.mode), colorScheme: theme.mode, minHeight: "100dvh", bgcolor: STAFF_COLOR.page, color: STAFF_COLOR.text }}>
+      {screen}
+    </Box>
+  );
 }
