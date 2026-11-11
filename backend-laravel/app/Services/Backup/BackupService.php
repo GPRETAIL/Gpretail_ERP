@@ -110,6 +110,39 @@ class BackupService
             'attendances' => ['scope' => 'via_parent', 'parent' => 'employees', 'local_fk' => 'employee_id'],
             'app_notifications' => ['scope' => 'store_id'],
         ],
+        // HRMS. Departments, designations, employees and attendance are also listed under Settings
+        // (where older backups and the failover catch-up sync have always had them).
+        'hrms' => [
+            'hr_departments' => ['scope' => 'store_id_or_company_id'],
+            'hr_designations' => ['scope' => 'store_id_or_company_id'],
+            'hr_leave_types' => ['scope' => 'store_id'],
+            'hr_leave_policies' => ['scope' => 'store_id'],
+            'hr_leave_policy_items' => ['scope' => 'via_parent', 'parent' => 'hr_leave_policies', 'local_fk' => 'policy_id'],
+            'hr_salary_components' => ['scope' => 'store_id'],
+            'hr_salary_structure_lines' => ['scope' => 'store_id'],
+            'hr_payroll_settings' => ['scope' => 'store_id'],
+            'hr_holidays' => ['scope' => 'store_id'],
+            'employees' => ['scope' => 'store_id'],
+            'attendances' => ['scope' => 'via_parent', 'parent' => 'employees', 'local_fk' => 'employee_id'],
+            'hr_checkins' => ['scope' => 'store_id'],
+            'hr_shift_roster' => ['scope' => 'store_id'],
+            'hr_requests' => ['scope' => 'store_id'],
+            'hr_employee_movements' => ['scope' => 'store_id'],
+            'hr_leave_applications' => ['scope' => 'store_id'],
+            'hr_leave_ledger' => ['scope' => 'store_id'],
+            'hr_payroll_runs' => ['scope' => 'store_id'],
+            'hr_payslips' => ['scope' => 'store_id'],
+            'hr_additional_pay' => ['scope' => 'store_id'],
+            'hr_separations' => ['scope' => 'store_id'],
+            'hr_settlements' => ['scope' => 'store_id'],
+            'hr_loans' => ['scope' => 'store_id'],
+            'hr_loan_recoveries' => ['scope' => 'store_id'],
+            'hr_expense_claims' => ['scope' => 'store_id'],
+            'hr_leave_encashments' => ['scope' => 'store_id'],
+            'hr_tax_declarations' => ['scope' => 'store_id'],
+            'hr_tax_declaration_items' => ['scope' => 'store_id'],
+            'hr_tds_challans' => ['scope' => 'store_id'],
+        ],
         'dashboard' => [],
         'analytical' => [],
     ];
@@ -137,6 +170,16 @@ class BackupService
     public function fullTableManifest(): array
     {
         return $this->buildTableManifestForModules(array_keys(self::MODULE_MAP));
+    }
+
+    /**
+     * What the local-server failover catch-up copies: every module except HRMS (its departments,
+     * designations, employees and attendance still come through Settings). The HR records point at
+     * login accounts the catch-up does not copy, so applying them on a local server could fail.
+     */
+    public function catchUpTableManifest(): array
+    {
+        return $this->buildTableManifestForModules(array_values(array_diff(array_keys(self::MODULE_MAP), ['hrms'])));
     }
 
     /**
@@ -200,6 +243,11 @@ class BackupService
                 $tableRows = [];
                 foreach ($query->cursor() as $row) {
                     $arr = (array) $row;
+                    if ($table === 'employees') {
+                        // The staff-app PIN hash: a 4-6 digit PIN is quick to guess from its hash, so it
+                        // never leaves the server. Restored employees get a new PIN from HR.
+                        unset($arr['app_pin']);
+                    }
                     if ($table === 'stores') {
                         unset(
                             $arr['platform_licence_token'],

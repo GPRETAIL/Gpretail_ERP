@@ -45,10 +45,16 @@ server as harmless leftovers. The optimised autoloader only points at the new lo
 
   hPanel silently refuses commands containing `&&`, `;`, quotes or `>`. Keep it to a single command, or point
   it at a script, as the admin does. It runs every scheduled command listed in `docs/architecture.md`:
-  platform sync, notification sync, nightly purchase-order drafts and accounting posting. Laravel's
+  platform sync, notification sync, nightly purchase-order drafts, accounting posting, HRMS day closing and
+  the Backup Center's scheduled backups (`backups:run-scheduled`, checked every 15 minutes). Laravel's
   `withoutOverlapping` on each task stops runs piling up. The ERP queues nothing (realtime events are sent at
   the end of each request), so no queue worker is needed. The admin has its own cron
   (`Gpretail_Admin/deploy/hostinger/run.sh`).
+- **On-premises (Windows) server.** The same scheduler has to run there: one Task Scheduler task, every
+  minute, "Run whether user is logged on or not", running
+  `D:\xampp\php\php.exe D:\xampp\htdocs\Next\backend-laravel\artisan schedule:run`. Nothing else is needed for
+  backups. The old `POST /api/backups/scheduled-run` URL (header `X-Backup-Cron-Token: <BACKUP_CRON_SECRET>`)
+  still works for installs that trigger backups from an outside timer.
 - **Health check.** `GET /up`. `GET /api/health` also reports `background.scheduler` as `running`, `stale`
   or `never`; `never` or `stale` means the cron above is missing or failing.
 

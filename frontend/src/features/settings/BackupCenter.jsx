@@ -42,6 +42,8 @@ import FilterableDataTable from "@/shared/components/FilterableDataTable";
 import PageSkeleton from "@/shared/components/PageSkeleton";
 import { FIELD_HEIGHT, muiFieldSx } from "@/shared/theme/formControlSizes";
 
+const MODULE_LABELS = { crm: "CRM", hrms: "HRMS" };
+
 const fieldSx = muiFieldSx;
 const cardSx = { borderRadius: "7px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", boxShadow: 3, p: 2 };
 
@@ -333,6 +335,7 @@ export default function BackupCenter() {
   const [overview, setOverview] = useState({
     companies: [],
     moduleOptions: [],
+    schedulerRunning: false,
     setting: createDefaultSettingsForm(),
     stats: {
       last_backup_status: "never",
@@ -405,6 +408,7 @@ export default function BackupCenter() {
           ? data.companies.filter((company) => company && typeof company === "object")
           : [],
         moduleOptions: toStringArray(data.moduleOptions),
+        schedulerRunning: !!data.schedulerRunning,
         setting: normalizedSetting,
         stats: data.stats || {},
         backups: Array.isArray(data.backups) ? data.backups.map(normalizeBackupRow) : [],
@@ -434,7 +438,7 @@ export default function BackupCenter() {
   );
 
   const moduleOptions = useMemo(
-    () => (overview.moduleOptions || []).map((name) => ({ value: name, label: name })),
+    () => (overview.moduleOptions || []).map((name) => ({ value: name, label: MODULE_LABELS[name] || name.replace(/\b\w/g, (char) => char.toUpperCase()) })),
     [overview.moduleOptions]
   );
 
@@ -1225,7 +1229,7 @@ export default function BackupCenter() {
               />
 
               {settingsForm.scheduleEnabled ? (
-                settingsForm.lastScheduledAt ? (
+                overview.schedulerRunning ? (
                   <Typography
                     sx={{
                       borderRadius: "7px", border: "1px solid", borderColor: "success.main",
@@ -1233,20 +1237,18 @@ export default function BackupCenter() {
                       p: 1.5, fontSize: TYPE.small, color: "success.dark",
                     }}
                   >
-                    ✓ Scheduled backups are actively running — last one completed {toDateTime(settingsForm.lastScheduledAt)}. Your external trigger is working.
+                    ✓ This server runs scheduled backups itself: it checks every 15 minutes and takes the backup when it is due.
+                    {settingsForm.lastScheduledAt ? ` Last scheduled backup: ${toDateTime(settingsForm.lastScheduledAt)}.` : " No scheduled backup has been due yet."}
                   </Typography>
                 ) : (
                   <Typography
                     sx={{
-                      borderRadius: "7px", border: "1px solid", p: 1.5, fontSize: TYPE.small,
-                      ...(overview.cronSecretConfigured
-                        ? { borderColor: "warning.main", bgcolor: (theme) => alpha(theme.palette.warning.main, theme.palette.mode === "dark" ? 0.2 : 0.08), color: "warning.dark" }
-                        : { borderColor: "error.main", bgcolor: (theme) => alpha(theme.palette.error.main, theme.palette.mode === "dark" ? 0.2 : 0.08), color: "error.dark" }),
+                      borderRadius: "7px", border: "1px solid", borderColor: "warning.main", p: 1.5, fontSize: TYPE.small, color: "warning.dark",
+                      bgcolor: (theme) => alpha(theme.palette.warning.main, theme.palette.mode === "dark" ? 0.2 : 0.08),
                     }}
                   >
-                    {overview.cronSecretConfigured
-                      ? "⚠ The server is ready (BACKUP_CRON_SECRET is set), but no scheduled run has completed yet. Double-check your external trigger (cron-job.org etc.) is actually calling the URL below with the correct token."
-                      : "⚠ BACKUP_CRON_SECRET is not configured on this server yet. The trigger URL below will be rejected (403) no matter what token is used until it's set."}
+                    ⚠ The server&apos;s scheduler is not running, so scheduled backups (and the ERP&apos;s other timed jobs) are not taking place.
+                    {settingsForm.lastScheduledAt ? ` Last scheduled backup: ${toDateTime(settingsForm.lastScheduledAt)}.` : ""} See how to start it below.
                   </Typography>
                 )
               ) : null}
@@ -1259,17 +1261,21 @@ export default function BackupCenter() {
                     p: 1.5, fontSize: TYPE.small, color: "primary.dark",
                   }}
                 >
-                  This server has no background job runner, so scheduled backups need an
-                  external trigger to actually run. Set up a free service like{" "}
-                  <Box component="span" sx={{ fontWeight: 600 }}>cron-job.org</Box>, or your hosting
-                  panel&apos;s cron jobs, to periodically call (the secret goes in a header, never the URL, so it
-                  stays out of server logs):
-                  <Box sx={{ mt: 0.5, borderRadius: 1, bgcolor: "action.hover", p: 1, fontFamily: "monospace", wordBreak: "break-all" }}>
-                    curl -s -X POST -H &quot;X-Backup-Cron-Token: YOUR_SECRET&quot; {(import.meta.env.VITE_API_BASE_URL || "/api").replace(/\/api$/, "")}/api/backups/scheduled-run
+                  Scheduled backups run from the ERP&apos;s own scheduler, the same one that closes attendance and posts
+                  accounts, so they need no separate setup. The scheduler has to be started once on the server:
+                  <Box component="ul" sx={{ m: 0, mt: 0.5, pl: 2.5 }}>
+                    <li>Hosting (cPanel / hPanel): a cron job every minute running <Box component="span" sx={{ fontFamily: "monospace" }}>php artisan schedule:run</Box> (already set up on our hosted servers).</li>
+                    <li>On-premises Windows: the ERP scheduler service started by the installer, or a Task Scheduler task every minute running <Box component="span" sx={{ fontFamily: "monospace" }}>php artisan schedule:run</Box>.</li>
                   </Box>
-                  Get the real secret value from the server&apos;s{" "}
-                  <Box component="span" sx={{ fontFamily: "monospace" }}>BACKUP_CRON_SECRET</Box> environment
-                  variable — it is never shown here.
+                  The server PC must be on at the scheduled time; a missed backup runs at the next check after it is back on.
+                  {!overview.schedulerRunning && overview.cronSecretConfigured ? (
+                    <Box sx={{ mt: 1 }}>
+                      An outside timer can also trigger it (the secret goes in a header, never the URL):
+                      <Box sx={{ mt: 0.5, borderRadius: 1, bgcolor: "action.hover", p: 1, fontFamily: "monospace", wordBreak: "break-all" }}>
+                        curl -s -X POST -H &quot;X-Backup-Cron-Token: YOUR_SECRET&quot; {(import.meta.env.VITE_API_BASE_URL || "/api").replace(/\/api$/, "")}/api/backups/scheduled-run
+                      </Box>
+                    </Box>
+                  ) : null}
                   {settingsForm.encryptionEnabled && (settingsForm.encryptionPassword || settingsForm.scheduledEncryptionConfigured) ? (
                     <Typography sx={{ mt: 1, pt: 1, borderTop: 1, borderColor: "primary.main", color: "success.main", fontSize: "inherit" }}>
                       ✓ A password is saved above, so scheduled backups will run encrypted and include the Users table. The password is stored encrypted at rest on the server - this protects the backup file if it leaks or gets stolen separately, but not against someone who fully compromises this server.
