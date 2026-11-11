@@ -2,6 +2,7 @@ import React from "react";
 import { Plus, X } from "lucide-react";
 import { Box, IconButton, Typography } from "@mui/material";
 import { useTabs } from "./TabContext";
+import { TYPE } from "@/shared/theme/typeScale";
 
 const TabBar = () => {
   const { tabs, activeTabId, addTab, closeTab, switchTab, moveTab } = useTabs();
@@ -45,7 +46,7 @@ const TabBar = () => {
               sx={{
                 display: "flex", alignItems: "center", gap: 0.5,
                 px: { xs: 0.75, md: 1.25 }, py: { xs: 0.25, md: 0.5 },
-                borderRadius: "6px 6px 0 0", fontSize: { xs: 10, md: 12 }, cursor: "pointer", userSelect: "none",
+                borderRadius: "6px 6px 0 0", fontSize: TYPE.small, cursor: "pointer", userSelect: "none",
                 width: { xs: 100, md: 160 }, minWidth: 0, overflow: "hidden", transition: "background-color 0.2s, color 0.2s",
                 opacity: draggedTabId === tab.id ? 0.6 : 1,
                 ...(isActive

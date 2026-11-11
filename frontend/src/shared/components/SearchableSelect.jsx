@@ -5,6 +5,7 @@ import { Box } from "@mui/material";
 import { useTheme, alpha } from "@mui/material/styles";
 import { SEARCHABLE_TRIGGER_SX, SEARCHABLE_INPUT_SX } from "@/shared/theme/formControlSizes";
 import { dropdownPlacement as getDropdownPlacement } from "@/shared/utils/dropdownPlacement";
+import { TYPE } from "@/shared/theme/typeScale";
 
 /**
  * SearchableSelect — drop-in replacement for a plain <select>.
@@ -274,7 +275,7 @@ const SearchableSelect = ({
           onKeyDown={handleKeyboardNavigation}
           placeholder="Search..."
           sx={{
-            flex: 1, fontSize: 10.5, outline: "none", bgcolor: "transparent", color: "text.secondary",
+            flex: 1, fontSize: "var(--erp-font-body, 10.5px)", outline: "none", bgcolor: "transparent", color: "text.secondary",
             "&::placeholder": { color: "text.disabled" },
             ...searchInputSx,
           }}
@@ -286,7 +287,7 @@ const SearchableSelect = ({
           <Box
             component="li"
             onClick={() => select("")}
-            sx={{ px: 1, py: 0.5, fontSize: 10.5, color: "text.disabled", cursor: "pointer", "&:hover": { bgcolor: hoverBg, color: activeText } }}
+            sx={{ px: 1, py: 0.5, fontSize: "var(--erp-font-body, 10.5px)", color: "text.disabled", cursor: "pointer", "&:hover": { bgcolor: hoverBg, color: activeText } }}
           >
             — None —
           </Box>
@@ -295,13 +296,13 @@ const SearchableSelect = ({
           <Box
             component="li"
             onClick={() => select(search.trim())}
-            sx={{ px: 1, py: 0.5, fontSize: 10.5, cursor: "pointer", color: createText, fontWeight: 500, borderBottom: "1px solid", borderColor: "divider", "&:hover": { bgcolor: createHoverBg } }}
+            sx={{ px: 1, py: 0.5, fontSize: "var(--erp-font-body, 10.5px)", cursor: "pointer", color: createText, fontWeight: 500, borderBottom: "1px solid", borderColor: "divider", "&:hover": { bgcolor: createHoverBg } }}
           >
             + Create "{search.trim()}"
           </Box>
         )}
         {filtered.length === 0 && !creatable ? (
-          <Box component="li" sx={{ px: 1, py: 0.5, fontSize: 10.5, color: "text.disabled", fontStyle: "italic" }}>No results</Box>
+          <Box component="li" sx={{ px: 1, py: 0.5, fontSize: "var(--erp-font-body, 10.5px)", color: "text.disabled", fontStyle: "italic" }}>No results</Box>
         ) : filtered.length === 0 ? null : (
           filtered.map((o, idx) => {
             if (!hasSearch && o.divider) {
@@ -312,7 +313,7 @@ const SearchableSelect = ({
                 <Box
                   component="li"
                   key={`group-${idx}-${o.label}`}
-                  sx={{ px: 1, py: 0.5, fontSize: 10, fontWeight: 700, letterSpacing: "0.03em", color: "text.secondary", bgcolor: "action.hover", textTransform: "uppercase" }}
+                  sx={{ px: 1, py: 0.5, fontSize: TYPE.small, fontWeight: 700, letterSpacing: "0.03em", color: "text.secondary", bgcolor: "action.hover", textTransform: "uppercase" }}
                 >
                   {o.label}
                 </Box>
@@ -331,7 +332,7 @@ const SearchableSelect = ({
                   setHighlightIndex(optionIndex);
                 }}
                 sx={{
-                  px: 1, py: 0.5, fontSize: 10.5, cursor: "pointer",
+                  px: 1, py: 0.5, fontSize: "var(--erp-font-body, 10.5px)", cursor: "pointer",
                   bgcolor: isSelected || isHighlighted ? highlightBg : "transparent",
                   color: isSelected || isHighlighted ? activeText : "text.secondary",
                   fontWeight: isSelected ? 500 : 400,
@@ -352,7 +353,7 @@ const SearchableSelect = ({
   return (
     <Box sx={{ display: "flex", alignItems: "center", width: "100%" }} ref={containerRef} data-enter-ignore="true">
       {label && (
-        <Box component="label" sx={{ width: "40%", fontSize: 11.5, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5, flexShrink: 0 }}>
+        <Box component="label" sx={{ width: "40%", fontSize: "var(--erp-font-label, 11.5px)", fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5, flexShrink: 0 }}>
           {required && <Box component="span" sx={{ color: "error.main", mr: 0.5 }}>*</Box>}
           {label}
         </Box>
@@ -378,7 +379,7 @@ const SearchableSelect = ({
           sx={{
             width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
             border: "1px solid", borderColor: "divider", borderRadius: "2px", px: 0.75, py: 0.5,
-            fontSize: 10.5, bgcolor: "background.paper", textAlign: "left",
+            fontSize: "var(--erp-font-body, 10.5px)", bgcolor: "background.paper", textAlign: "left",
             "&:focus": { outline: "none", borderColor: "#3b82f6", boxShadow: "0 0 0 1px #3b82f6" },
             ...triggerSx,
           }}

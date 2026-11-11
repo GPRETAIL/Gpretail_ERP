@@ -222,3 +222,12 @@ it("switches to a complete enterprise theme in one click and publishes all of it
     primary_color: "#6d28d9", secondary_color: "#db2777", border_radius: 16, theme_style: "glassmorphism", font_family: "poppins",
   }), expect.any(Object)));
 });
+
+it("publishes a chosen typography size only after confirmation", async () => {
+  show(); await ready(); tab("Typography");
+  fireEvent.click(screen.getByRole("button", { name: "Large", exact: true }));
+  expect(screen.getByRole("button", { name: "Large", exact: true })).toHaveAttribute("aria-pressed", "true");
+  expect(api.put).not.toHaveBeenCalled();
+  apply();
+  await waitFor(() => expect(api.put).toHaveBeenCalledWith("/tenant/theme", expect.objectContaining({ text_size: "large", font_family: "inter" }), expect.any(Object)));
+});

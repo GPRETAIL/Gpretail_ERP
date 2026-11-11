@@ -20,6 +20,7 @@ import useStoreNameMap, { resolveStoreName } from "@/shared/hooks/useStoreNameMa
 import { ProtectedLayoutRouteRenderer } from "@/app/routes";
 import { Link, useLocation } from "react-router-dom";
 import PrintQueueTray from "@/features/printing/components/PrintQueueTray";
+import { TYPE } from "@/shared/theme/typeScale";
 
 const MOBILE_BREAKPOINT = 768;
 
@@ -100,7 +101,7 @@ const PrintStatusFooter = () => {
         sx={{
           justifyContent: "space-between", alignItems: "center",
           px: { xs: 1.5, md: 3, lg: 4 }, py: 0.5,
-          fontSize: { xs: 10, md: 12 }, color: "text.secondary",
+          fontSize: TYPE.small, color: "text.secondary",
           minWidth: 0, gap: 2, whiteSpace: "nowrap", overflowX: "auto",
           "& > *": { flexShrink: 0 },
         }}

@@ -6,6 +6,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { Box } from "@mui/material";
 import { useTheme, alpha } from "@mui/material/styles";
 import { SEARCHABLE_TRIGGER_SX, SEARCHABLE_INPUT_SX } from "@/shared/theme/formControlSizes";
+import { TYPE } from "@/shared/theme/typeScale";
 
 /**
  * Dropdown select with a search box that debounce-fetches from the server via `onAsyncSearch`,
@@ -267,13 +268,13 @@ const AsyncSearchSelect = ({ name, value, onChange, options, onAsyncSearch, plac
         onKeyDown={(e) => { if (disabled) return; handleTriggerKeyDown(e); }}
         sx={{
           width: "100%", border: "1px solid", borderColor: "divider", borderRadius: "2px", px: 0.5, py: 0.5,
-          fontSize: 10.5, bgcolor: "background.paper", textAlign: "left", display: "flex", alignItems: "center",
+          fontSize: TYPE.body, bgcolor: "background.paper", textAlign: "left", display: "flex", alignItems: "center",
           justifyContent: "space-between", opacity: disabled ? 0.6 : 1, cursor: disabled ? "not-allowed" : "pointer",
           "&:focus": { outline: "none", borderColor: "#3b82f6", boxShadow: "0 0 0 1px #3b82f6" },
           ...triggerSx,
         }}
       >
-        <Box component="span" sx={{ color: selectedLabel ? "text.primary" : "text.disabled", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 10.5 }}>{selectedLabel || placeholder}</Box>
+        <Box component="span" sx={{ color: selectedLabel ? "text.primary" : "text.disabled", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: TYPE.body }}>{selectedLabel || placeholder}</Box>
         <ChevronDown size={12} style={{ color: isDark ? "#64748b" : "#9ca3af", flexShrink: 0, transition: "transform 0.15s", transform: open ? "rotate(180deg)" : "none" }} />
       </Box>
       {open && !disabled && dropdownPlacement &&
@@ -294,13 +295,13 @@ const AsyncSearchSelect = ({ name, value, onChange, options, onAsyncSearch, plac
                 onKeyDown={handleKeyDown}
                 placeholder={searchPlaceholder}
                 sx={{
-                  width: "100%", fontSize: 10.5, outline: "none", bgcolor: "transparent", color: "text.secondary",
+                  width: "100%", fontSize: TYPE.body, outline: "none", bgcolor: "transparent", color: "text.secondary",
                   "&::placeholder": { color: "text.disabled" },
                   ...searchInputSx,
                 }}
               />
               {isSearching && (
-                <Box component="span" sx={{ fontSize: 10, color: "#3b82f6", fontWeight: 500, flexShrink: 0, px: 0.5, animation: "app-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite" }}>Searching...</Box>
+                <Box component="span" sx={{ fontSize: TYPE.small, color: "#3b82f6", fontWeight: 500, flexShrink: 0, px: 0.5, animation: "app-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite" }}>Searching...</Box>
               )}
             </Box>
             <Box component="ul" ref={listRef} sx={{ maxHeight: dropdownPlacement.maxHeight, overflowY: "auto" }}>
@@ -308,7 +309,7 @@ const AsyncSearchSelect = ({ name, value, onChange, options, onAsyncSearch, plac
                 component="li"
                 onClick={() => selectVal("")}
                 sx={{
-                  px: 1, py: 0.5, fontSize: 10.5, color: "text.secondary", cursor: "pointer",
+                  px: 1, py: 0.5, fontSize: TYPE.body, color: "text.secondary", cursor: "pointer",
                   bgcolor: highlightedIndex === 0 ? highlightBg : "transparent",
                   "&:hover": highlightedIndex === 0 ? {} : { bgcolor: alpha(theme.palette.primary.main, 0.04) },
                 }}
@@ -322,7 +323,7 @@ const AsyncSearchSelect = ({ name, value, onChange, options, onAsyncSearch, plac
                     key={getId(opt)}
                     onClick={() => selectVal(getId(opt))}
                     sx={{
-                      px: 1, py: 0.5, fontSize: 10.5, cursor: "pointer",
+                      px: 1, py: 0.5, fontSize: TYPE.body, cursor: "pointer",
                       bgcolor: isHighlighted || isSelected ? highlightBg : "transparent",
                       color: isHighlighted || isSelected ? selectedText : "text.secondary",
                       fontWeight: isHighlighted || isSelected ? 500 : 400,
@@ -333,7 +334,7 @@ const AsyncSearchSelect = ({ name, value, onChange, options, onAsyncSearch, plac
               })}
             </Box>
             {filtered.length > 100 && (
-              <Box sx={{ px: 1, py: 0.25, fontSize: 10, color: "text.disabled", bgcolor: alpha(theme.palette.text.primary, 0.02), textAlign: "center", borderTop: "1px solid", borderColor: "divider" }}>
+              <Box sx={{ px: 1, py: 0.25, fontSize: TYPE.small, color: "text.disabled", bgcolor: alpha(theme.palette.text.primary, 0.02), textAlign: "center", borderTop: "1px solid", borderColor: "divider" }}>
                 Showing top 100 of {filtered.length} (type to narrow)
               </Box>
             )}

@@ -1,5 +1,5 @@
 import { getContrastRatio } from "@mui/material/styles";
-import { DEFAULT_BRAND, DEFAULT_FONT, DEFAULT_THEME_STYLE, FONT_OPTIONS, THEME_STYLES, isHexColor } from "./themeRegistry";
+import { DEFAULT_BRAND, DEFAULT_FONT, DEFAULT_THEME_STYLE, FONT_OPTIONS, TEXT_SIZE_OPTIONS, THEME_STYLES, isHexColor } from "./themeRegistry";
 
 export const COLOR_FIELDS = [
   ["background_color", "Background"], ["surface_color", "Surface"], ["text_color", "Text"],
@@ -53,6 +53,7 @@ export function normalizeTheme(config = {}) {
     border_radius: Number.isFinite(config.border_radius) ? config.border_radius : DEFAULT_BRAND.border_radius,
     theme_style: THEME_STYLES.includes(config.theme_style) ? config.theme_style : DEFAULT_THEME_STYLE,
     font_family: FONT_OPTIONS.some(font => font.id === config.font_family) ? config.font_family : DEFAULT_FONT,
+    text_size: TEXT_SIZE_OPTIONS.some(option => option.id === config.text_size) ? config.text_size : "comfortable",
     light_colors: { ...legacy, ...config.light_colors }, dark_colors: { ...legacy, ...config.dark_colors },
   };
 }

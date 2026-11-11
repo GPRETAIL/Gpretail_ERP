@@ -44,15 +44,17 @@ describe("ensureGoogleFontLoaded", () => {
 });
 
 describe("FONT_OPTIONS", () => {
-  it("native fonts work without a network request and web fonts declare a family", () => {
-    for (const id of [DEFAULT_FONT, "segoe_ui"]) {
+  it("native and bundled fonts work without a network request and web fonts declare a family", () => {
+    const offline = [DEFAULT_FONT, "system", "segoe_ui"];
+    for (const id of offline) {
       const native = getFontOption(id);
       expect(native.google).toBeNull();
       expect(native.stack).toContain("sans-serif");
       ensureGoogleFontLoaded(native.google);
     }
     expect(document.querySelector('link[href*="fonts.googleapis.com"]')).toBeNull();
-    FONT_OPTIONS.filter((opt) => ![DEFAULT_FONT, "segoe_ui"].includes(opt.id)).forEach((opt) => {
+    expect(DEFAULT_FONT).toBe("inter"); // Bundled with the app (@fontsource-variable/inter).
+    FONT_OPTIONS.filter((opt) => !offline.includes(opt.id)).forEach((opt) => {
       expect(opt.google).toBeTruthy();
     });
   });

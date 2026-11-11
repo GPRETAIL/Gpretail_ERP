@@ -7,7 +7,7 @@ import { ThemeProvider, Box, Button, Chip, Dialog, DialogTitle, DialogContent, D
 import PageHeader from "@/shared/components/PageHeader";
 import SearchGridPanel from "@/shared/components/SearchGridPanel";
 import TablePaginationFooter from "@/shared/components/TablePaginationFooter";
-import { createTenantTheme, getFontOption } from "@/shared/theme/themeRegistry";
+import { createTenantTheme, getFontOption, applyTypographyPreset } from "@/shared/theme/themeRegistry";
 import surfaceCss from "@/shared/theme/themeStyles.css?inline";
 import baseCss from "@/index.css?inline";
 
@@ -28,6 +28,7 @@ export default function ThemeWorkspacePreview({ brand, mode }) {
     previewDoc.documentElement.dataset.themeStyle = brand.theme_style || "classic";
     previewDoc.documentElement.classList.toggle("dark", mode === "dark");
     previewDoc.documentElement.style.fontFamily = getFontOption(brand.font_family).stack;
+    applyTypographyPreset(previewDoc.documentElement, brand.text_size);
     previewDoc.body.style.margin = "0";
     previewDoc.body.style.fontSize = "13px";
     previewDoc.body.style.backgroundColor = theme.palette.background.default;
@@ -42,7 +43,7 @@ export default function ThemeWorkspacePreview({ brand, mode }) {
       previewDoc.head.appendChild(link);
     }
     return () => { style.remove(); link.remove(); };
-  }, [document, brand.theme_style, brand.font_family, mode, theme]);
+  }, [document, brand.theme_style, brand.font_family, brand.text_size, mode, theme]);
 
   return <Box sx={{ height: "100%", minHeight: 620 }}>
     <Typography sx={{ fontSize: 13, fontWeight: 700, mb: 1 }}>Workspace Preview · {mode === "dark" ? "Dark" : "Light"}</Typography>

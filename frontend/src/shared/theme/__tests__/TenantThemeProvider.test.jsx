@@ -117,25 +117,31 @@ describe("TenantThemeProvider", () => {
   // this inline style on <html> is the only place it's ever applied, for both the Tailwind shell
   // and (via typography.fontFamily: "inherit") every MUI component too.
   describe("mirrors font_family onto <html> style.fontFamily for the whole app", () => {
-    it("defaults to the system font stack when the tenant has none set, with no network request", async () => {
+    it("defaults to the bundled Inter font when the tenant has none set, with no network request", async () => {
       renderWithBrand({ primary_color: "#ff0000" });
 
-      await waitFor(() => expect(document.documentElement.style.fontFamily).toContain("BlinkMacSystemFont"));
+      await waitFor(() => expect(document.documentElement.style.fontFamily).toContain("Inter Variable"));
       expect(document.querySelector('link[href*="fonts.googleapis.com"]')).toBeNull();
     });
 
-    it("applies a chosen font and loads its Google Fonts stylesheet", async () => {
-      renderWithBrand({ font_family: "inter" });
+    it("applies a chosen web font and loads its Google Fonts stylesheet", async () => {
+      renderWithBrand({ font_family: "manrope" });
 
-      await waitFor(() => expect(document.documentElement.style.fontFamily).toContain("Inter"));
+      await waitFor(() => expect(document.documentElement.style.fontFamily).toContain("Manrope"));
       const link = document.querySelector('link[href*="fonts.googleapis.com"]');
-      expect(link?.href).toContain("family=Inter");
+      expect(link?.href).toContain("family=Manrope");
     });
 
-    it("falls back to the system stack for an unrecognized stored value", async () => {
-      renderWithBrand({ font_family: "comic-sans" });
+    it("keeps the system stack when a tenant chose it", async () => {
+      renderWithBrand({ font_family: "system" });
 
       await waitFor(() => expect(document.documentElement.style.fontFamily).toContain("BlinkMacSystemFont"));
+    });
+
+    it("falls back to the bundled default for an unrecognized stored value", async () => {
+      renderWithBrand({ font_family: "comic-sans" });
+
+      await waitFor(() => expect(document.documentElement.style.fontFamily).toContain("Inter Variable"));
     });
   });
 });

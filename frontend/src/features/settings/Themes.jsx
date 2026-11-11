@@ -8,7 +8,7 @@ import PageHeader from "@/shared/components/PageHeader";
 import ThemeWorkspacePreview from "./components/ThemeWorkspacePreview";
 import { useTheme } from "@/shared/theme/themeContext";
 import { loginSuccess } from "@/features/auth/authSlice";
-import { FONT_OPTIONS, isHexColor } from "@/shared/theme/themeRegistry";
+import { FONT_OPTIONS, TEXT_SIZE_OPTIONS, isHexColor } from "@/shared/theme/themeRegistry";
 import { COLOR_FIELDS, ENTERPRISE_THEMES, STYLE_OPTIONS, isEnterpriseTheme, normalizeTheme, themeErrors, themePayload } from "@/shared/theme/themeWorkspace";
 import { isTenantAdmin } from "@/features/auth/utils/accessControl";
 import { apiErrorMessage } from "@/shared/api/apiErrorMessage";
@@ -92,7 +92,7 @@ function ThemeEditor({ snapshot, prefix, companyScope, mode, reload, token, onBu
     <Box sx={{ flex: 1, minHeight: 0, overflowY: "auto", p: 1.5 }}>
       <Alert severity="info" sx={{ mb: 1.5 }}>
         {companyScope ? "Editing the company default. Stores without permitted overrides inherit this theme." : meta.source === "store" ? "Store Override — this store uses its own appearance." : "Inherited from Company — applying a theme creates a store override."}
-        {" "}Light/Dark is controlled by the existing top-header toggle. Shared control and grid sizes stay unchanged.
+        {" "}Light/Dark is controlled by the existing top-header toggle. Typography applies to screen controls and grids; print formats retain their own settings.
       </Alert>
       {!editable && <Alert severity="warning" sx={{ mb: 1 }}>This store is locked to company branding. Tenant Admin must enable its override in Company Default before it can be customized.</Alert>}
       {dirty && <Alert severity="warning" sx={{ mb: 1 }}>You have unsaved branding changes.</Alert>}
@@ -142,6 +142,13 @@ function ThemeEditor({ snapshot, prefix, companyScope, mode, reload, token, onBu
             {section === 2 && <>
               <Typography component="h2" sx={{ fontSize: 13, fontWeight: 700 }}>Typography</Typography>
               <Typography sx={{ fontSize: 12 }}>System Default works offline. Web fonts fall back to installed fonts when the internet is unavailable.</Typography>
+              <Typography component="h3" sx={{ fontSize: 13, fontWeight: 600 }}>Text size</Typography>
+              <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: "wrap" }}>
+                {TEXT_SIZE_OPTIONS.map(option => <Button key={option.id} aria-pressed={draft.text_size === option.id} variant={draft.text_size === option.id ? "outlined" : "text"} disabled={!editable || busy} onClick={() => change("text_size", option.id)}>{option.label}{option.id === "comfortable" ? " (recommended)" : ""}</Button>)}
+              </Stack>
+              <Typography sx={{ fontSize: 12 }}>Preview the heading, fields and table before applying. Receipt, invoice and barcode print sizes are unchanged.</Typography>
+              <Button disabled={!editable || busy} onClick={() => setDraft(previous => ({ ...previous, font_family: "inter", text_size: "comfortable" }))}>Reset typography to recommended</Button>
+              <Typography component="h3" sx={{ fontSize: 13, fontWeight: 600 }}>Font family</Typography>
               {FONT_OPTIONS.filter(font => font.id !== "playfair" || original.font_family === "playfair").map(font => <Button key={font.id} aria-label={font.label} aria-pressed={draft.font_family === font.id} variant={draft.font_family === font.id ? "outlined" : "text"} disabled={!editable || busy} onClick={() => change("font_family", font.id)} sx={{ justifyContent: "flex-start", textAlign: "left", p: 1.25 }}><Box><Typography sx={{ fontSize: 13, fontWeight: 600 }}>{font.label}</Typography>{font.description && <Typography sx={{ fontSize: 12, color: "text.secondary", mt: 0.25 }}>{font.description}</Typography>}</Box></Button>)}
             </>}
             {section === 3 && <>

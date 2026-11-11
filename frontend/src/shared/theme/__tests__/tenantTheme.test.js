@@ -47,13 +47,18 @@ describe("createTenantTheme", () => {
   });
 
   describe("advanced color tokens", () => {
-    it("leaves MUI's own defaults untouched when none are set", () => {
+    it("uses the ERP text colours and MUI's other defaults when none are set", () => {
       const withTokens = createTenantTheme(undefined, "light");
       const bare = createTheme();
 
       expect(withTokens.palette.background.default).toBe(bare.palette.background.default);
-      expect(withTokens.palette.text.primary).toBe(bare.palette.text.primary);
+      expect(withTokens.palette.text.primary).toBe("#1f2937");
+      expect(withTokens.palette.text.secondary).toBe("#4b5563");
       expect(withTokens.palette.success.main).toBe(bare.palette.success.main);
+      const dark = createTenantTheme(undefined, "dark");
+      expect([dark.palette.text.primary, dark.palette.text.secondary]).toEqual(["#f3f4f6", "#cbd5e1"]);
+      expect(dark.components.MuiLink.styleOverrides.root.color).toBe("#93c5fd"); // Brand blue is too dark to read on dark.
+      expect(createTenantTheme({ primary_color: "#7c3aed" }, "dark").components.MuiLink).toBeUndefined(); // A tenant's own colour wins.
     });
 
     it("applies each token independently when set", () => {

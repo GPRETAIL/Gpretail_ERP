@@ -411,9 +411,9 @@ main > .p-6 {
  /* html/body can't be nested as descendants of the body-scoped rule
     below (html is body's ancestor; body can't descend from itself), so
     these two get their own top-level, individually-scoped rules. */
- html:not(:has(.vx-workspace)) { font-size: 14px; }
+ html:not(:has(.vx-workspace, .vy-login)) { font-size: 14px; }
 
- body:not(:has(.vx-workspace)) {
+ body:not(:has(.vx-workspace, .vy-login)) {
   -webkit-text-size-adjust: 100%;
   -webkit-tap-highlight-color: transparent;
 
@@ -421,35 +421,21 @@ main > .p-6 {
   .topbar-action-btn,
   .glass-btn {
     padding: 0.3rem 0.55rem;
-    font-size: 0.68rem;
     gap: 0.2rem;
     border-radius: 0.375rem;
   }
 
-  /* ── Page headers / breadcrumbs ── */
-  h1, h2 {
-    font-size: 0.8rem !important;
-    line-height: 1.3 !important;
-  }
-
-  /* ── All text sizes scale down ── */
-  .text-xs { font-size: 0.65rem !important; }
-  .text-sm { font-size: 0.75rem !important; }
-  .text-base { font-size: 0.82rem !important; }
-  .text-lg { font-size: 0.9rem !important; }
-  .text-xl { font-size: 1rem !important; }
-  .text-2xl { font-size: 1.15rem !important; }
+  /* Text sizes are not shrunk here: Themes > Typography (Text size) sets them for every screen width. */
+  h1, h2 { line-height: 1.3 !important; }
 
   /* ── Inputs, selects, textareas ── */
   input:not([type="checkbox"]):not([type="radio"]),
   select,
   textarea {
-    font-size: 0.75rem !important;
     padding: 0.35rem 0.5rem !important;
   }
 
   /* ── Tables — horizontal scroll ── */
-  table { font-size: 0.68rem; }
   th, td { padding: 0.3rem 0.4rem !important; }
 
   /* Wrap table in scroll container */
@@ -499,7 +485,7 @@ main > .p-6 {
   .w-\[160px\] { width: 100px !important; }
 
   /* ── Status tabs/pills — compact ── */
-  .rounded-full { padding: 0.2rem 0.5rem !important; font-size: 0.62rem !important; }
+  .rounded-full { padding: 0.2rem 0.5rem !important; }
 
   /* ── Page topbar (breadcrumb + buttons) — wrap on mobile ── */
   .flex.justify-between.items-center.px-4 {
@@ -533,22 +519,16 @@ main > .p-6 {
    Scoped to exclude .vx-workspace - see note above the 767px block.
    ═══════════════════════════════════════════════════ */
 @media (max-width: 480px) {
- html:not(:has(.vx-workspace)) { font-size: 13px; }
+ html:not(:has(.vx-workspace, .vy-login)) { font-size: 13px; }
 
- body:not(:has(.vx-workspace)) {
+ body:not(:has(.vx-workspace, .vy-login)) {
   .topbar-action-btn,
   .glass-btn {
     padding: 0.25rem 0.45rem;
-    font-size: 0.62rem;
-  }
-
-  h1, h2 {
-    font-size: 0.72rem !important;
   }
 
   /* ── Footer compact ── */
   footer, [class*="shrink-0"][class*="border-t"] {
-    font-size: 0.6rem;
     padding-top: 0.2rem;
     padding-bottom: 0.2rem;
   }
@@ -559,10 +539,9 @@ main > .p-6 {
    TABLET (768px – 1023px)
    ═══════════════════════════════════════════════════ */
 @media (min-width: 768px) and (max-width: 1023px) {
- body:not(:has(.vx-workspace)) {
+ body:not(:has(.vx-workspace, .vy-login)) {
   .topbar-action-btn,
   .glass-btn {
-    font-size: 0.72rem;
     padding: 0.32rem 0.6rem;
   }
 
@@ -722,18 +701,20 @@ main > .p-6 {
 }
 
 .compact-pagination-select {
-  font-size: 0.56rem !important;
+  font-size: calc(var(--erp-font-label, 13px) - 1px) !important;
   line-height: 1.1 !important;
   padding-top: 0 !important;
   padding-bottom: 0 !important;
 }
 
 .compact-pagination-button {
-  font-size: 0.6rem !important;
+  font-size: calc(var(--erp-font-label, 13px) - 1px) !important;
   line-height: 1 !important;
 }
 
-/* Login page-specific responsive/input fixes */
+/* The .vy-login page owns its responsive type and spacing, so compact ERP
+   media rules above exclude it alongside the mobile workspace. */
+/* Legacy login page-specific responsive/input fixes */
 .login-page input:not([type="checkbox"]):not([type="radio"]) {
   color: #111827 !important;
   background-color: #ffffff !important;
@@ -962,3 +943,18 @@ main > .p-6 {
   border-radius: var(--erp-control-radius, .5rem) !important;
 }
 .erp-app-shell .MuiOutlinedInput-notchedOutline { border-radius: inherit; }
+
+/* Tenant screen typography; print documents retain their own sizing. */
+@media screen {
+  html[data-text-size] body:not(:has(.vy-login)) { font-size: var(--erp-font-body); }
+  html[data-text-size] body:not(:has(.vy-login)) :is(td, th, .MuiTableCell-root, .MuiMenuItem-root) { font-size: var(--erp-font-body) !important; }
+  html[data-text-size] body:not(:has(.vy-login)) :is(input:not([type=checkbox]):not([type=radio]), select, textarea, .MuiInputBase-root) { font-size: var(--erp-font-body) !important; }
+  html[data-text-size] body:not(:has(.vy-login)) :is(label, .MuiInputLabel-root) { font-size: var(--erp-font-label) !important; }
+  html[data-text-size] body:not(:has(.vy-login)) :is(.erp-page-title, .erp-search-grid-panel > h2) { font-size: var(--erp-font-heading) !important; line-height: 1.35; }
+  html[data-text-size] body:not(:has(.vy-login)) :is(.MuiButton-root, .topbar-action-btn) { font-size: var(--erp-font-button) !important; height: auto; min-height: 30px; }
+  html[data-text-size] body:not(:has(.vy-login)) :is(td, th) { font-variant-numeric: tabular-nums; }
+}
+
+@media screen and (max-width: 650px) {
+  html[data-text-size] body:not(:has(.vy-login)) :is(input:not([type=checkbox]):not([type=radio]), select, textarea) { font-size: max(16px, var(--erp-font-body)) !important; }
+}

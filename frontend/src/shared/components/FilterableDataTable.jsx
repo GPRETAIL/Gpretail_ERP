@@ -1,3 +1,4 @@
+import { TYPE } from "@/shared/theme/typeScale";
 import useResetOnChange from "@/shared/hooks/useResetOnChange";
 import TablePaginationFooter from "./TablePaginationFooter";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -475,7 +476,7 @@ export default function FilterableDataTable({
   // The column filter popup's two fields: 28px high like the toolbar controls, text centred so nothing is clipped.
   const columnFilterFieldSx = {
     "& .MuiOutlinedInput-root": { height: 28, borderRadius: controlBorderRadius ?? "5.25px" },
-    "& .MuiInputBase-input": { fontSize: 11.5, lineHeight: "20px", height: 20, py: "4px", px: "8px" },
+    "& .MuiInputBase-input": { fontSize: TYPE.body, lineHeight: "20px", height: 20, py: "4px", px: "8px" },
     "& .MuiNativeSelect-select.MuiInputBase-input": { pr: "26px", height: 20 },
     "& .MuiNativeSelect-icon, & .MuiSelect-icon": { right: 4 },
   };
@@ -507,7 +508,7 @@ export default function FilterableDataTable({
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 1 }}>
-          <Typography component="span" sx={{ fontSize: 11, fontWeight: 600, color: "text.secondary" }}>
+          <Typography component="span" sx={{ fontSize: TYPE.small, fontWeight: 600, color: "text.secondary" }}>
             {column.label}
           </Typography>
           <IconButton size="small" onClick={() => setActiveFilterColumn(null)}>
@@ -546,7 +547,7 @@ export default function FilterableDataTable({
             />
           )}
         </Box>
-        <Button size="small" onClick={() => clearColumnFilter(column.key)} sx={{ mt: 0.75, minWidth: 0, px: 1, fontSize: 11 }}>
+        <Button size="small" onClick={() => clearColumnFilter(column.key)} sx={{ mt: 0.75, minWidth: 0, px: 1, fontSize: TYPE.small }}>
           Clear
         </Button>
       </Popover>
@@ -2086,7 +2087,7 @@ export default function FilterableDataTable({
         <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", borderBottom: 1, borderColor: "divider", px: 2, py: 1.5 }}>
           <Box>
             <Typography sx={{ fontSize: 14, fontWeight: 600 }}>Filter Panel</Typography>
-            <Typography sx={{ fontSize: 11, color: "text.secondary" }}>Apply filters on multiple columns</Typography>
+            <Typography sx={{ fontSize: TYPE.small, color: "text.secondary" }}>Apply filters on multiple columns</Typography>
           </Box>
           <Stack direction="row" spacing={0.5}>
             <Tooltip title={filterPanelPinned ? "Unpin panel" : "Pin panel beside the table"}>
@@ -2116,8 +2117,8 @@ export default function FilterableDataTable({
           >
             Clear All
           </Button>
-          <Typography component="span" sx={{ fontSize: 11, color: "text.disabled" }}>|</Typography>
-          <Typography component="span" sx={{ fontSize: 11, color: "text.secondary" }}>
+          <Typography component="span" sx={{ fontSize: TYPE.small, color: "text.disabled" }}>|</Typography>
+          <Typography component="span" sx={{ fontSize: TYPE.small, color: "text.secondary" }}>
             Active: {Object.values(draftColumnFilters).filter((filter) => isFilterStateActive(filter)).length}
           </Typography>
         </Stack>
@@ -2150,7 +2151,7 @@ export default function FilterableDataTable({
                   <Stack direction="row" spacing={1} sx={{ mb: 1, alignItems: "center", justifyContent: "space-between" }}>
                     <Typography sx={{ fontSize: 12, fontWeight: 500 }}>{column.label}</Typography>
                     {isActive && (
-                      <Button size="small" color="inherit" onClick={() => clearDraftColumnFilter(column.key)} sx={{ fontSize: 11, minWidth: 0, p: 0 }}>
+                      <Button size="small" color="inherit" onClick={() => clearDraftColumnFilter(column.key)} sx={{ fontSize: TYPE.small, minWidth: 0, p: 0 }}>
                         Clear
                       </Button>
                     )}
@@ -2285,7 +2286,7 @@ export default function FilterableDataTable({
         >
           Filter
           {hasActiveColumnFilters && (
-            <Box component="span" sx={{ ml: 0.75, borderRadius: 10, bgcolor: "primary.main", color: "primary.contrastText", px: 0.75, fontSize: 10, fontWeight: 500 }}>
+            <Box component="span" sx={{ ml: 0.75, borderRadius: 10, bgcolor: "primary.main", color: "primary.contrastText", px: 0.75, fontSize: TYPE.small, fontWeight: 500 }}>
               {Object.values(columnFilters).filter((filter) => isFilterStateActive(filter)).length}
             </Box>
           )}
@@ -2299,7 +2300,7 @@ export default function FilterableDataTable({
             sx={toolbarFieldSx}
           >
             Clear Filter Out
-            <Box component="span" sx={{ ml: 0.75, borderRadius: 10, bgcolor: "error.main", color: "error.contrastText", px: 0.75, fontSize: 10, fontWeight: 500 }}>
+            <Box component="span" sx={{ ml: 0.75, borderRadius: 10, bgcolor: "error.main", color: "error.contrastText", px: 0.75, fontSize: TYPE.small, fontWeight: 500 }}>
               {excludedRowFilterCount}
             </Box>
           </Button>
@@ -2313,7 +2314,7 @@ export default function FilterableDataTable({
             sx={toolbarFieldSx}
           >
             Clear Show Matching
-            <Box component="span" sx={{ ml: 0.75, borderRadius: 10, bgcolor: "success.main", color: "success.contrastText", px: 0.75, fontSize: 10, fontWeight: 500 }}>
+            <Box component="span" sx={{ ml: 0.75, borderRadius: 10, bgcolor: "success.main", color: "success.contrastText", px: 0.75, fontSize: TYPE.small, fontWeight: 500 }}>
               {includedRowFilterCount}
             </Box>
           </Button>
@@ -2343,10 +2344,10 @@ export default function FilterableDataTable({
           sx={{
             alignItems: "center", borderRadius: "1.75px", border: "1px solid", borderColor: "primary.main",
             bgcolor: (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.16 : 0.08),
-            px: 1.25, fontSize: 11, mb: compact ? 1.5 : 2, py: compact ? 0.5 : 0.75,
+            px: 1.25, fontSize: TYPE.small, mb: compact ? 1.5 : 2, py: compact ? 0.5 : 0.75,
           }}
         >
-          <Typography sx={{ fontSize: 11, fontWeight: 500, color: "primary.main" }}>
+          <Typography sx={{ fontSize: TYPE.small, fontWeight: 500, color: "primary.main" }}>
             {selectedRows.length} row{selectedRows.length > 1 ? "s" : ""} selected
           </Typography>
           {onBulkDelete && (
@@ -2356,12 +2357,12 @@ export default function FilterableDataTable({
               color="error"
               startIcon={<Trash2 size={12} />}
               onClick={() => onBulkDelete(selectedRows)}
-              sx={{ fontSize: 11 }}
+              sx={{ fontSize: TYPE.small }}
             >
               Delete Selected
             </Button>
           )}
-          <Button size="small" variant="outlined" color="inherit" onClick={() => onSelectionChange([])} sx={{ fontSize: 11 }}>
+          <Button size="small" variant="outlined" color="inherit" onClick={() => onSelectionChange([])} sx={{ fontSize: TYPE.small }}>
             Clear Selection
           </Button>
         </Stack>
@@ -2760,7 +2761,7 @@ export default function FilterableDataTable({
                           <Box
                             component="span"
                             sx={{
-                              borderRadius: "999px", px: 1, py: 0.25, fontSize: 11,
+                              borderRadius: "999px", px: 1, py: 0.25, fontSize: TYPE.small,
                               bgcolor: (theme) => (theme.palette.mode === "dark" ? "#334155" : "#e2e8f0"),
                               color: (theme) => (theme.palette.mode === "dark" ? "#cbd5e1" : "#334155"),
                             }}
@@ -2768,7 +2769,7 @@ export default function FilterableDataTable({
                             {item.count} rows
                           </Box>
                           {item.aggregates && Object.keys(item.aggregates).length > 0 && (
-                            <Box component="span" sx={{ fontSize: 11, color: (theme) => (theme.palette.mode === "dark" ? "#94a3b8" : "#475569") }}>
+                            <Box component="span" sx={{ fontSize: TYPE.small, color: (theme) => (theme.palette.mode === "dark" ? "#94a3b8" : "#475569") }}>
                               {Object.entries(item.aggregates)
                                 .map(([columnKey, value]) => {
                                   const aggColumn = columns.find((column) => column.key === columnKey);
@@ -2795,19 +2796,19 @@ export default function FilterableDataTable({
                     >
                       <TableCell colSpan={tableColSpan} sx={{ px: 1.5, ...bodyCellYSx }}>
                         {item.loading ? (
-                          <Box sx={{ display: "flex", alignItems: "center", gap: 1, fontSize: 10.5, color: (theme) => (theme.palette.mode === "dark" ? "#94a3b8" : "#64748b") }}>
+                          <Box sx={{ display: "flex", alignItems: "center", gap: 1, fontSize: TYPE.small, color: (theme) => (theme.palette.mode === "dark" ? "#94a3b8" : "#64748b") }}>
                             <Skeleton variant="text" width={120} />
                             <Box component="span">Loading rows…</Box>
                           </Box>
                         ) : item.error ? (
-                          <Box component="span" sx={{ fontSize: 10.5, color: (theme) => (theme.palette.mode === "dark" ? "#f87171" : "#e11d48") }}>{item.error}</Box>
+                          <Box component="span" sx={{ fontSize: TYPE.small, color: (theme) => (theme.palette.mode === "dark" ? "#f87171" : "#e11d48") }}>{item.error}</Box>
                         ) : item.hasMore ? (
                           <Box
                             component="button"
                             type="button"
                             onClick={() => loadMoreGroupRows(item.groupKey)}
                             sx={{
-                              fontSize: 10.5, fontWeight: 500, color: "primary.main",
+                              fontSize: TYPE.small, fontWeight: 500, color: "primary.main",
                               "&:hover": { color: "primary.dark" },
                             }}
                           >
@@ -2953,11 +2954,11 @@ export default function FilterableDataTable({
             onClick={(event) => openPinSubmenu(event.currentTarget)}
             onKeyDown={(event) => { if (event.key === "ArrowRight") openPinSubmenu(event.currentTarget); }}
             selected={Boolean(headerContextMenu.pinAnchor)}
-            sx={{ gap: 1, fontSize: 10.5 }}
+            sx={{ gap: 1, fontSize: TYPE.body }}
           >
             <Pin size={14} style={{ color: "#d97706" }} />
             Pin column
-            <Box component="span" sx={{ ml: "auto", pl: 2, color: "text.secondary", fontSize: 10 }}>
+            <Box component="span" sx={{ ml: "auto", pl: 2, color: "text.secondary", fontSize: TYPE.small }}>
               {headerContextMenu.pinSide === "left" ? "Left" : headerContextMenu.pinSide === "right" ? "Right" : ""}
             </Box>
             <ChevronRight size={14} />
@@ -2993,7 +2994,7 @@ export default function FilterableDataTable({
                 aria-checked={headerContextMenu.pinSide === side}
                 selected={headerContextMenu.pinSide === side}
                 onClick={() => handleSetColumnPin(headerContextMenu.columnKey, side)}
-                sx={{ gap: 1, fontSize: 10.5 }}
+                sx={{ gap: 1, fontSize: TYPE.body }}
               >
                 <ListItemIcon sx={{ minWidth: "18px !important" }}>
                   {headerContextMenu.pinSide === side ? <Check size={14} /> : null}
@@ -3004,13 +3005,13 @@ export default function FilterableDataTable({
           </Menu>
           <Divider sx={{ my: 0.5 }} onMouseEnter={closePinSubmenu} />
           {enableColumnResize && (
-            <MenuItem onMouseEnter={closePinSubmenu} onClick={() => handleAutosizeColumn(headerContextMenu.columnKey)} sx={{ gap: 1, fontSize: 10.5 }}>
+            <MenuItem onMouseEnter={closePinSubmenu} onClick={() => handleAutosizeColumn(headerContextMenu.columnKey)} sx={{ gap: 1, fontSize: TYPE.body }}>
               <MoveHorizontal size={14} style={{ color: "#0d9488" }} />
               Autosize this column
             </MenuItem>
           )}
           {enableColumnResize && (
-            <MenuItem onMouseEnter={closePinSubmenu} onClick={handleAutosizeAllColumns} sx={{ gap: 1, fontSize: 10.5 }}>
+            <MenuItem onMouseEnter={closePinSubmenu} onClick={handleAutosizeAllColumns} sx={{ gap: 1, fontSize: TYPE.body }}>
               <MoveHorizontal size={14} style={{ color: "#0d9488" }} />
               Autosize all columns
             </MenuItem>
@@ -3021,7 +3022,7 @@ export default function FilterableDataTable({
               setHeaderContextMenu(null);
               handleOpenColumnDialog();
             }}
-            sx={{ gap: 1, fontSize: 10.5 }}
+            sx={{ gap: 1, fontSize: TYPE.body }}
           >
             <Columns3 size={14} style={{ color: "#64748b" }} />
             Choose columns
@@ -3035,7 +3036,7 @@ export default function FilterableDataTable({
                   ? handleUngroupColumn()
                   : handleGroupByColumn(headerContextMenu.columnKey)
               )}
-              sx={{ gap: 1, fontSize: 10.5 }}
+              sx={{ gap: 1, fontSize: TYPE.body }}
             >
               <Filter size={14} style={{ color: "#2563eb" }} />
               {headerContextMenu.isGrouped ? "Ungroup" : "Group By"}
@@ -3044,7 +3045,7 @@ export default function FilterableDataTable({
           <MenuItem
             onMouseEnter={closePinSubmenu}
             onClick={() => openFilterPanel(headerContextMenu.columnKey)}
-            sx={{ gap: 1, fontSize: 10.5 }}
+            sx={{ gap: 1, fontSize: TYPE.body }}
           >
             <Filter size={14} style={{ color: "#2563eb" }} />
             Filter
@@ -3072,8 +3073,8 @@ export default function FilterableDataTable({
           }}
         >
           <Box sx={{ borderBottom: 1, borderColor: "divider", px: 1.5, py: 1 }}>
-            <Typography sx={{ fontSize: 11, fontWeight: 600 }}>{rowContextMenu.label}</Typography>
-            <Typography noWrap sx={{ fontSize: 11, color: "text.secondary" }}>{rowContextMenu.displayValue}</Typography>
+            <Typography sx={{ fontSize: TYPE.small, fontWeight: 600 }}>{rowContextMenu.label}</Typography>
+            <Typography noWrap sx={{ fontSize: TYPE.small, color: "text.secondary" }}>{rowContextMenu.displayValue}</Typography>
           </Box>
           {/* Hidden while grouped -- pinning doesn't combine with Group By in this version, see
               pinnedRowEntries above. */}

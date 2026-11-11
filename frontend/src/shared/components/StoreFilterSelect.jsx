@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { Box, MenuItem, TextField, Typography } from "@mui/material";
 import api from "@/shared/api/apiClient";
+import { TYPE } from "@/shared/theme/typeScale";
 
 // Module-scope cache: every report page shares one companies fetch per session.
 let cachedStores = null;
@@ -49,7 +50,7 @@ const StoreFilterSelect = ({ value, onChange, label = "Store" }) => {
 
   return (
     <Box>
-      <Typography component="label" sx={{ display: "block", fontSize: 11, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>
+      <Typography component="label" sx={{ display: "block", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary", mb: 0.5 }}>
         {label}
       </Typography>
       <TextField
@@ -58,7 +59,7 @@ const StoreFilterSelect = ({ value, onChange, label = "Store" }) => {
         onChange={(e) => onChange(e.target.value)}
         size="small"
         fullWidth
-        sx={{ "& .MuiInputBase-input": { fontSize: 10.5 } }}
+        sx={{ "& .MuiInputBase-input": { fontSize: TYPE.body } }}
       >
         <MenuItem value="">All Stores (Consolidated)</MenuItem>
         {stores.map((store) => (

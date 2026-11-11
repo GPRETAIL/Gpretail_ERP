@@ -207,6 +207,14 @@ for (const style of ["glassmorphism", "liquid_ai"]) {
 // colors the way createNamedTheme used to). Precedence per palette group, narrowest wins: named
 // palette's own default (if any) < style preset (apple/glass surface tokens) < tenant's explicit
 // advanced-color choice.
+// Default text colours under every palette (a named palette, style preset or a tenant's own colours win).
+export const DEFAULT_TEXT = {
+  light: { primary: "#1f2937", secondary: "#4b5563" },
+  dark: { primary: "#f3f4f6", secondary: "#cbd5e1" },
+};
+// Links on dark backgrounds: the brand blue is too dark to read there (about 3:1).
+export const DARK_LINK = "#93c5fd";
+
 function resolveBrandTheme(brand, mode, basePalette = {}) {
   const { light, dark, ...modeIndependent } = basePalette;
   const modeTokens = (mode === "dark" ? dark : light) || {};
@@ -220,7 +228,7 @@ function resolveBrandTheme(brand, mode, basePalette = {}) {
   const borderRadius = Number.isFinite(brand?.border_radius) ? brand.border_radius : DEFAULT_BRAND.border_radius;
   const style = THEME_STYLES.includes(brand?.theme_style) ? brand.theme_style : DEFAULT_THEME_STYLE;
 
-  const baseGroups = { ...modeIndependent, ...modeTokens };
+  const baseGroups = { text: { ...DEFAULT_TEXT[mode === "dark" ? "dark" : "light"] }, ...modeIndependent, ...modeTokens };
   delete baseGroups.primary;
   delete baseGroups.secondary;
 
@@ -249,6 +257,7 @@ function resolveBrandTheme(brand, mode, basePalette = {}) {
     components: {
       ...baseThemeOptions.components,
       ...STYLE_COMPONENTS[style](mode),
+      ...(mode === "dark" && !isHexColor(brand?.primary_color) ? { MuiLink: { styleOverrides: { root: { color: DARK_LINK } } } } : {}),
       MuiButton: { ...STYLE_COMPONENTS[style](mode).MuiButton, styleOverrides: { root: { ...STYLE_COMPONENTS[style](mode).MuiButton?.styleOverrides?.root, borderRadius: "0.5rem" } } },
       MuiOutlinedInput: { styleOverrides: { root: { ...STYLE_COMPONENTS[style](mode).MuiOutlinedInput?.styleOverrides?.root, borderRadius: "0.5rem", backgroundColor: advancedPalette.background?.paper || (mode === "dark" ? "#1e2030" : "#ffffff") } } },
       ...Object.fromEntries(
@@ -299,7 +308,8 @@ export const FONT_OPTIONS = [
   { id: "manrope", label: "Manrope", description: "Premium Style — polished, modern headings and everyday screens.", stack: '"Manrope", "Segoe UI", Arial, sans-serif', google: "Manrope:wght@400;500;600;700" },
   { id: "ibm_plex_sans", label: "IBM Plex Sans", description: "Enterprise — structured typography for business forms and dashboards.", stack: '"IBM Plex Sans", "Segoe UI", Arial, sans-serif', google: "IBM+Plex+Sans:wght@400;500;600;700" },
   { id: "source_sans_3", label: "Source Sans 3", description: "Professional — clear, restrained typography for detailed ERP work.", stack: '"Source Sans 3", "Segoe UI", Arial, sans-serif', google: "Source+Sans+3:wght@400;500;600;700" },
-  { id: "inter", label: "Inter", stack: '"Inter", sans-serif', google: "Inter:wght@400;500;600;700" },
+  // Bundled with the app (@fontsource-variable/inter, imported in main.jsx): no download, works offline.
+  { id: "inter", label: "Inter", description: "Recommended — clean, even ERP text; bundled with the app, works offline.", stack: '"Inter Variable", "Inter", "Segoe UI", -apple-system, Roboto, Arial, sans-serif', google: null },
   { id: "roboto", label: "Roboto", stack: '"Roboto", sans-serif', google: "Roboto:wght@400;500;700" },
   { id: "poppins", label: "Poppins", stack: '"Poppins", sans-serif', google: "Poppins:wght@400;500;600;700" },
   {
@@ -309,7 +319,7 @@ export const FONT_OPTIONS = [
     google: "Playfair+Display:wght@400;600;700",
   },
 ];
-export const DEFAULT_FONT = "system";
+export const DEFAULT_FONT = "inter";
 
 export function getFontOption(id) {
   return FONT_OPTIONS.find((opt) => opt.id === id) || FONT_OPTIONS.find((opt) => opt.id === DEFAULT_FONT);
@@ -340,3 +350,20 @@ export const TONES = {
   slate: { bg: "rgba(100,116,139,0.12)", fg: "#475569" },
   info: { bg: "rgba(29,78,216,0.12)", fg: "#1d4ed8" },
 };
+
+// Screen typography presets; receipt and invoice documents use their own print styles.
+export const TEXT_SIZE_OPTIONS = [
+  { id: "compact", label: "Compact", body: 13, labelSize: 12, heading: 16, button: 13 },
+  { id: "comfortable", label: "Comfortable", body: 14, labelSize: 13, heading: 18, button: 14 },
+  { id: "large", label: "Large", body: 16, labelSize: 14, heading: 20, button: 16 },
+];
+export function getTextSizeOption(id) {
+  return TEXT_SIZE_OPTIONS.find(option => option.id === id) || TEXT_SIZE_OPTIONS[1];
+}
+export function applyTypographyPreset(element, id) {
+  const preset = getTextSizeOption(id);
+  element.dataset.textSize = preset.id;
+  for (const [key, value] of Object.entries({ body: preset.body, label: preset.labelSize, heading: preset.heading, button: preset.button })) {
+    element.style.setProperty(`--erp-font-${key}`, `${value}px`);
+  }
+}

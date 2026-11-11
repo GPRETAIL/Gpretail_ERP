@@ -1,6 +1,7 @@
 import { ArrowLeft } from "lucide-react";
 import { IconButton, Stack, Typography } from "@mui/material";
 import { erpActionSx } from "@/shared/theme/erpUi";
+import { TYPE } from "@/shared/theme/typeScale";
 
 // Shared page-header shell: back button + title on the left, arbitrary actions on the right.
 // Matches the header-bar convention hand-copied across most list/detail pages (e.g.
@@ -32,7 +33,7 @@ const PageHeader = ({ title, onBack, actions, backLabel = "Back" }) => (
           <ArrowLeft size={16} />
         </IconButton>
       )}
-      <Typography component="h1" className="erp-page-title" sx={{ fontSize: 13, fontWeight: 600, display: "flex", flexWrap: "wrap", alignItems: "center", gap: 0.5 }}>
+      <Typography component="h1" className="erp-page-title" sx={{ fontSize: TYPE.heading, fontWeight: 600, display: "flex", flexWrap: "wrap", alignItems: "center", gap: 0.5 }}>
         {title}
       </Typography>
     </Stack>

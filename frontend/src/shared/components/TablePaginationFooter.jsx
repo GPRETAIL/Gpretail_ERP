@@ -1,6 +1,7 @@
 import { Button, IconButton, MenuItem, Select, Stack, Typography } from "@mui/material";
 import { Loader2 } from "lucide-react";
 import { ERP_UI } from "@/shared/theme/erpUi";
+import { TYPE } from "@/shared/theme/typeScale";
 
 // Product's pagination layout, shared by every ERP FilterableDataTable.
 export default function TablePaginationFooter({
@@ -8,13 +9,13 @@ export default function TablePaginationFooter({
   canJump = true, cursor = false, append = false, hasPrev, hasNext,
   busy, loading, onPrevious, onNext, onPageChange, onLimitChange,
 }) {
-  const textSx = { fontSize: { xs: 11, md: 8 }, color: "text.secondary" };
-  const controlSx = { height: { xs: 36, md: 26 }, fontSize: { xs: 11, md: 7 }, borderRadius: ERP_UI.controlRadius };
-  const buttonSx = { height: { xs: 36, md: 26 }, minWidth: 36, fontSize: { xs: 12, md: 9 }, border: "1px solid", borderColor: "divider", borderRadius: "1.75px" };
+  const textSx = { fontSize: TYPE.small, color: "text.secondary" };
+  const controlSx = { height: { xs: 36, md: 26 }, fontSize: TYPE.small, borderRadius: ERP_UI.controlRadius };
+  const buttonSx = { height: { xs: 36, md: 26 }, minWidth: 36, fontSize: TYPE.small, border: "1px solid", borderColor: "divider", borderRadius: "1.75px" };
   const menuProps = {
     anchorOrigin: { vertical: "top", horizontal: "left" },
     transformOrigin: { vertical: "bottom", horizontal: "left" },
-    slotProps: { paper: { sx: { maxHeight: 220, "& .MuiMenuItem-root": { minHeight: "auto", fontSize: 10, py: 0.5, px: 1.5 } } } },
+    slotProps: { paper: { sx: { maxHeight: 220, "& .MuiMenuItem-root": { minHeight: "auto", fontSize: TYPE.small, py: 0.5, px: 1.5 } } } },
   };
   return (
     <Stack component="nav" aria-label="Table pagination" className="erp-table-pagination" direction="row" spacing={1}
@@ -31,14 +32,14 @@ export default function TablePaginationFooter({
         {append ? (
           <Button variant="outlined" color="inherit" onClick={onNext} disabled={!hasNext || loading}
             startIcon={loading ? <Loader2 size={14} style={{ animation: "app-spin 1s linear infinite" }} /> : null}
-            sx={{ fontSize: 9, px: 2, py: 0.5 }}>
+            sx={{ fontSize: TYPE.small, px: 2, py: 0.5 }}>
             {hasNext ? "Load More" : "No more results"}
           </Button>
         ) : (<>
           <IconButton size="small" onClick={onPrevious} disabled={!hasPrev || busy} title="Previous"
             className="compact-pagination-button" sx={buttonSx}>{"<"}</IconButton>
           {cursor ? (
-            <Typography component="span" sx={{ px: 0.75, fontSize: 9, color: "text.secondary", fontWeight: 500, userSelect: "none" }}>Continuous</Typography>
+            <Typography component="span" sx={{ px: 0.75, fontSize: TYPE.small, color: "text.secondary", fontWeight: 500, userSelect: "none" }}>Continuous</Typography>
           ) : !canJump ? (
             <Typography component="span" sx={textSx}>Page {page} of {totalPages}</Typography>
           ) : (
