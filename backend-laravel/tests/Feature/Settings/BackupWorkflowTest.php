@@ -40,6 +40,18 @@ class BackupWorkflowTest extends TestCase
         $this->assertSame($encrypted, $store->fresh()->backup_settings['encryption_password_encrypted']);
     }
 
+    public function test_cloud_or_hybrid_storage_needs_all_oci_details(): void
+    {
+        $store = $this->admin();
+        $this->postJson('/api/backups/settings', ['storageMode' => 'cloud', 'ociNamespace' => 'gpretail'])->assertStatus(422)
+            ->assertJsonPath('message', fn ($message) => str_contains($message, 'all five Oracle Cloud (OCI) details'));
+        $this->assertNull($store->fresh()->backup_settings);
+        $this->postJson('/api/backups/settings', ['storageMode' => 'local'])->assertOk();
+        $this->postJson('/api/backups/settings', ['storageMode' => 'hybrid', 'ociNamespace' => 'gpretail', 'ociRegion' => 'ap-mumbai-1',
+            'ociAccessKeyId' => 'access-key', 'ociSecretAccessKey' => 'secret-key', 'ociBucket' => 'backups'])->assertOk();
+        $this->assertSame('hybrid', $store->fresh()->backup_settings['storage_mode']);
+    }
+
     public function test_invalid_weekday_is_rejected_before_schedule_calculation(): void
     {
         $this->admin();

@@ -18,6 +18,8 @@ use Throwable;
 
 class BackupController extends Controller
 {
+    private const CLOUD_NEEDS_OCI = 'Cloud and Hybrid storage need all five Oracle Cloud (OCI) details: namespace, region, access key, secret key and bucket. Fill them in (use Test Connection to check), or choose Local Storage.';
+
     public function __construct(private BackupService $backups) {}
 
     private function presentSettings(array $settings): array
@@ -365,6 +367,9 @@ class BackupController extends Controller
                     $settings['encryption_password_encrypted'] = $existing['encryption_password_encrypted'];
                 }
                 $settings['last_scheduled_at'] = $existing['last_scheduled_at'] ?? null;
+                if (in_array($settings['storage_mode'], ['cloud', 'hybrid'], true) && ! BackupService::isCloudConfigured($settings)) {
+                    return response()->json(['success' => false, 'message' => self::CLOUD_NEEDS_OCI], 422);
+                }
                 $store->update(['backup_settings' => $settings]);
             } else {
                 abort_unless(
@@ -375,6 +380,7 @@ class BackupController extends Controller
                 // Multi-store owner / Super Admin: apply schedule/retention across
                 // authorized active stores only. OCI credentials are preserved per-store.
                 $stores = $this->authorizedStores($request)->where('is_active', true)->get();
+                $updates = [];
                 foreach ($stores as $store) {
                     $existing = $store->backup_settings ?? [];
                     $storeSettings = array_merge($settings, [
@@ -387,6 +393,13 @@ class BackupController extends Controller
                         'encryption_password_encrypted' => $existing['encryption_password_encrypted']
                             ?? ($settings['encryption_password_encrypted'] ?? null),
                     ]);
+                    if (in_array($storeSettings['storage_mode'], ['cloud', 'hybrid'], true) && ! BackupService::isCloudConfigured($storeSettings)) {
+                        return response()->json(['success' => false, 'message' => self::CLOUD_NEEDS_OCI." ({$store->name} has no OCI details yet; select it and save them there first.)"], 422);
+                    }
+                    $updates[] = [$store, $storeSettings];
+                }
+                // Checked for every store first, so a refusal never leaves the stores half updated.
+                foreach ($updates as [$store, $storeSettings]) {
                     $store->update(['backup_settings' => $storeSettings]);
                 }
             }

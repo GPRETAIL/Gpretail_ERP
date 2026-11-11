@@ -1062,18 +1062,18 @@ export default function BackupCenter() {
                 <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary" }}>Default Storage</Typography>
                 <TextField select size="small" fullWidth sx={fieldSx} value={settingsForm.storageMode} onChange={(event) => setSettingsForm((prev) => ({ ...prev, storageMode: event.target.value }))}>
                   {storageModeOptions.map((option) => {
-                    const needsCloud = option.value === "cloud" || option.value === "hybrid";
-                    const isDisabled = needsCloud && !settingsForm.cloudConfigured;
+                    const needsSetup = (option.value === "cloud" || option.value === "hybrid") && !settingsForm.cloudConfigured;
                     return (
-                      <MenuItem key={option.value} value={option.value} disabled={isDisabled}>
-                        {option.label}{isDisabled ? " (configure OCI below first)" : ""}
+                      <MenuItem key={option.value} value={option.value}>
+                        {option.label}{needsSetup ? " (needs Oracle Cloud details)" : ""}
                       </MenuItem>
                     );
                   })}
                 </TextField>
               </Box>
 
-              {/* Oracle Cloud Infrastructure (OCI) Credentials */}
+              {/* Oracle Cloud (OCI) details: only when Cloud or Hybrid is chosen (or scheduled cloud copies are still on). */}
+              {settingsForm.storageMode !== "local" || settingsForm.cloudStorageEnabled ? (
               <Stack
                 spacing={1.5}
                 sx={{
@@ -1166,6 +1166,7 @@ export default function BackupCenter() {
                   label="Enable cloud storage for scheduled backups"
                 />
               </Stack>
+              ) : null}
 
               <FormControlLabel
                 sx={{ ml: 0, "& .MuiFormControlLabel-label": { fontSize: 12.25, color: "text.secondary" } }}
@@ -1179,7 +1180,7 @@ export default function BackupCenter() {
                 label="Enable local storage for scheduled backups"
               />
               <Typography sx={{ mt: -1, fontSize: TYPE.small, color: "text.secondary" }}>
-                Enabling both stores a copy in each location (Hybrid). Cloud storage requires the OCI credentials above to be configured; scheduled backups fall back to local storage automatically if they are not.
+                Enabling both stores a copy in each location (Hybrid). For cloud copies choose Cloud or Hybrid above and fill in the Oracle Cloud details; scheduled backups fall back to local storage automatically if they stop working.
               </Typography>
 
               <FormControlLabel
