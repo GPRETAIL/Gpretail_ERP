@@ -43,7 +43,7 @@ class MobileAccess
         'SupplierController' => '/masters/supplier', 'AgentController' => '/masters/agent', 'TransportController' => '/masters/transport',
         'CustomerController' => '/crm/customer', 'CustomerOrderController' => '/crm/customer-orders',
         'CrmDashboardController' => '/crm/customer', 'LoyaltyController' => '/crm/loyalty-management',
-        'FinanceDashboardController' => '/finance/dashboard', 'SupplierPaymentController' => '/finance/supplier-payment',
+        'FinanceDashboardController' => '/finance/dashboard', 'HrDashboardController' => '/hrms/dashboard', 'SupplierPaymentController' => '/finance/supplier-payment',
         'AnalyticalDashboardController' => '/analytical/dashboard', 'ProductPurchaseAnalyticsController' => '/analytical/dashboard',
         'AttendanceController' => '/hrms/employee-in-out', 'EmployeeController' => '/hrms/employee', 'HrConfigurationController' => '/hrms/hr-configuration',
         'HolidayController' => '/hrms/holidays', 'LeaveTypeController' => '/hrms/leave-setup', 'LeavePolicyController' => '/hrms/leave-setup',

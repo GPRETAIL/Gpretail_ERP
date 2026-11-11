@@ -333,6 +333,16 @@ class AttendanceService
             ->orderBy('punched_at')->orderBy('id')->get();
     }
 
+    /**
+     * An employee's status on a day: the attendance row's status, else holiday, weekly off, or (once the
+     * day is over) absent; a day still running with no punch is NOT_MARKED.
+     */
+    public function dayStatus(Employee $employee, ?Attendance $row, string $date): string
+    {
+        return $row?->status ?? ($this->holiday($employee->store_id, $date) ? 'HOLIDAY'
+            : ($this->isWeekOff($employee, $date) ? 'WEEK_OFF' : ($date < $this->today() ? 'ABSENT' : 'NOT_MARKED')));
+    }
+
     /** Off on the roster that day; with no roster day, the employee's weekly off ("Dynamic" means only the roster sets it). */
     public function isWeekOff(Employee $employee, string $date): bool
     {

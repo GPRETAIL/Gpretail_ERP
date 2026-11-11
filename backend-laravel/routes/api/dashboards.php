@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\V1\Dashboards\CrmDashboardController;
 use App\Http\Controllers\Api\V1\Dashboards\DashboardController;
 use App\Http\Controllers\Api\V1\Dashboards\DashboardLayoutController;
 use App\Http\Controllers\Api\V1\Dashboards\FinanceDashboardController;
+use App\Http\Controllers\Api\V1\Dashboards\HrDashboardController;
 use App\Http\Controllers\Api\V1\Dashboards\MastersDashboardController;
 use App\Http\Controllers\Api\V1\Dashboards\SalesDashboardController;
 use App\Http\Controllers\Api\V1\Dashboards\SettingsDashboardController;
@@ -39,6 +40,7 @@ Route::get('sales/dashboard', [SalesDashboardController::class, 'index']);
 
 // Finance Dashboard (main Dashboard's Finance tab)
 Route::get('finance/dashboard', [FinanceDashboardController::class, 'index']);
+Route::get('hrms/dashboard', [HrDashboardController::class, 'index']);
 // Store Dashboard (main Dashboard's Store tab -- cross-store comparison)
 Route::get('store/dashboard', [StoreDashboardController::class, 'index']);
 

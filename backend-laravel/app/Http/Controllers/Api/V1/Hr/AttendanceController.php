@@ -32,12 +32,10 @@ class AttendanceController extends Controller
         $employees = $this->scope->apply(Employee::where('is_active', true), $request->user(), 'id')
             ->with(['department:id,name'])->orderBy('name')->get();
         $rows = Attendance::whereDate('date', $date)->whereIn('employee_id', $employees->pluck('id'))->get()->keyBy('employee_id');
-        $closed = $date < $this->attendance->today();
 
-        $data = $employees->map(function (Employee $employee) use ($rows, $date, $closed) {
+        $data = $employees->map(function (Employee $employee) use ($rows, $date) {
             $row = $rows->get($employee->id);
-            $status = $row?->status ?? ($this->attendance->holiday($employee->store_id, $date) ? 'HOLIDAY'
-                : ($this->attendance->isWeekOff($employee, $date) ? 'WEEK_OFF' : ($closed ? 'ABSENT' : 'NOT_MARKED')));
+            $status = $this->attendance->dayStatus($employee, $row, $date);
 
             return [
                 'employee_id' => $employee->id, 'name' => $employee->name, 'code' => $employee->code,

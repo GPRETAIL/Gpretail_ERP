@@ -10,7 +10,7 @@
  * pagePermissionCatalog.js grants from it, so a tab can never be visible-but-ungrantable (or the
  * reverse) the way it would if each file kept its own copy.
  *
- * Every tab now has its own dedicated *DashboardTabPane component (Warehouse/CRM/Sales/Finance/
+ * Every tab now has its own dedicated *DashboardTabPane component (Warehouse/CRM/Sales/Finance/HR/
  * Store/Masters/Settings/Analytical) backed by its own service+controller -- there is no more
  * generic flat-card fallback (the old MODULE_TABS config) to keep in sync with this list.
  */
@@ -20,6 +20,7 @@ export const DASHBOARD_PAGES = [
   { id: "crm", name: "CRM" },
   { id: "sales", name: "Sales" },
   { id: "finance", name: "Finance" },
+  { id: "hrms", name: "HR" },
   { id: "store", name: "Store" },
   { id: "analytical", name: "Analytical" },
   { id: "masters", name: "Masters" },

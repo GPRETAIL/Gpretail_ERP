@@ -39,6 +39,7 @@ const StoreDashboardTabPane = lazy(() => import("./components/StoreDashboardTabP
 const MastersDashboardTabPane = lazy(() => import("./components/MastersDashboardTabPane"));
 const SettingsDashboardTabPane = lazy(() => import("./components/SettingsDashboardTabPane"));
 const AnalyticalDashboardTabPane = lazy(() => import("./components/AnalyticalDashboardTabPane"));
+const HrDashboardTabPane = lazy(() => import("./components/HrDashboardTabPane"));
 
 const formatYmd = (date) => {
   const year = date.getFullYear();
@@ -76,7 +77,8 @@ const Dashboard = () => {
   // Tabs the signed-in user may actually see. canAccessPath returns true for everyone not in
   // page-permission mode, so this is a no-op for owners/admins and only narrows a permissioned user.
   const visibleTabs = useMemo(
-    () => DASHBOARD_TABS.filter((tab) => canAccessPath(tab.path, authUser)),
+    // The HR tab also needs HRMS itself (role, page grants and the store licence's hrms section).
+    () => DASHBOARD_TABS.filter((tab) => canAccessPath(tab.path, authUser) && (tab.id !== "hrms" || canAccessPath("/hrms/dashboard", authUser))),
     [authUser]
   );
 
@@ -526,6 +528,17 @@ const Dashboard = () => {
           <SettingsDashboardTabPane
             active={activeTab === "settings"}
             companyId={companyId}
+            privacyMode={privacyMode}
+          />
+        </Box>
+      )}
+
+      {openedTabs.has("hrms") && (
+        <Box sx={{ display: activeTab === "hrms" ? "block" : "none" }}>
+          <HrDashboardTabPane
+            active={activeTab === "hrms"}
+            fromDate={fromDate}
+            toDate={toDate}
             privacyMode={privacyMode}
           />
         </Box>
