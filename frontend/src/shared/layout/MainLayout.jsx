@@ -302,10 +302,6 @@ const PrintStatusFooter = () => {
             </Typography>
           </ButtonBase>
 
-          <Typography component="span" sx={{ fontSize: "inherit" }}>
-            Customer Care <b>+91 123456789</b>
-          </Typography>
-
           <FooterClock />
         </Stack>
       </Stack>
