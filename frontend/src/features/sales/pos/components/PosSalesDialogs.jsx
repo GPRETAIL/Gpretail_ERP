@@ -200,6 +200,23 @@ export function QuickCustomerDialog({
   );
 }
 
+// POS Sales and POS Old share the Sale Discount pop-up; POS Old keeps its own labels, its line discount
+// field (discAmt) and its one-decimal money.
+const DISCOUNT_VARIANTS = {
+  posSales: {
+    subtitle: "Select sale rows and apply a discount percentage to the current POS bill.",
+    tableSx: { width: "100%", minWidth: 860 }, tableSize: "small", headSx: {}, barcodeSx: {},
+    labels: { detail: "Detail", percent: "Addin %", value: "D.Value" },
+    lineDiscount: (line) => line.discount,
+  },
+  posOld: {
+    subtitle: "Select sale rows and apply a discount percentage to the current POS Old bill.",
+    tableSx: { width: "100%", minWidth: 760, fontSize: 12.25 }, tableSize: undefined, headSx: { color: "text.secondary" }, barcodeSx: { color: "text.secondary" },
+    labels: { detail: "Product", percent: "Dis %", value: "Dis AMT" },
+    lineDiscount: (line) => line.discAmt,
+  },
+};
+
 /**
  * Sale Discount: tick bill lines and give them a discount, as a percentage or a value, per line or for all
  * the ticked lines at once. Nothing changes on the bill until Apply.
@@ -207,32 +224,34 @@ export function QuickCustomerDialog({
 export function DiscountDialog({
   rows, allSelected, selectedSet, percentInput, valueInput, totals,
   onToggleAll, onToggleRow, onRowPercentChange, onRowValueChange, onPercentChange, onValueChange, onApply, onClose,
+  variant = "posSales", formatAmount = formatMoney,
 }) {
+  const look = DISCOUNT_VARIANTS[variant];
   return (
     <PosDialogShell
       onClose={onClose}
       panelSx={{ display: "flex", maxHeight: "86vh", width: "100%", maxWidth: 1024, flexDirection: "column" }}
       headerSx={{ px: 2.5, py: 2 }}
       title="Sale Discount"
-      subtitle="Select sale rows and apply a discount percentage to the current POS bill."
+      subtitle={look.subtitle}
       closeLabel="Close discount dialog"
     >
       <Box sx={{ flex: 1, overflow: "auto", px: 2.5, py: 2 }}>
         <Box sx={{ overflow: "hidden", borderRadius: "3.5px", border: 1, borderColor: "divider" }}>
           <Box sx={{ maxHeight: "44vh", overflow: "auto" }}>
-            <Table sx={{ width: "100%", minWidth: 860 }} size="small">
-              <TableHead sx={{ position: "sticky", top: 0, bgcolor: "action.hover" }}>
+            <Table sx={look.tableSx} size={look.tableSize}>
+              <TableHead sx={{ position: "sticky", top: 0, bgcolor: "action.hover", ...look.headSx }}>
                 <TableRow>
                   <TableCell sx={{ width: 48 }}>
                     <Checkbox checked={allSelected} onChange={onToggleAll} size="small" />
                   </TableCell>
                   <TableCell>Barcode</TableCell>
-                  <TableCell>Detail</TableCell>
+                  <TableCell>{look.labels.detail}</TableCell>
                   <TableCell align="right">Price</TableCell>
                   <TableCell align="right">Qty</TableCell>
                   <TableCell>Discount</TableCell>
-                  <TableCell align="right">Addin %</TableCell>
-                  <TableCell align="right">D.Value</TableCell>
+                  <TableCell align="right">{look.labels.percent}</TableCell>
+                  <TableCell align="right">{look.labels.value}</TableCell>
                   <TableCell align="right">Amount</TableCell>
                 </TableRow>
               </TableHead>
@@ -245,11 +264,11 @@ export function DiscountDialog({
                         <Box component="span" sx={{ color: "text.secondary" }}>{index + 1}</Box>
                       </Stack>
                     </TableCell>
-                    <TableCell sx={{ fontFamily: "monospace" }}>{line.barcode || "-"}</TableCell>
+                    <TableCell sx={{ fontFamily: "monospace", ...look.barcodeSx }}>{line.barcode || "-"}</TableCell>
                     <TableCell>{line.productName || "-"}</TableCell>
-                    <TableCell align="right">{formatMoney(line.price)}</TableCell>
+                    <TableCell align="right">{formatAmount(line.price)}</TableCell>
                     <TableCell align="right">{toNum(line.qty, 0)}</TableCell>
-                    <TableCell sx={{ color: "text.secondary" }}>{`${formatMoney(line.discount)} @ ${line.appliedPercent}%`}</TableCell>
+                    <TableCell sx={{ color: "text.secondary" }}>{`${formatAmount(look.lineDiscount(line))} @ ${line.appliedPercent}%`}</TableCell>
                     <TableCell align="right">
                       <TextField
                         type="number"
@@ -270,7 +289,7 @@ export function DiscountDialog({
                         sx={{ width: 96, "& .MuiInputBase-input": { fontSize: 12.25, textAlign: "right" } }}
                       />
                     </TableCell>
-                    <TableCell align="right">{formatMoney(line.previewNetAmount)}</TableCell>
+                    <TableCell align="right">{formatAmount(line.previewNetAmount)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -305,13 +324,13 @@ export function DiscountDialog({
             />
           </Box>
           <Typography sx={{ pb: 1, fontSize: 12.25, color: "text.secondary" }}>
-            Allowed on selected amount: {formatMoney(totals.selectedAmount)}
+            Allowed on selected amount: {formatAmount(totals.selectedAmount)}
           </Typography>
         </Stack>
 
         <Stack direction="row" sx={{ alignItems: "center", justifyContent: "flex-end", gap: 1 }}>
           <Button type="button" onClick={onApply} className="glass-btn glass-btn-primary">
-            Apply ({formatMoney(totals.previewDiscountValue)})
+            Apply ({formatAmount(totals.previewDiscountValue)})
           </Button>
           <Button type="button" onClick={onClose} className="glass-btn glass-btn-secondary">
             Close

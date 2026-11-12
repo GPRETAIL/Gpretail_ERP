@@ -42,8 +42,9 @@ import { createGroupFetchers } from "@/shared/utils/serverGrouping";
 import SearchableSelect from "@/shared/components/SearchableSelect";
 import UploadImportButton from "@/shared/components/UploadImportButton";
 import CounterAssignmentDialog from "./components/CounterAssignmentDialog";
+import { DiscountDialog } from "./components/PosSalesDialogs";
 import { usePrintContext } from "@/features/printing/context/PrintContext";
-import { Box, Stack, Typography, TextField, MenuItem, IconButton, Button, Checkbox, Table, TableHead, TableBody, TableRow, TableCell, alpha } from "@mui/material";
+import { Box, Stack, Typography, TextField, MenuItem, IconButton, Button, Table, TableHead, TableBody, TableRow, TableCell, alpha } from "@mui/material";
 
 
 import {
@@ -3190,151 +3191,24 @@ const LegacyPos = () => {
       )}
 
       {discountDialogOpen && (
-        <Box
-          sx={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", bgcolor: "rgba(0,0,0,0.3)", p: 2 }}
-          onClick={closeDiscountDialog}
-        >
-          <Box
-            sx={{ display: "flex", maxHeight: "86vh", width: "100%", maxWidth: 1024, flexDirection: "column", borderRadius: "7px", border: 1, borderColor: "divider", bgcolor: "background.paper", boxShadow: 12 }}
-            onClick={(event) => event.stopPropagation()}
-          >
-            <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", borderBottom: 1, borderColor: "divider", px: 2.5, py: 2 }}>
-              <Box>
-                <Typography sx={{ fontSize: 12.25, fontWeight: 600, color: "text.primary" }}>Sale Discount</Typography>
-                <Typography sx={{ fontSize: TYPE.small, color: "text.secondary" }}>
-                  Select sale rows and apply a discount percentage to the current POS Old bill.
-                </Typography>
-              </Box>
-              <IconButton
-                type="button"
-                onClick={closeDiscountDialog}
-                size="small"
-                aria-label="Close discount dialog"
-                sx={{ color: "text.disabled", "&:hover": { color: "text.secondary" } }}
-              >
-                <X size={16} />
-              </IconButton>
-            </Stack>
-
-            <Box sx={{ flex: 1, overflow: "auto", px: 2.5, py: 2 }}>
-              <Box sx={{ overflow: "hidden", borderRadius: "3.5px", border: 1, borderColor: "divider" }}>
-                <Box sx={{ maxHeight: "44vh", overflow: "auto" }}>
-                  <Table sx={{ width: "100%", minWidth: 760, fontSize: 12.25 }}>
-                    <TableHead sx={{ position: "sticky", top: 0, bgcolor: "action.hover", color: "text.secondary" }}>
-                      <TableRow>
-                        <TableCell sx={{ width: 48 }}>
-                          <Checkbox
-                            checked={positiveCartLines.length > 0 && discountSelectedLineIds.length === positiveCartLines.length}
-                            onChange={handleDiscountToggleAll}
-                            size="small"
-                          />
-                        </TableCell>
-                        <TableCell>Barcode</TableCell>
-                        <TableCell>Product</TableCell>
-                        <TableCell align="right">Price</TableCell>
-                        <TableCell align="right">Qty</TableCell>
-                        <TableCell>Discount</TableCell>
-                        <TableCell align="right">Dis %</TableCell>
-                        <TableCell align="right">Dis AMT</TableCell>
-                        <TableCell align="right">Amount</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {discountDialogRows.map((line, index) => (
-                        <TableRow key={line.lineId} hover>
-                          <TableCell>
-                            <Stack direction="row" sx={{ alignItems: "center", gap: 1 }}>
-                              <Checkbox
-                                checked={discountDialogSelectedSet.has(line.lineId)}
-                                onChange={() => handleDiscountRowToggle(line.lineId)}
-                                size="small"
-                              />
-                              <Box component="span" sx={{ color: "text.secondary" }}>{index + 1}</Box>
-                            </Stack>
-                          </TableCell>
-                          <TableCell sx={{ fontFamily: "monospace", color: "text.secondary" }}>{line.barcode || "-"}</TableCell>
-                          <TableCell>{line.productName || "-"}</TableCell>
-                          <TableCell align="right">{formatMoney(line.price)}</TableCell>
-                          <TableCell align="right">{toNum(line.qty, 0)}</TableCell>
-                          <TableCell sx={{ color: "text.secondary" }}>{`${formatMoney(line.discAmt)} @ ${line.appliedPercent}%`}</TableCell>
-                          <TableCell align="right">
-                            <TextField
-                              type="number"
-                              slotProps={{ htmlInput: { min: 0, step: 0.01 } }}
-                              value={line.percentInput}
-                              onChange={(event) => handleDiscountRowPercentChange(line.lineId, event.target.value)}
-                              size="small"
-                              sx={{ width: 80, "& .MuiInputBase-input": { fontSize: 12.25, textAlign: "right" } }}
-                            />
-                          </TableCell>
-                          <TableCell align="right">
-                            <TextField
-                              type="number"
-                              slotProps={{ htmlInput: { min: 0, step: 0.01 } }}
-                              value={line.valueInput}
-                              onChange={(event) => handleDiscountRowValueChange(line.lineId, event.target.value)}
-                              size="small"
-                              sx={{ width: 96, "& .MuiInputBase-input": { fontSize: 12.25, textAlign: "right" } }}
-                            />
-                          </TableCell>
-                          <TableCell align="right">{formatMoney(line.previewNetAmount)}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </Box>
-              </Box>
-            </Box>
-
-            <Stack sx={{ flexDirection: { xs: "column", lg: "row" }, gap: 1.5, borderTop: 1, borderColor: "divider", px: 2.5, py: 2, alignItems: { lg: "center" }, justifyContent: { lg: "space-between" } }}>
-              <Stack direction="row" sx={{ flexWrap: "wrap", alignItems: "flex-end", gap: 1.5 }}>
-                <Box>
-                  <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Discount %</Typography>
-                  <TextField
-                    type="number"
-                    slotProps={{ htmlInput: { min: 0, step: 0.01 } }}
-                    value={discountPercentInput}
-                    onChange={(event) => applyDiscountPercentToSelected(event.target.value)}
-                    size="small"
-                    autoFocus
-                    sx={{ width: 128, "& .MuiInputBase-input": { fontSize: 12.25 } }}
-                  />
-                </Box>
-                <Box>
-                  <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>D.Value</Typography>
-                  <TextField
-                    type="number"
-                    slotProps={{ htmlInput: { min: 0, step: 0.01 } }}
-                    value={discountValueInput}
-                    onChange={(event) => applyDiscountValueToSelected(event.target.value)}
-                    size="small"
-                    sx={{ width: 160, "& .MuiInputBase-input": { fontSize: 12.25 } }}
-                  />
-                </Box>
-                <Typography sx={{ pb: 1, fontSize: 12.25, color: "text.secondary" }}>
-                  Allowed on selected amount: {formatMoney(discountDialogTotals.selectedAmount)}
-                </Typography>
-              </Stack>
-
-              <Stack direction="row" sx={{ alignItems: "center", justifyContent: "flex-end", gap: 1 }}>
-                <Button
-                  type="button"
-                  onClick={applyDiscountDialog}
-                  className="glass-btn glass-btn-primary"
-                >
-                  Apply ({formatMoney(discountDialogTotals.previewDiscountValue)})
-                </Button>
-                <Button
-                  type="button"
-                  onClick={closeDiscountDialog}
-                  className="glass-btn glass-btn-secondary"
-                >
-                  Close
-                </Button>
-              </Stack>
-            </Stack>
-          </Box>
-        </Box>
+        <DiscountDialog
+          variant="posOld"
+          formatAmount={formatMoney}
+          rows={discountDialogRows}
+          allSelected={positiveCartLines.length > 0 && discountSelectedLineIds.length === positiveCartLines.length}
+          selectedSet={discountDialogSelectedSet}
+          percentInput={discountPercentInput}
+          valueInput={discountValueInput}
+          totals={discountDialogTotals}
+          onToggleAll={handleDiscountToggleAll}
+          onToggleRow={handleDiscountRowToggle}
+          onRowPercentChange={handleDiscountRowPercentChange}
+          onRowValueChange={handleDiscountRowValueChange}
+          onPercentChange={applyDiscountPercentToSelected}
+          onValueChange={applyDiscountValueToSelected}
+          onApply={applyDiscountDialog}
+          onClose={closeDiscountDialog}
+        />
       )}
 
       {loading && (
