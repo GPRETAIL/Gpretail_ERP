@@ -17,21 +17,14 @@ import {
   Trash2,
   X,
   ChevronRight,
-  ChevronLeft,
   ChevronUp,
   ChevronDown,
-  ChevronsRight,
-  ChevronsLeft,
   Loader2,
 } from "lucide-react";
 import {
   Box,
   Button,
   Checkbox,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
   Drawer,
   IconButton,
   Divider,
@@ -55,6 +48,7 @@ import {
 import { alpha } from "@mui/material/styles";
 import useRowVirtualization from "@/shared/hooks/useRowVirtualization";
 import ExportBottomSheet from "./ExportBottomSheet";
+import ColumnPersonalizerDialog from "./ColumnPersonalizerDialog";
 import { fetchTablePreference, saveTablePreference } from "@/shared/utils/tablePreferences";
 
 import {
@@ -169,9 +163,6 @@ export default function FilterableDataTable({
   const [visibleColumns, setVisibleColumns] = useState(() =>
     columns.map((column) => column.key)
   );
-  const [draftVisibleColumns, setDraftVisibleColumns] = useState(() =>
-    columns.map((column) => column.key)
-  );
   const [columnOrder, setColumnOrder] = useState(() =>
     columns.map((column) => column.key)
   );
@@ -252,8 +243,6 @@ export default function FilterableDataTable({
   const stableSchemaColumnsRef = useRef(columns);
   const dragColRef = useRef(null);
   const dragOverColRef = useRef(null);
-  const dragListItemRef = useRef(null);
-  const dragOverListItemRef = useRef(null);
   const orderSaveTimer = useRef(null);
   const serverSearchTimerRef = useRef(null);
   const didInitServerSearchRef = useRef(false);
@@ -281,11 +270,6 @@ export default function FilterableDataTable({
   useResetOnChange([columnKeysSignature], () => {
     const schemaColumns = columns;
     setVisibleColumns((prev) => {
-      const valid = prev.filter((key) => schemaColumns.some((column) => column.key === key));
-      if (valid.length > 0) return valid;
-      return schemaColumns.map((column) => column.key);
-    });
-    setDraftVisibleColumns((prev) => {
       const valid = prev.filter((key) => schemaColumns.some((column) => column.key === key));
       if (valid.length > 0) return valid;
       return schemaColumns.map((column) => column.key);
@@ -1168,187 +1152,17 @@ export default function FilterableDataTable({
     rows,
   ]);
 
-  // --- Column personalizer dual-list state ---
-  const [availableHighlight, setAvailableHighlight] = useState(null);
-  const [selectedHighlight, setSelectedHighlight] = useState(null);
-  const [draftSelectedOrder, setDraftSelectedOrder] = useState([]);
-
+  // "Personalize List Columns" dialog (ColumnPersonalizerDialog): it keeps its own draft, starting from the
+  // current columns each time it opens (a new key remounts it).
+  const [columnDialogSession, setColumnDialogSession] = useState({ key: 0, initialSelected: [] });
   const handleOpenColumnDialog = () => {
-    // draftVisibleColumns = keys currently selected (in order)
     const orderedSelected = columnOrder.filter((k) => visibleColumns.includes(k));
     const extra = visibleColumns.filter((k) => !orderedSelected.includes(k));
-    setDraftVisibleColumns([...orderedSelected, ...extra]);
-    setDraftSelectedOrder([...orderedSelected, ...extra]);
-    setAvailableHighlight(null);
-    setSelectedHighlight(null);
+    setColumnDialogSession((prev) => ({ key: prev.key + 1, initialSelected: [...orderedSelected, ...extra] }));
     setShowColumnDialog(true);
   };
 
-  const handleMoveToSelected = () => {
-    if (!availableHighlight) return;
-    moveKeyToSelected(availableHighlight, null);
-  };
-
-  const handleMoveAllToSelected = () => {
-    const allKeys = columns.map((c) => c.key);
-    setDraftVisibleColumns(allKeys);
-    setDraftSelectedOrder(allKeys);
-    setAvailableHighlight(null);
-  };
-
-  const handleMoveToAvailable = () => {
-    if (!selectedHighlight) return;
-    // Don't allow removing the last column
-    if (draftVisibleColumns.length <= 1) return;
-    moveKeyToAvailable(selectedHighlight);
-  };
-
-  const handleMoveAllToAvailable = () => {
-    // Keep at least the first column
-    const first = draftSelectedOrder[0];
-    setDraftVisibleColumns([first]);
-    setDraftSelectedOrder([first]);
-    setSelectedHighlight(null);
-  };
-
-  const handleMoveSelectedUp = () => {
-    if (!selectedHighlight) return;
-    setDraftSelectedOrder((prev) => {
-      const idx = prev.indexOf(selectedHighlight);
-      if (idx <= 0) return prev;
-      const next = [...prev];
-      [next[idx - 1], next[idx]] = [next[idx], next[idx - 1]];
-      return next;
-    });
-  };
-
-  const handleMoveSelectedDown = () => {
-    if (!selectedHighlight) return;
-    setDraftSelectedOrder((prev) => {
-      const idx = prev.indexOf(selectedHighlight);
-      if (idx === -1 || idx >= prev.length - 1) return prev;
-      const next = [...prev];
-      [next[idx], next[idx + 1]] = [next[idx + 1], next[idx]];
-      return next;
-    });
-  };
-
-  // --- Column personalizer drag handlers (mirrors the table header's onDragStart/onDragOver/
-  // onDrop pattern below: refs instead of state so a drag doesn't re-render the dialog on every
-  // dragover frame, direct style/class mutation for the drag-over indicator for the same reason) ---
-  const moveKeyToSelected = useCallback((key, beforeKey) => {
-    setDraftVisibleColumns((prev) => (prev.includes(key) ? prev : [...prev, key]));
-    setDraftSelectedOrder((prev) => {
-      const withoutKey = prev.filter((k) => k !== key);
-      const idx = beforeKey ? withoutKey.indexOf(beforeKey) : -1;
-      return idx === -1 ? [...withoutKey, key] : [...withoutKey.slice(0, idx), key, ...withoutKey.slice(idx)];
-    });
-    setSelectedHighlight(key);
-    setAvailableHighlight(null);
-  }, [setDraftVisibleColumns, setDraftSelectedOrder, setSelectedHighlight, setAvailableHighlight]);
-
-  const moveKeyToAvailable = useCallback((key) => {
-    setDraftVisibleColumns((prev) => (prev.length <= 1 ? prev : prev.filter((k) => k !== key)));
-    setDraftSelectedOrder((prev) => (prev.length <= 1 ? prev : prev.filter((k) => k !== key)));
-    setAvailableHighlight(key);
-    setSelectedHighlight(null);
-  }, [setDraftVisibleColumns, setDraftSelectedOrder, setSelectedHighlight, setAvailableHighlight]);
-
-  const reorderSelected = useCallback((key, beforeKey) => {
-    if (key === beforeKey) return;
-    setDraftSelectedOrder((prev) => {
-      const withoutKey = prev.filter((k) => k !== key);
-      const idx = beforeKey ? withoutKey.indexOf(beforeKey) : -1;
-      return idx === -1 ? [...withoutKey, key] : [...withoutKey.slice(0, idx), key, ...withoutKey.slice(idx)];
-    });
-  }, [setDraftSelectedOrder]);
-
-  const onListItemDragStart = useCallback((e, key, from) => {
-    dragListItemRef.current = { key, from };
-    e.dataTransfer.effectAllowed = "move";
-    e.currentTarget.style.opacity = "0.5";
-  }, []);
-
-  const onListItemDragEnd = useCallback((e) => {
-    e.currentTarget.style.opacity = "";
-    dragListItemRef.current = null;
-    dragOverListItemRef.current = null;
-  }, []);
-
-  const onListItemDragOver = useCallback((e) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-  }, []);
-
-  const onListItemDragEnter = useCallback((e, key) => {
-    dragOverListItemRef.current = key;
-    e.currentTarget.classList.add("border-t-2", "border-t-blue-400");
-  }, []);
-
-  const onListItemDragLeave = useCallback((e) => {
-    e.currentTarget.classList.remove("border-t-2", "border-t-blue-400");
-  }, []);
-
-  const onAvailableListDrop = useCallback(
-    (e) => {
-      e.preventDefault();
-      const dragged = dragListItemRef.current;
-      if (dragged?.from === "selected") moveKeyToAvailable(dragged.key);
-      dragListItemRef.current = null;
-      dragOverListItemRef.current = null;
-    },
-    [moveKeyToAvailable]
-  );
-
-  const onSelectedListItemDrop = useCallback(
-    (e, targetKey) => {
-      e.preventDefault();
-      e.stopPropagation();
-      e.currentTarget.classList.remove("border-t-2", "border-t-blue-400");
-      const dragged = dragListItemRef.current;
-      if (dragged) {
-        if (dragged.from === "available") moveKeyToSelected(dragged.key, targetKey);
-        else reorderSelected(dragged.key, targetKey);
-      }
-      dragListItemRef.current = null;
-      dragOverListItemRef.current = null;
-    },
-    [moveKeyToSelected, reorderSelected]
-  );
-
-  const onSelectedListDrop = useCallback(
-    (e) => {
-      e.preventDefault();
-      const dragged = dragListItemRef.current;
-      if (dragged) {
-        if (dragged.from === "available") moveKeyToSelected(dragged.key, null);
-        else reorderSelected(dragged.key, null);
-      }
-      dragListItemRef.current = null;
-      dragOverListItemRef.current = null;
-    },
-    [moveKeyToSelected, reorderSelected]
-  );
-
-  const draftAvailableColumns = useMemo(
-    () => columns.filter((c) => !draftVisibleColumns.includes(c.key)),
-    [columns, draftVisibleColumns]
-  );
-
-  const draftSelectedColumns = useMemo(
-    () =>
-      draftSelectedOrder
-        .map((key) => columns.find((c) => c.key === key))
-        .filter(Boolean),
-    [columns, draftSelectedOrder]
-  );
-
-  const handleApplyColumns = async () => {
-    const valid = draftSelectedOrder.filter((key) =>
-      columns.some((column) => column.key === key)
-    );
-    if (valid.length === 0) return;
-
+  const handleApplyColumns = async (valid) => {
     setVisibleColumns(valid);
     setColumnOrder(valid);
     setShowColumnDialog(false);
@@ -3384,219 +3198,16 @@ export default function FilterableDataTable({
         />
       )}
 
-      <Dialog
+      <ColumnPersonalizerDialog
+        key={columnDialogSession.key}
         open={showColumnDialog}
+        columns={columns}
+        initialSelected={columnDialogSession.initialSelected}
+        saving={savingColumnPrefs}
         onClose={() => setShowColumnDialog(false)}
-        slotProps={{
-          paper: {
-            sx: {
-              width: "100%",
-              maxWidth: 768,
-              bgcolor: "background.paper",
-              border: "1px solid",
-              borderColor: "divider",
-            },
-          },
-        }}
-      >
-            {/* Header */}
-            <DialogTitle sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: 1, borderColor: "divider", px: 2.5, py: 1.5 }}>
-              <Typography sx={{ fontSize: 14, fontWeight: 600 }}>Personalize List Columns</Typography>
-              <IconButton size="small" onClick={() => setShowColumnDialog(false)}>
-                <X size={16} />
-              </IconButton>
-            </DialogTitle>
-
-            {/* Body — dual list */}
-            <DialogContent sx={{ display: "flex", alignItems: "stretch", gap: 1.5, px: 2.5, py: 2, minHeight: 320 }}>
-              {/* Available list */}
-              <Box sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
-                <Typography sx={{ fontSize: 12, fontWeight: 600, mb: 0.75 }}>Available</Typography>
-                <Box
-                  sx={{ flex: 1, border: "1px solid", borderColor: "divider", borderRadius: "1.75px", overflow: "auto", bgcolor: "background.paper", maxHeight: 280 }}
-                  onDragOver={onListItemDragOver}
-                  onDrop={onAvailableListDrop}
-                >
-                  {draftAvailableColumns.length === 0 ? (
-                    <Typography sx={{ fontSize: 12, color: "text.disabled", p: 1.5, textAlign: "center" }}>All columns selected</Typography>
-                  ) : (
-                    draftAvailableColumns.map((col) => (
-                      <Box
-                        key={col.key}
-                        draggable
-                        onDragStart={(e) => onListItemDragStart(e, col.key, "available")}
-                        onDragEnd={onListItemDragEnd}
-                        onClick={() => {
-                          setAvailableHighlight(col.key);
-                          setSelectedHighlight(null);
-                        }}
-                        onDoubleClick={() => {
-                          setDraftVisibleColumns((prev) => [...prev, col.key]);
-                          setDraftSelectedOrder((prev) => [...prev, col.key]);
-                          setAvailableHighlight(null);
-                        }}
-                        sx={{
-                          display: "flex", alignItems: "center", gap: 0.75, px: 1, py: 0.75, fontSize: 12,
-                          cursor: "grab", userSelect: "none", borderBottom: 1, borderColor: "divider",
-                          "&:last-of-type": { borderBottom: 0 },
-                          ...(availableHighlight === col.key
-                            ? { bgcolor: "primary.main", color: "primary.contrastText" }
-                            : { color: "text.secondary", "&:hover": { bgcolor: "action.hover" } }),
-                        }}
-                      >
-                        <GripVertical
-                          size={12}
-                          style={{ flexShrink: 0, color: availableHighlight === col.key ? "inherit" : undefined, opacity: availableHighlight === col.key ? 0.7 : undefined }}
-                        />
-                        {col.label}
-                      </Box>
-                    ))
-                  )}
-                </Box>
-              </Box>
-
-              {/* Transfer buttons */}
-              <Stack sx={{ alignItems: "center", justifyContent: "center" }} spacing={1}>
-                <IconButton
-                  size="small"
-                  title="Move to selected"
-                  onClick={handleMoveToSelected}
-                  disabled={!availableHighlight}
-                  sx={{ border: "1px solid", borderColor: "divider", borderRadius: "1.75px" }}
-                >
-                  <ChevronRight size={16} />
-                </IconButton>
-                <IconButton
-                  size="small"
-                  title="Move all to selected"
-                  onClick={handleMoveAllToSelected}
-                  disabled={draftAvailableColumns.length === 0}
-                  sx={{ border: "1px solid", borderColor: "divider", borderRadius: "1.75px" }}
-                >
-                  <ChevronsRight size={16} />
-                </IconButton>
-                <IconButton
-                  size="small"
-                  title="Move to available"
-                  onClick={handleMoveToAvailable}
-                  disabled={!selectedHighlight || draftVisibleColumns.length <= 1}
-                  sx={{ border: "1px solid", borderColor: "divider", borderRadius: "1.75px" }}
-                >
-                  <ChevronLeft size={16} />
-                </IconButton>
-                <IconButton
-                  size="small"
-                  title="Move all to available"
-                  onClick={handleMoveAllToAvailable}
-                  disabled={draftVisibleColumns.length <= 1}
-                  sx={{ border: "1px solid", borderColor: "divider", borderRadius: "1.75px" }}
-                >
-                  <ChevronsLeft size={16} />
-                </IconButton>
-              </Stack>
-
-              {/* Selected list */}
-              <Box sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
-                <Typography sx={{ fontSize: 12, fontWeight: 600, mb: 0.75 }}>Selected</Typography>
-                <Box
-                  sx={{ flex: 1, border: "1px solid", borderColor: "divider", borderRadius: "1.75px", overflow: "auto", bgcolor: "background.paper", maxHeight: 280 }}
-                  onDragOver={onListItemDragOver}
-                  onDrop={onSelectedListDrop}
-                >
-                  {draftSelectedColumns.map((col) => (
-                    <Box
-                      key={col.key}
-                      draggable
-                      onDragStart={(e) => onListItemDragStart(e, col.key, "selected")}
-                      onDragEnd={onListItemDragEnd}
-                      onDragOver={onListItemDragOver}
-                      onDragEnter={(e) => onListItemDragEnter(e, col.key)}
-                      onDragLeave={onListItemDragLeave}
-                      onDrop={(e) => onSelectedListItemDrop(e, col.key)}
-                      onClick={() => {
-                        setSelectedHighlight(col.key);
-                        setAvailableHighlight(null);
-                      }}
-                      onDoubleClick={() => {
-                        if (draftVisibleColumns.length <= 1) return;
-                        setDraftVisibleColumns((prev) => prev.filter((k) => k !== col.key));
-                        setDraftSelectedOrder((prev) => prev.filter((k) => k !== col.key));
-                        setSelectedHighlight(null);
-                      }}
-                      sx={{
-                        display: "flex", alignItems: "center", gap: 0.75, px: 1, py: 0.75, fontSize: 12,
-                        cursor: "grab", userSelect: "none", borderBottom: 1, borderColor: "divider",
-                        "&:last-of-type": { borderBottom: 0 },
-                        ...(selectedHighlight === col.key
-                          ? { bgcolor: "primary.main", color: "primary.contrastText" }
-                          : { color: "text.secondary", "&:hover": { bgcolor: "action.hover" } }),
-                      }}
-                    >
-                      <GripVertical
-                        size={12}
-                        style={{ flexShrink: 0, color: selectedHighlight === col.key ? "inherit" : undefined, opacity: selectedHighlight === col.key ? 0.7 : undefined }}
-                      />
-                      {col.label}
-                    </Box>
-                  ))}
-                </Box>
-              </Box>
-
-              {/* Reorder buttons */}
-              <Stack sx={{ alignItems: "center", justifyContent: "center" }} spacing={1}>
-                <IconButton
-                  size="small"
-                  title="Move up"
-                  onClick={handleMoveSelectedUp}
-                  disabled={
-                    !selectedHighlight ||
-                    draftSelectedOrder.indexOf(selectedHighlight) <= 0
-                  }
-                  sx={{ border: "1px solid", borderColor: "divider", borderRadius: "1.75px" }}
-                >
-                  <ChevronUp size={16} />
-                </IconButton>
-                <IconButton
-                  size="small"
-                  title="Move down"
-                  onClick={handleMoveSelectedDown}
-                  disabled={
-                    !selectedHighlight ||
-                    draftSelectedOrder.indexOf(selectedHighlight) >=
-                      draftSelectedOrder.length - 1
-                  }
-                  sx={{ border: "1px solid", borderColor: "divider", borderRadius: "1.75px" }}
-                >
-                  <ChevronDown size={16} />
-                </IconButton>
-              </Stack>
-            </DialogContent>
-
-            {/* Footer */}
-            <DialogActions sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderTop: 1, borderColor: "divider", px: 2.5, py: 1.5 }}>
-              <Button
-                size="small"
-                variant="outlined"
-                onClick={handleResetColumnDefaults}
-                disabled={savingColumnPrefs}
-              >
-                Reset to column defaults
-              </Button>
-              <Stack direction="row" spacing={1}>
-                <Button size="small" variant="outlined" onClick={() => setShowColumnDialog(false)}>
-                  Cancel
-                </Button>
-                <Button
-                  size="small"
-                  variant="contained"
-                  onClick={handleApplyColumns}
-                  disabled={savingColumnPrefs}
-                >
-                  {savingColumnPrefs ? "Applying..." : "OK"}
-                </Button>
-              </Stack>
-            </DialogActions>
-      </Dialog>
+        onApply={handleApplyColumns}
+        onReset={handleResetColumnDefaults}
+      />
     </Box>
   );
 }
