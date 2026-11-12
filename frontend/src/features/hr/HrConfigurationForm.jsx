@@ -29,6 +29,10 @@ const STATIC_DESIGNATION_ROLES = [
 const HHMM_24_REGEX = /^([01]\d|2[0-3]):([0-5]\d)$/;
 
 const isValidHHMM = (value) => HHMM_24_REGEX.test(String(value || "").trim());
+const hhmmToMinutes = (value) => {
+  const [hours, minutes] = String(value || "").trim().split(":").map(Number);
+  return hours * 60 + minutes;
+};
 
 const HrConfigurationForm = () => {
   const navigate = useNavigate();
@@ -196,11 +200,11 @@ const HrConfigurationForm = () => {
       return;
     }
     if (showWorkingHour && !isValidHHMM(formData.minimumFullDay)) {
-      toast.warning("Minimum Full Day must be in hh:mm format (24 hours)");
+      toast.warning("Full Day Hours must be in hh:mm format (24 hours)");
       return;
     }
     if (showWorkingHour && !isValidHHMM(formData.minimumPresent)) {
-      toast.warning("Minimum Present must be in hh:mm format (24 hours)");
+      toast.warning("Half Day Hours must be in hh:mm format (24 hours)");
       return;
     }
     if (showWorkingHour && !isValidHHMM(formData.fromTime)) {
@@ -209,6 +213,10 @@ const HrConfigurationForm = () => {
     }
     if (showWorkingHour && !isValidHHMM(formData.toTime)) {
       toast.warning("To must be in hh:mm format (24 hours)");
+      return;
+    }
+    if (showWorkingHour && hhmmToMinutes(formData.minimumPresent) >= hhmmToMinutes(formData.minimumFullDay)) {
+      toast.warning("Half Day Hours must be less than Full Day Hours");
       return;
     }
     if (showWorkingHour && !isValidHHMM(formData.workingHours)) {
@@ -351,26 +359,6 @@ const HrConfigurationForm = () => {
                 )}
                 {showWorkingHour && (
                   <TextInput
-                    label="Minimum Full Day [hh:mm]"
-                    name="minimumFullDay"
-                    required
-                    value={formData.minimumFullDay}
-                    onChange={handleChange}
-                    placeholder="hh:mm"
-                  />
-                )}
-                {showWorkingHour && (
-                  <TextInput
-                    label="Minimum Present [hh:mm]"
-                    name="minimumPresent"
-                    required
-                    value={formData.minimumPresent}
-                    onChange={handleChange}
-                    placeholder="hh:mm"
-                  />
-                )}
-                {showWorkingHour && (
-                  <TextInput
                     label="From [hh:mm]"
                     name="fromTime"
                     required
@@ -397,6 +385,28 @@ const HrConfigurationForm = () => {
                     value={formData.workingHours}
                     onChange={handleChange}
                     placeholder="hh:mm"
+                  />
+                )}
+                {showWorkingHour && (
+                  <TextInput
+                    label="Full Day Hours [hh:mm]"
+                    name="minimumFullDay"
+                    required
+                    value={formData.minimumFullDay}
+                    onChange={handleChange}
+                    placeholder="e.g. 07:00"
+                    hint="Worked this long or more (check-in to check-out) counts as a full day."
+                  />
+                )}
+                {showWorkingHour && (
+                  <TextInput
+                    label="Half Day Hours [hh:mm]"
+                    name="minimumPresent"
+                    required
+                    value={formData.minimumPresent}
+                    onChange={handleChange}
+                    placeholder="e.g. 04:00"
+                    hint="Worked this long but less than a full day counts as a half day. Less than this is absent."
                   />
                 )}
                 {showWorkingHour && (

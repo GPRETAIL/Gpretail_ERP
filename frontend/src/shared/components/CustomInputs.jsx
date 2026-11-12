@@ -11,11 +11,9 @@ const TextInput = ({
   onChange,
   placeholder = "",
   disabled = false,
-}) => (
-  <Box sx={{ display: "flex", alignItems: "center" }}>
-    <Box component="label" sx={{ width: "40%", fontSize: FIELD_FONT_SIZE, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5 }}>
-      {required && <Box component="span" sx={{ color: "error.main", mr: 0.5 }}>*</Box>} {label}
-    </Box>
+  hint = "",
+}) => {
+  const input = (
     <Box
       component="input"
       type={type}
@@ -26,8 +24,21 @@ const TextInput = ({
       disabled={disabled}
       sx={{ flex: 1, ...fieldBaseSx(disabled) }}
     />
-  </Box>
-);
+  );
+  return (
+    <Box sx={{ display: "flex", alignItems: hint ? "flex-start" : "center" }}>
+      <Box component="label" sx={{ width: "40%", fontSize: FIELD_FONT_SIZE, fontWeight: 500, color: "text.secondary", textAlign: "right", pr: 1.5, pt: hint ? 0.75 : 0 }}>
+        {required && <Box component="span" sx={{ color: "error.main", mr: 0.5 }}>*</Box>} {label}
+      </Box>
+      {hint ? (
+        <Box sx={{ flex: 1, display: "flex", flexDirection: "column", gap: 0.5 }}>
+          {input}
+          <Box component="span" sx={{ fontSize: 12, color: "text.secondary", lineHeight: 1.4 }}>{hint}</Box>
+        </Box>
+      ) : input}
+    </Box>
+  );
+};
 const SelectInput = ({
   label,
   name,
