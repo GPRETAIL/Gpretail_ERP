@@ -7,6 +7,7 @@ import { useSelector } from "react-redux";
 import { TabProvider, useTabs } from "./TabContext";
 import { TransferActivityProvider, useTransferActivity } from "@/features/store/context/TransferActivityContext";
 import { handleEnterKeyNavigation } from "@/shared/utils/enterToNextField";
+import FooterClock from "@/shared/components/FooterClock";
 import { usePrintContext } from "@/features/printing/context/PrintContext";
 import { useSyncStatus } from "@/features/sync/context/SyncStatusContext";
 import { Printer, Store, Server, Cloud, X, Loader2, CheckCircle2, AlertCircle, Upload, Download, Headphones } from "lucide-react";
@@ -304,6 +305,8 @@ const PrintStatusFooter = () => {
           <Typography component="span" sx={{ fontSize: "inherit" }}>
             Customer Care <b>+91 123456789</b>
           </Typography>
+
+          <FooterClock />
         </Stack>
       </Stack>
     </Box>
