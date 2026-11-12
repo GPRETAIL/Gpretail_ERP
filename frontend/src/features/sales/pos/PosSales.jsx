@@ -31,9 +31,10 @@ import FilterableDataTable from "@/shared/components/FilterableDataTable";
 import { createGroupFetchers } from "@/shared/utils/serverGrouping";
 import UploadImportButton from "@/shared/components/UploadImportButton";
 import CounterAssignmentDialog from "./components/CounterAssignmentDialog";
+import { DiscountDialog, QuickCustomerDialog, SalesManDialog } from "./components/PosSalesDialogs";
 import Breadcrumbs from "@/shared/components/Breadcrumbs";
 import { usePrintContext } from "@/features/printing/context/PrintContext";
-import { Box, Stack, Typography, TextField, MenuItem, IconButton, Button, Checkbox, Radio, Table, TableHead, TableBody, TableRow, TableCell, alpha } from "@mui/material";
+import { Box, Stack, Typography, TextField, MenuItem, IconButton, Button, Checkbox, alpha } from "@mui/material";
 import { downloadHtmlAsPdf } from "@/features/printing/utils/htmlToPdf";
 import { buildPosSaleReceiptHtml, buildPosReturnReceiptHtml } from "@/features/printing/utils/posReceiptHtml";
 
@@ -110,8 +111,6 @@ import {
 import {
   TextInput,
   SelectInput,
-  DialogTextField,
-  DialogSelectField,
 } from "./components/PosSalesFormFields";
 
 const PosSales = () => {
@@ -3125,491 +3124,49 @@ const PosSales = () => {
       </Box>
 
       {salesManDialog.open && (
-        <Box
-          sx={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", bgcolor: "rgba(0,0,0,0.3)", p: 2 }}
-          onClick={closeSalesManDialog}
-        >
-          <Box
-            sx={{ width: "100%", maxWidth: 448, borderRadius: "7px", border: 1, borderColor: "divider", bgcolor: "background.paper", boxShadow: 12 }}
-            onClick={(event) => event.stopPropagation()}
-          >
-            <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", borderBottom: 1, borderColor: "divider", px: 2, py: 1.5 }}>
-              <Box>
-                <Typography sx={{ fontSize: 12.25, fontWeight: 600, color: "text.primary" }}>Sales Man</Typography>
-                <Typography sx={{ fontSize: TYPE.small, color: "text.secondary" }}>Write or scan the Sales Man ID</Typography>
-              </Box>
-              <IconButton
-                type="button"
-                onClick={closeSalesManDialog}
-                size="small"
-                aria-label="Close sales man dialog"
-                sx={{ color: "text.disabled", "&:hover": { color: "text.secondary" } }}
-              >
-                <X size={16} />
-              </IconButton>
-            </Stack>
-
-            <Box sx={{ px: 2, py: 2 }}>
-              <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: TYPE.label, fontWeight: 700, color: "error.main" }}>Sales Man ID</Typography>
-              <TextField
-                type="text"
-                value={salesManDialog.value}
-                onChange={(event) =>
-                  setSalesManDialog((prev) => ({ ...prev, value: event.target.value }))
-                }
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") {
-                    event.preventDefault();
-                    saveSalesManDialog();
-                  }
-                }}
-                placeholder="Write or scan Sales Man ID"
-                size="small"
-                fullWidth
-                autoFocus
-              />
-            </Box>
-
-            <Stack direction="row" spacing={1} sx={{ alignItems: "center", justifyContent: "flex-end", borderTop: 1, borderColor: "divider", px: 2, py: 1.5 }}>
-              <Button
-                type="button"
-                onClick={closeSalesManDialog}
-                className="glass-btn glass-btn-secondary"
-              >
-                Cancel
-              </Button>
-              <Button
-                type="button"
-                onClick={saveSalesManDialog}
-                className="glass-btn glass-btn-primary"
-              >
-                Save
-              </Button>
-            </Stack>
-          </Box>
-        </Box>
+        <SalesManDialog
+          value={salesManDialog.value}
+          onChange={(value) => setSalesManDialog((prev) => ({ ...prev, value }))}
+          onSave={saveSalesManDialog}
+          onClose={closeSalesManDialog}
+        />
       )}
 
       {quickCustomerDialogOpen && (
-        <Box
-          sx={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", bgcolor: "rgba(0,0,0,0.3)", p: 2 }}
-          onClick={closeQuickCustomerDialog}
-        >
-          <Box
-            sx={{ display: "flex", maxHeight: "92vh", width: "100%", maxWidth: 1280, flexDirection: "column", borderRadius: "7px", border: 1, borderColor: "divider", bgcolor: "background.paper", boxShadow: 12 }}
-            onClick={(event) => event.stopPropagation()}
-          >
-            <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", borderBottom: 1, borderColor: "divider", px: 2.5, py: 2 }}>
-              <Box>
-                <Typography sx={{ fontSize: 12.25, fontWeight: 600, color: "text.primary" }}>Quick Customer</Typography>
-                <Typography sx={{ fontSize: TYPE.small, color: "text.secondary" }}>
-                  Press Enter to move to next field. On mobile number Enter, existing customers appear below.
-                </Typography>
-              </Box>
-              <IconButton
-                type="button"
-                onClick={closeQuickCustomerDialog}
-                size="small"
-                aria-label="Close quick customer dialog"
-                sx={{ color: "text.disabled", "&:hover": { color: "text.secondary" } }}
-              >
-                <X size={16} />
-              </IconButton>
-            </Stack>
-
-            <Box sx={{ flex: 1, overflowY: "auto", px: 2.5, py: 2 }}>
-              <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", xl: "1fr 1fr" }, columnGap: 3, rowGap: 2 }}>
-                <DialogTextField
-                  label="Mobile No"
-                  name="mobileNo"
-                  value={quickCustomer.mobileNo}
-                  onChange={handleQuickCustomerChange}
-                  onKeyDown={(event) => handleQuickCustomerFieldKeyDown("mobileNo", event)}
-                  inputRef={(node) => {
-                    quickCustomerFieldRefs.current.mobileNo = node;
-                  }}
-                />
-                <DialogTextField
-                  label="Address"
-                  name="address"
-                  value={quickCustomer.address}
-                  onChange={handleQuickCustomerChange}
-                  onKeyDown={(event) => handleQuickCustomerFieldKeyDown("address", event)}
-                  inputRef={(node) => {
-                    quickCustomerFieldRefs.current.address = node;
-                  }}
-                />
-
-                <DialogTextField
-                  label="Name"
-                  name="name"
-                  value={quickCustomer.name}
-                  onChange={handleQuickCustomerChange}
-                  onKeyDown={(event) => handleQuickCustomerFieldKeyDown("name", event)}
-                  inputRef={(node) => {
-                    quickCustomerFieldRefs.current.name = node;
-                  }}
-                />
-                <Box sx={{ display: "grid", gridTemplateColumns: { md: "1fr 1fr" }, gap: 2 }}>
-                  <DialogSelectField
-                    label="City"
-                    name="cityId"
-                    value={quickCustomer.cityId}
-                    options={customerConfigOptions.cities}
-                    onChange={handleQuickCustomerChange}
-                    onKeyDown={(event) => handleQuickCustomerFieldKeyDown("cityId", event)}
-                    inputRef={(node) => {
-                      quickCustomerFieldRefs.current.cityId = node;
-                    }}
-                  />
-                  <DialogSelectField
-                    label="State"
-                    name="stateId"
-                    value={quickCustomer.stateId}
-                    options={customerConfigOptions.states}
-                    onChange={handleQuickCustomerChange}
-                    onKeyDown={(event) => handleQuickCustomerFieldKeyDown("stateId", event)}
-                    inputRef={(node) => {
-                      quickCustomerFieldRefs.current.stateId = node;
-                    }}
-                  />
-                </Box>
-
-                <Box sx={{ display: "grid", gridTemplateColumns: { md: "1fr 1fr" }, gap: 2 }}>
-                  <DialogTextField
-                    label="Date of Birth"
-                    name="dateOfBirth"
-                    type="date"
-                    value={quickCustomer.dateOfBirth}
-                    onChange={handleQuickCustomerChange}
-                    onKeyDown={(event) => handleQuickCustomerFieldKeyDown("dateOfBirth", event)}
-                    inputRef={(node) => {
-                      quickCustomerFieldRefs.current.dateOfBirth = node;
-                    }}
-                  />
-                  <DialogTextField
-                    label="Billing Name"
-                    name="billingName"
-                    value={quickCustomer.billingName}
-                    onChange={handleQuickCustomerChange}
-                    onKeyDown={(event) => handleQuickCustomerFieldKeyDown("billingName", event)}
-                    inputRef={(node) => {
-                      quickCustomerFieldRefs.current.billingName = node;
-                    }}
-                  />
-                </Box>
-                <Box sx={{ display: "grid", gridTemplateColumns: { md: "1fr 1fr" }, gap: 2 }}>
-                  <DialogSelectField
-                    label="Customer Category"
-                    name="customerCategoryId"
-                    value={quickCustomer.customerCategoryId}
-                    options={customerConfigOptions.customerCategories}
-                    onChange={handleQuickCustomerChange}
-                    onKeyDown={(event) => handleQuickCustomerFieldKeyDown("customerCategoryId", event)}
-                    inputRef={(node) => {
-                      quickCustomerFieldRefs.current.customerCategoryId = node;
-                    }}
-                  />
-                  <DialogTextField
-                    label="Section/Religion"
-                    name="sectionReligion"
-                    value={quickCustomer.sectionReligion}
-                    onChange={handleQuickCustomerChange}
-                    onKeyDown={(event) => handleQuickCustomerFieldKeyDown("sectionReligion", event)}
-                    inputRef={(node) => {
-                      quickCustomerFieldRefs.current.sectionReligion = node;
-                    }}
-                  />
-                </Box>
-
-                <Box sx={{ display: "grid", gridTemplateColumns: { md: "1fr 1fr" }, gap: 2 }}>
-                  <DialogTextField
-                    label="Card No"
-                    name="cardNo"
-                    value={quickCustomer.cardNo}
-                    onChange={handleQuickCustomerChange}
-                    onKeyDown={(event) => handleQuickCustomerFieldKeyDown("cardNo", event)}
-                    inputRef={(node) => {
-                      quickCustomerFieldRefs.current.cardNo = node;
-                    }}
-                  />
-                  <DialogTextField
-                    label="GST No"
-                    name="gstNo"
-                    value={quickCustomer.gstNo}
-                    onChange={handleQuickCustomerChange}
-                    onKeyDown={(event) => handleQuickCustomerFieldKeyDown("gstNo", event)}
-                    inputRef={(node) => {
-                      quickCustomerFieldRefs.current.gstNo = node;
-                    }}
-                  />
-                </Box>
-                <Box sx={{ display: "grid", gridTemplateColumns: { md: "1fr 1fr" }, gap: 2 }}>
-                  <DialogTextField
-                    label="Email Id"
-                    name="emailId"
-                    value={quickCustomer.emailId}
-                    onChange={handleQuickCustomerChange}
-                    onKeyDown={(event) => handleQuickCustomerFieldKeyDown("emailId", event)}
-                    inputRef={(node) => {
-                      quickCustomerFieldRefs.current.emailId = node;
-                    }}
-                  />
-                  <DialogSelectField
-                    label="Area"
-                    name="areaId"
-                    value={quickCustomer.areaId}
-                    options={customerConfigOptions.areas}
-                    onChange={handleQuickCustomerChange}
-                    onKeyDown={(event) => handleQuickCustomerFieldKeyDown("areaId", event)}
-                    inputRef={(node) => {
-                      quickCustomerFieldRefs.current.areaId = node;
-                    }}
-                  />
-                </Box>
-
-                <Box sx={{ gridColumn: { xl: "span 2" } }}>
-                  <Typography sx={{ mb: 1, fontSize: 12.25, fontWeight: 600, color: "text.primary" }}>Search Results</Typography>
-                  <Box sx={{ overflow: "hidden", borderRadius: "3.5px", border: 1, borderColor: "divider" }}>
-                    <Box sx={{ maxHeight: 320, overflow: "auto" }}>
-                      <Table sx={{ width: "100%", minWidth: 720 }} size="small">
-                        <TableHead sx={{ position: "sticky", top: 0, bgcolor: "action.hover" }}>
-                          <TableRow>
-                            <TableCell sx={{ width: 40 }} />
-                            <TableCell>Name</TableCell>
-                            <TableCell>GSTNO</TableCell>
-                            <TableCell>Area</TableCell>
-                            <TableCell>Mobile</TableCell>
-                            <TableCell>Action</TableCell>
-                          </TableRow>
-                        </TableHead>
-                        <TableBody>
-                          {quickCustomerSearchResults.length === 0 ? (
-                            <TableRow>
-                              <TableCell colSpan={6} sx={{ py: 5, textAlign: "center", color: "text.disabled" }}>
-                                No matched customers
-                              </TableCell>
-                            </TableRow>
-                          ) : (
-                            quickCustomerSearchResults.map((row) => {
-                              const isSelected = row.value === quickCustomerSelectedId;
-                              return (
-                                <TableRow
-                                  key={row.value}
-                                  sx={{ bgcolor: isSelected ? (theme) => alpha(theme.palette.primary.main, theme.palette.mode === "dark" ? 0.24 : 0.08) : "background.paper", "&:hover": { bgcolor: isSelected ? undefined : "action.hover" } }}
-                                >
-                                  <TableCell>
-                                    <Radio
-                                      checked={isSelected}
-                                      onChange={() => setQuickCustomerSelectedId(row.value)}
-                                      size="small"
-                                    />
-                                  </TableCell>
-                                  <TableCell>{row.name || "-"}</TableCell>
-                                  <TableCell>{row.gstNo || "-"}</TableCell>
-                                  <TableCell>{row.areaName || "-"}</TableCell>
-                                  <TableCell>{row.mobileNo || "-"}</TableCell>
-                                  <TableCell>
-                                    <Button
-                                      type="button"
-                                      onClick={() => applyQuickCustomerSelection(row)}
-                                      className="glass-btn glass-btn-primary"
-                                      size="small"
-                                    >
-                                      Select
-                                    </Button>
-                                  </TableCell>
-                                </TableRow>
-                              );
-                            })
-                          )}
-                        </TableBody>
-                      </Table>
-                    </Box>
-                  </Box>
-                </Box>
-              </Box>
-            </Box>
-
-            <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", borderTop: 1, borderColor: "divider", px: 2.5, py: 2 }}>
-              <Button
-                type="button"
-                onClick={saveQuickCustomer}
-                disabled={quickCustomerSaving}
-                className="glass-btn glass-btn-success"
-              >
-                {quickCustomerSaving ? "Saving..." : "Save"}
-              </Button>
-              <Stack direction="row" sx={{ alignItems: "center", gap: 1 }}>
-                <Button
-                  type="button"
-                  onClick={() => applyQuickCustomerSelection(selectedQuickCustomerSearchRow)}
-                  disabled={!selectedQuickCustomerSearchRow}
-                  className="glass-btn glass-btn-primary"
-                >
-                  Select
-                </Button>
-                <Button
-                  type="button"
-                  onClick={closeQuickCustomerDialog}
-                  disabled={quickCustomerSaving}
-                  className="glass-btn glass-btn-secondary"
-                >
-                  Close
-                </Button>
-              </Stack>
-            </Stack>
-          </Box>
-        </Box>
+        <QuickCustomerDialog
+          customer={quickCustomer}
+          configOptions={customerConfigOptions}
+          fieldRefs={quickCustomerFieldRefs}
+          results={quickCustomerSearchResults}
+          selectedId={quickCustomerSelectedId}
+          selectedRow={selectedQuickCustomerSearchRow}
+          saving={quickCustomerSaving}
+          onChange={handleQuickCustomerChange}
+          onFieldKeyDown={handleQuickCustomerFieldKeyDown}
+          onSelectId={setQuickCustomerSelectedId}
+          onApplySelection={applyQuickCustomerSelection}
+          onSave={saveQuickCustomer}
+          onClose={closeQuickCustomerDialog}
+        />
       )}
 
       {discountDialogOpen && (
-        <Box
-          sx={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", bgcolor: "rgba(0,0,0,0.3)", p: 2 }}
-          onClick={closeDiscountDialog}
-        >
-          <Box
-            sx={{ display: "flex", maxHeight: "86vh", width: "100%", maxWidth: 1024, flexDirection: "column", borderRadius: "7px", border: 1, borderColor: "divider", bgcolor: "background.paper", boxShadow: 12 }}
-            onClick={(event) => event.stopPropagation()}
-          >
-            <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", borderBottom: 1, borderColor: "divider", px: 2.5, py: 2 }}>
-              <Box>
-                <Typography sx={{ fontSize: 12.25, fontWeight: 600, color: "text.primary" }}>Sale Discount</Typography>
-                <Typography sx={{ fontSize: TYPE.small, color: "text.secondary" }}>
-                  Select sale rows and apply a discount percentage to the current POS bill.
-                </Typography>
-              </Box>
-              <IconButton
-                type="button"
-                onClick={closeDiscountDialog}
-                size="small"
-                aria-label="Close discount dialog"
-                sx={{ color: "text.disabled", "&:hover": { color: "text.secondary" } }}
-              >
-                <X size={16} />
-              </IconButton>
-            </Stack>
-
-            <Box sx={{ flex: 1, overflow: "auto", px: 2.5, py: 2 }}>
-              <Box sx={{ overflow: "hidden", borderRadius: "3.5px", border: 1, borderColor: "divider" }}>
-                <Box sx={{ maxHeight: "44vh", overflow: "auto" }}>
-                  <Table sx={{ width: "100%", minWidth: 860 }} size="small">
-                    <TableHead sx={{ position: "sticky", top: 0, bgcolor: "action.hover" }}>
-                      <TableRow>
-                        <TableCell sx={{ width: 48 }}>
-                          <Checkbox
-                            checked={cartWithTotals.length > 0 && discountSelectedLineIds.length === cartWithTotals.length}
-                            onChange={handleDiscountToggleAll}
-                            size="small"
-                          />
-                        </TableCell>
-                        <TableCell>Barcode</TableCell>
-                        <TableCell>Detail</TableCell>
-                        <TableCell align="right">Price</TableCell>
-                        <TableCell align="right">Qty</TableCell>
-                        <TableCell>Discount</TableCell>
-                        <TableCell align="right">Addin %</TableCell>
-                        <TableCell align="right">D.Value</TableCell>
-                        <TableCell align="right">Amount</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {discountDialogRows.map((line, index) => (
-                        <TableRow key={line.lineId} hover>
-                          <TableCell>
-                            <Stack direction="row" sx={{ alignItems: "center", gap: 1 }}>
-                              <Checkbox
-                                checked={discountDialogSelectedSet.has(line.lineId)}
-                                onChange={() => handleDiscountRowToggle(line.lineId)}
-                                size="small"
-                              />
-                              <Box component="span" sx={{ color: "text.secondary" }}>{index + 1}</Box>
-                            </Stack>
-                          </TableCell>
-                          <TableCell sx={{ fontFamily: "monospace" }}>{line.barcode || "-"}</TableCell>
-                          <TableCell>{line.productName || "-"}</TableCell>
-                          <TableCell align="right">{formatMoney(line.price)}</TableCell>
-                          <TableCell align="right">{toNum(line.qty, 0)}</TableCell>
-                          <TableCell sx={{ color: "text.secondary" }}>{`${formatMoney(line.discount)} @ ${line.appliedPercent}%`}</TableCell>
-                          <TableCell align="right">
-                            <TextField
-                              type="number"
-                              slotProps={{ htmlInput: { min: 0
-                              , step: 0.01 } }}
-                              value={line.percentInput}
-                              onChange={(event) => handleDiscountRowPercentChange(line.lineId, event.target.value)}
-                              size="small"
-                              sx={{ width: 80, "& .MuiInputBase-input": { fontSize: 12.25, textAlign: "right" } }}
-                            />
-                          </TableCell>
-                          <TableCell align="right">
-                            <TextField
-                              type="number"
-                              slotProps={{ htmlInput: { min: 0, step: 0.01 } }}
-                              value={line.valueInput}
-                              onChange={(event) => handleDiscountRowValueChange(line.lineId, event.target.value)}
-                              size="small"
-                              sx={{ width: 96, "& .MuiInputBase-input": { fontSize: 12.25, textAlign: "right" } }}
-                            />
-                          </TableCell>
-                          <TableCell align="right">{formatMoney(line.previewNetAmount)}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </Box>
-              </Box>
-            </Box>
-
-            <Stack sx={{ flexDirection: { xs: "column", lg: "row" }, gap: 1.5, borderTop: 1, borderColor: "divider", px: 2.5, py: 2, alignItems: { lg: "center" }, justifyContent: { lg: "space-between" } }}>
-              <Stack direction="row" sx={{ flexWrap: "wrap", alignItems: "flex-end", gap: 1.5 }}>
-                <Box>
-                  <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>Discount %</Typography>
-                  <TextField
-                    type="number"
-                    slotProps={{ htmlInput: { min: 0, step: 0.01 } }}
-                    value={discountPercentInput}
-                    onChange={(event) => applyDiscountPercentToSelected(event.target.value)}
-                    size="small"
-                    autoFocus
-                    sx={{ width: 128, "& .MuiInputBase-input": { fontSize: 12.25 } }}
-                  />
-                </Box>
-                <Box>
-                  <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: 12.25, fontWeight: 500, color: "text.secondary" }}>D.Value</Typography>
-                  <TextField
-                    type="number"
-                    slotProps={{ htmlInput: { min: 0, step: 0.01 } }}
-                    value={discountValueInput}
-                    onChange={(event) => applyDiscountValueToSelected(event.target.value)}
-                    size="small"
-                    sx={{ width: 160, "& .MuiInputBase-input": { fontSize: 12.25 } }}
-                  />
-                </Box>
-                <Typography sx={{ pb: 1, fontSize: 12.25, color: "text.secondary" }}>
-                  Allowed on selected amount: {formatMoney(discountDialogTotals.selectedAmount)}
-                </Typography>
-              </Stack>
-
-              <Stack direction="row" sx={{ alignItems: "center", justifyContent: "flex-end", gap: 1 }}>
-                <Button
-                  type="button"
-                  onClick={applyDiscountDialog}
-                  className="glass-btn glass-btn-primary"
-                >
-                  Apply ({formatMoney(discountDialogTotals.previewDiscountValue)})
-                </Button>
-                <Button
-                  type="button"
-                  onClick={closeDiscountDialog}
-                  className="glass-btn glass-btn-secondary"
-                >
-                  Close
-                </Button>
-              </Stack>
-            </Stack>
-          </Box>
-        </Box>
+        <DiscountDialog
+          rows={discountDialogRows}
+          allSelected={cartWithTotals.length > 0 && discountSelectedLineIds.length === cartWithTotals.length}
+          selectedSet={discountDialogSelectedSet}
+          percentInput={discountPercentInput}
+          valueInput={discountValueInput}
+          totals={discountDialogTotals}
+          onToggleAll={handleDiscountToggleAll}
+          onToggleRow={handleDiscountRowToggle}
+          onRowPercentChange={handleDiscountRowPercentChange}
+          onRowValueChange={handleDiscountRowValueChange}
+          onPercentChange={applyDiscountPercentToSelected}
+          onValueChange={applyDiscountValueToSelected}
+          onApply={applyDiscountDialog}
+          onClose={closeDiscountDialog}
+        />
       )}
 
       {paymentDialogOpen && (
