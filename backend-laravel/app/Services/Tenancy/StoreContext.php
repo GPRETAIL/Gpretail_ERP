@@ -10,6 +10,7 @@ use Illuminate\Support\Collection;
 use App\Services\Platform\StoreLicenceVerifier;
 use App\Services\Pos\PosCounter;
 use App\Services\Settings\TenantThemes;
+use App\Support\RequestMemo;
 
 /** Store identity in the existing single-company installation. company_id is a legacy store alias. */
 class StoreContext
@@ -36,7 +37,7 @@ class StoreContext
     /** @return Collection<int, Store> */
     public function stores(User $user): Collection
     {
-        return $this->available($user)->orderBy('id')->get();
+        return app(RequestMemo::class)->remember('stores:'.$user->getKey(), fn () => $this->available($user)->orderBy('id')->get());
     }
 
     public function selected(User $user): ?Store
@@ -65,11 +66,13 @@ class StoreContext
      */
     public function licensedStores(User $user): Collection
     {
-        $activation = PlatformActivation::current();
-        $verifier = app(StoreLicenceVerifier::class);
+        return app(RequestMemo::class)->remember('licensed-stores:'.$user->getKey(), function () use ($user) {
+            $activation = PlatformActivation::current();
+            $verifier = app(StoreLicenceVerifier::class);
 
-        return $this->stores($user)->filter(fn (Store $store) => $store->is_active
-            && (! ($store->platform_store_id || $activation?->activated) || $verifier->verify($store, $activation)['ok']))->values();
+            return $this->stores($user)->filter(fn (Store $store) => $store->is_active
+                && (! ($store->platform_store_id || $activation?->activated) || $verifier->verify($store, $activation)['ok']))->values();
+        });
     }
 
     public function authFields(User $user): array

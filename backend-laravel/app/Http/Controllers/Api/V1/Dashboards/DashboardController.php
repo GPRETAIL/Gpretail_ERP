@@ -650,7 +650,7 @@ class DashboardController extends Controller
                     'total_stock_qty' => $totalStockQty,
                     'low_stock_alerts' => $lowStockAlerts,
                 ],
-                'recent_sales' => PosSale::with(['customer', 'user'])->orderBy('id', 'desc')->limit(5)->get(),
+                'recent_sales' => PosSale::with(['customer', 'user', 'settlement', 'appliedReturn'])->orderBy('id', 'desc')->limit(5)->get(),
                 'top_products' => $topSellingRows,
                 'monthly_trend' => $dailyTrendPoints,
             ],

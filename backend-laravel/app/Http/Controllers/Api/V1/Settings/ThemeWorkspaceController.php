@@ -71,6 +71,7 @@ class ThemeWorkspaceController extends Controller
         }
         $this->themes->validateContrast($store ? array_replace_recursive($this->themes->decode($this->themes->company($code)?->config), $config) : $config);
         DB::transaction(function () use ($request, $scope, $store, $code, $config, $allowed) {
+            app(\App\Support\RequestMemo::class)->flush(); // read the theme fresh under the lock
             if ($store) {
                 if ($code) {
                     DB::table('tenant_themes')->where('company_code', $code)->lockForUpdate()->first();
@@ -105,6 +106,7 @@ class ThemeWorkspaceController extends Controller
             }
             $this->themes->record($scope, $config, $allowed, $request->user(), $request->attributes->get('theme_operation', 'apply'));
         });
+        app(\App\Support\RequestMemo::class)->flush();
 
         return $this->index($request, $id);
     }

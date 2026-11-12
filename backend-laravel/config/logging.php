@@ -50,6 +50,13 @@ return [
     |
     */
 
+    // Thresholds for the performance log (0 turns one off).
+    'performance' => [
+        'slow_query_ms' => (int) env('LOG_SLOW_QUERY_MS', 1000),
+        'slow_request_ms' => (int) env('LOG_SLOW_REQUEST_MS', 3000),
+        'request_query_limit' => (int) env('LOG_REQUEST_QUERY_LIMIT', 150),
+    ],
+
     'channels' => [
 
         'stack' => [
@@ -70,6 +77,16 @@ return [
             'driver' => 'daily',
             'path' => storage_path('logs/client-errors.log'),
             'level' => 'error',
+            'days' => 14,
+            'replace_placeholders' => true,
+        ],
+
+        // Slow queries, slow or query-heavy requests, and N+1 lazy loads (AppServiceProvider,
+        // MeasureApiPerformance). Warnings only: these never trigger the error alerts.
+        'performance' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/performance.log'),
+            'level' => 'warning',
             'days' => 14,
             'replace_placeholders' => true,
         ],

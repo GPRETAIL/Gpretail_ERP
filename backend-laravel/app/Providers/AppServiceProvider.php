@@ -2,16 +2,24 @@
 
 namespace App\Providers;
 
+use App\Models\PlatformActivation;
+use App\Models\Store;
+use App\Models\User;
 use App\Services\Accounting\LedgerPoster;
 use App\Services\Notifications\RealtimeService;
 use App\Services\Tenancy\StoreModelScope;
 use App\Services\Tenancy\StoreSchema;
+use App\Support\RequestMemo;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Events\QueryExecuted;
+use Illuminate\Foundation\Http\Events\RequestHandled;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Str;
 use Laravel\Sanctum\Sanctum;
 
 class AppServiceProvider extends ServiceProvider
@@ -23,6 +31,7 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->scoped(StoreSchema::class);
         $this->app->scoped(RealtimeService::class);
+        $this->app->scoped(RequestMemo::class);
     }
 
     /**
@@ -30,6 +39,28 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Per-request lookups (RequestMemo) are dropped after each request and when what they read changes.
+        Event::listen(RequestHandled::class, fn () => $this->app->make(RequestMemo::class)->flush());
+        foreach ([PlatformActivation::class, Store::class, User::class] as $model) {
+            $model::saved(fn () => $this->app->make(RequestMemo::class)->flush());
+            $model::deleted(fn () => $this->app->make(RequestMemo::class)->flush());
+        }
+        // N+1: a relation loaded one row at a time on models fetched as a list. Tests fail on it; anywhere
+        // else it still loads, and is written once per model and relation to the performance log.
+        Model::preventLazyLoading();
+        if (! $this->app->runningUnitTests()) {
+            Model::handleLazyLoadingViolationUsing(function (Model $model, string $relation): void {
+                static $seen = [];
+                $key = $model::class.'.'.$relation;
+                if (! $model->exists || $model->wasRecentlyCreated || isset($seen[$key])) {
+                    return;
+                }
+                $seen[$key] = true;
+                Log::channel('performance')->warning('N+1: relation loaded row by row', [
+                    'model' => $model::class, 'relation' => $relation, 'request' => $this->requestLabel(),
+                ]);
+            });
+        }
         // Signed-in API calls: a per-user ceiling, so a leaked token or a runaway script can't hammer
         // reports and exports. Platform sync replays are exempt (a node may replay a long backlog).
         RateLimiter::for('signed-in', function (Request $request) {
@@ -42,11 +73,18 @@ class AppServiceProvider extends ServiceProvider
                 ? Limit::perMinute($perMinute)->by('user:'.($request->user()?->getAuthIdentifier() ?? $request->ip()))
                 : Limit::none();
         });
-        Event::listen(QueryExecuted::class, function (QueryExecuted $query): void {
+        $slowQueryMs = (int) config('logging.performance.slow_query_ms', 1000);
+        Event::listen(QueryExecuted::class, function (QueryExecuted $query) use ($slowQueryMs): void {
             $metrics = request()->attributes->get('api_performance');
             if ($metrics) {
                 $metrics->queries++;
                 $metrics->databaseMs += $query->time;
+            }
+            // The SQL only, never the bindings (they can hold customer data).
+            if ($slowQueryMs > 0 && $query->time >= $slowQueryMs) {
+                Log::channel('performance')->warning('Slow query', [
+                    'ms' => (int) round($query->time), 'sql' => Str::limit($query->sql, 2000), 'request' => $this->requestLabel(),
+                ]);
             }
         });
         Sanctum::authenticateAccessTokensUsing(function ($token, bool $isValid): bool {
@@ -67,5 +105,10 @@ class AppServiceProvider extends ServiceProvider
         Event::listen('eloquent.saving: App\\Models\\*', function ($event, $models) use ($scope): void {
             $scope->saving($models[0]);
         });
+    }
+
+    private function requestLabel(): string
+    {
+        return $this->app->runningInConsole() ? 'console' : request()->method().' /'.request()->path();
     }
 }

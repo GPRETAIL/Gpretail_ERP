@@ -17,7 +17,9 @@ The backend suite takes about 1 minute with `-d xdebug.mode=off` and about 4.5 m
 ## Where tests go
 
 - **Backend:** `tests/Feature/<Module>/<Behaviour>Test.php`. Use `RefreshDatabase`, create a store and
-  user, and sign in with `Sanctum::actingAs`. Send `X-Store-Id` on store-scoped requests.
+  user, and sign in with `Sanctum::actingAs`. Send `X-Store-Id` on store-scoped requests. A relation
+  loaded row by row on a list of models (N+1) throws `LazyLoadingViolationException` in tests: eager-load
+  it with `with()`. This includes relations that a model's appended attributes read.
 - **Frontend:** in `__tests__/` beside the code. Mock `@/shared/api/apiClient` for API calls.
 - **End-to-end:** each test cleans up what it creates, so the test store returns to its starting data.
 

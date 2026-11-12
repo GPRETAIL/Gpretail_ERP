@@ -86,6 +86,13 @@ Cancelled requests and 4xx API errors are not reported, and the same error is se
   route also allows `API_SIGNED_IN_PER_MINUTE` requests per user per minute (600; 0 turns it off), then
   answers 429 with `Retry-After`. Platform sync replays are exempt, and offline bills retry a 429 later.
 - **Print HTML:** text going into a print window's HTML goes through `shared/utils/escapeHtml.js`.
+- **Performance log** (`storage/logs/performance-*.log`, 14 days; warnings only, so no alerts):
+  - slow queries (`LOG_SLOW_QUERY_MS`, 1000): the SQL only, never the values
+  - slow requests (`LOG_SLOW_REQUEST_MS`, 3000)
+  - requests running many queries (`LOG_REQUEST_QUERY_LIMIT`, 150)
+  - N+1 loads: a relation loaded row by row on a list of models. Tests fail on these
+    (`Model::preventLazyLoading`), so eager-load with `with()`. Elsewhere the relation still loads and is
+    logged once per model and relation.
 
 ## Lists: Group By and pinned rows
 
@@ -123,6 +130,11 @@ groups and totals the report (`ReportSummaryService` running a whitelisted datas
 
 ## Conventions worth knowing
 
+- Lookups repeated within one request are read once through `App\Support\RequestMemo`: the licence
+  record (`PlatformActivation::current()`), a user's stores and licensed stores (`StoreContext`), and
+  the company theme (`TenantThemes::company`). The memo is emptied after each request and whenever a
+  store, user or activation record is saved or deleted. Code that writes these tables with `DB::table`,
+  or syncs a user's stores, calls `RequestMemo::flush()`.
 - Business dates (for example voucher dates) use `config('app.business_timezone')`
   (Asia/Kolkata by default). `app.timezone` is UTC.
 - Controller class names are permission keys; see `docs/folder-structure.md`.

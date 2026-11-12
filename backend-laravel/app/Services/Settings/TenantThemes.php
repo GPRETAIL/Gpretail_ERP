@@ -31,7 +31,8 @@ class TenantThemes
 
     public function company(?string $code): ?object
     {
-        return $code ? DB::table('tenant_themes')->where('company_code', $code)->first() : null;
+        // Read once per request; ThemeWorkspaceController drops it around its writes.
+        return $code ? app(\App\Support\RequestMemo::class)->remember('tenant-theme:'.$code, fn () => DB::table('tenant_themes')->where('company_code', $code)->first()) : null;
     }
 
     public function decode($json): array

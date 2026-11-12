@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\RequestMemo;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -57,8 +58,9 @@ class PlatformActivation extends Model
         ];
     }
 
+    /** The installation's activation record, read once per request (see RequestMemo). */
     public static function current(): ?self
     {
-        return static::query()->orderByDesc('id')->first();
+        return app(RequestMemo::class)->remember('platform-activation', fn () => static::query()->orderByDesc('id')->first());
     }
 }

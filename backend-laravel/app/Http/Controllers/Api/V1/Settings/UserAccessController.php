@@ -187,6 +187,7 @@ class UserAccessController extends Controller
                 'phone' => $request->input('phone'), 'is_active' => $request->boolean('is_active', true),
                 'must_change_password' => $request->boolean('must_change_password', false), 'page_permissions' => $permissions]);
             $user->assignedStores()->sync($ids);
+            app(\App\Support\RequestMemo::class)->flush();
 
             return $user;
         });
@@ -226,6 +227,7 @@ class UserAccessController extends Controller
             }
             $user->update([...$data, 'store_id' => $ids[0], 'platform_company_code' => $company, 'page_permissions' => $permissions]);
             $user->assignedStores()->sync($ids);
+            app(\App\Support\RequestMemo::class)->flush();
             $user->tokens()->delete();
         });
 
