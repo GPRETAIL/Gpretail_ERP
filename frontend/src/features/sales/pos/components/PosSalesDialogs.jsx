@@ -1,10 +1,10 @@
-import { X } from "lucide-react";
+import { Printer, Save, X } from "lucide-react";
 import { Box, Button, Checkbox, IconButton, Radio, Stack, Table, TableBody, TableCell, TableHead, TableRow, TextField, Typography, alpha } from "@mui/material";
 import { TYPE } from "@/shared/theme/typeScale";
 import { DialogSelectField, DialogTextField } from "./PosSalesFormFields";
-import { formatMoney, toNum } from "../utils/posSalesUtils";
+import { formatMoney, posSalesDialogNativeSelectSx, toNum } from "../utils/posSalesUtils";
 
-// PosSales pop-ups: Sales Man, Quick Customer and Sale Discount. PosSales owns their state and actions;
+// PosSales pop-ups: Sales Man, Quick Customer, Sale Discount and POS Payment. PosSales owns their state and actions;
 // these only draw them. Clicking the dimmed background or the X closes a pop-up.
 
 const overlaySx = { position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", bgcolor: "rgba(0,0,0,0.3)", p: 2 };
@@ -317,6 +317,164 @@ export function DiscountDialog({
             Close
           </Button>
         </Stack>
+      </Stack>
+    </PosDialogShell>
+  );
+}
+
+const paymentRowSx = { justifyContent: "space-between", borderRadius: "3.5px", border: 1, borderColor: "divider", px: 1.5, py: 1 };
+const warningBoxSx = {
+  borderColor: (theme) => alpha(theme.palette.warning.main, 0.4),
+  bgcolor: (theme) => alpha(theme.palette.warning.main, theme.palette.mode === "dark" ? 0.16 : 0.08),
+};
+const paymentLabelSx = { fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" };
+
+function PaymentChoiceSelect({ selectRef, value, placeholder, options, onChange, onKeyDown }) {
+  return (
+    <Box component="select" ref={selectRef} value={value} onChange={(event) => onChange(event.target.value)} onKeyDown={onKeyDown} sx={posSalesDialogNativeSelectSx}>
+      <option value="">{placeholder}</option>
+      {options.map((row) => (
+        <option key={row.value} value={row.value}>
+          {row.label}
+        </option>
+      ))}
+    </Box>
+  );
+}
+
+/**
+ * POS Payment: the bill totals, a refund to confirm when a return credit exceeds the bill, and cash, card
+ * and UPI received (card needs a card type, UPI a provider). Save or Save & Print checks out.
+ */
+export function PaymentDialog({
+  totals, totalDiscount, refundAmount, form, cardTypes, upiProviders, cardTypeSelectRef, upiProviderSelectRef, saving,
+  onFieldChange, onCardTypeChange, onUpiProviderChange, onToggleRefund,
+  onCashKeyDown, onCardAmountKeyDown, onCardTypeKeyDown, onUpiAmountKeyDown, onUpiProviderKeyDown, onSave, onClose,
+}) {
+  return (
+    <PosDialogShell
+      onClose={onClose}
+      panelSx={{ width: "100%", maxWidth: 768 }}
+      headerSx={{ px: 2, py: 1.5 }}
+      title="POS Payment"
+      subtitle="Review bill amount and enter received payment"
+      closeLabel="Close payment dialog"
+    >
+      <Box sx={{ display: "grid", gap: 2, px: 2, py: 2, gridTemplateColumns: { lg: "1.05fr 1.4fr" } }}>
+        <Stack sx={{ gap: 1, fontSize: 12.25 }}>
+          <Stack direction="row" sx={paymentRowSx}>
+            <Box component="span" sx={{ color: "text.secondary" }}>Bill(s) Amount</Box>
+            <Box component="span" sx={{ fontWeight: 600, color: totals.billAmount < 0 ? "error.main" : "text.primary" }}>
+              {formatMoney(totals.billAmount)}
+            </Box>
+          </Stack>
+          <Stack direction="row" sx={paymentRowSx}>
+            <Box component="span" sx={{ color: "text.secondary" }}>Discount Amount</Box>
+            <Box component="span" sx={{ fontWeight: 600, color: "text.primary" }}>{formatMoney(totalDiscount)}</Box>
+          </Stack>
+          <Stack direction="row" sx={paymentRowSx}>
+            <Box component="span" sx={{ color: "text.secondary" }}>Net Amount</Box>
+            <Box component="span" className="pos-total" sx={{ fontWeight: 800, fontSize: TYPE.posTotal, fontVariantNumeric: "tabular-nums", color: totals.netAmount < 0 ? "error.main" : "text.primary" }}>
+              {formatMoney(totals.netAmount)}
+            </Box>
+          </Stack>
+          <Stack direction="row" sx={paymentRowSx}>
+            <Box component="span" sx={{ color: "text.secondary" }}>Balance</Box>
+            <Box component="span" sx={{ fontWeight: 600, color: totals.balanceAmount > 0 ? "error.main" : "success.main" }}>
+              {formatMoney(totals.balanceAmount)}
+            </Box>
+          </Stack>
+          <Stack direction="row" sx={paymentRowSx}>
+            <Box component="span" sx={{ color: "text.secondary" }}>Received</Box>
+            <Box component="span" sx={{ fontWeight: 600, color: "text.primary" }}>{formatMoney(totals.receivedAmount)}</Box>
+          </Stack>
+          {totals.changeAmount > 0 && (
+            <Stack direction="row" sx={{ ...paymentRowSx, ...warningBoxSx }}>
+              <Box component="span" sx={{ color: "text.secondary" }}>Change</Box>
+              <Box component="span" sx={{ fontWeight: 600, color: "text.primary" }}>{formatMoney(totals.changeAmount)}</Box>
+            </Stack>
+          )}
+        </Stack>
+
+        <Stack sx={{ gap: 2 }}>
+          {refundAmount > 0 && (
+            <Box sx={{ borderRadius: "3.5px", border: 1, ...warningBoxSx, p: 1.5 }}>
+              <Stack direction="row" sx={{ flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 1 }}>
+                <Typography sx={{ fontSize: TYPE.small, color: "warning.dark" }}>
+                  Confirm the refund before saving. Any received amount is added to the refund.
+                </Typography>
+                <Button type="button" onClick={onToggleRefund} className={form.refundApproved ? "glass-btn glass-btn-success" : "glass-btn glass-btn-primary"}>
+                  {form.refundApproved ? `Refunded ${formatMoney(refundAmount)}` : `Refund ${formatMoney(refundAmount)}`}
+                </Button>
+              </Stack>
+            </Box>
+          )}
+
+          <Stack sx={{ gap: 1 }}>
+            <Typography sx={paymentLabelSx}>Cash</Typography>
+            <TextField
+              type="number"
+              autoFocus
+              slotProps={{ htmlInput: { min: 0, step: 0.01, "aria-label": "Cash received" } }}
+              value={form.cashAmount}
+              onChange={(event) => onFieldChange("cashAmount", event.target.value)}
+              onKeyDown={onCashKeyDown}
+              size="small"
+              fullWidth
+              placeholder="Enter cash received"
+            />
+          </Stack>
+
+          <Box sx={{ display: "grid", gap: 1, gridTemplateColumns: { md: "1fr 1fr" } }}>
+            <Stack sx={{ gap: 1 }}>
+              <Typography sx={paymentLabelSx}>Card Amount</Typography>
+              <TextField
+                type="number"
+                slotProps={numberInputProps}
+                value={form.cardAmount}
+                onChange={(event) => onFieldChange("cardAmount", event.target.value)}
+                onKeyDown={onCardAmountKeyDown}
+                size="small"
+                fullWidth
+              />
+            </Stack>
+            <Stack sx={{ gap: 1 }}>
+              <Typography sx={paymentLabelSx}>Card Type</Typography>
+              <PaymentChoiceSelect selectRef={cardTypeSelectRef} value={form.cardTypeId} placeholder="Select card type" options={cardTypes} onChange={onCardTypeChange} onKeyDown={onCardTypeKeyDown} />
+            </Stack>
+          </Box>
+
+          <Box sx={{ display: "grid", gap: 1, gridTemplateColumns: { md: "1fr 1fr" } }}>
+            <Stack sx={{ gap: 1 }}>
+              <Typography sx={paymentLabelSx}>UPI Amount</Typography>
+              <TextField
+                type="number"
+                slotProps={numberInputProps}
+                value={form.upiAmount}
+                onChange={(event) => onFieldChange("upiAmount", event.target.value)}
+                onKeyDown={onUpiAmountKeyDown}
+                size="small"
+                fullWidth
+              />
+            </Stack>
+            <Stack sx={{ gap: 1 }}>
+              <Typography sx={paymentLabelSx}>UPI Provider</Typography>
+              <PaymentChoiceSelect selectRef={upiProviderSelectRef} value={form.upiProviderId} placeholder="Select UPI provider" options={upiProviders} onChange={onUpiProviderChange} onKeyDown={onUpiProviderKeyDown} />
+            </Stack>
+          </Box>
+        </Stack>
+      </Box>
+
+      <Stack direction="row" sx={{ flexWrap: "wrap", alignItems: "center", justifyContent: "flex-end", gap: 1, borderTop: 1, borderColor: "divider", px: 2, py: 1.5 }}>
+        <Button type="button" onClick={onClose} disabled={saving} className="glass-btn glass-btn-secondary">
+          Cancel
+        </Button>
+        <Button type="button" onClick={() => onSave(false)} disabled={saving} className="glass-btn glass-btn-success" startIcon={<Save size={16} />}>
+          {saving ? "Saving..." : "Save"}
+        </Button>
+        <Button type="button" onClick={() => onSave(true)} disabled={saving} className="glass-btn glass-btn-primary" startIcon={<Printer size={16} />}>
+          {saving ? "Saving..." : "Save & Print"}
+        </Button>
       </Stack>
     </PosDialogShell>
   );
