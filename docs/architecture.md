@@ -88,8 +88,9 @@ server-paged table groups in the database through `shared/utils/serverGrouping.j
 - **Coverage guard:** `GroupByCoverage.contract.test.js` fails when a server-paged page has no group fetchers.
 
 Rows can be pinned to the top or bottom from the row right-click menu (No pin / Pin to top / Pin to
-bottom). Pins keep the row, so they stay in view across pages, sorting, filters and Group By. They last
-for the session.
+bottom), or several at once: tick them, then use Pin rows in the column header menu, which also has
+Unpin all rows. Pins keep the row, so they stay in view across pages, sorting, filters and Group By.
+They last for the session.
 
 ## Conventions worth knowing
 
