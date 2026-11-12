@@ -2462,6 +2462,9 @@ const PosSales = () => {
                   onChange={(e) => setAddBarcode(e.target.value)}
                   onKeyDown={handleBarcodeKeyDown}
                   placeholder={applyingReturn ? "Fetching return..." : "Scan / enter barcode"}
+                  // Enter here is a scan or a shortcut (C, D, 0) handled above; the layout's
+                  // Enter-to-next-field must not also move focus to (and open) the product picker.
+                  slotProps={{ htmlInput: { "data-enter-ignore": "true" } }}
                   size="small"
                   fullWidth
                   sx={{ "& .MuiInputBase-input": { fontSize: TYPE.small, py: 0.75 } }}

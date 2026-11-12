@@ -2323,6 +2323,9 @@ const LegacyPos = () => {
                 onChange={(e) => setBarcodeInput(e.target.value)}
                 onKeyDown={handleBarcodeSubmit}
                 placeholder="Barcode_Product_Name"
+                // Enter here is a scan or the D shortcut; the layout's Enter-to-next-field must not
+                // also move focus away (to CANCEL F4 on an empty bill), so the next scan lands here.
+                slotProps={{ htmlInput: { "data-enter-ignore": "true" } }}
                 size="small"
                 fullWidth
                 sx={{ "& .MuiInputBase-input": { fontSize: 12.25, py: 0.75 } }}
