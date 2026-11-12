@@ -39,6 +39,9 @@ class ReportSummaryService
         }
 
         $base = $this->base($dataset, [...($dataset['joins'] ?? []), ...($layout['joins'] ?? [])], $storeIds, $dated ? [$from, $to] : null);
+        if (isset($layout['where'])) {
+            $base->whereRaw($this->sql($layout['where'])); // A layout's own scope, e.g. only bills with a discount.
+        }
         $measures = $dataset['measures'];
         $measureSelects = collect($measures)->map(fn ($m, $key) => $this->sql($m['expr'])." as m_$key")->values()->all();
         $extras = $layout['extras'] ?? [];
@@ -124,14 +127,15 @@ class ReportSummaryService
         return $query;
     }
 
-    /** {date:x} and {month:x} for both MariaDB and the SQLite test database. */
+    /** {date:x}, {month:x} (2026-11) and {mon:x} (11) for both MariaDB and the SQLite test database. */
     private function sql(string $expr): string
     {
         $sqlite = DB::connection()->getDriverName() === 'sqlite';
 
-        return preg_replace_callback('/\{(date|month):([a-z0-9_.]+)\}/i', fn ($m) => match ($m[1]) {
+        return preg_replace_callback('/\{(date|month|mon):([a-z0-9_.]+)\}/i', fn ($m) => match ($m[1]) {
             'date' => $sqlite ? "date({$m[2]})" : "DATE({$m[2]})",
             'month' => $sqlite ? "strftime('%Y-%m', {$m[2]})" : "DATE_FORMAT({$m[2]}, '%Y-%m')",
+            'mon' => $sqlite ? "strftime('%m', {$m[2]})" : "DATE_FORMAT({$m[2]}, '%m')",
         }, $expr);
     }
 
@@ -143,6 +147,6 @@ class ReportSummaryService
 
     private function number(mixed $value, string $type): float|int
     {
-        return $type === 'count' ? (int) $value : round((float) $value, $type === 'money' ? 2 : 3);
+        return $type === 'count' ? (int) $value : round((float) $value, in_array($type, ['money', 'percent'], true) ? 2 : 3);
     }
 }

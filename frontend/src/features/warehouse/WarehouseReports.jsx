@@ -14,7 +14,7 @@ import { Box, Stack, Typography, Button, alpha } from "@mui/material";
 import { toast } from "react-toastify";
 import useResetOnChange from "@/shared/hooks/useResetOnChange";
 import SummaryLayoutsDrawer, { SummaryLayoutsButtons , SummaryPanelRow } from "@/shared/components/SummaryLayoutsDrawer";
-import { daysAgoKey, fetchSummary, fetchSummaryLayouts, todayKey } from "@/shared/utils/reportSummary";
+import { daysAgoKey, fetchSummary, fetchSummaryLayouts, tabSummaryFor, todayKey } from "@/shared/utils/reportSummary";
 
 const formatDate = (dateStr) => {
   if (!dateStr) return "-";
@@ -910,118 +910,121 @@ const REPORT_DATA_SOURCES = {
     emptyText: "No transport entries found.",
   },
   invoice_report: {
-    summary: "invoice_lines",
+    summary: { dataset: "invoice_lines", layouts: ["supplier", "bill", "item", "brand", "gst_rate", "hsn", "date", "month", "location"] },
     columns: invoiceReportColumns,
     fetchRows: () => getAllRows("/invoices"),
     emptyText: "No invoices found.",
   },
   invoice_detail_report: {
-    summary: "invoice_lines",
+    summary: { dataset: "invoice_lines", layouts: ["bill", "supplier", "item", "brand", "size", "date"] },
     columns: invoiceDetailColumns,
     fetchRows: buildInvoiceDetailRows,
     emptyText: "No invoice detail rows found.",
   },
   wh_entry_report: {
+    summary: { dataset: "inventory_entries", layouts: ["supplier", "product", "brand", "date", "status", "month", "location"] },
     columns: whEntryReportColumns,
     fetchRows: () => getAllRows("/inventory-entries"),
     emptyText: "No inventory entries found.",
   },
   purchase_report: {
-    summary: "direct_purchase_lines",
+    summary: { dataset: "direct_purchase_lines", layouts: ["supplier", "bill", "item", "brand", "gst_rate", "hsn", "date", "month", "location"] },
     columns: purchaseReportColumns,
     fetchRows: () => getAllRows("/direct-purchases"),
     emptyText: "No direct purchases found.",
   },
   purchase_items_report: {
-    summary: "direct_purchase_lines",
+    summary: { dataset: "direct_purchase_lines", layouts: ["item", "brand", "category", "size", "colour", "supplier", "section"] },
     columns: purchaseItemColumns,
     fetchRows: buildDirectPurchaseItemRows,
     emptyText: "No purchase item rows found.",
   },
   purchase_hsn_report: {
-    summary: "direct_purchase_lines",
+    summary: { dataset: "direct_purchase_lines", layouts: ["hsn", "gst_rate", "supplier", "month"] },
     columns: purchaseHsnColumns,
     fetchRows: buildDirectPurchaseItemRows,
     emptyText: "No purchase HSN rows found.",
   },
   purchase_return_report: {
-    summary: "purchase_returns",
+    summary: { dataset: "purchase_returns", layouts: ["supplier", "reason", "item", "status", "date", "month", "location"] },
     columns: purchaseReturnColumns,
     fetchRows: () => getAllRows("/purchase-returns"),
     emptyText: "No purchase returns found.",
   },
   stock_report: {
-    summary: "stock",
+    summary: { dataset: "stock", layouts: ["category", "brand", "item", "size", "section", "location"] },
     columns: stockReportColumns,
     fetchRows: () => getAllRows("/barcodes/physical-stock"),
     emptyText: "No stock rows found.",
   },
   warehouse_stock_analysis_report: {
-    summary: "stock",
+    summary: { dataset: "stock", layouts: ["category", "brand", "item", "size", "section", "location"] },
     columns: warehouseStockAnalysisColumns,
     fetchRows: () => getAllRows("/barcodes/physical-stock"),
     emptyText: "No warehouse stock analysis rows found.",
   },
   stock_ason_date: {
-    summary: "stock",
+    summary: { dataset: "stock", layouts: ["category", "brand", "item", "size", "section", "location"] },
     columns: stockAsonDateColumns,
     fetchRows: buildPhysicalStockRowsWithAsOnDate,
     emptyText: "No stock rows found for the selected date.",
   },
   stock_transactions: {
+    summary: { dataset: "stock_transactions", layouts: ["type", "source", "item", "date", "month"] },
     columns: stockTransactionColumns,
     fetchRows: buildItemLocatorRows,
     emptyText: "No stock transaction rows found.",
   },
   product_master_report: {
+    summary: { dataset: "products", layouts: ["category", "brand", "section", "type", "status"] },
     columns: productMasterColumns,
     fetchRows: buildItemLocatorRows,
     emptyText: "No product master rows found.",
   },
   invoice_vs_purchase_order: {
-    summary: "po_lines",
+    summary: { dataset: "po_lines", layouts: ["supplier", "status", "item", "brand", "date", "month"] },
     columns: poLineColumns,
     fetchRows: () => getWarehouseReportRows("po_lines"),
     emptyText: "No purchase orders yet.",
   },
   purchase_order_summary_report: {
-    summary: "po_lines",
+    summary: { dataset: "po_lines", layouts: ["supplier", "status", "item", "brand", "date", "month"] },
     columns: poSummaryColumns,
     fetchRows: () => getWarehouseReportRows("po_summary"),
     emptyText: "No purchase orders yet.",
   },
   purchase_order_detail_report: {
-    summary: "po_lines",
+    summary: { dataset: "po_lines", layouts: ["item", "supplier", "status", "brand", "date"] },
     columns: poLineColumns,
     fetchRows: () => getWarehouseReportRows("po_lines"),
     emptyText: "No purchase orders yet.",
   },
   purchase_order_item_wise_pending: {
-    summary: "po_lines",
+    summary: { dataset: "po_lines", layouts: ["item", "supplier", "brand", "status"] },
     columns: poLineColumns,
     fetchRows: async () => (await getWarehouseReportRows("po_lines")).filter((row) => toNumber(row.pending) > 0),
     emptyText: "Nothing is pending on open purchase orders.",
   },
   purchase_tax_report: {
-    summary: "direct_purchase_lines",
+    summary: { dataset: "direct_purchase_lines", layouts: ["gst_rate", "hsn", "supplier", "bill", "month"] },
     columns: purchaseTaxColumns,
     fetchRows: () => getWarehouseReportRows("purchase_tax"),
     emptyText: "No purchase tax yet.",
   },
   purchase_tax_summary_report: {
-    summary: "direct_purchase_lines",
+    summary: { dataset: "direct_purchase_lines", layouts: ["gst_rate", "hsn", "supplier", "month"] },
     columns: purchaseTaxSummaryColumns,
     fetchRows: () => getWarehouseReportRows("purchase_tax_summary"),
     emptyText: "No purchase tax yet.",
   },
   purchase_report_barcode_section_wise: {
-    summary: "direct_purchase_lines",
+    summary: { dataset: "direct_purchase_lines", layouts: ["section", "item", "size", "brand", "supplier"] },
     columns: sectionPurchaseColumns,
     fetchRows: () => getWarehouseReportRows("section_purchase"),
     emptyText: "No barcodes yet.",
   },
   supplier_pending_bills: {
-    summary: "direct_purchase_lines",
+    summary: { dataset: "direct_purchase_lines", layouts: ["supplier", "bill", "date", "month"] },
     columns: supplierPendingColumns,
     fetchRows: async () => (await getAllRows("/supplier-payments/pending")).map((row) => ({
       ...row, bill_type: row?.invoice_type === "direct" ? "Direct purchase" : "Purchase invoice", bill_date: dayOnly(row?.invoice_date),
@@ -1029,6 +1032,7 @@ const REPORT_DATA_SOURCES = {
     emptyText: "No pending supplier bills.",
   },
   supplier_payment_report: {
+    summary: { dataset: "supplier_payments", layouts: ["supplier", "payment_mode", "date", "month", "location"] },
     columns: supplierPaymentColumns,
     fetchRows: async () => (await getAllRows("/supplier-payments")).map((row) => ({
       ...row, pay_date: dayOnly(row?.payment_date), supplier_name: row?.supplier?.name || row?.supplier_name || "-",
@@ -1036,65 +1040,67 @@ const REPORT_DATA_SOURCES = {
     emptyText: "No supplier payments yet.",
   },
   section_wise_purchase_return_report: {
-    summary: "purchase_returns",
+    summary: { dataset: "purchase_returns", layouts: ["section", "supplier", "item", "reason", "month"] },
     columns: sectionReturnColumns,
     fetchRows: () => getWarehouseReportRows("section_returns"),
     emptyText: "No purchase returns yet.",
   },
   purchase_return_report_cancelled: {
-    summary: "purchase_returns",
+    summary: { dataset: "purchase_returns", layouts: ["supplier", "reason", "item", "status", "date", "month", "location"] },
     columns: cancelledReturnColumns,
     fetchRows: () => getWarehouseReportRows("cancelled_returns"),
     emptyText: "No cancelled purchase returns.",
   },
   stock_movement_locationwise: {
-    summary: "outward_lines",
+    summary: { dataset: "outward_lines", layouts: ["to_store", "from_store", "item", "status", "date", "month"] },
     columns: stockMovementColumns,
     fetchRows: () => getWarehouseReportRows("stock_movement"),
     emptyText: "No stock has moved between stores yet.",
   },
   retail_stock_analysis_report: {
-    summary: "stock",
+    summary: { dataset: "stock", layouts: ["category", "brand", "item", "size", "section", "location"] },
     columns: retailStockColumns,
     fetchRows: () => getWarehouseReportRows("retail_stock"),
     emptyText: "No stock on hand.",
   },
   stock_audit_report: {
-    summary: "stock",
+    summary: { dataset: "stock", layouts: ["category", "brand", "item", "size", "section", "location"] },
     columns: stockAuditColumns,
     fetchRows: () => getAllRows("/sales-reports/store/stock_audit"),
     emptyText: "No physical stock audits yet.",
   },
   outward_report: {
-    summary: "outward_lines",
+    summary: { dataset: "outward_lines", layouts: ["to_store", "from_store", "item", "status", "date", "month"] },
     columns: outwardColumns,
     fetchRows: () => getWarehouseReportRows("outwards"),
     emptyText: "No transfers yet.",
   },
   outward_details_report: {
-    summary: "outward_lines",
+    summary: { dataset: "outward_lines", layouts: ["item", "to_store", "from_store", "status", "date"] },
     columns: outwardLineColumns,
     fetchRows: () => getWarehouseReportRows("outward_lines"),
     emptyText: "No transfers yet.",
   },
   pending_inward_report: {
-    summary: "outward_lines",
+    summary: { dataset: "outward_lines", layouts: ["from_store", "item", "date", "status"] },
     columns: outwardColumns,
     fetchRows: () => getWarehouseReportRows("pending_inward"),
     emptyText: "Nothing is in transit to this store.",
   },
   pending_outward_report: {
-    summary: "outward_lines",
+    summary: { dataset: "outward_lines", layouts: ["to_store", "item", "date", "status"] },
     columns: outwardColumns,
     fetchRows: () => getWarehouseReportRows("pending_outward"),
     emptyText: "Nothing sent from this store is waiting to be received.",
   },
   supplier_master_report: {
+    summary: { dataset: "suppliers", layouts: ["city", "state", "status"] },
     columns: supplierMasterColumns,
     fetchRows: async () => (await getAllRows("/suppliers")).map((row) => ({ ...row, active_label: activeLabel(row) })),
     emptyText: "No suppliers yet.",
   },
   agent_master_report: {
+    summary: { dataset: "agents", layouts: ["type", "city", "status"] },
     columns: agentMasterColumns,
     fetchRows: async () => (await getAllRows("/agents")).map((row) => ({
       ...row, phone_no: row?.phone || row?.contact_no || "-", commission: row?.commission_pct ?? row?.commission_rate ?? null, active_label: activeLabel(row),
@@ -1102,6 +1108,7 @@ const REPORT_DATA_SOURCES = {
     emptyText: "No agents yet.",
   },
   tax_master_report: {
+    summary: { dataset: "taxes", layouts: ["rate", "type", "use", "status"] },
     columns: taxMasterColumns,
     fetchRows: async () => (await getAllRows("/taxes")).map((row) => ({
       ...row,
@@ -1303,18 +1310,20 @@ const WarehouseReports = () => {
 
   const selectedReport = selectedReportKey ? reportLookup[selectedReportKey] || null : null;
   const selectedReportSource = selectedReport ? REPORT_DATA_SOURCES[selectedReport.key] || null : null;
-  const tabSummary = selectedReportSource?.summary ? summaryLayouts[selectedReportSource.summary] || null : null;
+  const tabSummary = selectedReportSource?.summary ? tabSummaryFor(selectedReportSource.summary, summaryLayouts) : null;
   const summaryOptions = tabSummary?.layouts || [];
   const tableRows = appliedSummary ? appliedSummary.rows : reportRows;
   const tableColumns = appliedSummary ? appliedSummary.columns : selectedReportSource?.columns || [];
   const openSummary = () => {
-    setSummaryForm((prev) => (summaryOptions.some((opt) => opt.value === prev.mode) ? prev : { ...prev, mode: summaryOptions[0]?.value || "" }));
+    // Each report opens on its own first breakdown; within the same report the last choice is kept.
+    setSummaryForm((prev) => (prev.report === selectedReportKey && summaryOptions.some((opt) => opt.value === prev.mode)
+      ? prev : { ...prev, report: selectedReportKey, mode: summaryOptions[0]?.value || "" }));
     setSummaryOpen(true);
   };
   const applySummary = async () => {
     setSummaryLoading(true);
     try {
-      const summary = await fetchSummary("/warehouse-reports/summary", selectedReportSource.summary, {
+      const summary = await fetchSummary("/warehouse-reports/summary", tabSummary.dataset, {
         layout: summaryForm.mode,
         ...(tabSummary?.dated ? { from: summaryForm.from, to: summaryForm.to } : {}),
       });

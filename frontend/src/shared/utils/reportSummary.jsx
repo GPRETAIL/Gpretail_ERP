@@ -12,6 +12,7 @@ const formatValue = (value, type) => {
   }
   const number = Number(value);
   if (!Number.isFinite(number)) return String(value);
+  if (type === "percent") return `${number.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`;
   return type === "money"
     ? number.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
     : number.toLocaleString("en-IN", { maximumFractionDigits: type === "count" ? 0 : 3 });
@@ -32,6 +33,22 @@ export function buildSummaryColumns(summary) {
         : <Box sx={{ textAlign: "right" }}>{bold(row, formatValue(value, column.type))}</Box>),
     })),
   ];
+}
+
+/** The dataset a report tab summarises: `summary` is a dataset key, or `{ dataset, layouts }`. */
+export const summaryDatasetOf = (summary) => (typeof summary === "string" ? summary : summary?.dataset) || null;
+
+/**
+ * A report tab's own Summary layouts: its dataset's entry from the summary-layouts catalog, with the breakdowns the
+ * tab lists, in its order (the first is where the panel opens). A tab that names only a dataset gets all of them.
+ */
+export function tabSummaryFor(summary, catalog) {
+  const dataset = summaryDatasetOf(summary);
+  const entry = dataset ? catalog?.[dataset] : null;
+  if (!entry) return null;
+  const wanted = Array.isArray(summary?.layouts) ? summary.layouts : null;
+  const layouts = wanted ? wanted.map((key) => entry.layouts.find((layout) => layout.value === key)).filter(Boolean) : entry.layouts;
+  return { ...entry, dataset, layouts };
 }
 
 /** Summary rows with a Total row at the end (the server totals, so it is right even when the list is capped). */

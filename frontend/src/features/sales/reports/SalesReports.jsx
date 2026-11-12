@@ -11,7 +11,7 @@ import { useSelector } from "react-redux";
 import api from "@/shared/api/apiClient";
 import ExportBottomSheet from "@/shared/components/ExportBottomSheet";
 import SummaryLayoutsDrawer, { SummaryDateField, SummaryField, SummaryLayoutsButtons , SummaryPanelRow } from "@/shared/components/SummaryLayoutsDrawer";
-import { fetchSummary, fetchSummaryLayouts } from "@/shared/utils/reportSummary";
+import { fetchSummary, fetchSummaryLayouts, tabSummaryFor } from "@/shared/utils/reportSummary";
 import FilterableDataTable from "@/shared/components/FilterableDataTable";
 import Breadcrumbs from "@/shared/components/Breadcrumbs";
 import { Box, Stack, Typography, TextField, MenuItem, alpha } from "@mui/material";
@@ -1822,19 +1822,19 @@ function buildSalesSummaryColumns(mode) {
 
 const REPORT_DATA_SOURCES = {
   sales_return_report: {
-    summary: "pos_returns",
+    summary: { dataset: "pos_returns", layouts: ["date", "customer", "bill", "reason", "item", "month", "location"] },
     columns: salesReturnColumns,
     fetchRows: buildSalesReturnRows,
     emptyText: "No sales returns found.",
   },
   dealer_invoice_report: {
-    summary: "dealer_lines",
+    summary: { dataset: "dealer_lines", layouts: ["dealer", "invoice", "item", "date", "month", "location"] },
     columns: dealerDocumentColumns("Invoice no", "Invoice date"),
     fetchRows: () => buildDealerDocumentRows("/dealer-invoices", "bill_no", "invoice_date"),
     emptyText: "No dealer invoices found.",
   },
   dealer_return_report: {
-    summary: "dealer_returns",
+    summary: { dataset: "dealer_returns", layouts: ["dealer", "date", "month", "location"] },
     columns: dealerDocumentColumns("Return no", "Return date"),
     fetchRows: () => buildDealerDocumentRows("/dealer-invoice-returns", "return_no", "return_date"),
     emptyText: "No dealer returns found.",
@@ -1845,6 +1845,7 @@ const REPORT_DATA_SOURCES = {
     emptyText: "No POS sales found.",
   },
   unsettled_bill_report: {
+    summary: { dataset: "unsettled_bills", layouts: ["bill", "date", "customer", "counter", "cashier", "month", "location"] },
     columns: unsettledBillColumns,
     fetchRows: async () => {
       return getAllRows("/settlements/unpaid-bills", { status: "open" });
@@ -1852,36 +1853,37 @@ const REPORT_DATA_SOURCES = {
     emptyText: "No unsettled sales bills found.",
   },
   sales_report_salesman_wise: {
-    summary: "sale_lines",
+    summary: { dataset: "sale_lines", layouts: ["salesman", "date", "item", "category", "brand", "month", "location"] },
     columns: salesmanSummaryColumns,
     fetchRows: buildSalesmanSummaryRows,
     emptyText: "No salesman wise sales rows found.",
   },
   sales_report_salesman_wise_detail: {
-    summary: "sale_lines",
+    summary: { dataset: "sale_lines", layouts: ["salesman", "bill", "item", "date", "category", "brand", "month"] },
     columns: saleItemColumns,
     fetchRows: buildPosSaleItemRows,
     emptyText: "No salesman detail rows found.",
   },
   sales_report_margin: {
-    summary: "sale_lines",
+    summary: { dataset: "sale_margin", layouts: ["item", "category", "brand", "salesman", "date", "month", "location"] },
     columns: salesMarginColumns,
     fetchRows: getReportSales,
     emptyText: "No sales margin rows found.",
   },
   sales_report_invoice_wise: {
-    summary: "sale_lines",
+    summary: { dataset: "sale_lines", layouts: ["bill", "date", "customer", "counter", "cashier", "payment_mode", "discount_bills", "month", "location"] },
     columns: salesReportColumns,
     fetchRows: () => getAllRows("/pos-sales"),
     emptyText: "No invoice wise sales rows found.",
   },
   sales_report_barcode_wise: {
-    summary: "sale_lines",
+    summary: { dataset: "sale_lines", layouts: ["barcode", "item", "size", "section", "brand", "category"] },
     columns: saleItemColumns,
     fetchRows: buildPosSaleItemRows,
     emptyText: "No barcode wise sales rows found.",
   },
   cancelled_sales_report: {
+    summary: { dataset: "cancelled_bills", layouts: ["bill", "date", "customer", "counter", "cashier", "month", "location"] },
     columns: unsettledBillColumns,
     fetchRows: async () => {
       return getAllRows("/settlements/unpaid-bills", { status: "canceled" });
@@ -1889,22 +1891,25 @@ const REPORT_DATA_SOURCES = {
     emptyText: "No cancelled sales found.",
   },
   approved_bill_report: {
+    summary: { dataset: "approvals", layouts: ["customer", "date", "approved_by", "month", "location"] },
     columns: salesReportColumns,
     fetchRows: buildApprovedSalesOnApprovalRows,
     emptyText: "No approved sales on approval bills found.",
   },
   delivery_report: {
+    summary: { dataset: "customer_orders", layouts: ["status", "delivery_date", "customer", "salesman", "date", "month", "location"] },
     columns: deliveryReportColumns,
     fetchRows: () => getAllRows("/customer-orders"),
     emptyText: "No delivery rows found.",
   },
   day_summary_report: {
-    summary: "sale_lines",
+    summary: { dataset: "sale_lines", layouts: ["date", "month", "counter", "cashier", "payment_mode", "location"] },
     columns: daySummaryColumns,
     fetchRows: buildDaySummaryRows,
     emptyText: "No day summary rows found.",
   },
   day_end_settlement_summary: {
+    summary: { dataset: "settlements", layouts: ["date", "settled_by", "month", "location"] },
     columns: daySummaryColumns.map((column) => {
       if (column.key === "sale_date") {
         return {
@@ -1936,6 +1941,7 @@ const REPORT_DATA_SOURCES = {
     emptyText: "No day-end settlement rows found.",
   },
   cashier_wise_settlement_summary: {
+    summary: { dataset: "cash_sessions", layouts: ["cashier", "date", "status", "month", "location"] },
     columns: [
       { key: "cashier_name", label: "Cashier" },
       {
@@ -1968,19 +1974,20 @@ const REPORT_DATA_SOURCES = {
     emptyText: "No cashier wise settlement rows found.",
   },
   settlement_opening_closing_report: {
-    summary: "sale_payments",
+    summary: { dataset: "cash_sessions", layouts: ["date", "cashier", "status", "month", "location"] },
     columns: settlementOpeningClosingColumns,
     fetchRows: buildCashOpeningClosingRows,
     emptyText: "No opening/closing rows found.",
   },
   company_wise_sale_collection_report: {
-    summary: "sale_payments",
+    summary: { dataset: "sale_payments", layouts: ["location", "payment_mode", "date", "month"] },
     columns: companyWiseSaleCollectionColumns,
     fetchRows: buildCompanyWiseSaleCollectionRows,
     emptyText: "No company wise sale collection rows found.",
     defaultGroupByColumn: "company_name",
   },
   credit_sale_collection_report: {
+    summary: { dataset: "credit_bills", layouts: ["customer", "bill", "date", "counter", "month", "location"] },
     columns: unsettledBillColumns,
     fetchRows: async () => {
       return getAllRows("/settlements/unpaid-bills", { status: "credit" });
@@ -1988,94 +1995,97 @@ const REPORT_DATA_SOURCES = {
     emptyText: "No credit sale collection rows found.",
   },
   sales_tax_report_summary: {
-    summary: "sale_lines",
+    summary: { dataset: "sale_tax", layouts: ["gst_rate", "hsn", "date", "bill", "month", "location"] },
     columns: taxSummaryColumns,
     fetchRows: buildSalesTaxSummaryRows,
     emptyText: "No sales tax summary rows found.",
   },
   sales_tax_report_column_wise: {
-    summary: "sale_lines",
+    summary: { dataset: "sale_tax", layouts: ["gst_rate", "hsn", "date", "bill", "month", "location"] },
     columns: saleItemColumns,
     fetchRows: buildPosSaleItemRows,
     emptyText: "No sales tax detail rows found.",
   },
   sales_hsn_report: {
-    summary: "sale_lines",
+    summary: { dataset: "sale_tax", layouts: ["hsn", "gst_rate", "item", "month", "location"] },
     columns: salesHsnColumns,
     fetchRows: buildSalesHsnRows,
     emptyText: "No sales HSN rows found.",
   },
   my_customers_report: {
-    summary: "customers",
+    summary: { dataset: "customers", layouts: ["type", "city", "state", "status"] },
     columns: myCustomerSalesColumns,
     fetchRows: buildMyCustomerSalesRows,
     emptyText: "No customer sales rows found.",
   },
   inactive_customer_report: {
-    summary: "customers",
+    summary: { dataset: "customers", layouts: ["city", "type", "state"] },
     columns: customerColumns,
     fetchRows: () => buildCustomerRows(true),
     emptyText: "No inactive customers found.",
   },
   sales_analysis_report: {
-    summary: "sale_lines",
+    summary: { dataset: "sale_lines", layouts: ["category", "brand", "item", "section", "size", "salesman", "month", "location"] },
     columns: daySummaryColumns,
     fetchRows: buildDaySummaryRows,
     emptyText: "No sales analysis rows found.",
   },
   sales_vs_settlement_report: {
-    summary: "sale_payments",
+    summary: { dataset: "sale_payments", layouts: ["date", "payment_mode", "counter", "cashier", "month", "location"] },
     columns: salesVsSettlementColumns,
     fetchRows: getReportSales,
     emptyText: "No sales vs settlement rows found.",
   },
   sales_vs_stock_report: {
-    summary: "store_stock",
+    summary: { dataset: "store_stock", layouts: ["category", "brand", "item", "size", "section", "location"] },
     columns: salesVsStockColumns,
     fetchRows: buildSalesVsStockRows,
     emptyText: "No sales vs stock rows found.",
   },
   sales_vs_purchase_vs_stock: {
+    summary: { dataset: "store_stock", layouts: ["category", "brand", "item", "size", "section", "location"] },
     columns: salesVsPurchaseVsStockColumns,
     fetchRows: buildSalesVsPurchaseVsStockRows,
     emptyText: "No sales vs purchase vs stock rows found.",
   },
   stock_detail_report: {
-    summary: "store_stock",
+    summary: { dataset: "store_stock", layouts: ["category", "brand", "item", "size", "section", "location"] },
     columns: stockColumns,
     fetchRows: buildStockRows,
     emptyText: "No stock detail rows found.",
   },
   direct_stock_report: {
-    summary: "store_stock",
+    summary: { dataset: "store_stock", layouts: ["category", "brand", "item", "size", "section", "location"] },
     columns: stockColumns,
     fetchRows: buildStockRows,
     emptyText: "No direct stock rows found.",
   },
   stock_audit_report: {
+    summary: { dataset: "stock_audits", layouts: ["audit", "status", "date", "item", "month"] },
     columns: stockAuditColumns,
     fetchRows: () => getStoreReportRows("stock_audit"),
     emptyText: "No physical stock audits yet.",
   },
   cashier_wise_discount_report: {
-    summary: "sale_lines",
+    summary: { dataset: "sale_lines", layouts: ["cashier", "discount_bills", "date", "counter", "month"] },
     columns: cashierWiseDiscountColumns,
     fetchRows: buildCashierWiseDiscountRows,
     emptyText: "No cashier discount rows found.",
   },
   biller_wise_report: {
-    summary: "sale_lines",
+    summary: { dataset: "sale_lines", layouts: ["salesman", "discount_bills", "date", "month"] },
     columns: billerWiseDiscountColumns,
     fetchRows: buildCashierWiseDiscountRows,
     emptyText: "No discounted bills found.",
   },
   employee_detail_report: {
+    summary: { dataset: "employees", layouts: ["department", "designation", "status", "joining_month"] },
     columns: employeeColumns,
     fetchRows: buildEmployeeRows,
     emptyText: "No employee rows found.",
   },
   day_summary_without_offset: {
-    summary: "sale_lines",
+    summary: { dataset: "sale_lines", layouts: ["date", "month", "counter", "cashier", "payment_mode", "location"] },
     columns: daySummaryColumns,
     fetchRows: buildDaySummaryRows,
     emptyText: "No day summary rows found.",
@@ -2084,12 +2094,13 @@ const REPORT_DATA_SOURCES = {
   alteration_report: { unavailableReason: "A dedicated data source for this report is not connected." },
   promotion_details_report: { unavailableReason: "A dedicated data source for this report is not connected." },
   sales_snapshot_text: {
-    summary: "sale_lines",
+    summary: { dataset: "sale_lines", layouts: ["date", "month", "counter", "cashier", "payment_mode", "location"] },
     columns: daySummaryColumns,
     fetchRows: buildDaySummaryRows,
     emptyText: "No snapshot rows found.",
   },
   settlement_detail_report: {
+    summary: { dataset: "settlements", layouts: ["date", "settled_by", "month", "location"] },
     columns: [
       { key: "batch_no", label: "Settlement No" },
       { key: "settlement_date", label: "Date", render: formatDate },
@@ -2100,6 +2111,7 @@ const REPORT_DATA_SOURCES = {
     emptyText: "No settlement detail rows found.",
   },
   customer_advance_collection_report: {
+    summary: { dataset: "customer_orders", layouts: ["customer", "status", "date", "delivery_date", "month"] },
     columns: [
       { key: "order_no", label: "Order No" },
       { key: "order_date", label: "Date", render: formatDate },
@@ -2111,25 +2123,25 @@ const REPORT_DATA_SOURCES = {
     emptyText: "No customer advance rows found.",
   },
   settlement_reconciliation: {
-    summary: "sale_payments",
+    summary: { dataset: "sale_payments", layouts: ["date", "payment_mode", "counter", "cashier", "month", "location"] },
     columns: daySummaryColumns,
     fetchRows: buildDayEndSettlementSummaryRows,
     emptyText: "No reconciliation rows found.",
   },
   sales_tax_report_row_wise: {
-    summary: "sale_lines",
+    summary: { dataset: "sale_tax", layouts: ["gst_rate", "hsn", "date", "bill", "month", "location"] },
     columns: taxSummaryColumns,
     fetchRows: buildSalesTaxSummaryRows,
     emptyText: "No tax rows found.",
   },
   sales_tax_splitup_collection_report: {
-    summary: "sale_lines",
+    summary: { dataset: "sale_tax", layouts: ["gst_rate", "hsn", "date", "bill", "month", "location"] },
     columns: taxSummaryColumns,
     fetchRows: buildSalesTaxSummaryRows,
     emptyText: "No tax splitup rows found.",
   },
   credit_customer_outstanding_report: {
-    summary: "customers",
+    summary: { dataset: "customers", layouts: ["city", "type", "status"] },
     columns: unsettledBillColumns,
     fetchRows: async () => {
       return getAllRows("/settlements/unpaid-bills", { status: "credit" });
@@ -2141,18 +2153,20 @@ const REPORT_DATA_SOURCES = {
   coupon_consumption_report: { unavailableReason: "A dedicated data source for this report is not connected." },
   gift_voucher_credit_note_consumption_report: { unavailableReason: "A dedicated data source for this report is not connected." },
   loyalty_reward_consumption_report: {
-    summary: "customers",
+    summary: { dataset: "customers", layouts: ["type", "city", "status"] },
     columns: loyaltyRedemptionColumns,
     fetchRows: () => getStoreReportRows("loyalty_redemptions"),
     emptyText: "No loyalty points have been redeemed yet.",
   },
   gift_issue_report: { unavailableReason: "A dedicated data source for this report is not connected." },
   birthday_wishes: {
+    summary: { dataset: "customers", layouts: ["birth_month", "city", "type"] },
     columns: occasionColumns("Date of birth", "Turning"),
     fetchRows: () => buildCustomerOccasionRows("date_of_birth"),
     emptyText: "No customer has a date of birth saved.",
   },
   anniversary_wishes: {
+    summary: { dataset: "customers", layouts: ["anniversary_month", "city", "type"] },
     columns: occasionColumns("Marriage date", "Years"),
     fetchRows: () => buildCustomerOccasionRows("marriage_date"),
     emptyText: "No customer has a marriage date saved.",
@@ -2161,13 +2175,13 @@ const REPORT_DATA_SOURCES = {
   scheduled_message_log: { unavailableReason: "A dedicated data source for this report is not connected." },
   scheme_details_report: { unavailableReason: "A dedicated data source for this report is not connected." },
   stock_report_with_shelf_period: {
-    summary: "store_stock",
+    summary: { dataset: "store_stock", layouts: ["category", "brand", "item", "size", "section", "location"] },
     columns: shelfPeriodColumns,
     fetchRows: () => getStoreReportRows("shelf_period"),
     emptyText: "No stock on hand.",
   },
   stock_aging_detail_report: {
-    summary: "store_stock",
+    summary: { dataset: "store_stock", layouts: ["category", "brand", "item", "size", "section", "location"] },
     columns: stockAgingColumns,
     fetchRows: () => getStoreReportRows("stock_aging"),
     emptyText: "No stock on hand.",
@@ -2176,13 +2190,13 @@ const REPORT_DATA_SOURCES = {
   price_changer_report: { unavailableReason: "A dedicated data source for this report is not connected." },
   stock_split_report: { unavailableReason: "A dedicated data source for this report is not connected." },
   incentive_report_section: {
-    summary: "sale_lines",
+    summary: { dataset: "sale_lines", layouts: ["section", "salesman", "category", "month"] },
     columns: incentiveSectionColumns,
     fetchRows: buildIncentiveSectionRows,
     emptyText: "No sales with a salesman yet.",
   },
   incentive_report_employees: {
-    summary: "sale_lines",
+    summary: { dataset: "sale_lines", layouts: ["salesman", "section", "date", "month"] },
     columns: incentiveEmployeeColumns,
     fetchRows: () => getStoreReportRows("incentives"),
     emptyText: "No sales with a salesman yet.",
@@ -2474,12 +2488,13 @@ const SalesReports = () => {
   const selectedReportSource = selectedReport && REPORT_DATA_SOURCES[selectedReport.key]?.fetchRows ? REPORT_DATA_SOURCES[selectedReport.key] : null;
 
   const isSalesReportTab = selectedReport?.key === "sales_report";
-  const tabSummary = selectedReportSource?.summary ? tabSummaryLayouts[selectedReportSource.summary] || null : null;
+  const tabSummary = selectedReportSource?.summary ? tabSummaryFor(selectedReportSource.summary, tabSummaryLayouts) : null;
   const summaryOptions = isSalesReportTab ? SALES_SUMMARY_MODE_OPTIONS : tabSummary?.layouts || [];
   const summaryAvailable = isSalesReportTab || summaryOptions.length > 0;
   const openSummaryDrawer = () => {
-    // Each tab has its own breakdowns: start on the first one when the last choice belongs to another tab.
-    setSalesSummaryForm((prev) => (summaryOptions.some((opt) => opt.value === prev.mode) ? prev : { ...prev, mode: summaryOptions[0]?.value || "" }));
+    // Each tab has its own breakdowns and opens on its first one; within the same tab the last choice is kept.
+    setSalesSummaryForm((prev) => (prev.report === selectedReportKey && summaryOptions.some((opt) => opt.value === prev.mode)
+      ? prev : { ...prev, report: selectedReportKey, mode: summaryOptions[0]?.value || "" }));
     setSalesSummaryDrawerOpen(true);
   };
 
@@ -2504,7 +2519,7 @@ const SalesReports = () => {
   const applyTabSummary = async () => {
     setSalesSummaryLoading(true);
     try {
-      const summary = await fetchSummary("/sales-reports/summary", selectedReportSource.summary, {
+      const summary = await fetchSummary("/sales-reports/summary", tabSummary.dataset, {
         layout: salesSummaryForm.mode,
         ...(tabSummary?.dated ? { from: salesSummaryForm.from, to: salesSummaryForm.to } : {}),
       });

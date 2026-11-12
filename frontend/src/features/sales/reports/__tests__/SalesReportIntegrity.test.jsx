@@ -129,17 +129,24 @@ it("Incentive Report - Section adds up the employee incentives per month and sec
   expect(rows).toEqual([{ month: "2026-11", section: "Sarees", employees: 2, bills: 3, qty: 4, net_sales: 1500, incentive_amount: 25 }]);
 });
 
-it("a tab with a summary dataset offers its server breakdowns and shows the server totals", async () => {
+it("a tab offers its own breakdowns, in its order, opening on its first, and shows the server totals", async () => {
   api.get.mockImplementation((url) => Promise.resolve({ data: { data:
-    url === "/sales-reports/summary-layouts" ? { sale_lines: { dated: true, layouts: [{ value: "item", label: "Item" }, { value: "date", label: "Date" }] } }
-      : url === "/sales-reports/summary/sale_lines" ? { layout_label: "Item", group_header: "Item", from: "2026-10-01", to: "2026-10-31", columns: [{ key: "net", label: "Net sales", type: "money" }],
-        rows: [{ s_no: 1, label: "Cotton Shirt", net: 250 }], totals: { net: 250 } }
+    url === "/sales-reports/summary-layouts" ? { sale_tax: { dated: true, layouts: [
+      { value: "date", label: "Date" }, { value: "item", label: "Item" }, { value: "gst_rate", label: "GST rate" }, { value: "hsn", label: "HSN" },
+    ] } }
+      : url === "/sales-reports/summary/sale_tax" ? { layout_label: "GST rate", group_header: "GST %", from: "2026-10-01", to: "2026-10-31", columns: [{ key: "taxable", label: "Taxable value", type: "money" }],
+        rows: [{ s_no: 1, label: "5", taxable: 250 }], totals: { taxable: 250 } }
         : [] } }));
   await open("Tax Reports", "Sales HSN Report");
   fireEvent.click(screen.getByRole("button", { name: "Summary layouts" }));
-  fireEvent.click(screen.getByText("Date"));
+  // The HSN report lists HSN, GST rate, Item (its own order; Date is not one of its breakdowns) and opens on HSN.
+  const choices = screen.getAllByRole("radio").map((radio) => radio.closest("label")?.textContent || radio.value);
+  expect(choices.join("|")).toMatch(/HSN.*GST rate.*Item/);
+  expect(choices.join("|")).not.toMatch(/Date/);
+  expect(screen.getByRole("radio", { name: /HSN/ })).toBeChecked();
+  fireEvent.click(screen.getByText("GST rate"));
   fireEvent.click(screen.getByRole("button", { name: "Apply breakdown" }));
-  await waitFor(() => expect(api.get).toHaveBeenCalledWith("/sales-reports/summary/sale_lines", { params: expect.objectContaining({ layout: "date" }) }));
-  await waitFor(() => expect(JSON.parse(screen.getByTestId("report-rows").textContent).map((row) => row.label)).toEqual(["Cotton Shirt", "Total"]));
+  await waitFor(() => expect(api.get).toHaveBeenCalledWith("/sales-reports/summary/sale_tax", { params: expect.objectContaining({ layout: "gst_rate" }) }));
+  await waitFor(() => expect(JSON.parse(screen.getByTestId("report-rows").textContent).map((row) => row.label)).toEqual(["5", "Total"]));
   expect(screen.getByRole("button", { name: "Standard view" })).toBeInTheDocument();
 });

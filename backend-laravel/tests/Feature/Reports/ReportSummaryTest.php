@@ -96,4 +96,53 @@ class ReportSummaryTest extends TestCase
         $this->getJson('/api/accounting/summary/outstanding?layout=age&side=receivable')->assertOk()->assertJsonPath('data.layout', 'age');
         $this->getJson('/api/accounting/summary-layouts')->assertOk()->assertJsonPath('data.outstanding.layouts.0.value', 'age');
     }
+
+    public function test_every_dataset_and_layout_runs_and_stays_within_the_store(): void
+    {
+        $this->sell(0, 100, now()->toDateTimeString());
+        $service = app(\App\Services\Reports\ReportSummaryService::class);
+        $ran = 0;
+        foreach (\App\Services\Reports\SummaryDatasets::all() as $key => $dataset) {
+            foreach (array_keys($dataset['layouts']) as $layout) {
+                $result = $service->run($dataset['module'], $key, $layout, null, null, [$this->fixture['store']->id]);
+                $this->assertArrayHasKey('totals', $result, "$key/$layout");
+                $ran++;
+            }
+        }
+        $this->assertGreaterThan(200, $ran);
+        // A store outside the context never counts, on the new datasets too.
+        $other = Store::create(['name' => 'Elsewhere', 'code' => 'SUM-ELSE', 'is_active' => true]);
+        DB::table('settlements')->insert(['store_id' => $other->id, 'batch_no' => 'ST-1', 'settlement_date' => now(), 'total_sales' => 999, 'cash_total' => 999, 'card_total' => 0, 'upi_total' => 0, 'credit_total' => 0, 'created_at' => now(), 'updated_at' => now()]);
+        $this->getJson('/api/sales-reports/summary/settlements?layout=date')->assertOk()->assertJsonPath('data.totals.settlements', 0);
+    }
+
+    public function test_margin_tax_split_and_discount_bills(): void
+    {
+        $this->sell(0, 118, '2026-10-01 10:00:00');
+        $this->sell(1, 236, '2026-10-02 10:00:00');
+        $first = DB::table('pos_sales')->orderBy('id')->value('id');
+        // Bill 1: 118 incl. 18 tax, cost 60, a 10 discount, intra-state. Bill 2: 236 incl. 36 tax, cost 150, IGST.
+        DB::table('pos_sale_items')->where('pos_sale_id', $first)->update(['subtotal' => 118, 'tax_amount' => 18, 'quantity' => 1, 'cost_price' => 60, 'discount' => 10]);
+        DB::table('pos_sale_items')->where('pos_sale_id', '<>', $first)->update(['subtotal' => 236, 'tax_amount' => 36, 'quantity' => 1, 'cost_price' => 150, 'discount' => 0]);
+        DB::table('pos_sales')->update(['discount_amount' => 0]);
+        DB::table('pos_sales')->where('id', '<>', $first)->update(['igst' => 1]);
+        $range = '&from=2026-10-01&to=2026-10-31';
+
+        $margin = $this->getJson("/api/sales-reports/summary/sale_margin?layout=date$range")->assertOk()->json('data.totals');
+        $this->assertEquals([300, 210, 90, 30], [$margin['sales'], $margin['cost'], $margin['margin'], $margin['margin_pct']]); // (100+200) - (60+150).
+
+        // A line that recorded no cost falls back to its variant's, then its product's cost.
+        DB::table('pos_sale_items')->where('pos_sale_id', '<>', $first)->update(['cost_price' => 0]);
+        DB::table('product_variants')->update(['cost_price' => 0]);
+        DB::table('products')->update(['cost_price' => 120]);
+        $this->assertEquals(180, $this->getJson("/api/sales-reports/summary/sale_margin?layout=date$range")->json('data.totals.cost')); // 60 + 120.
+
+        $tax = $this->getJson("/api/sales-reports/summary/sale_tax?layout=gst_rate$range")->assertOk()->json('data.totals');
+        $this->assertEquals([300, 9, 9, 36, 54, 354], [$tax['taxable'], $tax['cgst'], $tax['sgst'], $tax['igst'], $tax['tax'], $tax['total']]);
+
+        $discounted = $this->getJson("/api/sales-reports/summary/sale_lines?layout=discount_bills$range")->assertOk()->json('data');
+        $this->assertCount(1, $discounted['rows']);
+        $this->assertEquals(1, $discounted['totals']['bills']); // Only the discounted bill, totals included.
+        $this->assertEquals(2, $this->getJson("/api/sales-reports/summary/sale_lines?layout=bill$range")->json('data.totals.bills'));
+    }
 }

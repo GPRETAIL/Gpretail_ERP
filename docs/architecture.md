@@ -92,6 +92,19 @@ bottom), or several at once: tick them, then use Pin rows in the column header m
 Unpin all rows. Pins keep the row, so they stay in view across pages, sorting, filters and Group By.
 They last for the session.
 
+## Report summary layouts
+
+Every Sales and Warehouse report tab has a **Summary layouts** panel: pick a breakdown and a period, and the server
+groups and totals the report (`ReportSummaryService` running a whitelisted dataset from
+`app/Services/Reports/SummaryDatasets.php`, limited to the request's stores).
+- **Per-tab lists:** a tab's `summary` in `SalesReports.jsx` / `WarehouseReports.jsx` is
+  `{ dataset, layouts: [...] }`. It lists that report's own breakdowns in order, and the panel opens on the first.
+  `tabSummaryFor()` in `shared/utils/reportSummary.jsx` resolves it.
+- **Margin and tax:** `sale_margin` and `sale_tax` give Margin and CGST/SGST/IGST on the same bill lines.
+  Margin cost falls back from the line's cost to the variant's, then the product's.
+- **Layout scope:** a layout can carry its own `where`, for example Discount bills.
+- **Adding one:** a new breakdown goes in the dataset, then into the tab's `layouts` list.
+
 ## Conventions worth knowing
 
 - Business dates (for example voucher dates) use `config('app.business_timezone')`
