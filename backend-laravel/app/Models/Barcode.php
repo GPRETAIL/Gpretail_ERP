@@ -53,6 +53,11 @@ class Barcode extends Model
     }
 
     /** @return BelongsTo<InventoryEntryItem, $this> */
+    public function inventoryEntry(): BelongsTo
+    {
+        return $this->belongsTo(InventoryEntry::class, 'inventory_entry_id');
+    }
+
     public function inventoryItem(): BelongsTo
     {
         return $this->belongsTo(InventoryEntryItem::class, 'inventory_item_id');

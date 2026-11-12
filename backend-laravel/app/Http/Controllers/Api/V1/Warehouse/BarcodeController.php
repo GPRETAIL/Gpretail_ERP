@@ -13,6 +13,7 @@ use App\Models\Stock;
 use App\Models\StockOutwardItem;
 use App\Models\Store;
 use App\Services\Inventory\DirectPurchaseStock;
+use App\Services\Inventory\ItemLocatorService;
 use App\Services\Inventory\VariantResolverService;
 use App\Support\PaginationService;
 use Illuminate\Http\Request;
@@ -32,6 +33,17 @@ class BarcodeController extends Controller
      * Supports ?direct_purchase_id=X  or  ?transport_entry_id=X
      * Also supports ?search, ?all, ?limit
      * ───────────────────────────────────────────────────────────── */
+    /**
+     * Warehouse > Item Locator: barcodes with their source, product details, prices and live stock and bin.
+     * `in_stock=0` also lists barcodes whose product is out of stock.
+     */
+    public function itemLocator(Request $request, ItemLocatorService $locator)
+    {
+        $rows = $locator->rows($request->boolean('in_stock', true));
+
+        return response()->json(['success' => true, 'data' => $rows, 'total' => count($rows)]);
+    }
+
     public function index(Request $request)
     {
         $query = Barcode::with([

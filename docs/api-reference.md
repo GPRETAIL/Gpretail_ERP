@@ -1,6 +1,6 @@
 # API reference
 
-Every endpoint under `/api`, grouped by module (651 endpoints). Generated from
+Every endpoint under `/api`, grouped by module (652 endpoints). Generated from
 `php artisan route:list --sort=definition --json`; regenerate it after changing routes.
 
 - Each signed-in endpoint is also served under `/api/v1/...` with the same behaviour.
@@ -25,7 +25,7 @@ Every endpoint under `/api`, grouped by module (651 endpoints). Generated from
 - [Sales](#sales) (94)
 - [Settings](#settings) (70)
 - [Store](#store) (18)
-- [Warehouse](#warehouse) (64)
+- [Warehouse](#warehouse) (65)
 
 ## Analytical
 
@@ -723,6 +723,7 @@ Every endpoint under `/api`, grouped by module (651 endpoints). Generated from
 | GET | `/api/barcodes/source-item` | BarcodeController@sourceItem | yes |
 | PUT | `/api/barcodes/source-item` | BarcodeController@updateSourceItem | yes |
 | GET | `/api/barcodes/physical-stock` | BarcodeController@physicalStock | yes |
+| GET | `/api/barcodes/item-locator` | BarcodeController@itemLocator | yes |
 | POST | `/api/barcodes/generate` | BarcodeController@generate | yes |
 | GET | `/api/barcodes` | BarcodeController@index | yes |
 | POST | `/api/barcodes` | BarcodeController@generateSingle | yes |

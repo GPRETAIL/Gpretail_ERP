@@ -43,6 +43,7 @@ Route::apiResource('purchase-entry', DirectPurchaseController::class);
 Route::get('barcodes/source-item', [BarcodeController::class, 'sourceItem']);
 Route::put('barcodes/source-item', [BarcodeController::class, 'updateSourceItem']);
 Route::get('barcodes/physical-stock', [BarcodeController::class, 'physicalStock']);
+Route::get('barcodes/item-locator', [BarcodeController::class, 'itemLocator']);
 Route::post('barcodes/generate', [BarcodeController::class, 'generate']);
 Route::get('barcodes', [BarcodeController::class, 'index']);
 Route::post('barcodes', [BarcodeController::class, 'generateSingle']);

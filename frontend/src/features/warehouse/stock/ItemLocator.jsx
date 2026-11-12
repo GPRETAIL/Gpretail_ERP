@@ -142,7 +142,7 @@ const ItemLocator = () => {
       { key: "fit", label: "Fit" },
       { key: "type", label: "Type" },
       { key: "size", label: "Size" },
-      { key: "section", label: "Section" },
+      { key: "section", label: "Location" },
       { key: "design", label: "Design" },
       { key: "hsn", label: "HSN" },
       { key: "invoiceNo", label: "Invoice No" },
@@ -185,104 +185,11 @@ const ItemLocator = () => {
     return { total, totalPages };
   }, [rows.length, limit]);
 
+  // One server call (BarcodeController@itemLocator) returns each in-stock barcode with its source, product
+  // details, prices, live stock and bin; the filters below then work on these rows in the browser.
   const loadData = async () => {
-    const getAll = async (url) => {
-      try {
-        return await api.get(url, { params: { all: "true" } });
-      } catch {
-        return api.get(url);
-      }
-    };
-
-    const [barcodesRes, transportRes, inventoryRes, directPurchaseRes, invoicesRes] =
-      await Promise.all([
-        getAll("/barcodes"),
-        api.get("/transport-entries", { params: { all: "true" } }),
-        getAll("/inventory-entries"),
-        getAll("/direct-purchases"),
-        getAll("/invoices"),
-      ]);
-
-    const barcodes = barcodesRes.data?.data || [];
-    const transports = transportRes.data?.data || [];
-    const inventoryEntries = inventoryRes.data?.data || [];
-    const directPurchases = directPurchaseRes.data?.data || [];
-    const invoices = invoicesRes.data?.data || [];
-
-    const completedTransportMap = new Map(
-      transports.filter((t) => t.status === "completed").map((t) => [t.id, t])
-    );
-    const directPurchaseMap = new Map(directPurchases.map((dp) => [dp.id, dp]));
-    const invoiceMap = new Map();
-    invoices.forEach((inv) => {
-      if (!invoiceMap.has(inv.transport_entry_id)) {
-        invoiceMap.set(inv.transport_entry_id, inv);
-      }
-    });
-
-    const inventoryMap = new Map();
-    for (const entry of inventoryEntries) {
-      const itemMap = new Map((entry.items || []).map((item) => [item.id, item]));
-      inventoryMap.set(entry.id, { ...entry, _itemMap: itemMap });
-    }
-
-    const mappedRows = barcodes
-      .filter((b) => toNum(b.qty) > 0)
-      .filter((b) => {
-        const fromTransport = !!b.transport_entry_id && completedTransportMap.has(b.transport_entry_id);
-        const fromDirectPurchase = !!b.direct_purchase_id && directPurchaseMap.has(b.direct_purchase_id);
-        return fromTransport || fromDirectPurchase;
-      })
-      .map((barcodeRow) => {
-        const transport = completedTransportMap.get(barcodeRow.transport_entry_id);
-        const directPurchase = directPurchaseMap.get(barcodeRow.direct_purchase_id);
-        const invoice = barcodeRow.transport_entry_id
-          ? invoiceMap.get(barcodeRow.transport_entry_id)
-          : null;
-        const invEntry = inventoryMap.get(barcodeRow.inventory_entry_id);
-        const invItem = invEntry?._itemMap?.get(barcodeRow.inventory_item_id);
-
-        return {
-          id: barcodeRow.id,
-          mode: "stock",
-          barcode: barcodeRow.barcode || "-",
-          batch: barcodeRow.batch_id || "-",
-          source: barcodeRow.direct_purchase_id ? "Direct Purchase" : "Transport",
-          company: transport?.company?.name || directPurchase?.company?.name || "-",
-          supplier:
-            transport?.supplier?.name ||
-            directPurchase?.supplier?.name ||
-            invEntry?.supplier?.name ||
-            "-",
-          product: barcodeRow.product_name || invEntry?.product?.name || "-",
-          brand: invEntry?.brand?.name || "-",
-          colour: invEntry?.color?.name || "-",
-          material: invEntry?.material?.name || "-",
-          pattern: invEntry?.pattern?.name || "-",
-          style: invEntry?.style?.name || "-",
-          sleeve: invEntry?.sleeve?.name || "-",
-          fit: invEntry?.fit?.name || "-",
-          type: invEntry?.type?.name || "-",
-          size: barcodeRow.size || invItem?.size || "-",
-          section: transport?.section || directPurchase?.retail_location || "Direct Purchase",
-          design: barcodeRow.design_no || invItem?.design_no || "-",
-          hsn: invEntry?.hsn_code || "-",
-          customerMobile: "-",
-          billNo: invoice?.invoice_no || directPurchase?.invoice_no || "-",
-          billDate: invoice?.invoice_date || directPurchase?.invoice_date || "-",
-          billValue: toNum(invoice?.bill_value || directPurchase?.bill_value),
-          price: toNum(barcodeRow.final_price || barcodeRow.selling_price),
-          invoiceNo: invoice?.invoice_no || directPurchase?.invoice_no || "-",
-          lrNo: transport?.lr_no || directPurchase?.lr_no || "-",
-          qty: toNum(barcodeRow.qty),
-          stock: toNum(barcodeRow.qty),
-          cost: toNum(barcodeRow.cost),
-          sale: toNum(barcodeRow.selling_price),
-          net: toNum(barcodeRow.final_price),
-        };
-      })
-      .sort((a, b) => String(b.id).localeCompare(String(a.id)));
-
+    const res = await api.get("/barcodes/item-locator");
+    const mappedRows = (res.data?.data || []).map((row) => ({ ...row, mode: "stock", customerMobile: "-", billNo: row.invoiceNo }));
     setRawRows(mappedRows);
     setRows(mappedRows);
     return mappedRows;
