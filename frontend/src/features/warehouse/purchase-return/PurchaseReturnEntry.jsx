@@ -13,6 +13,7 @@ import AsyncSearchSelect from "@/shared/components/AsyncSearchSelect";
 import { usePrintContext } from "@/features/printing/context/PrintContext";
 import { muiFieldSx } from "@/shared/theme/formControlSizes";
 import { Box, Stack, Typography, TextField as MuiTextField, MenuItem, Button, Table, TableHead, TableBody, TableRow, TableCell, alpha } from "@mui/material";
+import { escapeHtml } from "@/shared/utils/escapeHtml";
 
 const SelectField = ({ label, name, value, onChange, options, inline = false, sx }) => (
   <Box sx={{ display: inline ? "flex" : "block", alignItems: inline ? "center" : undefined, gap: inline ? 1 : undefined, ...sx }}>
@@ -782,9 +783,9 @@ const PurchaseReturnEntry = () => {
         (item, index) => `
           <tr>
             <td>${index + 1}</td>
-            <td>${item.barcode || "-"}</td>
-            <td>${item.product_name || "-"}</td>
-            <td>${item.design_no || "-"}</td>
+            <td>${escapeHtml(item.barcode || "-")}</td>
+            <td>${escapeHtml(item.product_name || "-")}</td>
+            <td>${escapeHtml(item.design_no || "-")}</td>
             <td>${item.return_bundles || 0}</td>
             <td>${item.return_pieces || 0}</td>
             <td>${item.return_qty || 0}</td>
@@ -796,7 +797,7 @@ const PurchaseReturnEntry = () => {
     const html = `
       <html>
         <head>
-          <title>Purchase Return ${savedRow.return_no}</title>
+          <title>Purchase Return ${escapeHtml(savedRow.return_no)}</title>
           <style>
             body { font-family: Arial, sans-serif; padding: 24px; }
             h2 { margin: 0 0 8px 0; }
@@ -810,11 +811,11 @@ const PurchaseReturnEntry = () => {
         <body>
           <h2>Purchase Return</h2>
           <div class="meta">
-            <div><strong>Return No:</strong> ${savedRow.return_no}</div>
-            <div><strong>Date:</strong> ${savedRow.return_date}</div>
-            <div><strong>Company:</strong> ${savedRow.company?.name || "-"}</div>
-            <div><strong>Supplier:</strong> ${savedRow.supplier?.name || "-"}</div>
-            <div><strong>Transport:</strong> ${savedRow.transport?.name || "-"}</div>
+            <div><strong>Return No:</strong> ${escapeHtml(savedRow.return_no)}</div>
+            <div><strong>Date:</strong> ${escapeHtml(savedRow.return_date)}</div>
+            <div><strong>Company:</strong> ${escapeHtml(savedRow.company?.name || "-")}</div>
+            <div><strong>Supplier:</strong> ${escapeHtml(savedRow.supplier?.name || "-")}</div>
+            <div><strong>Transport:</strong> ${escapeHtml(savedRow.transport?.name || "-")}</div>
             <div><strong>Return Bundles:</strong> ${savedRow.return_bundles || 0}</div>
             <div><strong>Return Pieces:</strong> ${savedRow.return_pieces || 0}</div>
             <div><strong>Return Boxes:</strong> ${savedRow.return_boxes || 0}</div>

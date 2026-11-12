@@ -12,7 +12,7 @@ import { severityTileSx } from "@/features/dashboard/utils/dashboardFormatters";
 // limit already breached, a run that already failed) rather than something merely approaching a
 // deadline -- shown in red instead of amber, same red/amber split every module's own Action
 // Required banner already uses for its 'critical' vs 'warning' tiles.
-const CRITICAL_TYPE_PATTERN = /OVERDUE|VARIANCE|EXCEEDED|FAILED/;
+const CRITICAL_TYPE_PATTERN = /OVERDUE|VARIANCE|EXCEEDED|FAILED|SYSTEM_ERRORS/;
 
 const timeAgo = (createdAt) => {
   if (!createdAt) return "";

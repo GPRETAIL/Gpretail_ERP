@@ -56,6 +56,9 @@ return [
     'web_lifetime_minutes' => (int) env('SANCTUM_WEB_LIFETIME_MINUTES', 720),
     'web_idle_minutes' => (int) env('SANCTUM_WEB_IDLE_MINUTES', 240),
 
+    // Signed-in API requests allowed per user per minute (429 after that). 0 turns the limit off.
+    'signed_in_requests_per_minute' => (int) env('API_SIGNED_IN_PER_MINUTE', 600),
+
     /*
     |--------------------------------------------------------------------------
     | Token Prefix

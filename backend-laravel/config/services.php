@@ -65,6 +65,12 @@ return [
         'model' => env('OPENAI_MODEL', 'gpt-4o-mini'),
     ],
 
+    // ops:error-alerts: new errors go to every admin's notification bell, and to this address when set.
+    'ops_alerts' => [
+        'email' => env('OPS_ALERT_EMAIL'),
+        'cooldown_minutes' => (int) env('OPS_ALERT_COOLDOWN_MINUTES', 60),
+    ],
+
     'space_ocr' => [
         'key' => env('SPACE_OCR_API_KEY'),
         'endpoint' => env('SPACE_OCR_ENDPOINT', 'https://api.space-ocr.com/ocr/markdown'),

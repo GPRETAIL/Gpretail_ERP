@@ -85,7 +85,7 @@ $registerAppRoutes = function () {
 };
 
 // Register directly on /api/...
-Route::middleware('auth:sanctum')->group($registerAppRoutes);
+Route::middleware(['auth:sanctum', 'throttle:signed-in'])->group($registerAppRoutes);
 
 // Register on /api/v1/...
-Route::middleware('auth:sanctum')->prefix('v1')->name('v1.')->group($registerAppRoutes);
+Route::middleware(['auth:sanctum', 'throttle:signed-in'])->prefix('v1')->name('v1.')->group($registerAppRoutes);

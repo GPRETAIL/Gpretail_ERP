@@ -58,6 +58,14 @@ server as harmless leftovers. The optimised autoloader only points at the new lo
 - **Health check.** `GET /up`. `GET /api/health` also reports `background.scheduler` as `running`, `stale`
   or `never`; `never` or `stale` means the cron above is missing or failing.
 
+## Alerts
+
+- **Error alerts:** errors reach admins' notification bell by themselves (`ops:error-alerts` runs from
+  the cron). To get them by email too, set `OPS_ALERT_EMAIL` and the `MAIL_*` settings in the server's `.env`.
+- **Downtime:** set up an external uptime monitor (any free one) on `https://dev.gpsoftware.in/api/health`,
+  because a site that is down can't send its own alert. Have it alert on a non-200 response, or on a body
+  without `"scheduler":"running"`.
+
 ## Rollback
 
 Each deploy keeps a code archive and a database backup in `~/.gp-erp-recovery/` on the server. To roll

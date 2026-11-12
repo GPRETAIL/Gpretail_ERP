@@ -13,6 +13,7 @@ import AsyncSearchSelect from "@/shared/components/AsyncSearchSelect";
 import Breadcrumbs from "@/shared/components/Breadcrumbs";
 import { muiFieldSx } from "@/shared/theme/formControlSizes";
 import { usePrintContext } from "@/features/printing/context/PrintContext";
+import { escapeHtml } from "@/shared/utils/escapeHtml";
 
 const PAYMENT_MODES = ["Inter bank transfer", "Cheque/DD", "Cash", "Card", "UPI"];
 
@@ -639,7 +640,7 @@ const CustomerOrderForm = () => {
       .map(
         (item) => `
       <tr>
-        <td>${item.productName || "-"}</td>
+        <td>${escapeHtml(item.productName || "-")}</td>
         <td style="text-align:right">${Number(item.price || 0).toFixed(2)}</td>
         <td style="text-align:right">${Number(item.qty || 0).toFixed(3)}</td>
         <td style="text-align:right">${Number(item.amount || 0).toFixed(2)}</td>
@@ -650,7 +651,7 @@ const CustomerOrderForm = () => {
     const html = `
       <html>
       <head>
-        <title>Customer Order #${orderNo}</title>
+        <title>Customer Order #${escapeHtml(orderNo)}</title>
         <style>
           body { font-family: Arial, sans-serif; padding: 16px; }
           h2 { margin: 0 0 8px 0; }
@@ -663,9 +664,9 @@ const CustomerOrderForm = () => {
       </head>
       <body>
         <h2>Customer Order Receipt</h2>
-        <div class="meta">Order No: <b>${orderNo}</b></div>
-        <div class="meta">Order Date: <b>${form.orderDate || "-"}</b></div>
-        <div class="meta">Customer: <b>${form.customerName || "-"}</b> (${form.customerMobile || "-"})</div>
+        <div class="meta">Order No: <b>${escapeHtml(orderNo)}</b></div>
+        <div class="meta">Order Date: <b>${escapeHtml(form.orderDate || "-")}</b></div>
+        <div class="meta">Customer: <b>${escapeHtml(form.customerName || "-")}</b> (${escapeHtml(form.customerMobile || "-")})</div>
         <table>
           <thead>
             <tr>

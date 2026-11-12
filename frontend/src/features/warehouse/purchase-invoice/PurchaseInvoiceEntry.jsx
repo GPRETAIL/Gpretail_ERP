@@ -14,6 +14,7 @@ import { usePrintContext } from "@/features/printing/context/PrintContext";
 import { getMasterLookups } from "@/features/warehouse/utils/lookupCache";
 import { Box, Stack, Typography, TextField, MenuItem, IconButton, Button, Checkbox, Table, TableHead, TableBody, TableRow, TableCell, alpha } from "@mui/material";
 import { muiFieldSx } from "@/shared/theme/formControlSizes";
+import { escapeHtml } from "@/shared/utils/escapeHtml";
 
 const invoiceFieldLabelSx = { width: 112, flexShrink: 0, fontSize: TYPE.small, fontWeight: 500, color: "text.secondary" };
 const invoiceControlSx = muiFieldSx;
@@ -1028,7 +1029,7 @@ const PurchaseInvoiceEntry = () => {
         return `
           <tr>
             <td>${idx + 1}</td>
-            <td>${item.type || "-"}</td>
+            <td>${escapeHtml(item.type || "-")}</td>
             <td class="num">${amountOn.toFixed(2)}</td>
             <td class="num">${discount.toFixed(2)}</td>
             <td class="num">${taxPerc.toFixed(2)}%</td>
@@ -1048,7 +1049,7 @@ const PurchaseInvoiceEntry = () => {
       <html>
         <head>
           <meta charset="utf-8" />
-          <title>Invoice ${inv.invoiceNo || ""}</title>
+          <title>Invoice ${escapeHtml(inv.invoiceNo || "")}</title>
           <style>
             body { font-family: Arial, sans-serif; font-size: 12px; color: #111; padding: 14px; }
             .head { display: flex; justify-content: space-between; margin-bottom: 10px; }
@@ -1066,12 +1067,12 @@ const PurchaseInvoiceEntry = () => {
         <body>
           <div class="title">Warehouse Invoice</div>
           <div class="meta">
-            <div><strong>Company:</strong> ${inv.companyName || "-"}</div>
-            <div><strong>Supplier:</strong> ${inv.supplierName || "-"}</div>
-            <div><strong>Invoice No:</strong> ${inv.invoiceNo || "-"}</div>
-            <div><strong>Invoice Date:</strong> ${inv.invoiceDate || "-"}</div>
-            <div><strong>Entry Date:</strong> ${inv.entryDate || "-"}</div>
-            <div><strong>LR No:</strong> ${inv.lrNo || "-"}</div>
+            <div><strong>Company:</strong> ${escapeHtml(inv.companyName || "-")}</div>
+            <div><strong>Supplier:</strong> ${escapeHtml(inv.supplierName || "-")}</div>
+            <div><strong>Invoice No:</strong> ${escapeHtml(inv.invoiceNo || "-")}</div>
+            <div><strong>Invoice Date:</strong> ${escapeHtml(inv.invoiceDate || "-")}</div>
+            <div><strong>Entry Date:</strong> ${escapeHtml(inv.entryDate || "-")}</div>
+            <div><strong>LR No:</strong> ${escapeHtml(inv.lrNo || "-")}</div>
           </div>
           <table>
             <thead>

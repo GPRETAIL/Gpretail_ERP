@@ -38,3 +38,6 @@ Schedule::command('backups:run-scheduled')->everyFifteenMinutes()->withoutOverla
 
 // Lets /api/health report whether the server cron (schedule:run every minute) is running.
 Schedule::call(fn () => Cache::put('ops:scheduler-heartbeat', now()->timestamp, 600))->everyMinute()->name('ops:heartbeat');
+
+// New server errors and screen crashes in the logs alert the admins (bell, plus email when OPS_ALERT_EMAIL is set).
+Schedule::command('ops:error-alerts')->everyTenMinutes()->withoutOverlapping();

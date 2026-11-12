@@ -57,6 +57,7 @@ Shared hosting runs no queue workers, so background work is done by scheduled co
 | `purchase-orders:generate` | 02:30 daily |
 | `accounting:post` | 02:45 daily (catch-up for any document that did not post) |
 | `security:purge-plaintext-snapshots --encrypt` | 03:15 daily |
+| `ops:error-alerts` | every 10 minutes (see "Error alerts" below) |
 
 Realtime updates use hosted Pusher, configured in `.env`.
 
@@ -70,6 +71,21 @@ Every other crash, plus errors outside React (`window` error and unhandled promi
 `shared/utils/clientErrors.js` to `POST /api/client-errors`, which writes it with the user, store and page
 to `storage/logs/client-errors-*.log` (kept 14 days). Search that log for the reference a user quotes.
 Cancelled requests and 4xx API errors are not reported, and the same error is sent at most once a minute.
+
+## Error alerts and rate limits
+
+- **Error alerts:** `ops:error-alerts` reads only what was added to the logs since its last run: server
+  errors (`laravel*.log`, ERROR and worse) and screen crashes (`client-errors-*.log`). When there are new
+  ones, every active admin gets one notification in the bell (`SYSTEM_ERRORS`, shown in red) with the
+  count and the most frequent messages. It also sends an email when `OPS_ALERT_EMAIL` is set and mail is
+  configured. At most one alert goes out per `OPS_ALERT_COOLDOWN_MINUTES` (60); errors in between wait
+  and go out together.
+- **Downtime:** the app can't report itself down. Point an external uptime monitor at `/api/health`; it
+  also says whether the scheduler is running.
+- **Rate limits:** login, PIN, activation and sync routes have their own throttles. Every signed-in
+  route also allows `API_SIGNED_IN_PER_MINUTE` requests per user per minute (600; 0 turns it off), then
+  answers 429 with `Retry-After`. Platform sync replays are exempt, and offline bills retry a 429 later.
+- **Print HTML:** text going into a print window's HTML goes through `shared/utils/escapeHtml.js`.
 
 ## Lists: Group By and pinned rows
 

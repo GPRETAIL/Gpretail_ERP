@@ -14,6 +14,7 @@ import { createGroupFetchers } from "@/shared/utils/serverGrouping";
 import ExportBottomSheet from "@/shared/components/ExportBottomSheet";
 import { usePrintContext } from "@/features/printing/context/PrintContext";
 import { Box, Stack, IconButton, Button } from "@mui/material";
+import { escapeHtml } from "@/shared/utils/escapeHtml";
 
 // Matches config('pagination.resources.purchase_returns.groupable_columns') on the backend.
 const { onFetchGroupSummaries: fetchPurchaseReturnGroupSummaries, onFetchGroupRows: fetchPurchaseReturnGroupRows } =
@@ -118,8 +119,8 @@ const PurchaseReturnSearch = () => {
         (item, idx) => `
           <tr>
             <td>${idx + 1}</td>
-            <td>${item.barcode || "-"}</td>
-            <td>${item.product_name || "-"}</td>
+            <td>${escapeHtml(item.barcode || "-")}</td>
+            <td>${escapeHtml(item.product_name || "-")}</td>
             <td>${item.return_qty || 0}</td>
             <td style="text-align:right;">${toNumber(item.amount).toFixed(2)}</td>
           </tr>
@@ -130,7 +131,7 @@ const PurchaseReturnSearch = () => {
     const html = `
       <html>
         <head>
-          <title>Purchase Return ${entry.return_no}</title>
+          <title>Purchase Return ${escapeHtml(entry.return_no)}</title>
           <style>
             body { font-family: Arial, sans-serif; padding: 20px; }
             table { width: 100%; border-collapse: collapse; margin-top: 12px; }
@@ -140,10 +141,10 @@ const PurchaseReturnSearch = () => {
         </head>
         <body>
           <h2>Purchase Return</h2>
-          <div>Return No: ${entry.return_no}</div>
-          <div>Date: ${entry.return_date}</div>
-          <div>Supplier: ${entry.supplier?.name || "-"}</div>
-          <div>Company: ${entry.company?.name || "-"}</div>
+          <div>Return No: ${escapeHtml(entry.return_no)}</div>
+          <div>Date: ${escapeHtml(entry.return_date)}</div>
+          <div>Supplier: ${escapeHtml(entry.supplier?.name || "-")}</div>
+          <div>Company: ${escapeHtml(entry.company?.name || "-")}</div>
           <table>
             <thead>
               <tr>
