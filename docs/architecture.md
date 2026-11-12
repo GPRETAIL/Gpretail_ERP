@@ -39,6 +39,7 @@ React SPA (frontend/)  ──HTTPS──▶  Laravel API (backend-laravel/)  ─
 | Offline billing | `Sales/PosOfflineController`, `frontend/src/features/sales/pos/offline` | Tills bill under an offline series `F{counter}`; bills sync later and conflicts are flagged for manager review |
 | Discount and refund approvals | `Services/Approvals/ApprovalService` | Per-role limits; supervisor PIN with lockout |
 | Returns | `Sales/PosReturnController` | Refund is prorated from the bill line (discount and tax included) |
+| Cash register | `Sales/CashRegisterController`, `Services/Sales/CashRegisterService` | One drawer per counter: Cash Opening counts the float, Cash Closing (also POS Old's Close) counts the drawer against opening + cash taken (less change, split bills included) − cash refunds − counter expenses |
 | Purchasing | `Warehouse/*` | Purchase invoices, inventory entries, direct purchases, barcodes, LR/transport |
 | Store transfers | `Store/StockOutwardController` | Dispatched → in transit → received or cancelled (`Enums/TransferStatus`) |
 | Purchase orders | `Store/PurchaseOrderController`, `Services/Inventory/ReorderService` | A nightly reorder run drafts orders per supplier (`Enums/PurchaseOrderStatus`) |

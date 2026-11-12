@@ -97,12 +97,16 @@ const CashOpening = () => {
 
       return {
         locations: mapSelect(payload.locations),
-        counters: mapSelect(payload.counters),
+        // A counter whose drawer is already open can't be opened again until it is closed.
+        counters: (payload.counters || []).map((row) => {
+          const open = (payload.openCounterIds || []).includes(row.id);
+          return { value: String(row.id), label: open ? `${row.name} (open)` : row.name, disabled: open };
+        }),
         paidByEmployees: mapSelect(payload.paidByEmployees, formatEmployee),
         cashiers: mapSelect(payload.cashiers, formatEmployee),
       };
   }, []);
-  const { loading: loadingMeta } = useAsyncQuery(fetchMeta, {
+  const { loading: loadingMeta, reload: reloadMeta } = useAsyncQuery(fetchMeta, {
     onSuccess: setOptions,
     onError: error => { toast.error(error.response?.data?.message || "Failed to load cash opening options"); setOptions({ locations: [], counters: [], paidByEmployees: [], cashiers: [] }); },
   });
@@ -171,7 +175,7 @@ const CashOpening = () => {
   };
 
   const handleSave = async () => {
-    if (!formData.locationId) {
+    if (options.locations.length > 0 && !formData.locationId) {
       toast.error("Location is required");
       return;
     }
@@ -179,11 +183,12 @@ const CashOpening = () => {
       toast.error("Counter is required");
       return;
     }
-    if (!formData.paidByEmployeeId) {
+    // People are required only when the store keeps employees (HRMS) to choose from.
+    if (options.paidByEmployees.length > 0 && !formData.paidByEmployeeId) {
       toast.error("Paid By is required");
       return;
     }
-    if (!formData.cashierEmployeeId) {
+    if (options.cashiers.length > 0 && !formData.cashierEmployeeId) {
       toast.error("Cashier is required");
       return;
     }
@@ -204,15 +209,17 @@ const CashOpening = () => {
     try {
       await api.post("/cash-openings", payload);
       toast.success("Cash opening saved successfully");
+      reloadMeta();
+      // The counter just opened can't be opened again, so it is cleared from the form.
       setFormData((prev) => ({
         locationId: prev.locationId,
-        counterId: prev.counterId,
+        counterId: "",
         paidByEmployeeId: prev.paidByEmployeeId,
         cashierEmployeeId: prev.cashierEmployeeId,
         ...buildBlankCounts(),
       }));
     } catch (err) {
-      toast.error(err?.response?.data?.message || "Failed to save cash opening");
+      toast.error(err?.response?.data?.errors?.counterId?.[0] || err?.response?.data?.message || "Failed to save cash opening");
     } finally {
       setSaving(false);
     }
@@ -276,7 +283,7 @@ const CashOpening = () => {
       >
         <MenuItem value="">Select {label}</MenuItem>
         {optionsList.map((row) => (
-          <MenuItem key={row.value} value={row.value}>
+          <MenuItem key={row.value} value={row.value} disabled={row.disabled}>
             {row.label}
           </MenuItem>
         ))}
@@ -426,7 +433,7 @@ const CashOpening = () => {
           setSearchPage(1);
         }}
         paginationMode="server"
-        {...createGroupFetchers("/cash-openings", { cashier: "user_id" }, undefined, { inline: true })}
+        {...createGroupFetchers("/cash-openings", { counter: "counter_id", cashier: "cashier_employee_id" }, undefined, { inline: true })}
         pagination={searchGrid.rawPagination}
         onNextCursor={searchGrid.navigateCursor}
         onPreviousCursor={searchGrid.navigateCursor}

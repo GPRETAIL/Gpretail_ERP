@@ -13,6 +13,7 @@ class PosReturn extends Model
 
     protected $fillable = [
         'store_id',
+        'counter_id',
         'pos_sale_id',
         'customer_id',
         'return_no',

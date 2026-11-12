@@ -66,7 +66,6 @@ export const barcodeMatchesReturnScan = (lineBarcode, scannedRaw) => {
   return compactBarcode(lineBarcode) === compactBarcode(scannedRaw);
 };
 
-export const DENOMINATIONS = [2000, 500, 200, 100, 50, 20, 10, 5, 2, 1];
 /** Matches POS Return: barcode-only lines are not capped by a source bill. */
 export const STANDALONE_MAX_QTY = 999999;
 export const WALKING_CUSTOMER_NAME = "Walking customer";

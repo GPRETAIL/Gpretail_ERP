@@ -408,12 +408,12 @@ const buildCashOpeningClosingRows = async () => {
   const grouped = new Map();
   const getKey = (row) => `${row.store_id || ""}__${row.id}`;
 
-  // CashRegisterSession has no counter/location/paidBy/receivedBy - those
-  // stay "-" honestly rather than reading relations that don't exist;
-  // `user` is the one real relation available, used for the cashier name.
+  // Each register session (one counter's drawer) carries its counter, location and the people involved
+  // (CashRegisterController row: counter/location {name}, paidBy/cashier/receivedBy {name, employee_code}).
+  const person = (value) => (value?.name ? `${value.name}${value.employee_code ? ` (${value.employee_code})` : ""}` : null);
   openings.forEach((row) => {
     const dayKey = formatDayKey(row?.opened_at || row?.created_at);
-    const counterName = "-";
+    const counterName = row?.counter?.name || "-";
     const key = getKey(row);
     if (!grouped.has(key)) {
       grouped.set(key, {
@@ -434,13 +434,15 @@ const buildCashOpeningClosingRows = async () => {
 
     const entry = grouped.get(key);
     entry.opening_amount = round2(toNumber(row?.opening_cash));
-    entry.cashier_name = row?.user?.name || entry.cashier_name;
+    entry.location_name = row?.location?.name || entry.location_name;
+    entry.paid_by = person(row?.paidBy) || entry.paid_by;
+    entry.cashier_name = person(row?.cashier) || row?.user?.name || entry.cashier_name;
     entry.event_date = row?.opened_at || entry.event_date;
   });
 
   closings.forEach((row) => {
     const dayKey = formatDayKey(row?.closed_at || row?.created_at);
-    const counterName = "-";
+    const counterName = row?.counter?.name || "-";
     const key = getKey(row);
     if (!grouped.has(key)) {
       grouped.set(key, {
@@ -462,7 +464,9 @@ const buildCashOpeningClosingRows = async () => {
     const entry = grouped.get(key);
     entry.closing_amount = round2(toNumber(row?.closing_cash));
     entry.difference = round2(toNumber(row?.difference));
-    entry.cashier_name = row?.user?.name || entry.cashier_name;
+    entry.closing_bill_no = row?.bill_no ?? entry.closing_bill_no;
+    entry.received_by = person(row?.receivedBy) || entry.received_by;
+    entry.cashier_name = person(row?.cashier) || row?.user?.name || entry.cashier_name;
     entry.event_date = row?.closed_at || entry.event_date;
     if (!entry.opening_amount && toNumber(row?.opening_cash) > 0) {
       entry.opening_amount = round2(row?.opening_cash);

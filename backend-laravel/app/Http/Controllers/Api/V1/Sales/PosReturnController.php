@@ -13,6 +13,7 @@ use App\Models\Product;
 use App\Services\Approvals\ApprovalService;
 use App\Services\Documents\DocumentNumberService;
 use App\Services\Inventory\StockService;
+use App\Services\Pos\PosCounter;
 use App\Support\GroupAggregationService;
 use App\Support\PaginationService;
 use Illuminate\Http\Request;
@@ -162,6 +163,8 @@ class PosReturnController extends Controller
 
             $posReturn = PosReturn::create([
                 'store_id' => $storeId,
+                // The till's counter, so a cash refund comes out of that counter's drawer at Cash Closing.
+                'counter_id' => PosCounter::find($request->user()?->counter_id, (int) $storeId)?->id,
                 'pos_sale_id' => $standalone ? null : $sourcePosSaleId,
                 'customer_id' => $request->input('customerId'),
                 'return_no' => $returnNo,

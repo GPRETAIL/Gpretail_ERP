@@ -389,7 +389,8 @@ return [
             'tie_breaker' => 'id',
             'allowed_sorts' => ['id', 'opened_at', 'closed_at', 'status', 'created_at'],
             'groupable_columns' => [
-                'cashier' => ['column' => 'user_id', 'join' => ['table' => 'users', 'foreign' => 'user_id', 'local' => 'id'], 'label_from' => 'users.name'],
+                'counter' => ['column' => 'counter_id', 'join' => ['table' => 'system_configurations', 'foreign' => 'counter_id', 'local' => 'id'], 'label_from' => 'system_configurations.value'],
+                'cashier' => ['column' => 'cashier_employee_id', 'join' => ['table' => 'employees', 'foreign' => 'cashier_employee_id', 'local' => 'id'], 'label_from' => 'employees.name'],
                 'status' => ['column' => 'status'],
             ],
         ],

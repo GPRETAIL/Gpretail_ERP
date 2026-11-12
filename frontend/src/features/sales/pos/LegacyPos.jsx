@@ -21,7 +21,6 @@ import {
   parseBillNoFromInput,
   isLikelySaleBillInput,
   barcodeMatchesReturnScan,
-  DENOMINATIONS,
   STANDALONE_MAX_QTY,
   WALKING_CUSTOMER_NAME,
   isExchangeReturnLine,
@@ -43,6 +42,7 @@ import SearchableSelect from "@/shared/components/SearchableSelect";
 import UploadImportButton from "@/shared/components/UploadImportButton";
 import CounterAssignmentDialog from "./components/CounterAssignmentDialog";
 import { DiscountDialog } from "./components/PosSalesDialogs";
+import CashClosingDialog from "@/features/sales/settlement/CashClosingDialog";
 import { usePrintContext } from "@/features/printing/context/PrintContext";
 import { Box, Stack, Typography, TextField, MenuItem, IconButton, Button, Table, TableHead, TableBody, TableRow, TableCell, alpha } from "@mui/material";
 
@@ -148,13 +148,6 @@ const LegacyPos = () => {
   const [holdConfirm, setHoldConfirm] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [showSearchPage, setShowSearchPage] = useState(false);
-
-  // close register denominations
-  const [denomCounts, setDenomCounts] = useState(
-    DENOMINATIONS.reduce((a, d) => ({ ...a, [`c_${d}`]: 0 }), {})
-  );
-  const [closeNote, setCloseNote] = useState("");
-  const [sessionSummary, setSessionSummary] = useState({ cash: 0, online_pay: 0, credit_card: 0, point: 0, returns: 0, total: 0 });
 
   // return/exchange
   const [returnReasons, setReturnReasons] = useState([]);
@@ -1309,19 +1302,8 @@ const LegacyPos = () => {
     return () => window.removeEventListener("keydown", handleKeydown);
   }, []);
 
-  /* ─── close register ─── */
-  const handleOpenCloseRegister = async () => {
-    setShowCloseRegister(true);
-    try {
-      const res = await api.get("/pos-old-sales/session-summary");
-      setSessionSummary(res.data?.data || { cash: 0, online_pay: 0, credit_card: 0, point: 0, returns: 0, total: 0 });
-    } catch { /* keep defaults */ }
-  };
-
-  const denomTotal = useMemo(
-    () => DENOMINATIONS.reduce((s, d) => s + toInt(denomCounts[`c_${d}`], 0) * d, 0),
-    [denomCounts]
-  );
+  /* ─── close register: the same Cash Closing as Sales > Cash Closing, for this till's counter ─── */
+  const handleOpenCloseRegister = () => setShowCloseRegister(true);
 
   const mapLookupSaleItemsToExchangeDraft = useCallback((items) => {
     return (items || []).map((item, index) => {
@@ -2836,127 +2818,11 @@ const LegacyPos = () => {
       )}
 
       {/* Close Register Dialog */}
-      {showCloseRegister && (
-        <Box sx={{ position: "fixed", inset: 0, bgcolor: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50 }}>
-          <Box sx={{ bgcolor: "background.paper", borderRadius: "7px", boxShadow: 12, width: 700, maxHeight: "90vh", overflow: "auto" }}>
-            <Stack direction="row" sx={{ bgcolor: "#6B8E23", color: "common.white", px: 2, py: 1.5, alignItems: "center", justifyContent: "space-between", borderTopLeftRadius: "7px", borderTopRightRadius: "7px" }}>
-              <Typography component="h3" sx={{ fontWeight: 600 }}>CloseRegister</Typography>
-              <IconButton onClick={() => setShowCloseRegister(false)} size="small" sx={{ color: "common.white", "&:hover": { opacity: 0.8 } }}>
-                <X size={20} />
-              </IconButton>
-            </Stack>
-            <Stack sx={{ p: 2, gap: 2 }}>
-              {/* Info row */}
-              <Box sx={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 2, fontSize: 12.25 }}>
-                <Box>
-                  <Box sx={{ color: "text.secondary", fontWeight: 600 }}>Opened by</Box>
-                  <Box sx={{ color: "text.primary" }}>POS User</Box>
-                </Box>
-                <Box>
-                  <Box sx={{ color: "text.secondary", fontWeight: 600 }}>Cash in Hand</Box>
-                  <Box sx={{ color: "text.primary" }}>0.00 INR</Box>
-                </Box>
-                <Box>
-                  <Box sx={{ color: "text.secondary", fontWeight: 600 }}>Opening Time</Box>
-                  <Box sx={{ color: "text.primary" }}>{now.toLocaleDateString("en-IN")} {now.toLocaleTimeString("en-IN")}</Box>
-                </Box>
-              </Box>
-
-              {/* Payments Summary */}
-              <Box>
-                <Typography sx={{ fontSize: 15.75, fontWeight: 600, color: "text.secondary", mb: 1 }}>Payments Summary</Typography>
-                <Table sx={{ width: "100%", fontSize: 12.25 }}>
-                  <TableHead sx={{ bgcolor: "action.hover" }}>
-                    <TableRow>
-                      <TableCell sx={{ textAlign: "left" }}>Payment Type</TableCell>
-                      <TableCell sx={{ textAlign: "left" }}>Expected (INR)</TableCell>
-                      <TableCell sx={{ textAlign: "left" }}>Counted</TableCell>
-                      <TableCell sx={{ textAlign: "left" }}>Difference</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {[
-                      { label: "Cash", key: "cash" },
-                      { label: "Credit Card", key: "credit_card" },
-                      { label: "Point", key: "point" },
-                      { label: "Online Pay", key: "online_pay" },
-                      { label: "Returns", key: "returns" },
-                    ].map((row) => (
-                      <TableRow key={row.key}>
-                        <TableCell sx={{ fontWeight: 500, color: "text.primary" }}>{row.label}</TableCell>
-                        <TableCell>
-                          <Box component="input" type="text" readOnly value={toNum(sessionSummary[row.key], 0).toFixed(2)} sx={{ width: "100%", bgcolor: "action.hover", border: 1, borderColor: "grey.300", borderRadius: "3.5px", px: 1, py: 0.5, fontSize: 12.25, color: "text.primary" }} />
-                        </TableCell>
-                        <TableCell>
-                          <Box component="input" type="text" defaultValue="0.00" sx={{ width: "100%", border: 1, borderColor: "grey.300", borderRadius: "3.5px", px: 1, py: 0.5, fontSize: 12.25, bgcolor: "background.paper", color: "text.primary" }} />
-                        </TableCell>
-                        <TableCell>
-                          <Box component="input" type="text" readOnly defaultValue={(-toNum(sessionSummary[row.key], 0)).toFixed(2)} sx={{ width: "100%", bgcolor: "action.hover", border: 1, borderColor: "grey.300", borderRadius: "3.5px", px: 1, py: 0.5, fontSize: 12.25, color: "text.primary" }} />
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                    <TableRow sx={{ bgcolor: "action.hover" }}>
-                      <TableCell sx={{ fontWeight: 700, color: "text.primary" }}>Total</TableCell>
-                      <TableCell>
-                        <Box component="input" type="text" readOnly value={toNum(sessionSummary.total, 0).toFixed(2)} sx={{ width: "100%", bgcolor: "action.hover", border: 1, borderColor: "grey.300", borderRadius: "3.5px", px: 1, py: 0.5, fontSize: 12.25, fontWeight: 700, color: "text.primary" }} />
-                      </TableCell>
-                      <TableCell>
-                        <Box component="input" type="text" readOnly defaultValue="0.00" sx={{ width: "100%", bgcolor: "action.hover", border: 1, borderColor: "grey.300", borderRadius: "3.5px", px: 1, py: 0.5, fontSize: 12.25, fontWeight: 700, color: "text.primary" }} />
-                      </TableCell>
-                      <TableCell>
-                        <Box component="input" type="text" readOnly defaultValue="0.00" sx={{ width: "100%", bgcolor: "action.hover", border: 1, borderColor: "grey.300", borderRadius: "3.5px", px: 1, py: 0.5, fontSize: 12.25, fontWeight: 700, color: "text.primary" }} />
-                      </TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
-              </Box>
-
-              {/* Cash Denominations + Note */}
-              <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2 }}>
-                <Box>
-                  <Typography sx={{ fontSize: 15.75, fontWeight: 600, color: "text.secondary", mb: 1 }}>Cash Denominations</Typography>
-                  <Stack sx={{ gap: 0.5 }}>
-                    {DENOMINATIONS.map((d) => (
-                      <Stack direction="row" key={d} sx={{ alignItems: "center", gap: 1, fontSize: 12.25 }}>
-                        <Box component="span" sx={{ width: 48, fontWeight: 500, color: "text.primary" }}>{d}</Box>
-                        <Box component="span" sx={{ color: "text.disabled" }}>X</Box>
-                        <Box
-                          component="input"
-                          type="number" min="0"
-                          value={denomCounts[`c_${d}`]}
-                          onChange={(e) => setDenomCounts((p) => ({ ...p, [`c_${d}`]: toInt(e.target.value, 0) }))}
-                          sx={{ width: 64, border: 1, borderColor: "grey.300", borderRadius: "3.5px", px: 1, py: 0.25, fontSize: 12.25, textAlign: "right", bgcolor: "background.paper", color: "text.primary" }}
-                        />
-                        <Box component="span" sx={{ fontSize: 12.25, color: "text.secondary" }}>{(toInt(denomCounts[`c_${d}`], 0) * d).toFixed(2)}</Box>
-                      </Stack>
-                    ))}
-                    <Stack direction="row" sx={{ alignItems: "center", gap: 1, fontSize: 12.25, fontWeight: 700, borderTop: 1, borderColor: "divider", pt: 0.5, color: "text.primary" }}>
-                      <Box component="span">Total:</Box>
-                      <Box component="span">{denomTotal.toFixed(2)}</Box>
-                    </Stack>
-                  </Stack>
-                </Box>
-                <Box>
-                  <Typography sx={{ fontSize: 15.75, fontWeight: 600, color: "text.secondary", mb: 1 }}>Note</Typography>
-                  <TextField
-                    value={closeNote}
-                    onChange={(e) => setCloseNote(e.target.value)}
-                    multiline
-                    rows={6}
-                    fullWidth
-                    sx={{ "& .MuiInputBase-input": { fontSize: 12.25 } }}
-                  />
-                </Box>
-              </Box>
-
-              <Stack direction="row" sx={{ justifyContent: "flex-end", gap: 1 }}>
-                <Button onClick={() => setShowCloseRegister(false)} className="glass-btn glass-btn-danger" sx={{ px: 2, py: 1 }}>Close</Button>
-                <Button className="glass-btn glass-btn-primary" sx={{ px: 2, py: 1 }}>save&print</Button>
-              </Stack>
-            </Stack>
-          </Box>
-        </Box>
-      )}
+      <CashClosingDialog
+        open={showCloseRegister}
+        onClose={() => setShowCloseRegister(false)}
+        defaultCounterId={authUser?.counter_id}
+      />
 
       {/* Return / Exchange dialog — bill → reason → lines */}
       {(showReturnDialog || showExchangeDialog) && (
