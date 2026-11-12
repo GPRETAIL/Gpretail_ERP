@@ -66,14 +66,20 @@ class StaffAppAccess
             ->filter(fn (Employee $employee) => self::phoneKey($employee->phone) === $phoneKey)->values();
     }
 
+    /**
+     * Whether the store's subscription includes the HRMS staff app: the licence's `hrms` channel, set in the
+     * Vynerix admin apart from the business mobile app (`mobile`). A licence issued before the HRMS app had its
+     * own switch carries no `hrms` key and follows `mobile`, as it always did.
+     */
     public function storeAllowsApp(Store $store): bool
     {
         if (! $store->is_active) {
             return false;
         }
         $licence = app(StoreLicenceVerifier::class)->verify($store);
+        $channels = $licence['claims']['entitlements']['channels'] ?? [];
 
-        return $licence['ok'] && ($licence['claims']['entitlements']['channels']['mobile'] ?? false) === true;
+        return $licence['ok'] && (array_key_exists('hrms', $channels) ? $channels['hrms'] : ($channels['mobile'] ?? false)) === true;
     }
 
     public static function assertStrongPin(string $pin, string $field = 'pin'): void

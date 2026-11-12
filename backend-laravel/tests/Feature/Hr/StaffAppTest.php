@@ -47,14 +47,14 @@ class StaffAppTest extends TestCase
         $this->staff = $this->employee('Staff Senthil', '+91 98765 43210', $this->store, null, $this->lead);
     }
 
-    private function licensedStore(string $name, int $platformId, bool $mobile = true): Store
+    private function licensedStore(string $name, int $platformId, bool $mobile = true, ?bool $hrms = null): Store
     {
         $store = Store::create(['name' => $name, 'code' => 'STR-'.Str::random(6), 'platform_company_code' => $this->activation->company_code,
             'platform_store_id' => $platformId, 'activated_at' => now(), 'is_active' => true]);
         $claims = ['iss' => 'vx-admin', 'aud' => 'next-erp', 'kid' => 'dev', 'sub' => $store->code, 'company_code' => $this->activation->company_code,
             'store_id' => $platformId, 'deployment_id' => $this->activation->deployment_id, 'status' => 'active', 'subscription_status' => 'active',
             'iat' => now()->subHour()->timestamp, 'exp' => now()->addDay()->timestamp, 'activeTill' => now()->addMonth()->timestamp,
-            'offline_until' => now()->addDays(2)->timestamp, 'entitlements' => ['channels' => ['mobile' => $mobile], 'sections' => ['hrms' => 'all']]];
+            'offline_until' => now()->addDays(2)->timestamp, 'entitlements' => ['channels' => ['mobile' => $mobile] + ($hrms === null ? [] : ['hrms' => $hrms]), 'sections' => ['hrms' => 'all']]];
         $encode = fn ($value) => rtrim(strtr(base64_encode(json_encode($value)), '+/', '-_'), '=');
         $input = $encode(['alg' => 'EdDSA', 'typ' => 'JWT', 'kid' => 'dev']).'.'.$encode($claims);
         openssl_sign($input, $signature, $this->privateKeyPem, null);
@@ -169,6 +169,22 @@ class StaffAppTest extends TestCase
         $worker = $this->employee('Basic Worker', '9123456789', $basic);
         $this->hrSetsPin($worker, '482619', $hr);
         $this->staffLogin('9123456789', '482619')->assertForbidden()->assertJsonPath('error_code', 'MOBILE_SUBSCRIPTION_REQUIRED');
+    }
+
+    public function test_the_hrms_app_follows_its_own_switch_not_the_business_app(): void
+    {
+        // HRMS app on, business mobile app off: staff can sign in.
+        $hrOnly = $this->licensedStore('HRMS only branch', 61, mobile: false, hrms: true);
+        $worker = $this->employee('Hrms Worker', '9000011111', $hrOnly);
+        $this->hrSetsPin($worker, '482619', $this->login('manager', $hrOnly));
+        $this->staffLogin('9000011111', '482619')->assertOk();
+
+        // Business app on, HRMS app off: staff are refused with the subscription message.
+        $bizOnly = $this->licensedStore('Business only branch', 62, mobile: true, hrms: false);
+        $other = $this->employee('Biz Worker', '9000022222', $bizOnly);
+        $this->hrSetsPin($other, '482619', $this->login('manager', $bizOnly));
+        $this->staffLogin('9000022222', '482619')->assertForbidden()->assertJsonPath('error_code', 'MOBILE_SUBSCRIPTION_REQUIRED')
+            ->assertJsonPath('message', fn ($message) => str_contains($message, 'HRMS app'));
     }
 
     public function test_the_same_number_in_two_stores_asks_which_store(): void
