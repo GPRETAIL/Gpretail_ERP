@@ -1421,10 +1421,13 @@ export default function FilterableDataTable({
 
   // side: "left" | "right" | null (no pin). A column moves between sides rather than being in both.
   const openPinSubmenu = useCallback((anchor) => {
-    setHeaderContextMenu((current) => (current && current.pinAnchor !== anchor ? { ...current, pinAnchor: anchor } : current));
+    setHeaderContextMenu((current) => (current && current.pinAnchor !== anchor ? { ...current, pinAnchor: anchor, rowPinAnchor: null } : current));
+  }, []);
+  const openHeaderRowPinSubmenu = useCallback((anchor) => {
+    setHeaderContextMenu((current) => (current && current.rowPinAnchor !== anchor ? { ...current, rowPinAnchor: anchor, pinAnchor: null } : current));
   }, []);
   const closePinSubmenu = useCallback(() => {
-    setHeaderContextMenu((current) => (current?.pinAnchor ? { ...current, pinAnchor: null } : current));
+    setHeaderContextMenu((current) => (current?.pinAnchor || current?.rowPinAnchor ? { ...current, pinAnchor: null, rowPinAnchor: null } : current));
   }, []);
 
   const handleSetColumnPin = useCallback(
@@ -1781,6 +1784,36 @@ export default function FilterableDataTable({
     });
     return pins.map((pin) => fresh.get(pin.key) || { row: pin.row, sourceIndex: -1, pinKey: pin.key });
   }, [currentPageRowEntries, getRowKey, pinnedKeySet]);
+  // Header menu "Pin rows": applies to the ticked rows. A ticked row is found on this page or among the
+  // pinned ones (a pin keeps its row); "No pin" only needs the key.
+  const selectedRowKeys = useMemo(() => selectedRows.map((key) => String(key)), [selectedRows]);
+  const selectedRowsPinSide = useMemo(() => {
+    if (selectedRowKeys.length === 0) return undefined;
+    const sideOf = (key) => (pinnedRows.top.some((pin) => pin.key === key) ? "top" : pinnedRows.bottom.some((pin) => pin.key === key) ? "bottom" : null);
+    const sides = new Set(selectedRowKeys.map(sideOf));
+    return sides.size === 1 ? [...sides][0] : undefined;
+  }, [selectedRowKeys, pinnedRows]);
+  const handleSetSelectedRowsPin = useCallback((side) => {
+    const rowsByKey = new Map([...pinnedRows.top, ...pinnedRows.bottom].map((pin) => [pin.key, pin.row]));
+    currentPageRowEntries.forEach((entry) => rowsByKey.set(String(getRowKey(entry.row, entry.sourceIndex)), entry.row));
+    const keys = new Set(selectedRowKeys);
+    setPinnedRows((prev) => {
+      const without = (list) => list.filter((pin) => !keys.has(pin.key));
+      const top = without(prev.top);
+      const bottom = without(prev.bottom);
+      if (side) {
+        selectedRowKeys.forEach((key) => {
+          if (rowsByKey.has(key)) (side === "top" ? top : bottom).push({ key, row: rowsByKey.get(key) });
+        });
+      }
+      return { top, bottom };
+    });
+    setHeaderContextMenu(null);
+  }, [pinnedRows, currentPageRowEntries, getRowKey, selectedRowKeys]);
+  const handleUnpinAllRows = useCallback(() => {
+    setPinnedRows({ top: [], bottom: [] });
+    setHeaderContextMenu(null);
+  }, []);
   const pinnedTopEntries = useMemo(() => toPinnedEntries(pinnedRows.top), [toPinnedEntries, pinnedRows.top]);
   const pinnedBottomEntries = useMemo(() => toPinnedEntries(pinnedRows.bottom), [toPinnedEntries, pinnedRows.bottom]);
   const unpinnedRowEntries = useMemo(() => {
@@ -3085,6 +3118,75 @@ export default function FilterableDataTable({
                 {label}
               </MenuItem>
             ))}
+          </Menu>
+          {/* Pin rows: the ticked rows go to the top or bottom (a single row can also be pinned from its right-click menu). */}
+          <MenuItem
+            aria-haspopup="menu"
+            aria-expanded={Boolean(headerContextMenu.rowPinAnchor)}
+            onMouseEnter={(event) => openHeaderRowPinSubmenu(event.currentTarget)}
+            onClick={(event) => openHeaderRowPinSubmenu(event.currentTarget)}
+            onKeyDown={(event) => { if (event.key === "ArrowRight") openHeaderRowPinSubmenu(event.currentTarget); }}
+            selected={Boolean(headerContextMenu.rowPinAnchor)}
+            sx={{ gap: 1, fontSize: TYPE.body }}
+          >
+            <Pin size={14} style={{ color: "#d97706", transform: "rotate(90deg)" }} />
+            Pin rows
+            <Box component="span" sx={{ ml: "auto", pl: 2, color: "text.secondary", fontSize: TYPE.small }}>
+              {selectedRowKeys.length > 0 ? `${selectedRowKeys.length} ticked` : pinnedKeySet.size > 0 ? `${pinnedKeySet.size} pinned` : ""}
+            </Box>
+            <ChevronRight size={14} />
+          </MenuItem>
+          <Menu
+            open={Boolean(headerContextMenu.rowPinAnchor)}
+            anchorEl={headerContextMenu.rowPinAnchor}
+            onClose={closePinSubmenu}
+            anchorOrigin={{ vertical: "top", horizontal: "right" }}
+            transformOrigin={{ vertical: "top", horizontal: "left" }}
+            hideBackdrop
+            disableAutoFocus
+            disableEnforceFocus
+            disableRestoreFocus
+            sx={{ pointerEvents: "none" }}
+            slotProps={{
+              paper: {
+                className: "min-w-[150px] py-1",
+                sx: { pointerEvents: "auto", bgcolor: "background.paper", border: "1px solid", borderColor: "divider", borderRadius: 1, boxShadow: 4 },
+              },
+              list: { onKeyDown: (event) => { if (event.key === "ArrowLeft" || event.key === "Escape") closePinSubmenu(); } },
+            }}
+          >
+            {selectedRowKeys.length > 0 ? (
+              [
+                [null, "No pin"],
+                ["top", "Pin to top"],
+                ["bottom", "Pin to bottom"],
+              ].map(([side, label]) => (
+                <MenuItem
+                  key={label}
+                  role="menuitemradio"
+                  aria-checked={selectedRowsPinSide === side}
+                  selected={selectedRowsPinSide === side}
+                  onClick={() => handleSetSelectedRowsPin(side)}
+                  sx={{ gap: 1, fontSize: TYPE.body }}
+                >
+                  <ListItemIcon sx={{ minWidth: "18px !important" }}>
+                    {selectedRowsPinSide === side ? <Check size={14} /> : null}
+                  </ListItemIcon>
+                  {label}
+                </MenuItem>
+              ))
+            ) : (
+              <MenuItem disabled sx={{ fontSize: TYPE.small, whiteSpace: "normal", maxWidth: 220 }}>
+                {enableSelection ? "Tick the rows to pin, or right-click a row" : "Right-click a row to pin it"}
+              </MenuItem>
+            )}
+            {pinnedKeySet.size > 0 && <Divider sx={{ my: 0.5 }} />}
+            {pinnedKeySet.size > 0 && (
+              <MenuItem onClick={handleUnpinAllRows} sx={{ gap: 1, fontSize: TYPE.body }}>
+                <ListItemIcon sx={{ minWidth: "18px !important" }} />
+                Unpin all rows
+              </MenuItem>
+            )}
           </Menu>
           <Divider sx={{ my: 0.5 }} onMouseEnter={closePinSubmenu} />
           {enableColumnResize && (

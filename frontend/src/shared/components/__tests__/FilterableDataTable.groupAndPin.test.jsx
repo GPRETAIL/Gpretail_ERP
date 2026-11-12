@@ -129,6 +129,35 @@ describe("FilterableDataTable — row pinning (No pin / Pin to top / Pin to bott
     expect(bodyTexts(container).some((t) => t.includes("Dev"))).toBe(true);
   });
 
+  it("pins the ticked rows from the column header menu, and Unpin all rows clears them", () => {
+    const props = { rows, columns, showExport: false, enableSelection: true, onSelectionChange: vi.fn() };
+    const openHeaderRowPins = (container) => {
+      fireEvent.contextMenu(headerCell(container, "Name"));
+      const item = screen.getByRole("menuitem", { name: /Pin rows/ });
+      const hint = item.textContent;
+      fireEvent.click(item);
+      return hint;
+    };
+    const first = render(<FilterableDataTable {...props} selectedRows={[]} />);
+    openHeaderRowPins(first.container);
+    expect(screen.getByText("Tick the rows to pin, or right-click a row")).toBeInTheDocument();
+    expect(screen.queryByRole("menuitemradio", { name: "Pin to top" })).not.toBeInTheDocument();
+    first.unmount();
+
+    const { container } = render(<FilterableDataTable {...props} selectedRows={[3, 5]} />);
+    expect(openHeaderRowPins(container)).toContain("2 ticked");
+    fireEvent.click(screen.getByRole("menuitemradio", { name: "Pin to bottom" }));
+    const bottom = container.querySelectorAll('tbody tr[data-pinned-row="bottom"]');
+    expect(bottom).toHaveLength(2);
+    expect(bottom[0].textContent).toContain("Chitra");
+    expect(bottom[1].textContent).toContain("Esha");
+
+    openHeaderRowPins(container);
+    expect(screen.getByRole("menuitemradio", { name: "Pin to bottom" })).toHaveAttribute("aria-checked", "true");
+    fireEvent.click(screen.getByRole("menuitem", { name: "Unpin all rows" }));
+    expect(container.querySelectorAll("tbody tr[data-pinned-row]")).toHaveLength(0);
+  });
+
   it("keeps pinned rows while grouped", () => {
     const { container } = render(<FilterableDataTable rows={rows} columns={columns} showExport={false} />);
     pinRow(container, "Esha", "Pin to top");
