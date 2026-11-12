@@ -4,11 +4,8 @@ import TablePaginationFooter from "./TablePaginationFooter";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ERP_UI, erpControlSx } from "@/shared/theme/erpUi";
 import {
-  Check,
-  Columns3,
   Filter,
   GripVertical,
-  MoveHorizontal,
   Layers,
   Pin,
   PinOff,
@@ -27,8 +24,6 @@ import {
   Checkbox,
   Drawer,
   IconButton,
-  Divider,
-  ListItemIcon,
   Menu,
   MenuItem,
   Popover,
@@ -49,6 +44,7 @@ import { alpha } from "@mui/material/styles";
 import useRowVirtualization from "@/shared/hooks/useRowVirtualization";
 import ExportBottomSheet from "./ExportBottomSheet";
 import ColumnPersonalizerDialog from "./ColumnPersonalizerDialog";
+import { HeaderContextMenu, RowContextMenu } from "./TableContextMenus";
 import { fetchTablePreference, saveTablePreference } from "@/shared/utils/tablePreferences";
 
 import {
@@ -2858,294 +2854,42 @@ export default function FilterableDataTable({
       </Box>
 
       {headerContextMenu && (
-        <Menu
-          open
+        <HeaderContextMenu
+          menu={headerContextMenu}
           onClose={() => setHeaderContextMenu(null)}
-          anchorReference="anchorPosition"
-          anchorPosition={{ top: headerContextMenu.top, left: headerContextMenu.left }}
-          slotProps={{
-            paper: {
-              className: "min-w-[180px] py-1",
-              sx: {
-                bgcolor: "background.paper",
-                border: "1px solid",
-                borderColor: "divider",
-                borderRadius: 1,
-                boxShadow: 4,
-              },
-            },
+          onOpenPinSubmenu={openPinSubmenu}
+          onOpenRowPinSubmenu={openHeaderRowPinSubmenu}
+          onCloseSubmenus={closePinSubmenu}
+          onSetColumnPin={handleSetColumnPin}
+          tickedRowCount={selectedRowKeys.length}
+          pinnedRowCount={pinnedKeySet.size}
+          tickedRowsPinSide={selectedRowsPinSide}
+          onSetTickedRowsPin={handleSetSelectedRowsPin}
+          onUnpinAllRows={handleUnpinAllRows}
+          enableSelection={enableSelection}
+          enableColumnResize={enableColumnResize}
+          onAutosizeColumn={handleAutosizeColumn}
+          onAutosizeAllColumns={handleAutosizeAllColumns}
+          onChooseColumns={() => {
+            setHeaderContextMenu(null);
+            handleOpenColumnDialog();
           }}
-        >
-          {/* Pin column opens its choices to the side (hover, click or →) instead of listing them inline. */}
-          <MenuItem
-            aria-haspopup="menu"
-            aria-expanded={Boolean(headerContextMenu.pinAnchor)}
-            onMouseEnter={(event) => openPinSubmenu(event.currentTarget)}
-            onClick={(event) => openPinSubmenu(event.currentTarget)}
-            onKeyDown={(event) => { if (event.key === "ArrowRight") openPinSubmenu(event.currentTarget); }}
-            selected={Boolean(headerContextMenu.pinAnchor)}
-            sx={{ gap: 1, fontSize: TYPE.body }}
-          >
-            <Pin size={14} style={{ color: "#d97706" }} />
-            Pin column
-            <Box component="span" sx={{ ml: "auto", pl: 2, color: "text.secondary", fontSize: TYPE.small }}>
-              {headerContextMenu.pinSide === "left" ? "Left" : headerContextMenu.pinSide === "right" ? "Right" : ""}
-            </Box>
-            <ChevronRight size={14} />
-          </MenuItem>
-          <Menu
-            open={Boolean(headerContextMenu.pinAnchor)}
-            anchorEl={headerContextMenu.pinAnchor}
-            onClose={closePinSubmenu}
-            anchorOrigin={{ vertical: "top", horizontal: "right" }}
-            transformOrigin={{ vertical: "top", horizontal: "left" }}
-            // Not modal: the main menu stays hoverable, so moving to another item closes this one.
-            hideBackdrop
-            disableAutoFocus
-            disableEnforceFocus
-            disableRestoreFocus
-            sx={{ pointerEvents: "none" }}
-            slotProps={{
-              paper: {
-                className: "min-w-[130px] py-1",
-                sx: { pointerEvents: "auto", bgcolor: "background.paper", border: "1px solid", borderColor: "divider", borderRadius: 1, boxShadow: 4 },
-              },
-              list: { onKeyDown: (event) => { if (event.key === "ArrowLeft" || event.key === "Escape") closePinSubmenu(); } },
-            }}
-          >
-            {[
-              [null, "No pin"],
-              ["left", "Pin left"],
-              ["right", "Pin right"],
-            ].map(([side, label]) => (
-              <MenuItem
-                key={label}
-                role="menuitemradio"
-                aria-checked={headerContextMenu.pinSide === side}
-                selected={headerContextMenu.pinSide === side}
-                onClick={() => handleSetColumnPin(headerContextMenu.columnKey, side)}
-                sx={{ gap: 1, fontSize: TYPE.body }}
-              >
-                <ListItemIcon sx={{ minWidth: "18px !important" }}>
-                  {headerContextMenu.pinSide === side ? <Check size={14} /> : null}
-                </ListItemIcon>
-                {label}
-              </MenuItem>
-            ))}
-          </Menu>
-          {/* Pin rows: the ticked rows go to the top or bottom (a single row can also be pinned from its right-click menu). */}
-          <MenuItem
-            aria-haspopup="menu"
-            aria-expanded={Boolean(headerContextMenu.rowPinAnchor)}
-            onMouseEnter={(event) => openHeaderRowPinSubmenu(event.currentTarget)}
-            onClick={(event) => openHeaderRowPinSubmenu(event.currentTarget)}
-            onKeyDown={(event) => { if (event.key === "ArrowRight") openHeaderRowPinSubmenu(event.currentTarget); }}
-            selected={Boolean(headerContextMenu.rowPinAnchor)}
-            sx={{ gap: 1, fontSize: TYPE.body }}
-          >
-            <Pin size={14} style={{ color: "#d97706", transform: "rotate(90deg)" }} />
-            Pin rows
-            <Box component="span" sx={{ ml: "auto", pl: 2, color: "text.secondary", fontSize: TYPE.small }}>
-              {selectedRowKeys.length > 0 ? `${selectedRowKeys.length} ticked` : pinnedKeySet.size > 0 ? `${pinnedKeySet.size} pinned` : ""}
-            </Box>
-            <ChevronRight size={14} />
-          </MenuItem>
-          <Menu
-            open={Boolean(headerContextMenu.rowPinAnchor)}
-            anchorEl={headerContextMenu.rowPinAnchor}
-            onClose={closePinSubmenu}
-            anchorOrigin={{ vertical: "top", horizontal: "right" }}
-            transformOrigin={{ vertical: "top", horizontal: "left" }}
-            hideBackdrop
-            disableAutoFocus
-            disableEnforceFocus
-            disableRestoreFocus
-            sx={{ pointerEvents: "none" }}
-            slotProps={{
-              paper: {
-                className: "min-w-[150px] py-1",
-                sx: { pointerEvents: "auto", bgcolor: "background.paper", border: "1px solid", borderColor: "divider", borderRadius: 1, boxShadow: 4 },
-              },
-              list: { onKeyDown: (event) => { if (event.key === "ArrowLeft" || event.key === "Escape") closePinSubmenu(); } },
-            }}
-          >
-            {selectedRowKeys.length > 0 ? (
-              [
-                [null, "No pin"],
-                ["top", "Pin to top"],
-                ["bottom", "Pin to bottom"],
-              ].map(([side, label]) => (
-                <MenuItem
-                  key={label}
-                  role="menuitemradio"
-                  aria-checked={selectedRowsPinSide === side}
-                  selected={selectedRowsPinSide === side}
-                  onClick={() => handleSetSelectedRowsPin(side)}
-                  sx={{ gap: 1, fontSize: TYPE.body }}
-                >
-                  <ListItemIcon sx={{ minWidth: "18px !important" }}>
-                    {selectedRowsPinSide === side ? <Check size={14} /> : null}
-                  </ListItemIcon>
-                  {label}
-                </MenuItem>
-              ))
-            ) : (
-              <MenuItem disabled sx={{ fontSize: TYPE.small, whiteSpace: "normal", maxWidth: 220 }}>
-                {enableSelection ? "Tick the rows to pin, or right-click a row" : "Right-click a row to pin it"}
-              </MenuItem>
-            )}
-            {pinnedKeySet.size > 0 && <Divider sx={{ my: 0.5 }} />}
-            {pinnedKeySet.size > 0 && (
-              <MenuItem onClick={handleUnpinAllRows} sx={{ gap: 1, fontSize: TYPE.body }}>
-                <ListItemIcon sx={{ minWidth: "18px !important" }} />
-                Unpin all rows
-              </MenuItem>
-            )}
-          </Menu>
-          <Divider sx={{ my: 0.5 }} onMouseEnter={closePinSubmenu} />
-          {enableColumnResize && (
-            <MenuItem onMouseEnter={closePinSubmenu} onClick={() => handleAutosizeColumn(headerContextMenu.columnKey)} sx={{ gap: 1, fontSize: TYPE.body }}>
-              <MoveHorizontal size={14} style={{ color: "#0d9488" }} />
-              Autosize this column
-            </MenuItem>
-          )}
-          {enableColumnResize && (
-            <MenuItem onMouseEnter={closePinSubmenu} onClick={handleAutosizeAllColumns} sx={{ gap: 1, fontSize: TYPE.body }}>
-              <MoveHorizontal size={14} style={{ color: "#0d9488" }} />
-              Autosize all columns
-            </MenuItem>
-          )}
-          <MenuItem
-            onMouseEnter={closePinSubmenu}
-            onClick={() => {
-              setHeaderContextMenu(null);
-              handleOpenColumnDialog();
-            }}
-            sx={{ gap: 1, fontSize: TYPE.body }}
-          >
-            <Columns3 size={14} style={{ color: "#64748b" }} />
-            Choose columns
-          </MenuItem>
-          <Divider sx={{ my: 0.5 }} />
-          {(typeof onFetchGroupSummaries === "function" || canClientGroup || headerContextMenu.isGrouped) && (
-            <MenuItem
-              onMouseEnter={closePinSubmenu}
-              onClick={() => (
-                headerContextMenu.isGrouped
-                  ? handleUngroupColumn()
-                  : handleGroupByColumn(headerContextMenu.columnKey)
-              )}
-              sx={{ gap: 1, fontSize: TYPE.body }}
-            >
-              <Filter size={14} style={{ color: "#2563eb" }} />
-              {headerContextMenu.isGrouped ? "Ungroup" : "Group By"}
-            </MenuItem>
-          )}
-          <MenuItem
-            onMouseEnter={closePinSubmenu}
-            onClick={() => openFilterPanel(headerContextMenu.columnKey)}
-            sx={{ gap: 1, fontSize: TYPE.body }}
-          >
-            <Filter size={14} style={{ color: "#2563eb" }} />
-            Filter
-          </MenuItem>
-        </Menu>
+          canGroup={typeof onFetchGroupSummaries === "function" || canClientGroup}
+          onGroupBy={handleGroupByColumn}
+          onUngroup={handleUngroupColumn}
+          onFilter={openFilterPanel}
+        />
       )}
 
       {rowContextMenu && (
-        <Menu
-          open
+        <RowContextMenu
+          menu={rowContextMenu}
           onClose={() => setRowContextMenu(null)}
-          anchorReference="anchorPosition"
-          anchorPosition={{ top: rowContextMenu.top, left: rowContextMenu.left }}
-          slotProps={{
-            paper: {
-              className: "min-w-[220px] py-1",
-              sx: {
-                bgcolor: "background.paper",
-                border: "1px solid",
-                borderColor: "divider",
-                borderRadius: 1,
-                boxShadow: 4,
-              },
-            },
-          }}
-        >
-          <Box sx={{ borderBottom: 1, borderColor: "divider", px: 1.5, py: 1 }}>
-            <Typography sx={{ fontSize: TYPE.small, fontWeight: 600 }}>{rowContextMenu.label}</Typography>
-            <Typography noWrap sx={{ fontSize: TYPE.small, color: "text.secondary" }}>{rowContextMenu.displayValue}</Typography>
-          </Box>
-          <MenuItem
-            aria-haspopup="menu"
-            aria-expanded={Boolean(rowContextMenu.pinAnchor)}
-            onMouseEnter={(event) => openRowPinSubmenu(event.currentTarget)}
-            onClick={(event) => openRowPinSubmenu(event.currentTarget)}
-            onKeyDown={(event) => { if (event.key === "ArrowRight") openRowPinSubmenu(event.currentTarget); }}
-            selected={Boolean(rowContextMenu.pinAnchor)}
-            sx={{ gap: 1, fontSize: 12 }}
-          >
-            <Pin size={14} style={{ color: "#d97706" }} />
-            Pin row
-            <Box component="span" sx={{ ml: "auto", pl: 2, color: "text.secondary", fontSize: TYPE.small }}>
-              {rowContextMenu.pinSide === "top" ? "Top" : rowContextMenu.pinSide === "bottom" ? "Bottom" : ""}
-            </Box>
-            <ChevronRight size={14} />
-          </MenuItem>
-          <Menu
-            open={Boolean(rowContextMenu.pinAnchor)}
-            anchorEl={rowContextMenu.pinAnchor}
-            onClose={closeRowPinSubmenu}
-            anchorOrigin={{ vertical: "top", horizontal: "right" }}
-            transformOrigin={{ vertical: "top", horizontal: "left" }}
-            // Not modal, like the column pin submenu: moving to another item closes this one.
-            hideBackdrop
-            disableAutoFocus
-            disableEnforceFocus
-            disableRestoreFocus
-            sx={{ pointerEvents: "none" }}
-            slotProps={{
-              paper: {
-                className: "min-w-[140px] py-1",
-                sx: { pointerEvents: "auto", bgcolor: "background.paper", border: "1px solid", borderColor: "divider", borderRadius: 1, boxShadow: 4 },
-              },
-              list: { onKeyDown: (event) => { if (event.key === "ArrowLeft" || event.key === "Escape") closeRowPinSubmenu(); } },
-            }}
-          >
-            {[
-              [null, "No pin"],
-              ["top", "Pin to top"],
-              ["bottom", "Pin to bottom"],
-            ].map(([side, label]) => (
-              <MenuItem
-                key={label}
-                role="menuitemradio"
-                aria-checked={rowContextMenu.pinSide === side}
-                selected={rowContextMenu.pinSide === side}
-                onClick={() => handleSetRowPin(rowContextMenu.rowKeyValue, rowContextMenu.row, side)}
-                sx={{ gap: 1, fontSize: TYPE.body }}
-              >
-                <ListItemIcon sx={{ minWidth: "18px !important" }}>
-                  {rowContextMenu.pinSide === side ? <Check size={14} /> : null}
-                </ListItemIcon>
-                {label}
-              </MenuItem>
-            ))}
-          </Menu>
-          <MenuItem
-            onMouseEnter={closeRowPinSubmenu}
-            onClick={() => applyRowValueFilter("exclude", rowContextMenu.columnKey, rowContextMenu.rawValue)}
-            sx={{ fontSize: 12 }}
-          >
-            Filter Out
-          </MenuItem>
-          <MenuItem
-            onMouseEnter={closeRowPinSubmenu}
-            onClick={() => applyRowValueFilter("include", rowContextMenu.columnKey, rowContextMenu.rawValue)}
-            sx={{ fontSize: 12 }}
-          >
-            Show Matching
-          </MenuItem>
-        </Menu>
+          onOpenPinSubmenu={openRowPinSubmenu}
+          onClosePinSubmenu={closeRowPinSubmenu}
+          onSetRowPin={handleSetRowPin}
+          onFilterValue={applyRowValueFilter}
+        />
       )}
 
       {/* Surface 3 (filter panel) also gets a slide-in transition for the first time here -- new
