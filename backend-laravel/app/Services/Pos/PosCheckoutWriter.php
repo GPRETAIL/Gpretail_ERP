@@ -116,11 +116,14 @@ class PosCheckoutWriter
         foreach (array_chunk($lines, 200) as $chunk) {
             DB::table('pos_sale_items')->insert($chunk);
         }
+        // Only rows written now count: a database copied from another server (on-prem copy, restored backup) can
+        // reuse this bill's number and still hold movements of a deleted bill that had it.
+        $lastBefore = (int) DB::table('stock_transactions')->max('id');
         foreach (array_chunk($movements, 200) as $chunk) {
             DB::table('stock_transactions')->insert($chunk);
         }
         // Do not assume contiguous auto-increment IDs: other tills may insert.
-        $ids = DB::table('stock_transactions')->where('store_id', $sale->store_id)
+        $ids = DB::table('stock_transactions')->where('store_id', $sale->store_id)->where('id', '>', $lastBefore)
             ->where('reference_type', 'POS_SALE')->where('reference_id', $sale->id)->orderBy('id')->pluck('id');
         if ($ids->count() !== count($movements)) {
             throw new \LogicException('POS stock audit rows could not be reconciled.');

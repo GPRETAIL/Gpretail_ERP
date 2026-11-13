@@ -49,6 +49,19 @@ class PosCheckoutRetryTest extends TestCase
         $this->postJson('/api/pos-sales', [...$this->payload, 'checkoutKey' => (string) Str::uuid()])->assertUnprocessable();
     }
 
+    public function test_a_copied_database_with_movements_of_a_deleted_bill_still_takes_new_bills(): void
+    {
+        // A database copied from another server (on-prem copy, restored backup) reuses bill number 1 here while
+        // still holding the stock movement of the deleted bill 1 it came with.
+        DB::table('stock_transactions')->insert(['store_id' => $this->fixture['store']->id, 'product_id' => $this->fixture['items'][0]['productId'],
+            'reference_type' => 'POS_SALE', 'reference_id' => 1, 'type' => 'OUT', 'quantity' => 1, 'created_at' => now(), 'updated_at' => now()]);
+
+        $sale = $this->postJson('/api/pos-sales', $this->payload)->assertCreated();
+
+        $this->assertSame(1, $sale->json('data.id'));
+        $this->assertSame(1, DB::table('stock_batch_allocations')->count());
+    }
+
     public function test_changed_payload_or_different_user_cannot_reuse_an_existing_key(): void
     {
         $this->postJson('/api/pos-sales', $this->payload)->assertCreated();
