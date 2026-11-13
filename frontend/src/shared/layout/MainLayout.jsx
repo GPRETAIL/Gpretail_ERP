@@ -8,6 +8,7 @@ import { TabProvider, useTabs } from "./TabContext";
 import { TransferActivityProvider, useTransferActivity } from "@/features/store/context/TransferActivityContext";
 import { handleEnterKeyNavigation } from "@/shared/utils/enterToNextField";
 import FooterClock from "@/shared/components/FooterClock";
+import FailoverBanner from "@/shared/components/FailoverBanner";
 import { usePrintContext } from "@/features/printing/context/PrintContext";
 import { useSyncStatus } from "@/features/sync/context/SyncStatusContext";
 import { Printer, Store, Server, Cloud, X, Loader2, CheckCircle2, AlertCircle, Upload, Download, Headphones } from "lucide-react";
@@ -228,8 +229,10 @@ const PrintStatusFooter = () => {
               onClick={() => navigateActiveTab("/settings/configure-local-server")}
               title={
                 syncStatus.target === "local"
-                  ? "Using this store's local server"
-                  : "Local server unreachable — failed over to cloud"
+                  ? "Using this store's on-prem server"
+                  : syncStatus.catchingUp
+                    ? "The on-prem server is back and syncing; counters return to it once both sides are up to date"
+                    : "On-prem server unreachable — billing on the cloud"
               }
               sx={{
                 display: "flex", alignItems: "center", gap: 0.75, fontSize: "inherit", color: "inherit",
@@ -241,14 +244,14 @@ const PrintStatusFooter = () => {
                   <Box sx={{ color: "success.main", display: "inline-flex" }}>
                     <Server size={12} />
                   </Box>
-                  <Typography component="span" sx={{ fontSize: "inherit", color: "success.main" }}>Local Server</Typography>
+                  <Typography component="span" sx={{ fontSize: "inherit", color: "success.main" }}>On-prem server</Typography>
                 </>
               ) : (
                 <>
                   <Box sx={{ color: "warning.main", display: "inline-flex" }}>
                     <Cloud size={12} />
                   </Box>
-                  <Typography component="span" sx={{ fontSize: "inherit", color: "warning.main" }}>Cloud (Local Down)</Typography>
+                  <Typography component="span" sx={{ fontSize: "inherit", color: "warning.main" }}>{syncStatus.catchingUp ? "Cloud (on-prem catching up)" : "Cloud (on-prem down)"}</Typography>
                 </>
               )}
               {(syncStatus.outboxPending > 0 || syncStatus.outboxFailed > 0) && (
@@ -365,6 +368,7 @@ const MainLayout = () => {
           <Box sx={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", width: "100%", minWidth: 0, transition: "all 0.3s ease-in-out" }}>
             <Navbar sidebarExpanded={isExpanded} isMobile={isMobile} toggleSidebar={toggleSidebar} />
             <TabBar />
+            <FailoverBanner />
             <SubscriptionExpiryBanner />
             {isTenantAdmin(authUser) && authUser?.store_ids?.length === 0 && (
               <Alert severity="info" sx={{ borderRadius: 0 }}>

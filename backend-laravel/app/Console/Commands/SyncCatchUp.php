@@ -54,7 +54,7 @@ class SyncCatchUp extends Command
             }
         }
 
-        $cloudApi = rtrim((string) config('sync.cloud_api_base_url'), '/');
+        $cloudApi = \App\Services\Platform\LocalNodeRegistration::cloudApiBase($node->cloud_server_url);
         if (! $cloudApi) {
             $this->error('sync.cloud_api_base_url is not configured.');
 
@@ -79,7 +79,8 @@ class SyncCatchUp extends Command
         }
 
         $tables = $response->json('data.tables') ?? [];
-        $result = $backupService->mergeTablesFromExport($tables);
+        $result = \App\Services\Platform\LocalNodeRegistration::mergeSnapshot($backupService, $tables);
+        \App\Services\Platform\LocalNodeRegistration::continueNumbering($node->store_id, $response->json('data.counters') ?? []);
 
         $node->last_catch_up_at = now();
         $node->save();

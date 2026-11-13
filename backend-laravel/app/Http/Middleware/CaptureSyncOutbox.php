@@ -102,6 +102,8 @@ class CaptureSyncOutbox
             'payload' => $payload,
             'headers' => ['Content-Type' => $request->header('Content-Type', 'application/json')],
             'idempotency_key' => (string) Str::uuid7(), // Time-ordered: keeps the outbox index compact.
+            // Who made it, so the replay on the other server is saved under the same person, not the sync user.
+            'actor_username' => $request->user()?->role === 'sync_system' ? null : $request->user()?->username,
             'status' => 'pending',
         ]);
     }

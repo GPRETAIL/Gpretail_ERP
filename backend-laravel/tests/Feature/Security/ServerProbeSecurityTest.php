@@ -210,6 +210,30 @@ class ServerProbeSecurityTest extends TestCase
         Http::assertNothingSent();
     }
 
+    public function test_a_web_server_without_curl_gets_a_clear_message_instead_of_a_php_error(): void
+    {
+        $node = $this->setupNode();
+        $node->update(['cloud_server_url' => 'https://cloud.example.test']);
+        config(['sync.probe_allowed_endpoints' => ['https://cloud.example.test']]);
+        $this->app->instance(RegisteredServerProbe::class, new class extends RegisteredServerProbe
+        {
+            protected function addresses(string $host): array
+            {
+                return ['8.8.8.8'];
+            }
+
+            protected function curlAvailable(): bool
+            {
+                return false;
+            }
+        });
+        Http::fake();
+        $this->postJson('/api/local-server-config/test-cloud')->assertOk()
+            ->assertJsonPath('success', false)->assertJsonPath('data.status', 'OFFLINE')
+            ->assertJsonPath('message', "This server's PHP has no curl extension, which the connection test needs. Enable extension=curl for the web server's PHP and restart it.");
+        Http::assertNothingSent();
+    }
+
     public function test_approved_cloud_dns_is_pinned_and_redirects_are_disabled(): void
     {
         $node = $this->setupNode();

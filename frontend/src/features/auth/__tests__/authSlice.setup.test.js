@@ -5,7 +5,7 @@ import authReducer, { loginUser, logout } from "@/features/auth/authSlice";
 import { fetchAndApplyRuntimeRoutingConfig } from "@/shared/api/runtimeRouting";
 
 vi.mock("@/shared/api/apiClient", () => ({ default: { post: vi.fn() } }));
-vi.mock("@/shared/api/runtimeRouting", () => ({ clearRuntimeRoutingConfig: vi.fn(), fetchAndApplyRuntimeRoutingConfig: vi.fn() }));
+vi.mock("@/shared/api/runtimeRouting", () => ({ clearRuntimeRoutingConfig: vi.fn(), fetchAndApplyRuntimeRoutingConfig: vi.fn(), prepareRoutingForSignIn: vi.fn(), setSessionHome: vi.fn() }));
 vi.mock("@/shared/utils/storeSelection", () => ({ initializeStoreSelection: vi.fn() }));
 beforeEach(() => { localStorage.clear(); vi.resetAllMocks(); });
 afterEach(() => vi.unstubAllGlobals());

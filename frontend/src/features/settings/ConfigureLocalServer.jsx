@@ -21,6 +21,7 @@ import { Box, Button, Dialog, DialogTitle, DialogContent, DialogContentText, Dia
 import api from "@/shared/api/apiClient";
 import { fetchAndApplyRuntimeRoutingConfig } from "@/shared/api/runtimeRouting";
 import { muiFieldSx } from "@/shared/theme/formControlSizes";
+import OnPremConnectionCard from "./OnPremConnectionCard";
 
 const cardSx = { borderRadius: "7px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", boxShadow: 1 };
 
@@ -266,7 +267,7 @@ export default function ConfigureLocalServer() {
           <StatusIcon size={16} />
           <Box component="span">{tone.label}</Box>
         </Stack>
-        <Box sx={{ mt: 1, display: "grid", gap: 1.5, gridTemplateColumns: { md: "repeat(3, 1fr)" }, fontSize: 12.25, color: "text.secondary" }}>
+        <Box sx={{ mt: 1, display: "grid", gap: 1.5, gridTemplateColumns: { md: "repeat(4, 1fr)" }, fontSize: 12.25, color: "text.secondary" }}>
           <Box>
             <Box sx={{ fontSize: TYPE.small, textTransform: "uppercase", letterSpacing: "0.03em", color: "text.secondary" }}>Tenant Key</Box>
             <Box sx={{ mt: 0.5, fontWeight: 500, wordBreak: "break-all", color: "text.primary" }}>{config?.tenant_key || "Not assigned"}</Box>
@@ -279,10 +280,24 @@ export default function ConfigureLocalServer() {
             <Box sx={{ fontSize: TYPE.small, textTransform: "uppercase", letterSpacing: "0.03em", color: "text.secondary" }}>Last Seen</Box>
             <Box sx={{ mt: 0.5, fontWeight: 500, color: "text.primary" }}>{formatDateTime(config?.connector_last_seen_at)}</Box>
           </Box>
+          <Box>
+            <Box sx={{ fontSize: TYPE.small, textTransform: "uppercase", letterSpacing: "0.03em", color: "text.secondary" }}>Counter Address</Box>
+            <Box sx={{ mt: 0.5, fontWeight: 500, wordBreak: "break-all", color: "text.primary" }}>{config?.counter_url || "Not set"}</Box>
+          </Box>
         </Box>
       </Box>
 
       <Box sx={{ display: "grid", gap: 3, gridTemplateColumns: { xl: "1.1fr 0.9fr" } }}>
+        {config?.node_role === "local" ? (
+          <OnPremConnectionCard
+            config={config}
+            onConnected={(next) => {
+              setConfig((prev) => ({ ...(prev || {}), ...next }));
+              reloadConfig({ silent: true });
+              void fetchAndApplyRuntimeRoutingConfig({ apiClient: api, token: localStorage.getItem("token") }).catch(() => {});
+            }}
+          />
+        ) : (
         <Box component="section" sx={{ ...cardSx, p: { xs: 2, md: 2.5 } }}>
           <Typography component="h2" sx={{ fontSize: 14, fontWeight: 600, color: "text.primary" }}>Local Server Address</Typography>
           <Typography sx={{ mt: 0.5, fontSize: 12.25, color: "text.secondary" }}>
@@ -370,23 +385,28 @@ export default function ConfigureLocalServer() {
               </Button>
             </Stack>
             {(unsavedUrls || !config?.tenant_key) && <Typography role="status" sx={{ fontSize: 12, color: "text.secondary" }}>Save the server URLs before testing. Use your ERP backend address, not a frontend page URL. Other devices need the server's LAN address rather than 127.0.0.1. The server administrator must approve the backend endpoint before connection testing.</Typography>}
+            <Typography sx={{ fontSize: 12, color: "text.secondary" }}>
+              To set up an on-prem server, open Configure Local Server on that server and choose Connect to cloud. It fills
+              in this store's link here, and its heartbeat keeps the status above current.
+            </Typography>
           </Stack>
         </Box>
+        )}
 
         <Box component="section" sx={{ ...cardSx, p: { xs: 2, md: 2.5 } }}>
           <Typography component="h2" sx={{ fontSize: 14, fontWeight: 600, color: "text.primary" }}>How It Works</Typography>
           <Stack spacing={2} sx={{ mt: 2, fontSize: 12.25, color: "text.secondary" }}>
             <Stack direction="row" spacing={1.5}>
               <Box sx={{ display: "flex", flexShrink: 0, height: 21, width: 21, alignItems: "center", justifyContent: "center", borderRadius: "50%", bgcolor: "primary.main", fontSize: TYPE.small, fontWeight: 600, color: "primary.contrastText" }}>1</Box>
-              <Box>Save the address first. Test Local runs from the ERP server and requires an approved, reachable endpoint. A cloud host usually cannot reach a private store LAN; the installed local connector and the counter browser perform their own connection checks.</Box>
+              <Box>On the on-prem server, choose Connect to cloud and sign in with a cloud administrator. The store&apos;s data and staff accounts are copied there, and a sync job keeps both sides about 15 seconds apart.</Box>
             </Stack>
             <Stack direction="row" spacing={1.5}>
               <Box sx={{ display: "flex", flexShrink: 0, height: 21, width: 21, alignItems: "center", justifyContent: "center", borderRadius: "50%", bgcolor: "primary.main", fontSize: TYPE.small, fontWeight: 600, color: "primary.contrastText" }}>2</Box>
-              <Box>From then on, every device automatically checks the local server first and uses it when reachable — no separate login or URL to remember.</Box>
+              <Box>Billing PCs open the on-prem counter address (for example http://mainserver:5173) and use the on-prem server while it answers.</Box>
             </Stack>
             <Stack direction="row" spacing={1.5}>
               <Box sx={{ display: "flex", flexShrink: 0, height: 21, width: 21, alignItems: "center", justifyContent: "center", borderRadius: "50%", bgcolor: "primary.main", fontSize: TYPE.small, fontWeight: 600, color: "primary.contrastText" }}>3</Box>
-              <Box>If the local server goes down, devices switch to this cloud URL automatically so the store can keep working, and switch back the moment local is healthy again.</Box>
+              <Box>If it goes down, they switch to the cloud at the same address without signing out, showing Cloud (on-prem server down). When it is back, both sides sync first, then the counters return.</Box>
             </Stack>
           </Stack>
 

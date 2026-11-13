@@ -39,6 +39,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // On-prem, the counters reach this server through the Vite proxy on the same machine. Trusting only that
+        // local proxy's X-Forwarded-For gives each counter its own address for sign-in limits and logs.
+        if (config('sync.node_role') === 'local') {
+            \Illuminate\Http\Middleware\TrustProxies::at(['127.0.0.1', '::1']);
+        }
+
         // Per-request lookups (RequestMemo) are dropped after each request and when what they read changes.
         Event::listen(RequestHandled::class, fn () => $this->app->make(RequestMemo::class)->flush());
         foreach ([PlatformActivation::class, Store::class, User::class] as $model) {

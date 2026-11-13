@@ -8,7 +8,7 @@ import MobileLoginScreen from "./MobileLoginScreen";
 const { post } = vi.hoisted(() => ({ post: vi.fn() }));
 vi.mock("@/shared/api/apiClient", () => ({ default: { post } }));
 vi.mock("@/shared/api/runtimeRouting", () => ({
-  clearRuntimeRoutingConfig: vi.fn(), fetchAndApplyRuntimeRoutingConfig: vi.fn(),
+  clearRuntimeRoutingConfig: vi.fn(), fetchAndApplyRuntimeRoutingConfig: vi.fn(), prepareRoutingForSignIn: vi.fn(), setSessionHome: vi.fn(),
 }));
 vi.mock("@/features/auth/components/GoogleSignInButton", () => ({
   default: ({ onCredential, disabled }) => <button disabled={disabled} onClick={() => onCredential("google-credential")}>Sign in with Google</button>,

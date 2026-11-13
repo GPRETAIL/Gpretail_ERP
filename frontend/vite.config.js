@@ -27,6 +27,8 @@ function loadHttpsConfig(env = {}) {
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
   const proxyTarget = env.VITE_API_PROXY_TARGET || "http://localhost:8001";
+  // On-prem counters open this server by its machine name, e.g. http://mainserver:5173 (comma list).
+  const extraHosts = String(env.VITE_ALLOWED_HOSTS || "").split(",").map(host => host.trim()).filter(Boolean);
   const https = loadHttpsConfig(env);
 
   return {
@@ -59,13 +61,22 @@ export default defineConfig(({ mode }) => {
       ],
     },
     server: {
-      allowedHosts: ["home.gpretail.uk", "admin.gpretail.uk", "admin.home.gpretail.uk"],
+      allowedHosts: ["home.gpretail.uk", "admin.gpretail.uk", "admin.home.gpretail.uk", ...extraHosts],
       ...(https ? { https } : {}),
       proxy: {
         "/api": {
           target: proxyTarget,
           changeOrigin: true,
           ws: true,
+          // Each counter's own address reaches the backend (it trusts this local proxy), so sign-in limits are per counter.
+          xfwd: true,
+          // When the backend can't be reached, Vite answers 502. Saying why lets the counter send a bill that never
+          // arrived to the cloud instead (runtimeRouting.shouldRetryOnCloud).
+          configure: (proxy) => {
+            proxy.on("error", (err, _req, res) => {
+              if (res && typeof res.setHeader === "function" && !res.headersSent) res.setHeader("X-Proxy-Error", err?.code || "PROXY_ERROR");
+            });
+          },
           // Connector ZIP build can take minutes during dev
           timeout: 30_000,
           proxyTimeout: 30_000,

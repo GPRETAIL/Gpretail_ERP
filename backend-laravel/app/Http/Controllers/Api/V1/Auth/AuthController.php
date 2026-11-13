@@ -10,6 +10,8 @@ use App\Models\Store;
 use App\Models\StoreLocalNode;
 use App\Models\SyncOutboxEvent;
 use App\Models\User;
+use App\Services\Platform\FailoverIdentity;
+use App\Services\Platform\LocalNodeRegistration;
 use App\Services\Platform\PlatformBootstrap;
 use App\Services\Platform\PlatformClient;
 use App\Services\Pos\PosCounter;
@@ -23,6 +25,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 
 class AuthController extends Controller
@@ -167,7 +170,8 @@ class AuthController extends Controller
         }
 
         // Create Sanctum Token. A new ERP sign-in replaces earlier ERP sessions; the staff app (/hr) keeps its own.
-        $user->tokens()->where('name', '!=', \App\Services\Hr\StaffAppAccess::TOKEN_NAME)->delete();
+        // A counter's cloud failover sign-in (FailoverIdentity) also stays: it is used only while the on-prem server is down.
+        $user->tokens()->whereNotIn('name', [\App\Services\Hr\StaffAppAccess::TOKEN_NAME, FailoverIdentity::TOKEN_NAME])->delete();
         $token = $user->createToken($client.'-token', ['client:'.$client])->plainTextToken;
 
         return response()->json([
@@ -348,6 +352,83 @@ class AuthController extends Controller
         ]);
     }
 
+    /**
+     * On-prem only: connect this server to the cloud with a cloud company admin's sign-in (used once, never
+     * stored), then copy the store's data and users. Afterwards the counters can fail over to the cloud.
+     */
+    public function connectToCloud(Request $request, LocalNodeRegistration $registration)
+    {
+        abort_unless(in_array($request->user()?->role, ['admin', 'super_admin'], true), 403, 'Only administrators can connect this server to the cloud.');
+        abort_unless(config('sync.node_role') === 'local', 409, 'Connect to cloud is done on the on-prem server (SYNC_NODE_ROLE=local).');
+        $storeId = (int) $request->attributes->get('store_context_id', 0);
+        $store = app(StoreContext::class)->available($request->user())->find($storeId);
+        abort_unless($store, 422, 'Select the store this server runs first.');
+        $data = $request->validate([
+            'counter_url' => 'required|url:http,https|max:2048',
+            'cloud_server_url' => 'required|url:http,https|max:2048',
+            'username' => 'required|string|max:255',
+            'password' => 'required|string|max:255',
+        ]);
+
+        $node = $registration->connect($store, $data, $request->getSchemeAndHttpHost());
+
+        return response()->json(['success' => true, 'message' => "Connected to the cloud. {$node->users_synced} user(s) copied.",
+            'data' => $this->presentLocalServerNode($node, $node->store_id)]);
+    }
+
+    /** On-prem only: a cloud sign-in for the signed-in cashier, kept by the counter for an outage. */
+    public function failoverSession(Request $request)
+    {
+        abort_unless(config('sync.node_role') === 'local', 404, 'Not an on-prem server.');
+        $node = StoreLocalNode::where('enabled', true)->first();
+        abort_unless($node, 409, 'This server is not connected to the cloud yet.');
+        try {
+            $response = Http::acceptJson()->withHeaders(['X-Tenant-Key' => $node->tenant_key, 'X-Sync-Token' => $node->sync_token])
+                ->timeout(5)->post(LocalNodeRegistration::cloudApiBase($node->cloud_server_url).'/sync/failover-session', ['username' => $request->user()->username]);
+        } catch (\Throwable) {
+            return response()->json(['success' => false, 'message' => 'The cloud could not be reached.'], 503);
+        }
+        if (! $response->successful()) {
+            return response()->json(['success' => false, 'message' => $response->json('message') ?: 'The cloud refused a failover sign-in.'], $response->status() === 404 ? 404 : 503);
+        }
+
+        return response()->json(['success' => true, 'data' => [
+            'token' => $response->json('data.token'),
+            'expires_at' => $response->json('data.expires_at'),
+            'cloud_api_base_url' => LocalNodeRegistration::cloudApiBase($node->cloud_server_url),
+        ]]);
+    }
+
+    /**
+     * On-prem only: someone who signed in on the cloud during an outage gets an on-prem sign-in once this
+     * server is back. The cloud confirms whose sign-in it is; nothing else is trusted from the browser.
+     */
+    public function exchangeFailoverSession(Request $request)
+    {
+        abort_unless(config('sync.node_role') === 'local', 404, 'Not an on-prem server.');
+        $request->validate(['cloud_token' => 'required|string|max:500']);
+        $node = StoreLocalNode::where('enabled', true)->first();
+        abort_unless($node, 409, 'This server is not connected to the cloud yet.');
+        try {
+            $response = Http::acceptJson()->withHeaders(['X-Tenant-Key' => $node->tenant_key, 'X-Sync-Token' => $node->sync_token])
+                ->timeout(5)->post(LocalNodeRegistration::cloudApiBase($node->cloud_server_url).'/sync/session-user', ['token' => $request->input('cloud_token')]);
+        } catch (\Throwable) {
+            return response()->json(['success' => false, 'message' => 'The cloud could not be reached.'], 503);
+        }
+        if ($response->status() === 401) {
+            return response()->json(['success' => false, 'message' => 'Sign in again.'], 401);
+        }
+        if (! $response->successful()) {
+            return response()->json(['success' => false, 'message' => 'The cloud could not confirm this sign-in.'], 503);
+        }
+        $user = User::where('username', (string) $response->json('data.username'))->first();
+        if (! $user || ! $user->is_active) {
+            return response()->json(['success' => false, 'message' => 'Your account has not reached this server yet. Sign in again in a minute.'], 401);
+        }
+
+        return $this->completeLogin($user);
+    }
+
     /** Same scheme, host and port, compared the way the connection probe normalizes them (case, default port, /api). */
     private function sameServerOrigin(string $one, string $two): bool
     {
@@ -388,8 +469,10 @@ class AuthController extends Controller
 
         if (! $node) {
             return [
+                'node_role' => config('sync.node_role'),
                 'enabled' => false,
                 'tenant_key' => null,
+                'counter_url' => null,
                 'local_server_url' => null,
                 'cloud_server_url' => null,
                 'effective_cloud_server_url' => config('sync.cloud_api_base_url'),
@@ -402,19 +485,30 @@ class AuthController extends Controller
             ];
         }
 
-        $status = ! $node->last_health_check_at
+        // The on-prem server's heartbeat (every sync cycle) is the real signal; a manual Test Local is the fallback.
+        $lastSeen = collect([$node->last_heartbeat_at, $node->last_health_check_at])->filter()->max();
+        $status = ! $lastSeen
             ? 'not_connected'
-            : ($node->local_healthy ? 'online' : 'offline');
+            : ($node->local_healthy && (! $node->last_heartbeat_at || $node->last_heartbeat_at->gt(now()->subMinutes(3))) ? 'online' : 'offline');
+
+        $onPrem = config('sync.node_role') === 'local';
 
         return [
+            'node_role' => config('sync.node_role'),
             'enabled' => (bool) $node->enabled,
             'tenant_key' => $node->tenant_key,
+            'counter_url' => $node->counter_url,
+            'last_cycle_at' => optional($node->last_cycle_at)->toIso8601String(),
+            'last_users_sync_at' => optional($node->last_users_sync_at)->toIso8601String(),
+            'users_synced' => (int) $node->users_synced,
+            'last_heartbeat_at' => optional($node->last_heartbeat_at)->toIso8601String(),
+            'handshake' => $onPrem && $node->enabled ? app(LocalNodeRegistration::class)->handshakeState($node) : null,
             'local_server_url' => $node->local_server_url,
             'cloud_server_url' => $node->cloud_server_url,
             'effective_cloud_server_url' => $node->cloud_server_url ?: config('sync.cloud_api_base_url'),
             'advertised_local_server_url' => $node->advertised_local_server_url,
             'connector_status' => $status,
-            'connector_last_seen_at' => optional($node->last_health_check_at)->toIso8601String(),
+            'connector_last_seen_at' => optional($lastSeen)->toIso8601String(),
             'local_healthy' => (bool) $node->local_healthy,
             'outbox_pending' => $outboxPending,
             'outbox_failed' => $outboxFailed,

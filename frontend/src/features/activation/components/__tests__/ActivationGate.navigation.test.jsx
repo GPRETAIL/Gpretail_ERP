@@ -69,3 +69,18 @@ it("moves between mobile and desktop gates without changing hook order", async (
   expect(screen.getByText("ERP content")).toBeInTheDocument();
   expect(fetchStatus).toHaveBeenCalledTimes(1);
 });
+
+it("lets an on-prem counter reach sign-in through its cloud while the on-prem server is down", async () => {
+  window.history.replaceState({}, "", "/login");
+  localStorage.setItem("erp_onprem_cloud_api", "https://cloud.example/api");
+  const fetch = vi.fn(async (url) => {
+    if (String(url).startsWith("/api/")) throw new TypeError("Failed to fetch");
+    return { ok: true, status: 200, json: async () => ({ data: { activated: true } }) };
+  });
+  vi.stubGlobal("fetch", fetch);
+  const store = configureStore({ reducer: { auth: authReducer } });
+  render(<Provider store={store}><ActivationGate><div>Login page</div></ActivationGate></Provider>);
+  expect(await screen.findByText("Login page")).toBeInTheDocument();
+  expect(fetch).toHaveBeenCalledWith("https://cloud.example/api/activation/status", expect.anything());
+  expect(screen.queryByText("Cannot verify activation")).not.toBeInTheDocument();
+});

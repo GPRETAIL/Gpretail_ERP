@@ -5,6 +5,7 @@ import { logout } from "@/features/auth/authSlice";
 import { Loader2, ServerCrash, RefreshCw } from "lucide-react";
 import { Box, Button, Typography } from "@mui/material";
 import ActivationWizard from "@/features/activation/ActivationWizard";
+import { getFailoverCloudApiBase } from "@/shared/api/runtimeRouting";
 
 // Boot gate for the tenant deployment. On start it checks /api/activation/status:
 //  - activated  → render the app (children)
@@ -28,8 +29,19 @@ const DesktopActivationGate = ({ children }) => {
   const [licence, setLicence] = useState(null);
 
   const fetchActivation = useCallback(async ({ signal }) => {
-    const response = await fetch("/api/activation/status", { headers: { Accept: "application/json" }, signal });
-    return { ok: response.ok, body: await response.json().catch(() => ({})) };
+    const ask = async (url) => {
+      const response = await fetch(url, { headers: { Accept: "application/json" }, signal });
+      return { ok: response.ok, status: response.status, body: await response.json().catch(() => ({})) };
+    };
+    // An on-prem counter whose server is down asks the cloud it fails over to: the same company's deployment.
+    const cloud = getFailoverCloudApiBase();
+    try {
+      const local = await ask("/api/activation/status");
+      if (!cloud || local.status < 500) return local;
+    } catch (error) {
+      if (!cloud || error?.name === "AbortError") throw error;
+    }
+    return ask(`${cloud}/activation/status`);
   }, []);
   const { reload: check } = useAsyncQuery(fetchActivation, {
     onSuccess: ({ ok, body }) => {

@@ -52,7 +52,13 @@ class RegisteredServerProbe
                 'message' => 'This is the current development backend. Local sync is not verified: configure a separate local connector and cloud deployment before testing failover.'];
         }
         $resolved = str_contains($ip, ':') ? '['.$ip.']' : $ip;
-        $curl = filter_var($host, FILTER_VALIDATE_IP) ? [] : [CURLOPT_RESOLVE => [$host.':'.$parts['port'].':'.$resolved]];
+        // The checked address is pinned for the request (no DNS rebinding between the check and the call), which
+        // needs PHP's curl extension. Without it, say so instead of failing with a PHP error.
+        if (! filter_var($host, FILTER_VALIDATE_IP) && ! $this->curlAvailable()) {
+            return ['healthy' => false, 'reachable' => false,
+                'message' => "This server's PHP has no curl extension, which the connection test needs. Enable extension=curl for the web server's PHP and restart it."];
+        }
+        $curl = filter_var($host, FILTER_VALIDATE_IP) ? [] : [\CURLOPT_RESOLVE => [$host.':'.$parts['port'].':'.$resolved]];
         try {
             $response = Http::timeout(5)->connectTimeout(3)->withoutRedirecting()->withOptions(['proxy' => '', 'curl' => $curl])->get($origin.'/api/connector/web-config');
             $healthy = $response->successful() && ($local ? (bool) $response->json('data.enabled') : $response->json('success') === true);
@@ -61,6 +67,11 @@ class RegisteredServerProbe
         }
 
         return ['healthy' => $healthy];
+    }
+
+    protected function curlAvailable(): bool
+    {
+        return \defined('CURLOPT_RESOLVE');
     }
 
     protected function addresses(string $host): array

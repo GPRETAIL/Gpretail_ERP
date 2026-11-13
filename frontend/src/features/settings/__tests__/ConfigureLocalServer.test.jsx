@@ -101,3 +101,27 @@ it("distinguishes never connected nodes from overdue heartbeats", async () => {
   expect(screen.queryByText("Stale", { exact: true })).not.toBeInTheDocument();
   expect(screen.getAllByText("Not connected", { exact: true }).length).toBeGreaterThan(1);
 });
+
+it("on the on-prem server, connects to the cloud with a cloud admin and never keeps the password in the form", async () => {
+  const onPrem = { ...saved, node_role: "local", enabled: false, cloud_server_url: null, counter_url: null };
+  get.mockImplementation(async path => ({ data: { data: path === "/local-server-config" ? onPrem : { nodes: [] } } }));
+  post.mockResolvedValue({ data: { message: "Connected to the cloud. 4 user(s) copied.", data: { ...onPrem, enabled: true, cloud_server_url: "https://dev.gpsoftware.in", counter_url: "http://mainserver:5173", users_synced: 4 } } });
+  render(<ConfigureLocalServer />);
+
+  expect(await screen.findByText("This on-prem server and the cloud")).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Save URLs" })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Connect to cloud" }));
+  fireEvent.change(screen.getByLabelText(/Counter address/), { target: { value: "http://mainserver:5173" } });
+  expect(screen.getByLabelText(/Cloud address/)).toHaveValue("https://dev.gpsoftware.in");
+  fireEvent.change(screen.getByLabelText(/Cloud admin username/), { target: { value: "owner" } });
+  fireEvent.change(screen.getByLabelText(/Cloud admin password/), { target: { value: "pass" } });
+  fireEvent.click(screen.getByRole("button", { name: "Connect" }));
+
+  await waitFor(() => expect(post).toHaveBeenCalledWith("/local-server-config/connect", {
+    counter_url: "http://mainserver:5173", cloud_server_url: "https://dev.gpsoftware.in", username: "owner", password: "pass",
+  }, expect.anything()));
+  await waitFor(() => expect(toast.success).toHaveBeenCalledWith("Connected to the cloud. 4 user(s) copied."));
+  // The counters on this page pick up the new cloud link at once.
+  await waitFor(() => expect(initialize).toHaveBeenCalled());
+  await waitFor(() => expect(screen.queryByLabelText(/Cloud admin password/)).not.toBeInTheDocument());
+});

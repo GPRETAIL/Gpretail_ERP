@@ -55,6 +55,20 @@ server as harmless leftovers. The optimised autoloader only points at the new lo
   `D:\xampp\php\php.exe D:\xampp\htdocs\Next\backend-laravel\artisan schedule:run`. Nothing else is needed for
   backups. The old `POST /api/backups/scheduled-run` URL (header `X-Backup-Cron-Token: <BACKUP_CRON_SECRET>`)
   still works for installs that trigger backups from an outside timer.
+- **On-prem server with cloud failover.** On the store PC:
+  1. Backend `.env`: `SYNC_NODE_ROLE=local`. The counters reach it through the Vite server on the same PC.
+  2. Frontend `.env` (or the environment of the Vite process): `VITE_API_PROXY_TARGET` (the backend, e.g.
+     `http://127.0.0.1:8000`), `VITE_FAILOVER_CLOUD_API_URL=https://dev.gpsoftware.in/api` and
+     `VITE_ALLOWED_HOSTS=mainserver` (the name the billing PCs use). Run Vite with `--host`.
+  3. The Task Scheduler entry above (`schedule:run` every minute) runs the 15-second `sync:cycle`.
+  4. Sign in on-prem as an admin, open Configure Local Server, choose Connect to cloud and sign in with a cloud
+     company admin. The store's data and staff accounts are copied; staff then use their cloud passwords.
+
+  The cloud address must be public (https://dev.gpsoftware.in): Chrome refuses calls from a page it considers
+  public to a private LAN address, and a PC name can resolve to a public IPv6 address.
+
+  The cloud allows the counters' address by itself when it is a machine name without dots (`http://mainserver:5173`);
+  add a dotted intranet address to `CORS_EXTRA_ORIGINS` in the cloud's `.env`.
 - **Health check.** `GET /up`. `GET /api/health` also reports `background.scheduler` as `running`, `stale`
   or `never`; `never` or `stale` means the cron above is missing or failing.
 

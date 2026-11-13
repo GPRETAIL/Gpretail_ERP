@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\StoreLocalNode;
 use App\Models\SyncOutboxEvent;
 use App\Services\Backup\BackupService;
+use App\Services\Platform\FailoverIdentity;
+use App\Services\Platform\LocalNodeRegistration;
 use App\Services\Platform\RegisteredServerProbe;
 use App\Services\Platform\SyncCycleService;
 use Illuminate\Http\Request;
@@ -33,15 +35,88 @@ class SyncController extends Controller
             return response()->json(['success' => true, 'data' => ['enabled' => false]]);
         }
 
+        // Counters waiting on the cloud after an outage come back only once both sides are caught up.
+        $handshake = app(LocalNodeRegistration::class)->handshakeState($node);
+
         return response()->json([
             'success' => true,
             'data' => [
                 'enabled' => true,
                 'tenant_key' => $node->tenant_key,
-                'cloud_api_base_url' => $node->cloud_server_url ?: config('sync.cloud_api_base_url'),
+                'cloud_api_base_url' => LocalNodeRegistration::cloudApiBase($node->cloud_server_url),
                 'local_healthy' => true,
+                ...$handshake,
             ],
         ]);
+    }
+
+    /**
+     * Cloud. An on-prem server connects to this store with a cloud company admin's sign-in and gets its sync
+     * identity. The password is checked like a sign-in (lockout included) and never stored.
+     */
+    public function registerNode(Request $request, FailoverIdentity $identity)
+    {
+        abort_if(config('sync.node_role') === 'local', 409, 'This is an on-prem server, not the cloud.');
+        $data = $request->validate([
+            'username' => 'required|string|max:255',
+            'password' => 'required|string|max:255',
+            'platform_store_id' => 'nullable|max:100', // A number on some installs, text on others.
+            'store_code' => 'nullable|string|max:100',
+            'counter_url' => 'nullable|url:http,https|max:2048',
+        ]);
+        $result = $identity->registerNode($data['username'], $data['password'], isset($data['platform_store_id']) ? (string) $data['platform_store_id'] : null,
+            $data['store_code'] ?? null, $data['counter_url'] ?? null, (string) $request->ip());
+
+        return response()->json(['success' => true, 'message' => 'On-prem server connected.', 'data' => $result]);
+    }
+
+    /** Cloud. The store's users, for the on-prem server to copy (the cloud is the master for staff accounts). */
+    public function users(Request $request, FailoverIdentity $identity)
+    {
+        $node = $this->authenticateNode($request);
+        if (! $node) {
+            return response()->json(['success' => false, 'message' => 'Invalid tenant key or sync token'], 401);
+        }
+
+        return response()->json(['success' => true, 'data' => ['users' => $identity->storeUsers($node)]]);
+    }
+
+    /** Cloud. A sign-in for this store's cashier, used by the counters only while the on-prem server is down. */
+    public function failoverSession(Request $request, FailoverIdentity $identity)
+    {
+        $node = $this->authenticateNode($request);
+        if (! $node) {
+            return response()->json(['success' => false, 'message' => 'Invalid tenant key or sync token'], 401);
+        }
+        $request->validate(['username' => 'required|string|max:255']);
+
+        return response()->json(['success' => true, 'data' => $identity->issueFailoverToken($node, (string) $request->input('username'))]);
+    }
+
+    /** Cloud. Who a cloud sign-in belongs to, so the on-prem server can give that person an on-prem sign-in. */
+    public function sessionUser(Request $request, FailoverIdentity $identity)
+    {
+        $node = $this->authenticateNode($request);
+        if (! $node) {
+            return response()->json(['success' => false, 'message' => 'Invalid tenant key or sync token'], 401);
+        }
+        $request->validate(['token' => 'required|string|max:500']);
+        $username = $identity->sessionUsername($node, (string) $request->input('token'));
+
+        return $username
+            ? response()->json(['success' => true, 'data' => ['username' => $username]])
+            : response()->json(['success' => false, 'message' => 'This cloud sign-in is not valid for this store.'], 401);
+    }
+
+    /** Cloud. How many cloud writes the on-prem server still has to apply. */
+    public function outboundCount(Request $request)
+    {
+        $node = $this->authenticateNode($request);
+        if (! $node) {
+            return response()->json(['success' => false, 'message' => 'Invalid tenant key or sync token'], 401);
+        }
+
+        return response()->json(['success' => true, 'data' => ['pending' => SyncOutboxEvent::where('store_id', $node->store_id)->where('status', 'pending')->count()]]);
     }
 
     /**
@@ -58,6 +133,11 @@ class SyncController extends Controller
 
         $node->local_healthy = $request->boolean('local_healthy', true);
         $node->last_heartbeat_at = now();
+        // The counters' address is set on the on-prem page and shown on the cloud's.
+        if ($request->filled('counter_url') && filter_var($request->input('counter_url'), FILTER_VALIDATE_URL)
+            && preg_match('#^https?://#i', (string) $request->input('counter_url'))) {
+            $node->counter_url = mb_substr((string) $request->input('counter_url'), 0, 2048);
+        }
         if ($request->filled('advertised_local_server_url')) {
             $normalizedUrl = app(RegisteredServerProbe::class)->normalize((string) $request->input('advertised_local_server_url'));
             $host = trim((string) parse_url($normalizedUrl, PHP_URL_HOST), '[]');
@@ -91,7 +171,7 @@ class SyncController extends Controller
             ->where('status', 'pending')
             ->orderBy('id')
             ->limit($limit)
-            ->get(['id', 'method', 'path', 'payload', 'headers']);
+            ->get(['id', 'method', 'path', 'payload', 'headers', 'actor_username']);
 
         return response()->json([
             'success' => true,
@@ -167,6 +247,10 @@ class SyncController extends Controller
             'data' => [
                 'exported_at' => now()->toIso8601String(),
                 'tables' => $exported,
+                // The on-prem server continues the store's document numbers from here, so a newly connected
+                // server never re-issues a number the cloud already used (cloud failover bills use their own C series).
+                'counters' => \Illuminate\Support\Facades\DB::table('document_number_counters')->where('store_id', $node->store_id)
+                    ->where('origin', 'normal')->get(['prefix', 'period', 'origin', 'last_seq']),
             ],
         ]);
     }

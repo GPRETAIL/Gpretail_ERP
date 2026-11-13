@@ -1,6 +1,6 @@
 # API reference
 
-Every endpoint under `/api`, grouped by module (652 endpoints). Generated from
+Every endpoint under `/api`, grouped by module (660 endpoints). Generated from
 `php artisan route:list --sort=definition --json`; regenerate it after changing routes.
 
 - Each signed-in endpoint is also served under `/api/v1/...` with the same behaviour.
@@ -52,6 +52,9 @@ Every endpoint under `/api`, grouped by module (652 endpoints). Generated from
 | GET | `/api/local-server-config` | AuthController@localServerConfig | yes |
 | PUT | `/api/local-server-config` | AuthController@localServerConfigUpdate | yes |
 | GET | `/api/local-server-config/runtime` | AuthController@localServerConfigRuntime | yes |
+| POST | `/api/local-server-config/connect` | AuthController@connectToCloud | yes |
+| POST | `/api/auth/failover-session` | AuthController@failoverSession | yes |
+| POST | `/api/auth/failover-session/exchange` | AuthController@exchangeFailoverSession | no |
 | GET | `/api/mobile/access` | MobileAccessController@status | yes |
 | GET | `/api/me` | AuthController@me | yes |
 
@@ -471,6 +474,11 @@ Every endpoint under `/api`, grouped by module (652 endpoints). Generated from
 | POST | `/api/sync/outbound/ack` | SyncController@outboundAck | no |
 | GET|POST | `/api/sync/run-cycle` | SyncController@runCycle | no |
 | GET | `/api/sync/catch-up-export` | SyncController@catchUpExport | no |
+| POST | `/api/sync/register-node` | SyncController@registerNode | no |
+| GET | `/api/sync/users` | SyncController@users | no |
+| POST | `/api/sync/failover-session` | SyncController@failoverSession | no |
+| POST | `/api/sync/session-user` | SyncController@sessionUser | no |
+| GET | `/api/sync/outbound/count` | SyncController@outboundCount | no |
 | GET | `/api/sync/nodes` | SyncController@nodes | yes |
 | GET | `/api/sync/outbox` | SyncController@outboxEvents | yes |
 | POST | `/api/sync/outbox/{id}/retry` | SyncController@retryOutboxEvent | yes |

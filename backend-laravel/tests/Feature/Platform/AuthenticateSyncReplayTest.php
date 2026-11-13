@@ -84,6 +84,29 @@ class AuthenticateSyncReplayTest extends TestCase
         $this->assertSame($syncUser->id, $res->json('data.user_id'));
     }
 
+    public function test_a_replay_is_saved_under_the_cashier_who_made_it_when_they_exist_here(): void
+    {
+        $cashier = User::create(['name' => 'Asha', 'username' => 'asha', 'email' => 'asha@example.com', 'password' => 'secret123',
+            'role' => 'admin', 'store_id' => $this->store->id, 'is_active' => true]);
+
+        $res = $this->withHeaders($this->replayHeaders(['X-Sync-Actor' => 'asha']))->postJson('/api/pos-sales', $this->replayPayload());
+
+        $res->assertCreated();
+        $this->assertSame($cashier->id, $res->json('data.user_id'));
+        $this->assertSame(0, User::where('role', 'sync_system')->count());
+    }
+
+    public function test_an_unknown_or_inactive_actor_falls_back_to_the_sync_user(): void
+    {
+        User::create(['name' => 'Gone', 'username' => 'gone', 'email' => 'gone@example.com', 'password' => 'secret123',
+            'role' => 'admin', 'store_id' => $this->store->id, 'is_active' => false]);
+
+        $res = $this->withHeaders($this->replayHeaders(['X-Sync-Actor' => 'gone']))->postJson('/api/pos-sales', $this->replayPayload());
+
+        $res->assertCreated();
+        $this->assertSame(User::where('role', 'sync_system')->value('id'), $res->json('data.user_id'));
+    }
+
     public function test_the_sync_user_is_reused_not_recreated_on_a_second_replay(): void
     {
         $this->withHeaders($this->replayHeaders())->postJson('/api/pos-sales', $this->replayPayload())->assertCreated();

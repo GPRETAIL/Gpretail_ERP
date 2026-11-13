@@ -23,7 +23,11 @@ const checkAuth = async (dispatch) => {
     if (localStorage.getItem("token") !== token || sessionStorage.getItem("activeStoreId") !== storeScope) return;
     // An unavailable database/network is not proof that the session expired.
     // Server-side authorization remains mandatory on every business request.
-    if (error?.response?.status !== 401 && !error?.invalidAuthResponse) return;
+    if (error?.response?.status !== 401 && !error?.invalidAuthResponse) {
+      // On an on-prem page whose server is down, this moves the counter to the cloud and keeps watching for its return.
+      fetchAndApplyRuntimeRoutingConfig({ apiClient: api, token }).catch(() => {});
+      return;
+    }
     try {
       localStorage.removeItem("token");
       localStorage.removeItem("user");

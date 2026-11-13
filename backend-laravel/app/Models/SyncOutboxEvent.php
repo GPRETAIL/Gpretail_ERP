@@ -23,6 +23,7 @@ class SyncOutboxEvent extends Model
         'attempts',
         'last_error',
         'synced_at',
+        'actor_username',
     ];
 
     protected function casts(): array

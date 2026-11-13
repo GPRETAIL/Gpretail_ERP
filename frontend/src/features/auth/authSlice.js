@@ -2,13 +2,15 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import api from "@/shared/api/apiClient";
 import { initializeStoreSelection } from "@/shared/utils/storeSelection";
 import { disableWebPush } from "@/features/notifications/utils/webPush";
-import { clearRuntimeRoutingConfig, fetchAndApplyRuntimeRoutingConfig } from "@/shared/api/runtimeRouting";
+import { clearRuntimeRoutingConfig, fetchAndApplyRuntimeRoutingConfig, prepareRoutingForSignIn, setSessionHome } from "@/shared/api/runtimeRouting";
 import { clearPrivateApiCache } from "@/shared/api/privateApiCache";
 
 export const loginUser = createAsyncThunk(
   "auth/loginUser",
   async (credentials, { rejectWithValue }) => {
     try {
+      // On an on-prem page whose server is down, this sends the sign-in to the cloud.
+      await prepareRoutingForSignIn({ apiClient: api });
       const res = await api.post(credentials.id_token ? "/auth/google" : "/auth/login", credentials);
       if (res.data?.data?.activation_required && res.data.data.setup_token) {
         await clearPrivateApiCache();
@@ -28,6 +30,7 @@ export const loginUser = createAsyncThunk(
       await clearPrivateApiCache();
       localStorage.setItem("token", token);
       localStorage.setItem("user", JSON.stringify(user));
+      setSessionHome(res.config?.__routingTarget);
       initializeStoreSelection(user);
       await fetchAndApplyRuntimeRoutingConfig({ apiClient: api, token, user });
       return { token, user };

@@ -10,6 +10,8 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('platform:sync')->everyFiveMinutes()->withoutOverlapping();
+// On-prem server only: keep the cloud about 15 s behind (bills up, cloud writes and staff accounts down, heartbeat).
+Schedule::command('sync:cycle')->everyFifteenSeconds()->withoutOverlapping(5)->when(fn () => config('sync.node_role') === 'local');
 
 Schedule::command('platform:notifications-sync')->everyMinute()->withoutOverlapping();
 

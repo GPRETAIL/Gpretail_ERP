@@ -71,6 +71,8 @@ class CaptureSyncOutboxTest extends TestCase
         $this->assertSame('POST', $event->method);
         $this->assertSame('/pos-sales', $event->path);
         $this->assertSame('application/json', $event->headers['Content-Type']);
+        // The replay on the other server is saved under the same cashier.
+        $this->assertSame('testadmin', $event->actor_username);
     }
 
     public function test_cloud_node_queues_a_write_when_the_store_has_an_enabled_local_node(): void

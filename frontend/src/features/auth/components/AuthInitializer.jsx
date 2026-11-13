@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
 import { Box } from "@mui/material";
 import checkAuth from "@/features/auth/utils/checkAuth";
-import { logout } from "@/features/auth/authSlice";
+import { loginSuccess, logout } from "@/features/auth/authSlice";
 
 const AuthInitializer = ({ children }) => {
   const dispatch = useDispatch();
@@ -26,8 +26,16 @@ const AuthInitializer = ({ children }) => {
   // the login screen instead of leaving them on a dead session.
   useEffect(() => {
     const handleAuthExpired = () => dispatch(logout());
+    // A counter that signed in on the cloud during an on-prem outage got an on-prem sign-in on its return.
+    const handleSessionExchanged = (event) => {
+      if (event.detail?.token && event.detail?.user) dispatch(loginSuccess({ token: event.detail.token, user: event.detail.user }));
+    };
     window.addEventListener("vx-auth-expired", handleAuthExpired);
-    return () => window.removeEventListener("vx-auth-expired", handleAuthExpired);
+    window.addEventListener("vx-session-exchanged", handleSessionExchanged);
+    return () => {
+      window.removeEventListener("vx-auth-expired", handleAuthExpired);
+      window.removeEventListener("vx-session-exchanged", handleSessionExchanged);
+    };
   }, [dispatch]);
 
   // Mobile App (/app/*) bypasses desktop loading screen entirely

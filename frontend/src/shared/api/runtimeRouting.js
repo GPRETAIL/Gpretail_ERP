@@ -1,8 +1,22 @@
 import { serverUrlProblem } from "./serverUrlCheck";
 const CLOUD_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
+// On-prem frontends set this (e.g. https://dev.gpsoftware.in/api) so counters can reach the cloud even when the
+// on-prem backend is down from the start and never told them where the cloud is.
+const FAILOVER_CLOUD_API_URL = import.meta.env.VITE_FAILOVER_CLOUD_API_URL || "";
 const STORAGE_KEY = "erp_runtime_routing";
+const FAILOVER_SESSION_KEY = "erp_failover_session";
+const SESSION_HOME_KEY = "erp_session_home";
+// The cloud address of an on-prem page. Not session data, so it survives sign-out: the next sign-in during an
+// outage still knows where the cloud is.
+const ONPREM_CLOUD_KEY = "erp_onprem_cloud_api";
 const LOCAL_POLL_INTERVAL_MS = 5000;
 const LOCAL_POLL_TIMEOUT_MS = 1500;
+// Two missed health checks in a row (about 10 s) before counters move to the cloud: one slow answer is not an outage.
+const FAILURES_BEFORE_FAILOVER = 2;
+const FAILOVER_REFRESH_MS = 30 * 60 * 1000;
+const FAILOVER_RENEW_BEFORE_MS = 6 * 60 * 60 * 1000;
+// Vite's proxy marks a 502 with the connection error (vite.config.js). These mean the on-prem backend never got the request.
+const UNREACHED_PROXY_ERRORS = ["ECONNREFUSED", "EHOSTUNREACH", "ENETUNREACH", "ENOTFOUND", "EAI_AGAIN"];
 const DEFAULT_STATE = {
   enabled: false,
   tenantKey: "",
@@ -13,6 +27,10 @@ const DEFAULT_STATE = {
   localHealthUrl: "",
   localHealthy: false,
   runningOnLocalConnector: false,
+  // On-prem pages only: whether the on-prem backend answers, and whether both sides are caught up
+  // (ready | catching_up | cloud_unreachable). Counters on the cloud return only when it is not catching_up.
+  localReachable: false,
+  handshakeState: "",
 };
 
 let runtimeState = { ...DEFAULT_STATE };
@@ -21,6 +39,10 @@ let boundApiClient = null;
 let healthPending = false;
 let configurationAttempt = null;
 let configurationVersion = 0;
+let consecutiveFailures = 0;
+let failoverRefreshAt = 0;
+let failoverPending = null;
+let returnPending = null;
 
 const isBrowser = () => typeof window !== "undefined";
 
@@ -36,6 +58,15 @@ const toApiBase = (value = "") => {
   if (text === "/api") return "/api";
   if (text.endsWith("/api")) return stripTrailingSlash(text);
   return `${stripTrailingSlash(text)}/api`;
+};
+
+const readJson = (storage, key) => {
+  try {
+    const raw = storage.getItem(key);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
 };
 
 const pathFromRequestConfig = (config = {}) => {
@@ -57,6 +88,7 @@ const withoutQuery = (value = "") => String(value || "").split("?")[0] || "/";
 const isPosCheckout = config => String(config.method || "get").toLowerCase() === "post" &&
   /^\/(?:api\/)?pos-(?:old-)?sales\/?$/i.test(withoutQuery(pathFromRequestConfig(config)));
 const isBackupPath = config => /^\/(?:api\/)?backups(?:\/|$)/i.test(withoutQuery(pathFromRequestConfig(config)));
+const isSessionPath = path => /^\/(?:api\/)?(?:auth\/|local-server-config(?:\/|$))/.test(path);
 
 const isAlwaysCloudPath = (value = "") => {
   const path = withoutQuery(value).toLowerCase();
@@ -96,15 +128,25 @@ const isRetryableSetupFailure = (error) => {
   );
 };
 
+/** True when the on-prem proxy answered that it could not reach the backend at all: the request never arrived. */
+const neverReachedLocal = (error) => {
+  if (Number(error?.response?.status || 0) !== 502) return false;
+  const headers = error?.response?.headers || {};
+  const code = String((typeof headers.get === "function" ? headers.get("x-proxy-error") : headers["x-proxy-error"]) || "").toUpperCase();
+  return UNREACHED_PROXY_ERRORS.includes(code);
+};
+
 // Every mutation path funnels through here, so this is the one place that needs to notify
 // listeners (e.g. a navbar status badge) -- no separate "did the target actually change" check,
 // since re-rendering on an identical snapshot is harmless and simpler than tracking a diff.
 export const RUNTIME_ROUTING_CHANGED_EVENT = "erp:runtime-routing-changed";
+export const FAILOVER_SESSION_EXPIRED_EVENT = "vx-failover-session-expired";
 
 const persistState = () => {
   if (!isBrowser()) return;
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(runtimeState));
+    if (runtimeState.runningOnLocalConnector && isAbsoluteUrl(runtimeState.cloudBaseUrl)) window.localStorage.setItem(ONPREM_CLOUD_KEY, runtimeState.cloudBaseUrl);
   } catch {
     // ignore
   }
@@ -113,14 +155,137 @@ const persistState = () => {
 
 const readStoredState = () => {
   if (!isBrowser()) return null;
+  const parsed = readJson(window.localStorage, STORAGE_KEY);
+  return parsed && typeof parsed === "object" ? parsed : null;
+};
+
+// ─── The two sign-ins of an on-prem counter ──────────────────────────────────
+// "home" is the server the counter signed in on (localStorage "token"). The other server's sign-in is kept in
+// erp_failover_session: a cloud sign-in made by the on-prem server, used only while it is down.
+
+const readFailoverSession = () => (isBrowser() ? readJson(window.localStorage, FAILOVER_SESSION_KEY) : null);
+
+const writeFailoverSession = (session) => {
+  if (!isBrowser()) return;
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    if (!parsed || typeof parsed !== "object") return null;
-    return parsed;
+    if (session?.token) window.localStorage.setItem(FAILOVER_SESSION_KEY, JSON.stringify(session));
+    else window.localStorage.removeItem(FAILOVER_SESSION_KEY);
   } catch {
-    return null;
+    // ignore
+  }
+};
+
+export const getSessionHome = () => {
+  if (!isBrowser()) return "local";
+  try {
+    return window.localStorage.getItem(SESSION_HOME_KEY) === "cloud" ? "cloud" : "local";
+  } catch {
+    return "local";
+  }
+};
+
+/** Called after a sign-in: on an on-prem page, remembers whether it happened on the cloud (during an outage). */
+export const setSessionHome = (target) => {
+  if (!isBrowser()) return;
+  try {
+    if (runtimeState.runningOnLocalConnector && target === "cloud") window.localStorage.setItem(SESSION_HOME_KEY, "cloud");
+    else window.localStorage.removeItem(SESSION_HOME_KEY);
+  } catch {
+    // ignore
+  }
+};
+
+/** The sign-in to send to a target: the home sign-in, or the failover one for the other server. */
+export const getAuthTokenFor = (target) => {
+  const token = isBrowser() ? window.localStorage.getItem("token") : null;
+  if (!runtimeState.runningOnLocalConnector || !["local", "cloud"].includes(target)) return token;
+  if (target === getSessionHome()) return token;
+  return readFailoverSession()?.token || token;
+};
+
+/**
+ * Whether a request went to the server the counter did not sign in on. Its 401 never signs the counter out: the
+ * failover sign-in is dropped instead and the counter is asked to sign in again on the cloud.
+ */
+export const usedFailoverSession = (config = {}) => runtimeState.runningOnLocalConnector
+  && ["local", "cloud"].includes(config.__routingTarget) && config.__routingTarget !== getSessionHome();
+
+export const discardFailoverSession = () => {
+  writeFailoverSession(null);
+  failoverRefreshAt = 0;
+  if (isBrowser()) window.dispatchEvent(new CustomEvent(FAILOVER_SESSION_EXPIRED_EVENT));
+};
+
+/** Asks the on-prem server for a cloud sign-in for this counter, at most every 30 min, sooner when it nears expiry. */
+const refreshFailoverSession = async ({ force = false } = {}) => {
+  if (!isBrowser() || !boundApiClient || !runtimeState.runningOnLocalConnector || !runtimeState.localReachable) return;
+  if (getSessionHome() !== "local" || !window.localStorage.getItem("token")) return;
+  const current = readFailoverSession();
+  const expiresSoon = !current?.expiresAt || new Date(current.expiresAt).getTime() - Date.now() < FAILOVER_RENEW_BEFORE_MS;
+  if (!force && current?.token && !expiresSoon && Date.now() < failoverRefreshAt) return;
+  if (failoverPending) return failoverPending;
+  failoverPending = (async () => {
+    try {
+      const res = await boundApiClient.post("/auth/failover-session", null, { __routingTarget: "local" });
+      const data = res?.data?.data || {};
+      if (data.token) {
+        writeFailoverSession({ token: data.token, expiresAt: data.expires_at || null, cloudBaseUrl: toApiBase(data.cloud_api_base_url) });
+        if (data.cloud_api_base_url && toApiBase(data.cloud_api_base_url) !== runtimeState.cloudBaseUrl) {
+          runtimeState.cloudBaseUrl = toApiBase(data.cloud_api_base_url);
+          persistState();
+        }
+      }
+      failoverRefreshAt = Date.now() + FAILOVER_REFRESH_MS;
+    } catch {
+      // The cloud may be unreachable (internet down); the counter keeps working on-prem and retries later.
+      failoverRefreshAt = Date.now() + 60 * 1000;
+    } finally {
+      failoverPending = null;
+    }
+  })();
+  return failoverPending;
+};
+
+/** Signs the failover sign-in out on the cloud (best effort), e.g. on logout. */
+export const revokeFailoverSession = async () => {
+  const session = readFailoverSession();
+  writeFailoverSession(null);
+  if (!session?.token || !isBrowser() || typeof fetch !== "function") return;
+  const base = session.cloudBaseUrl || runtimeState.cloudBaseUrl;
+  if (!isAbsoluteUrl(base)) return;
+  try {
+    await fetch(`${base}/auth/logout`, { method: "POST", headers: { Accept: "application/json", Authorization: `Bearer ${session.token}` } });
+  } catch {
+    // It expires by itself within a day.
+  }
+};
+
+/**
+ * Someone signed in on the cloud during the outage: before the counter moves back, the on-prem server confirms
+ * that sign-in with the cloud and issues its own. Their cloud sign-in is then signed out.
+ */
+const exchangeCloudSession = async () => {
+  if (getSessionHome() !== "cloud") return true;
+  const cloudToken = window.localStorage.getItem("token");
+  if (!cloudToken) return false;
+  try {
+    const response = await fetch(`${stripTrailingSlash(runtimeState.localBaseUrl || "/api")}/auth/failover-session/exchange`, {
+      method: "POST",
+      headers: { Accept: "application/json", "Content-Type": "application/json" },
+      body: JSON.stringify({ cloud_token: cloudToken }),
+    });
+    const payload = await response.json().catch(() => null);
+    const localToken = payload?.data?.token;
+    if (!response.ok || !localToken) return false;
+    window.localStorage.setItem("token", localToken);
+    if (payload?.data?.user) window.localStorage.setItem("user", JSON.stringify(payload.data.user));
+    window.localStorage.removeItem(SESSION_HOME_KEY);
+    writeFailoverSession({ token: cloudToken, expiresAt: new Date(Date.now() + 60 * 1000).toISOString(), cloudBaseUrl: runtimeState.cloudBaseUrl });
+    void revokeFailoverSession();
+    window.dispatchEvent(new CustomEvent("vx-session-exchanged", { detail: { token: localToken, user: payload?.data?.user || null } }));
+    return true;
+  } catch {
+    return false;
   }
 };
 
@@ -171,29 +336,84 @@ const switchTarget = (target = "cloud") => {
   applyClientDefaultBase();
 };
 
+/** On-prem page: one health check of the on-prem backend, moving the counter between it and the cloud. */
+const pollOnPremOnce = async () => {
+  const healthUrl = runtimeState.localHealthUrl;
+  const version = configurationVersion;
+  const data = await fetchJsonWithTimeout(healthUrl).then(payload => payload?.data || {}, () => null);
+  if (version !== configurationVersion || !runtimeState.enabled || runtimeState.localHealthUrl !== healthUrl) return false;
+
+  if (data && data.enabled === false) {
+    // Failover was switched off on the on-prem server: it is just the store's server now.
+    applyResolvedState({ ...DEFAULT_STATE });
+    return false;
+  }
+  if (!data) {
+    consecutiveFailures++;
+    if (runtimeState.currentTarget === "local" && consecutiveFailures < FAILURES_BEFORE_FAILOVER) return false;
+    runtimeState.localReachable = false;
+    runtimeState.localHealthy = false;
+    runtimeState.handshakeState = "";
+    switchTarget("cloud");
+    return false;
+  }
+
+  consecutiveFailures = 0;
+  runtimeState.localReachable = true;
+  runtimeState.handshakeState = normalize(data.state) || "ready";
+  if (data.cloud_api_base_url) runtimeState.cloudBaseUrl = toApiBase(data.cloud_api_base_url);
+  if (runtimeState.currentTarget === "local") {
+    runtimeState.localHealthy = true;
+    persistState();
+    void refreshFailoverSession();
+    return true;
+  }
+  // On the cloud: come back only when both sides are caught up (or the cloud can't be reached from on-prem).
+  if (runtimeState.handshakeState === "catching_up") {
+    runtimeState.localHealthy = false;
+    persistState();
+    return false;
+  }
+  if (returnPending) return false;
+  returnPending = exchangeCloudSession().finally(() => { returnPending = null; });
+  const exchanged = await returnPending;
+  if (version !== configurationVersion || !exchanged) {
+    persistState();
+    return false;
+  }
+  runtimeState.localHealthy = true;
+  runtimeState.blockedReason = "";
+  switchTarget("local");
+  void refreshFailoverSession({ force: true });
+  return true;
+};
+
 const pollLocalHealthOnce = async () => {
   if (!isBrowser() || !runtimeState.enabled || !runtimeState.localHealthUrl) return false;
   if (healthPending || document.visibilityState === "hidden") return false;
   healthPending = true;
-  const healthUrl = runtimeState.localHealthUrl;
-  const version = configurationVersion;
   try {
-    const payload = await fetchJsonWithTimeout(healthUrl);
-    if (version !== configurationVersion || !runtimeState.enabled || runtimeState.localHealthUrl !== healthUrl) return false;
-    const data = payload?.data || payload || {};
-    const localHealthy = Boolean(data.local_healthy ?? data.connector?.local_healthy ?? payload?.success);
-    runtimeState.localHealthy = localHealthy;
-    if (localHealthy) {
-      runtimeState.blockedReason = "";
-      switchTarget("local");
-      return true;
+    if (runtimeState.runningOnLocalConnector) return await pollOnPremOnce();
+    const healthUrl = runtimeState.localHealthUrl;
+    const version = configurationVersion;
+    try {
+      const payload = await fetchJsonWithTimeout(healthUrl);
+      if (version !== configurationVersion || !runtimeState.enabled || runtimeState.localHealthUrl !== healthUrl) return false;
+      const data = payload?.data || payload || {};
+      const localHealthy = Boolean(data.local_healthy ?? data.connector?.local_healthy ?? payload?.success);
+      runtimeState.localHealthy = localHealthy;
+      if (localHealthy) {
+        runtimeState.blockedReason = "";
+        switchTarget("local");
+        return true;
+      }
+    } catch {
+      if (version !== configurationVersion || !runtimeState.enabled || runtimeState.localHealthUrl !== healthUrl) return false;
+      runtimeState.localHealthy = false;
+      persistState();
     }
-  } catch {
-    if (version !== configurationVersion || !runtimeState.enabled || runtimeState.localHealthUrl !== healthUrl) return false;
-    runtimeState.localHealthy = false;
-    persistState();
+    return false;
   } finally { healthPending = false; }
-  return false;
 };
 
 const startLocalHealthPolling = () => {
@@ -201,7 +421,8 @@ const startLocalHealthPolling = () => {
   if (!isBrowser() || !runtimeState.enabled || !runtimeState.localHealthUrl) return;
 
   healthTimer = window.setInterval(() => {
-    if (runtimeState.currentTarget !== "cloud") return;
+    // An on-prem page watches both ways (down → cloud, caught up → back); a cloud page only waits to switch over.
+    if (!runtimeState.runningOnLocalConnector && runtimeState.currentTarget !== "cloud") return;
     pollLocalHealthOnce().catch(() => {});
   }, LOCAL_POLL_INTERVAL_MS);
 };
@@ -219,10 +440,12 @@ const applyResolvedState = (next = {}) => {
   } else if (!runtimeState.localHealthy) {
     runtimeState.currentTarget = "cloud";
   }
+  consecutiveFailures = 0;
 
   persistState();
   applyClientDefaultBase();
   startLocalHealthPolling();
+  if (runtimeState.runningOnLocalConnector) void refreshFailoverSession();
   return runtimeState;
 };
 
@@ -233,19 +456,43 @@ const resolveFromLocalConnector = async () => {
     const data = payload?.data || {};
     const cloudBaseUrl = toApiBase(data.cloud_api_base_url);
     if (!cloudBaseUrl) return null;
+    const state = normalize(data.state) || "ready";
+    // A counter signed in on the cloud stays there until the on-prem server has caught up (and swapped its sign-in).
+    const local = Boolean(data.local_healthy) && getSessionHome() === "local";
     return {
       enabled: Boolean(data.enabled),
       tenantKey: normalize(data.tenant_key),
       blockedReason: "",
-      currentTarget: data.local_healthy ? "local" : "cloud",
+      currentTarget: local ? "local" : "cloud",
       localBaseUrl: "/api",
       cloudBaseUrl,
       localHealthUrl: "/api/connector/web-config",
-      localHealthy: Boolean(data.local_healthy),
+      localHealthy: local,
       runningOnLocalConnector: true,
+      localReachable: true,
+      handshakeState: state,
     };
   } catch {
-    return null;
+    // The on-prem backend is down. If this page is an on-prem one (it said so before, or its build names the
+    // cloud), the counter works on the cloud until the backend is back.
+    const stored = readStoredState();
+    const remembered = (() => { try { return window.localStorage.getItem(ONPREM_CLOUD_KEY) || ""; } catch { return ""; } })();
+    const cloudBaseUrl = toApiBase(FAILOVER_CLOUD_API_URL) || toApiBase(remembered)
+      || (stored?.runningOnLocalConnector ? toApiBase(stored.cloudBaseUrl) : "");
+    if (!isAbsoluteUrl(cloudBaseUrl)) return null;
+    return {
+      enabled: true,
+      tenantKey: normalize(stored?.tenantKey),
+      blockedReason: "",
+      currentTarget: "cloud",
+      localBaseUrl: "/api",
+      cloudBaseUrl,
+      localHealthUrl: "/api/connector/web-config",
+      localHealthy: false,
+      runningOnLocalConnector: true,
+      localReachable: false,
+      handshakeState: "",
+    };
   }
 };
 
@@ -318,22 +565,42 @@ export const applyRuntimeRoutingConfig = (input = {}) => {
     localHealthUrl: normalize(input.localHealthUrl),
     localHealthy: Boolean(input.localHealthy),
     runningOnLocalConnector: Boolean(input.runningOnLocalConnector),
+    localReachable: Boolean(input.localReachable ?? input.localHealthy),
+    handshakeState: normalize(input.handshakeState),
   });
 };
 
 export const clearRuntimeRoutingConfig = () => {
+  // A counter's cloud failover sign-in ends with its session.
+  void revokeFailoverSession();
   configurationVersion++;
   configurationAttempt = null;
   stopLocalHealthPolling();
+  consecutiveFailures = 0;
+  failoverRefreshAt = 0;
   runtimeState = { ...DEFAULT_STATE };
   if (isBrowser()) {
     try {
       window.localStorage.removeItem(STORAGE_KEY);
+      window.localStorage.removeItem(SESSION_HOME_KEY);
     } catch {
       // ignore
     }
   }
   applyClientDefaultBase();
+};
+
+/**
+ * Before any sign-in on a page: find out whether it is served by an on-prem server and whether that server is up,
+ * so the sign-in goes to the cloud during an outage. Sign-out keeps routing cleared.
+ */
+export const prepareRoutingForSignIn = async ({ apiClient } = {}) => {
+  if (apiClient) boundApiClient = apiClient;
+  if (!isBrowser()) return runtimeState;
+  const version = ++configurationVersion;
+  const localState = await resolveFromLocalConnector();
+  if (version !== configurationVersion || !localState) return runtimeState;
+  return applyResolvedState({ ...localState, currentTarget: localState.localReachable ? "local" : "cloud", localHealthy: localState.localReachable });
 };
 
 export const fetchAndApplyRuntimeRoutingConfig = async ({ apiClient, token } = {}) => {
@@ -367,9 +634,19 @@ export const prepareRoutingForRequest = async (config = {}) => {
   };
 
   const path = pathFromRequestConfig(next);
-  // Keep credentials/session checks on the deployment which issued the session.
-  // A saved failover destination is not an authentication authority.
-  if (/^\/(?:api\/)?(?:auth\/|local-server-config(?:\/|$))/.test(path)) {
+  if (isSessionPath(path)) {
+    if (runtimeState.runningOnLocalConnector && runtimeState.enabled) {
+      // On-prem page: sign-in and session checks go to the server that holds the session. Before sign-in, that is
+      // the on-prem server unless it is down, in which case the counter signs in on the cloud.
+      const signedIn = isBrowser() && Boolean(window.localStorage.getItem("token"));
+      const target = next.__routingTarget === "local" ? "local"
+        : signedIn ? getSessionHome() : runtimeState.currentTarget === "local" ? "local" : "cloud";
+      next.__routingTarget = target;
+      next.baseURL = target === "local" ? runtimeState.localBaseUrl || CLOUD_BASE_URL : runtimeState.cloudBaseUrl || CLOUD_BASE_URL;
+      return next;
+    }
+    // Keep credentials/session checks on the deployment which issued the session.
+    // A saved failover destination is not an authentication authority.
     next.baseURL = CLOUD_BASE_URL;
     next.__routingTarget = "deployment";
     return next;
@@ -430,14 +707,16 @@ export const prepareRoutingForRequest = async (config = {}) => {
 export const shouldRetryOnCloud = (error) => {
   if (error?.code === "ERR_CANCELED" || error?.__CANCEL__) return false;
   const requestConfig = error?.config || {};
-  // An ambiguous write may already have committed on the local database.
-  // Automatic fallback is reserved for reads across every ERP module.
-  if (!["get", "head", "options"].includes(String(requestConfig.method || "get").toLowerCase())) return false;
   if (!runtimeState.enabled) return false;
   if (requestConfig.__retriedOnCloud) return false;
   if (requestConfig.__routingTarget !== "local") return false;
   if (isBackupPath(requestConfig)) return false; // Archive IDs are local to their originating server.
   if (isAlwaysCloudPath(pathFromRequestConfig(requestConfig))) return false;
+  // An ambiguous write may already have committed on the local database. A write the on-prem proxy could not
+  // deliver at all (backend down) never arrived, so the cloud makes it exactly once.
+  if (!["get", "head", "options"].includes(String(requestConfig.method || "get").toLowerCase())) {
+    return runtimeState.runningOnLocalConnector && neverReachedLocal(error);
+  }
 
   const status = Number(error?.response?.status || 0);
   if (!error?.response) return true;
@@ -448,6 +727,12 @@ export const shouldRetryOnCloud = (error) => {
 };
 
 export const buildCloudRetryConfig = (config = {}) => {
+  if (runtimeState.runningOnLocalConnector) {
+    // The on-prem backend didn't answer: treat it as down now rather than after the next health checks.
+    consecutiveFailures = FAILURES_BEFORE_FAILOVER;
+    runtimeState.localReachable = false;
+    runtimeState.localHealthy = false;
+  }
   switchTarget("cloud");
   startLocalHealthPolling();
 
@@ -461,6 +746,16 @@ export const buildCloudRetryConfig = (config = {}) => {
     __routingTarget: "cloud",
     baseURL: runtimeState.cloudBaseUrl || CLOUD_BASE_URL,
   };
+};
+
+/**
+ * The cloud an on-prem page fails over to, known even while its own server is down (build setting, or what the
+ * server said earlier). Empty on a page that is not an on-prem one.
+ */
+export const getFailoverCloudApiBase = () => {
+  const remembered = (() => { try { return window.localStorage.getItem(ONPREM_CLOUD_KEY) || ""; } catch { return ""; } })();
+  const base = toApiBase(FAILOVER_CLOUD_API_URL) || toApiBase(remembered);
+  return isAbsoluteUrl(base) ? base : "";
 };
 
 export const getCloudBaseUrl = () => {
@@ -479,6 +774,9 @@ export const getRuntimeRoutingSnapshot = () => ({
   blockedReason: runtimeState.blockedReason,
   localBaseUrl: runtimeState.localBaseUrl,
   cloudBaseUrl: runtimeState.cloudBaseUrl,
+  runningOnLocalConnector: runtimeState.runningOnLocalConnector,
+  localReachable: runtimeState.localReachable,
+  handshakeState: runtimeState.handshakeState,
 });
 
 
@@ -488,7 +786,5 @@ if (storedState) {
     ...DEFAULT_STATE,
     ...storedState,
   };
-  if (runtimeState.runningOnLocalConnector) {
-    runtimeState.currentTarget = "local";
-  }
+  // An on-prem page starts on the server it was last on; the first health check corrects it within seconds.
 }

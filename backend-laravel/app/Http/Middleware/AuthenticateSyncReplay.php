@@ -3,6 +3,8 @@
 namespace App\Http\Middleware;
 
 use App\Models\StoreLocalNode;
+use App\Models\User;
+use App\Services\Tenancy\StoreContext;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -51,12 +53,28 @@ class AuthenticateSyncReplay
             return;
         }
 
-        $syncUser = $node->resolveSyncUser();
-        abort_unless($syncUser->role === 'sync_system' && $syncUser->store_id === $node->store_id, 403, 'Invalid sync identity.');
-        $syncUser->forceFill(['platform_company_code' => $node->store?->platform_company_code])->save();
+        // The person who made the write on the other server, when they also exist and can open the store here
+        // (staff accounts are copied from the cloud); otherwise the store's sync system user.
+        $actor = $this->actor($request, $node);
+        if (! $actor) {
+            $actor = $node->resolveSyncUser();
+            abort_unless($actor->role === 'sync_system' && $actor->store_id === $node->store_id, 403, 'Invalid sync identity.');
+            $actor->forceFill(['platform_company_code' => $node->store?->platform_company_code])->save();
+        }
         $request->attributes->set('authenticated_sync_replay', true);
 
-        Auth::guard('sanctum')->setUser($syncUser);
-        $request->setUserResolver(fn () => $syncUser);
+        Auth::guard('sanctum')->setUser($actor);
+        $request->setUserResolver(fn () => $actor);
+    }
+
+    private function actor(Request $request, StoreLocalNode $node): ?User
+    {
+        $username = trim((string) $request->header('X-Sync-Actor', ''));
+        if ($username === '') {
+            return null;
+        }
+        $user = User::where('username', $username)->where('is_active', true)->where('role', '!=', 'sync_system')->first();
+
+        return $user && app(StoreContext::class)->available($user)->whereKey($node->store_id)->exists() ? $user : null;
     }
 }

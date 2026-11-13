@@ -7,6 +7,7 @@ use App\Models\Store;
 use App\Models\StoreLocalNode;
 use App\Models\SyncOutboxEvent;
 use Illuminate\Http\Client\Response;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -44,20 +45,24 @@ class SyncCycleService
             }
         }
 
-        $cloudApi = rtrim((string) ($node->cloud_server_url ?: config('sync.cloud_api_base_url')), '/');
-        if ($cloudApi && ! str_ends_with($cloudApi, '/api')) {
-            $cloudApi .= '/api';
-        }
+        $cloudApi = LocalNodeRegistration::cloudApiBase($node->cloud_server_url);
         if (! $cloudApi) {
             return ['ran' => false, 'reason' => 'sync.cloud_api_base_url is not configured.'];
         }
 
-        return [
+        $result = [
             'ran' => true,
             'pushed' => $this->pushPendingWrites($node, $cloudApi),
             'pulled' => $this->pullAndApplyCloudWrites($node, $cloudApi),
+            // The cloud is the master for staff accounts; the counters sign in here with the same ones.
+            'users' => app(LocalNodeRegistration::class)->copyUsers($node),
             'heartbeat_ok' => $this->sendHeartbeat($node, $cloudApi),
         ];
+        $node->forceFill(['last_cycle_at' => now()])->save();
+        // Counters waiting on the cloud see the new backlog at once, not up to 10 s later.
+        Cache::forget(LocalNodeRegistration::STATE_CACHE_KEY);
+
+        return $result;
     }
 
     private function authHeaders(StoreLocalNode $node): array
@@ -82,6 +87,7 @@ class SyncCycleService
             try {
                 $response = Http::withHeaders(array_merge($this->authHeaders($node), [
                     'X-Sync-Replay' => '1',
+                    'X-Sync-Actor' => (string) $event->actor_username,
                     'X-Company-Scope-Id' => (string) $event->store_id,
                     'Content-Type' => $event->headers['Content-Type'] ?? 'application/json',
                 ]))->timeout(15)->send($event->method, $cloudApi.$event->path, [
@@ -161,6 +167,7 @@ class SyncCycleService
             try {
                 $localResponse = Http::withHeaders(array_merge($this->authHeaders($node), [
                     'X-Sync-Replay' => '1',
+                    'X-Sync-Actor' => (string) ($event['actor_username'] ?? ''),
                     'X-Company-Scope-Id' => (string) $node->store_id,
                     'Content-Type' => $event['headers']['Content-Type'] ?? 'application/json',
                 ]))->timeout(15)->send($event['method'], $localBase.'/api'.$event['path'], [
@@ -197,6 +204,7 @@ class SyncCycleService
             $response = Http::withHeaders($this->authHeaders($node))->timeout(10)->post($cloudApi.'/sync/heartbeat', [
                 'local_healthy' => $this->localServerHealthy($node),
                 'advertised_local_server_url' => $node->advertised_local_server_url,
+                'counter_url' => $node->counter_url,
             ]);
 
             return $response->successful();

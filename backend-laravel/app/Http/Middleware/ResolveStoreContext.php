@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use App\Http\Controllers\Api\V1\Settings\SettingsController;
 use App\Http\Controllers\Api\V1\Settings\ThemeWorkspaceController;
 use App\Models\PlatformActivation;
+use App\Services\Platform\FailoverIdentity;
 use App\Services\Tenancy\StoreContext;
 use App\Services\Platform\StoreLicenceVerifier;
 use Closure;
@@ -22,6 +23,10 @@ class ResolveStoreContext
         }
 
         $stores = $this->context->stores($request->user());
+        // A counter's failover sign-in (made by the on-prem server) only ever opens that one store.
+        if ($locked = FailoverIdentity::lockedStoreId($request->user())) {
+            $stores = $stores->where('id', $locked)->values();
+        }
         $ids = $stores->pluck('id')->all();
         $candidates = [];
         foreach (['X-Company-Scope-Id', 'X-Company-Id', 'X-Store-Id'] as $header) {

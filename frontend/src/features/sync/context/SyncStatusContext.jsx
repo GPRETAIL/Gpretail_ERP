@@ -13,6 +13,7 @@ const DEFAULT_STATE = {
   enabled: false,
   target: "cloud",
   healthy: false,
+  catchingUp: false,
   outboxPending: 0,
   outboxFailed: 0,
 };
@@ -46,9 +47,10 @@ export const SyncStatusProvider = ({ children }) => {
 
         const routing = getRuntimeRoutingSnapshot();
         setResult({ identity, status: {
-          enabled: Boolean(data.enabled),
+          enabled: Boolean(data.enabled) || Boolean(routing.runningOnLocalConnector && routing.enabled),
           target: routing.currentTarget === "local" ? "local" : "cloud",
           healthy: Boolean(routing.localHealthy),
+          catchingUp: Boolean(routing.localReachable && routing.handshakeState === "catching_up"),
           outboxPending: Number(data.outbox_pending || 0),
           outboxFailed: Number(data.outbox_failed || 0),
         } });
@@ -68,11 +70,17 @@ export const SyncStatusProvider = ({ children }) => {
     const onRoutingChanged = () => {
       if (!alive) return;
       const routing = getRuntimeRoutingSnapshot();
-      setResult((prev) => ({ identity, status: {
-        ...(prev?.identity === identity ? prev.status : DEFAULT_STATE),
-        target: routing.currentTarget === "local" ? "local" : "cloud",
-        healthy: Boolean(routing.localHealthy),
-      } }));
+      setResult((prev) => {
+        const previous = prev?.identity === identity ? prev.status : DEFAULT_STATE;
+        return { identity, status: {
+          ...previous,
+          // An on-prem counter that failed over shows it even while its own server can't say so.
+          enabled: previous.enabled || Boolean(routing.runningOnLocalConnector && routing.enabled),
+          target: routing.currentTarget === "local" ? "local" : "cloud",
+          healthy: Boolean(routing.localHealthy),
+          catchingUp: Boolean(routing.localReachable && routing.handshakeState === "catching_up"),
+        } };
+      });
       if (typeof routing.enabled === "boolean" && routing.enabled !== enabled) void refresh(true);
     };
     const onVisible = () => { if (document.visibilityState !== "hidden") void refresh(); };

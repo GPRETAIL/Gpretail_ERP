@@ -4,9 +4,12 @@ import { createReadCoalescer } from "./coalesceReads";
 import { handleStoreSelectionError } from "@/shared/utils/storeSelection";
 import {
   buildCloudRetryConfig,
+  discardFailoverSession,
+  getAuthTokenFor,
   getCloudBaseUrl,
   prepareRoutingForRequest,
   shouldRetryOnCloud,
+  usedFailoverSession,
 } from "./runtimeRouting";
 import { isStaffAppPath, STAFF_STORE_KEY, STAFF_TOKEN_KEY } from "./staffSession";
 
@@ -43,9 +46,6 @@ api.defaults.adapter = sharedReads.adapter;
 api.interceptors.request.use(
   async (config) => {
     if (!["get", "head", "options"].includes(String(config.method || "get").toLowerCase())) sharedReads.invalidate();
-    const token = localStorage.getItem(tokenKey());
-    if (token) config.headers.Authorization = `Bearer ${token}`;
-
     // A form may provision a user in another authorized store without changing all open tabs.
     // The API checks this explicit scope against the operator's assignments.
     const activeStoreId = config.storeScopeId == null ? selectedStoreId() : String(config.storeScopeId);
@@ -55,7 +55,11 @@ api.interceptors.request.use(
       config.headers["X-Company-Id"] = activeStoreId;
       config.headers["X-Store-Id"] = activeStoreId;
     }
-    return prepareRoutingForRequest(config);
+    const routed = await prepareRoutingForRequest(config);
+    // The sign-in for the server this request goes to: an on-prem counter holds one for each (runtimeRouting).
+    const token = isStaffAppPath() ? localStorage.getItem(STAFF_TOKEN_KEY) : getAuthTokenFor(routed.__routingTarget);
+    if (token) routed.headers.Authorization = `Bearer ${token}`;
+    return routed;
   },
   (error) => Promise.reject(error)
 );
@@ -67,7 +71,7 @@ api.interceptors.response.use(
     // Navigation and superseded searches deliberately abort requests.
     // Preserve cancellation for callers without retrying or reporting an outage.
     if (axios.isCancel(error) || error?.code === "ERR_CANCELED") return Promise.reject(error);
-    const currentToken = localStorage.getItem(tokenKey());
+    const currentToken = isStaffAppPath() ? localStorage.getItem(tokenKey()) : getAuthTokenFor(error.config?.__routingTarget);
     const sentHeaders = axios.AxiosHeaders.from(error.config?.headers);
     const sentToken = String(sentHeaders.get("Authorization") || "").replace(/^Bearer\s+/i, "");
     const sentStore = String(sentHeaders.get("X-Company-Scope-Id") || "");
@@ -86,6 +90,11 @@ api.interceptors.response.use(
       window.dispatchEvent(new CustomEvent("vx:mobile-access-denied"));
     }
     const isLoginRequest = LOGIN_PATHS.some((path) => requestUrl.includes(path));
+    // The cloud refused the counter's failover sign-in: drop only that one. The on-prem session is untouched.
+    if (error.response?.status === 401 && !isStaffAppPath() && usedFailoverSession(error.config)) {
+      discardFailoverSession();
+      return Promise.reject(error);
+    }
     if (error.response?.status === 401 && !isLoginRequest && currentToken && sentToken === currentToken) {
       void clearPrivateApiCache();
       if (isStaffAppPath()) {

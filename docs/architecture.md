@@ -37,6 +37,7 @@ React SPA (frontend/)  ──HTTPS──▶  Laravel API (backend-laravel/)  ─
 |---|---|---|
 | POS billing | `Sales/PosSaleController`, `Services/Pos` | Checkout is idempotent (`checkoutKey`); stock is taken FIFO from batches (`Services/Inventory/StockService`) |
 | Offline billing | `Sales/PosOfflineController`, `frontend/src/features/sales/pos/offline` | Tills bill under an offline series `F{counter}`; bills sync later and conflicts are flagged for manager review |
+| On-prem failover | `Services/Platform/LocalNodeRegistration`, `FailoverIdentity`, `SyncCycleService`, `frontend/src/shared/api/runtimeRouting.js` | See "On-prem server and cloud failover" below |
 | Discount and refund approvals | `Services/Approvals/ApprovalService` | Per-role limits; supervisor PIN with lockout |
 | Returns | `Sales/PosReturnController` | Refund is prorated from the bill line (discount and tax included) |
 | Cash register | `Sales/CashRegisterController`, `Services/Sales/CashRegisterService` | One drawer per counter: Cash Opening counts the float, Cash Closing (also POS Old's Close) counts the drawer against opening + cash taken (less change, split bills included) − cash refunds − counter expenses |
@@ -140,3 +141,33 @@ groups and totals the report (`ReportSummaryService` running a whitelisted datas
   (Asia/Kolkata by default). `app.timezone` is UTC.
 - Controller class names are permission keys; see `docs/folder-structure.md`.
 - Every signed-in route is registered twice: under `/api/...` and `/api/v1/...`.
+
+## On-prem server and cloud failover
+
+A store can run the ERP on a PC in the shop ("on-prem", `SYNC_NODE_ROLE=local`). Billing PCs open its counter
+address, e.g. `http://mainserver:5173` (Vite, forwarding `/api` to the on-prem backend). The cloud
+(dev.gpsoftware.in) is the master for staff accounts and the fallback when the on-prem server is down.
+
+- **Connecting.** On the on-prem server, Configure Local Server > Connect to cloud. A cloud company admin signs in
+  once (the password is not stored). The cloud (`POST /sync/register-node`) creates the store's node and a fresh
+  sync token. The on-prem server then pulls the store's data (catch-up) and its users. The on-prem store must
+  carry the cloud's store number; a fresh install is renumbered, one with business data is refused.
+- **Staying in step.** `sync:cycle` runs every 15 seconds on-prem (from `schedule:run`): it pushes on-prem
+  writes, applies writes the cloud made for the store, copies the store's users from the cloud (same username,
+  password and permissions; users removed on the cloud are switched off) and sends a heartbeat. Replayed writes
+  are saved under the person who made them (`X-Sync-Actor`), not the sync user.
+- **Two sign-ins per counter.** After signing in on-prem, the counter asks for a cloud sign-in for the same
+  person (`POST /auth/failover-session`, store-locked, 24 h, kept when the person signs in elsewhere). A counter
+  that signed in on the cloud during an outage swaps it for an on-prem one on return
+  (`POST /auth/failover-session/exchange`; the cloud confirms whose sign-in it is).
+- **Failing over.** Counters check `/api/connector/web-config` every 5 seconds. Two misses in a row, or a bill the
+  Vite proxy could not deliver (`X-Proxy-Error`), move them to the cloud at the same address, labelled "Cloud
+  (on-prem server down)". The cloud numbers its bills in a separate C series, so they never clash with on-prem
+  numbers it has not received yet. The cloud address comes from `VITE_FAILOVER_CLOUD_API_URL`, or from what
+  the on-prem server said earlier.
+- **Coming back.** The on-prem server reports `ready`, `catching_up` or `cloud_unreachable`. Counters on the cloud
+  return only when nothing is left to pull or push ("Cloud (on-prem server catching up)" until then).
+- **Limits.** If the whole server PC is off, its address cannot load (a plain-http intranet page can't work
+  offline). Open tabs keep billing; after a reload the counter opens the cloud address. Records created on-prem
+  (items, customers) can get a different number on the cloud; keeping numbers identical is the next phase.
+

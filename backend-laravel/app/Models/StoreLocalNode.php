@@ -18,12 +18,16 @@ class StoreLocalNode extends Model
         'sync_user_id',
         'enabled',
         'local_server_url',
+        'counter_url',
         'cloud_server_url',
         'advertised_local_server_url',
         'local_healthy',
         'last_heartbeat_at',
         'last_health_check_at',
         'last_catch_up_at',
+        'last_cycle_at',
+        'last_users_sync_at',
+        'users_synced',
     ];
 
     protected function casts(): array
@@ -34,6 +38,8 @@ class StoreLocalNode extends Model
             'last_heartbeat_at' => 'datetime',
             'last_health_check_at' => 'datetime',
             'last_catch_up_at' => 'datetime',
+            'last_cycle_at' => 'datetime',
+            'last_users_sync_at' => 'datetime',
         ];
     }
 
