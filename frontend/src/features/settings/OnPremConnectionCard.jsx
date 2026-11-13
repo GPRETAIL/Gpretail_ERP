@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { toast } from "react-toastify";
 import { Box, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Stack, TextField, Typography } from "@mui/material";
-import { Cloud, Loader2 } from "lucide-react";
+import { Cloud, CloudDownload, Loader2, RefreshCw } from "lucide-react";
 import api from "@/shared/api/apiClient";
 import { TYPE } from "@/shared/theme/typeScale";
 import { muiFieldSx } from "@/shared/theme/formControlSizes";
+import { SYNC_STARTED_EVENT } from "@/shared/api/runtimeRouting";
 
 const cardSx = { borderRadius: "7px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", boxShadow: 1 };
 const DEFAULT_CLOUD = "https://dev.gpsoftware.in";
@@ -39,6 +40,27 @@ export default function OnPremConnectionCard({ config, onConnected }) {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ counter_url: "", cloud_server_url: "", username: "", password: "" });
   const handshake = HANDSHAKE[config?.handshake?.state];
+  const [running, setRunning] = useState(null);
+  const [recopyOpen, setRecopyOpen] = useState(false);
+  const busy = Boolean(running || config?.sync_progress);
+  const pullErrors = config?.last_sync?.pulled?.errors || [];
+
+  const runSync = async (kind) => {
+    if (busy) return;
+    setRunning(kind);
+    setRecopyOpen(false);
+    window.dispatchEvent(new CustomEvent(SYNC_STARTED_EVENT));
+    try {
+      const res = await api.post(kind === "recopy" ? "/local-server-config/recopy" : "/local-server-config/sync-now", null, { timeout: 900000 });
+      toast.success(res.data?.message || "Done");
+      onConnected?.(res.data?.data || {});
+    } catch (err) {
+      const errors = err.response?.data?.errors;
+      toast.error((errors && Object.values(errors).flat()[0]) || err.response?.data?.message || "The sync did not finish");
+    } finally {
+      setRunning(null);
+    }
+  };
 
   const openDialog = () => {
     setForm({
@@ -79,10 +101,29 @@ export default function OnPremConnectionCard({ config, onConnected }) {
             address, and come back once both sides are up to date. Staff accounts come from the cloud.
           </Typography>
         </Box>
-        <Button type="button" variant={connected ? "outlined" : "contained"} color={connected ? "inherit" : "primary"} startIcon={<Cloud size={16} />} onClick={openDialog}>
-          {connected ? "Reconnect to cloud" : "Connect to cloud"}
-        </Button>
+        <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap", rowGap: 1 }}>
+          {connected && (
+            <>
+              <Button type="button" variant="contained" disabled={busy} onClick={() => runSync("sync")}
+                startIcon={running === "sync" ? <Loader2 size={16} style={{ animation: "app-spin 1s linear infinite" }} /> : <RefreshCw size={16} />}>
+                {running === "sync" ? "Syncing..." : "Sync now"}
+              </Button>
+              <Button type="button" variant="outlined" color="inherit" disabled={busy} onClick={() => setRecopyOpen(true)}
+                startIcon={running === "recopy" ? <Loader2 size={16} style={{ animation: "app-spin 1s linear infinite" }} /> : <CloudDownload size={16} />}>
+                {running === "recopy" ? "Re-copying..." : "Re-copy from cloud"}
+              </Button>
+            </>
+          )}
+          <Button type="button" variant={connected ? "outlined" : "contained"} color={connected ? "inherit" : "primary"} startIcon={<Cloud size={16} />} onClick={openDialog} disabled={busy}>
+            {connected ? "Reconnect to cloud" : "Connect to cloud"}
+          </Button>
+        </Stack>
       </Stack>
+      {config?.sync_progress && (
+        <Typography role="status" sx={{ mt: 1.5, fontSize: 12.25, color: "info.main" }}>
+          {config.sync_progress.label}{config.sync_progress.left != null ? ` · ${config.sync_progress.left} left` : "..."}
+        </Typography>
+      )}
 
       <Box sx={{ mt: 2, display: "grid", gap: 1.5, gridTemplateColumns: { md: "repeat(3, 1fr)" }, fontSize: 12.25 }}>
         <Fact label="Cloud">{connected ? config.cloud_server_url : "Not connected"}</Fact>
@@ -96,11 +137,33 @@ export default function OnPremConnectionCard({ config, onConnected }) {
           {config?.handshake ? `${config.handshake.local_backlog ?? 0} to the cloud · ${config.handshake.cloud_backlog ?? "?"} from the cloud` : "—"}
         </Fact>
       </Box>
+      {pullErrors.length > 0 && (
+        <Box role="alert" sx={{ mt: 1.5, fontSize: 12, color: "error.main" }}>
+          Changes from the cloud that could not be applied here (they are tried again on every sync):
+          <Box component="ul" sx={{ m: 0, mt: 0.5, pl: 2.5 }}>
+            {pullErrors.map((error) => <li key={error}>{error}</li>)}
+          </Box>
+        </Box>
+      )}
       {connected && !config?.last_cycle_at && (
         <Typography role="status" sx={{ mt: 1.5, fontSize: 12, color: "warning.main" }}>
           The sync job has not run yet. Add the Windows Task Scheduler entry for schedule:run (every minute), as in the setup guide.
         </Typography>
       )}
+
+      <Dialog open={recopyOpen} onClose={() => setRecopyOpen(false)} maxWidth="xs" fullWidth aria-labelledby="recopy-title">
+        <DialogTitle id="recopy-title">Re-copy from the cloud?</DialogTitle>
+        <DialogContent>
+          <DialogContentText sx={{ fontSize: 12.25 }}>
+            Copies this store&apos;s staff accounts, data and document numbers from the cloud again, for example after a long
+            outage or a reinstall. Records only this server has are kept. It can take a few minutes; billing keeps working.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setRecopyOpen(false)}>Cancel</Button>
+          <Button variant="contained" onClick={() => runSync("recopy")}>Re-copy</Button>
+        </DialogActions>
+      </Dialog>
 
       <Dialog open={open} onClose={() => { if (!saving) setOpen(false); }} maxWidth="sm" fullWidth aria-labelledby="connect-cloud-title">
         <Box component="form" onSubmit={connect}>

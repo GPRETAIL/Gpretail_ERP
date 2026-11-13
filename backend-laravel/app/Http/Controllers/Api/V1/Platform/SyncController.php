@@ -150,7 +150,8 @@ class SyncController extends Controller
         }
         $node->save();
 
-        return response()->json(['success' => true, 'message' => 'Heartbeat recorded']);
+        // The reply carries the current activation and store licence, so renewals reach the on-prem server by themselves.
+        return response()->json(['success' => true, 'message' => 'Heartbeat recorded', 'data' => ['identity' => app(FailoverIdentity::class)->identityFor($node)]]);
     }
 
     /**

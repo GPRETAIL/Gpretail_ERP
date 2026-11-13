@@ -10,6 +10,7 @@ const mockSnapshot = vi.fn();
 vi.mock("@/shared/api/runtimeRouting", () => ({
   getRuntimeRoutingSnapshot: () => mockSnapshot(),
   RUNTIME_ROUTING_CHANGED_EVENT: "erp:runtime-routing-changed",
+  SYNC_STARTED_EVENT: "vx-sync-started",
 }));
 
 import { SyncStatusProvider, useSyncStatus } from "@/features/sync/context/SyncStatusContext";
@@ -23,6 +24,7 @@ const StatusProbe = () => {
       <span data-testid="target">{status.target}</span>
       <span data-testid="healthy">{String(status.healthy)}</span>
       <span data-testid="pending">{status.outboxPending}</span>
+      <span data-testid="progress">{status.progress ? `${status.progress.label}:${status.progress.left}` : "none"}</span>
     </div>
   );
 };
@@ -98,5 +100,25 @@ describe("SyncStatusContext", () => {
     expect(screen.getByTestId("healthy")).toHaveTextContent("false");
     // Untouched by the event -- only the next poll's /local-server-config response updates this.
     await waitFor(() => expect(screen.getByTestId("pending")).toHaveTextContent("3"));
+  });
+
+  it("follows a running sync every 2 seconds and stops when it is done", async () => {
+    vi.useFakeTimers();
+    mockSnapshot.mockReturnValue({ currentTarget: "local", localHealthy: true, runningOnLocalConnector: true, enabled: true });
+    const progress = [{ label: "Syncing", left: 2 }, null];
+    let configChecks = 0;
+    mockGet.mockImplementation(async (path) => (path === "/local-server-config/progress"
+      ? { data: { data: progress.shift() ?? null } }
+      : { data: { data: { enabled: true, outbox_pending: 0, sync_progress: configChecks++ === 0 ? { label: "Syncing", left: 3 } : null } } }));
+    render(<SyncStatusProvider><StatusProbe /></SyncStatusProvider>);
+    await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+    expect(screen.getByTestId("progress").textContent).toBe("Syncing:3");
+    await act(async () => { await vi.advanceTimersByTimeAsync(2000); });
+    expect(screen.getByTestId("progress").textContent).toBe("Syncing:2");
+    await act(async () => { await vi.advanceTimersByTimeAsync(2000); });
+    expect(screen.getByTestId("progress").textContent).toBe("none");
+    const progressCalls = mockGet.mock.calls.filter(([path]) => path === "/local-server-config/progress").length;
+    await act(async () => { await vi.advanceTimersByTimeAsync(6000); });
+    expect(mockGet.mock.calls.filter(([path]) => path === "/local-server-config/progress").length).toBe(progressCalls);
   });
 });

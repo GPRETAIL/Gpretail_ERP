@@ -30,6 +30,9 @@ class ActivationController extends Controller
                     'activated' => false,
                     'status' => null,
                     'licence' => null,
+                    // A fresh on-prem server is set up from its cloud, not from Vynerix admin.
+                    'on_prem' => config('sync.node_role') === 'local',
+                    'cloud' => config('sync.node_role') === 'local' ? preg_replace('~/api/?$~', '', (string) config('sync.cloud_api_base_url')) : null,
                 ],
             ]);
         }

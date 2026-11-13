@@ -9,11 +9,13 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-Schedule::command('platform:sync')->everyFiveMinutes()->withoutOverlapping();
+// An on-prem server that took its identity from its cloud never calls Vynerix admin (see LocalNodeRegistration).
+$talksToVynerixAdmin = fn () => ! \App\Models\PlatformActivation::current()?->managed_by_cloud;
+Schedule::command('platform:sync')->everyFiveMinutes()->withoutOverlapping()->when($talksToVynerixAdmin);
 // On-prem server only: keep the cloud about 15 s behind (bills up, cloud writes and staff accounts down, heartbeat).
 Schedule::command('sync:cycle')->everyFifteenSeconds()->withoutOverlapping(5)->when(fn () => config('sync.node_role') === 'local');
 
-Schedule::command('platform:notifications-sync')->everyMinute()->withoutOverlapping();
+Schedule::command('platform:notifications-sync')->everyMinute()->withoutOverlapping()->when($talksToVynerixAdmin);
 
 Schedule::command('security:purge-plaintext-snapshots --encrypt')->dailyAt('03:15')->withoutOverlapping();
 

@@ -148,7 +148,7 @@ class AuthController extends Controller
             if (! $activation || ! $activation->activated || $activation->status !== 'active') {
                 return response()->json(['success' => false, 'message' => 'Your company ERP activation is not active. Contact your administrator.'], 403);
             }
-            if ($activation->onboarding_required && ! $activation->first_erp_login_at) {
+            if ($activation->onboarding_required && ! $activation->first_erp_login_at && ! $activation->managed_by_cloud) {
                 $entry = app(PlatformClient::class)->firstEntry($activation->company_code, (string) $activation->sync_token);
                 if (! $entry['ok'] || empty($entry['data']['first_erp_login_at'])) {
                     return response()->json(['success' => false, 'message' => $entry['message'] ?? 'Company validation failed. Retry after checking the GP Admin connection.'], 503);
@@ -376,6 +376,72 @@ class AuthController extends Controller
             'data' => $this->presentLocalServerNode($node, $node->store_id)]);
     }
 
+    /**
+     * On-prem only, before anyone can sign in: first-time setup of a fresh server from its cloud. A cloud admin's
+     * sign-in is checked by the cloud (with its lockout); nothing here trusts the caller.
+     */
+    public function bootstrapOnPrem(Request $request, LocalNodeRegistration $registration)
+    {
+        $data = $request->validate([
+            'username' => 'required|string|max:255',
+            'password' => 'required|string|max:255',
+            'store_code' => 'nullable|string|max:100',
+            'counter_url' => 'required|url:http,https|max:2048',
+        ]);
+        @set_time_limit(900);
+        $node = $registration->bootstrap($data, $request->getSchemeAndHttpHost());
+
+        return response()->json(['success' => true, 'message' => "This server is set up. {$node->users_synced} staff account(s) copied. Sign in with your cloud account.",
+            'data' => ['store' => $node->store?->only(['code', 'name']), 'users_synced' => (int) $node->users_synced]]);
+    }
+
+    /** On-prem only: sync with the cloud now instead of waiting for the 15-second job. */
+    public function syncNow(Request $request)
+    {
+        $node = $this->onPremNodeForAdmin($request);
+        $result = app(\App\Services\Platform\SyncCycleService::class)->run();
+        if (! ($result['ran'] ?? false)) {
+            return response()->json(['success' => false, 'message' => $result['reason'] ?? 'The sync did not run.'], ($result['busy'] ?? false) ? 409 : 422);
+        }
+        $pushed = $result['pushed'];
+        $pulled = $result['pulled'];
+        $message = "Sent {$pushed['sent']} and received {$pulled['applied']} change(s).";
+        if ($pushed['failed'] || $pulled['failed'] || $pushed['stopped_early']) {
+            $message .= $pushed['stopped_early'] ? ' The cloud did not answer; waiting changes stay queued.' : '';
+            $message .= $pushed['failed'] ? " {$pushed['failed']} change(s) were refused by the cloud (see the list below)." : '';
+            $message .= $pulled['failed'] ? " {$pulled['failed']} cloud change(s) could not be applied here." : '';
+        }
+
+        return response()->json(['success' => true, 'message' => $message, 'data' => $this->presentLocalServerNode($node->refresh(), $node->store_id)]);
+    }
+
+    /** On-prem only: copy staff accounts and the store's data from the cloud again. */
+    public function recopyFromCloud(Request $request, LocalNodeRegistration $registration)
+    {
+        $node = $this->onPremNodeForAdmin($request);
+        @set_time_limit(900);
+        $copied = $registration->recopy($node);
+
+        return response()->json(['success' => true, 'message' => "Copied from the cloud: {$copied['rows']} record(s), ".($copied['users'] ?? 0).' staff account(s).',
+            'data' => $this->presentLocalServerNode($node->refresh(), $node->store_id)]);
+    }
+
+    /** On-prem only: what the sync is doing right now, for the footer. Cheap; counters ask every few seconds. */
+    public function syncProgress()
+    {
+        return response()->json(['success' => true, 'data' => config('sync.node_role') === 'local' ? \App\Services\Platform\SyncProgress::current() : null]);
+    }
+
+    private function onPremNodeForAdmin(Request $request): StoreLocalNode
+    {
+        abort_unless(in_array($request->user()?->role, ['admin', 'super_admin'], true), 403, 'Only administrators can run a sync by hand.');
+        abort_unless(config('sync.node_role') === 'local', 409, 'This is done on the on-prem server.');
+        $node = StoreLocalNode::where('enabled', true)->first();
+        abort_unless($node, 409, 'This server is not connected to the cloud yet. Use Connect to cloud first.');
+
+        return $node;
+    }
+
     /** On-prem only: a cloud sign-in for the signed-in cashier, kept by the counter for an outage. */
     public function failoverSession(Request $request)
     {
@@ -503,6 +569,8 @@ class AuthController extends Controller
             'users_synced' => (int) $node->users_synced,
             'last_heartbeat_at' => optional($node->last_heartbeat_at)->toIso8601String(),
             'handshake' => $onPrem && $node->enabled ? app(LocalNodeRegistration::class)->handshakeState($node) : null,
+            'sync_progress' => $onPrem ? \App\Services\Platform\SyncProgress::current() : null,
+            'last_sync' => $onPrem ? \App\Services\Platform\SyncCycleService::lastResult() : null,
             'local_server_url' => $node->local_server_url,
             'cloud_server_url' => $node->cloud_server_url,
             'effective_cloud_server_url' => $node->cloud_server_url ?: config('sync.cloud_api_base_url'),

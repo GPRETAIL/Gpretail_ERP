@@ -17,6 +17,10 @@ class PlatformBootstrap
         if (PlatformActivation::current()?->activated) {
             return ['ok' => false, 'status' => 401, 'message' => 'Invalid username or password.'];
         }
+        if (config('sync.node_role') === 'local') {
+            // Vynerix admin allows one installation per company; an on-prem server is set up from its cloud.
+            return ['ok' => false, 'status' => 401, 'message' => 'This on-prem server is not set up yet. Reload the page and use Connect to cloud.'];
+        }
 
         $result = app(PlatformClient::class)->authenticateTenant($email, $password);
         if (! $result['ok']) {
@@ -26,6 +30,10 @@ class PlatformBootstrap
                 'message' => $status === 429 ? 'Too many setup attempts. Try again shortly.' : 'Could not verify company setup with GP Admin. Check your credentials and connection, then retry.'];
         }
         $identity = $result['data'];
+        if (($identity['authenticated'] ?? false) !== true) {
+            // GP Admin answered, but this email and password are not an active company's owner there.
+            return ['ok' => false, 'status' => 401, 'message' => "GP Admin did not accept this email and password. Use the company owner's ERP password from the welcome email, not the company-portal password. If this company's ERP is already installed elsewhere, sign in there: a company has one installation."];
+        }
         $company = $identity['company_code'] ?? '';
         $configured = config('platform.company_code');
         $existing = PlatformActivation::current();

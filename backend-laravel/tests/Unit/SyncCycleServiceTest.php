@@ -181,9 +181,33 @@ class SyncCycleServiceTest extends TestCase
         $result = app(SyncCycleService::class)->run();
 
         $this->assertTrue($result['pushed']['stopped_early']);
-        $this->assertSame('failed', $first->fresh()->status);
+        // The cloud was unhealthy, not the write: it stays queued for the next cycle, with the reason kept.
+        $this->assertSame('pending', $first->fresh()->status);
+        $this->assertSame(1, $first->fresh()->attempts);
+        $this->assertStringContainsString('HTTP 500', $first->fresh()->last_error);
         // Never attempted -- the batch stopped before reaching it.
         $this->assertSame('pending', $second->fresh()->status);
+    }
+
+    public function test_an_unreachable_cloud_leaves_writes_queued_and_a_second_sync_waits_for_the_first(): void
+    {
+        $event = SyncOutboxEvent::create([
+            'store_id' => $this->store->id, 'method' => 'POST', 'path' => '/pos-sales',
+            'payload' => [], 'headers' => [], 'idempotency_key' => 'k1', 'status' => 'pending',
+        ]);
+        Http::fake(fn () => throw new \Illuminate\Http\Client\ConnectionException('Could not resolve host'));
+
+        app(SyncCycleService::class)->run();
+        $this->assertSame('pending', $event->fresh()->status);
+        $this->assertNull(\App\Services\Platform\SyncProgress::current(), 'progress ends with the sync');
+
+        $lock = \Illuminate\Support\Facades\Cache::lock(SyncCycleService::LOCK, 60);
+        $lock->get();
+        try {
+            $this->assertTrue(app(SyncCycleService::class)->run()['busy']);
+        } finally {
+            $lock->release();
+        }
     }
 
     public function test_pull_fetches_applies_and_acks_cloud_origin_events(): void

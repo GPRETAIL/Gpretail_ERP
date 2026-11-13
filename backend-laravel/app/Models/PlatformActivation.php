@@ -34,6 +34,7 @@ class PlatformActivation extends Model
         'tenant_admin_email',
         'onboarding_required',
         'first_erp_login_at',
+        'managed_by_cloud',
     ];
 
     protected $hidden = [
@@ -54,6 +55,7 @@ class PlatformActivation extends Model
             'registered_at' => 'datetime',
             'first_erp_login_at' => 'datetime',
             'onboarding_required' => 'boolean',
+            'managed_by_cloud' => 'boolean',
             'last_synced_at' => 'datetime',
         ];
     }

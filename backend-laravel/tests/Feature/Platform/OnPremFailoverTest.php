@@ -259,6 +259,51 @@ class OnPremFailoverTest extends TestCase
         unset($node);
     }
 
+    public function test_an_admin_can_sync_now_and_re_copy_from_the_cloud_and_the_footer_sees_progress(): void
+    {
+        config(['sync.node_role' => 'local']);
+        $node = $this->node();
+        $this->admin->forceFill(['platform_company_code' => null])->save();
+        $this->store->forceFill(['platform_store_id' => null])->save(); // No signed licence in this test.
+        SyncOutboxEvent::create(['store_id' => $this->store->id, 'method' => 'POST', 'path' => '/customers', 'payload' => [],
+            'headers' => [], 'idempotency_key' => 'k1', 'status' => 'pending']);
+        Http::fake([
+            'cloud.example.test/api/customers' => Http::response(['success' => true], 201),
+            'cloud.example.test/api/sync/outbound/next*' => Http::response(['success' => true, 'data' => ['events' => []]]),
+            'cloud.example.test/api/sync/users' => Http::response(['success' => true, 'data' => ['users' => []]]),
+            'cloud.example.test/api/sync/heartbeat' => Http::response(['success' => true]),
+            'cloud.example.test/api/sync/outbound/count' => Http::response(['success' => true, 'data' => ['pending' => 0]]),
+            'cloud.example.test/api/sync/catch-up-export' => Http::response(['success' => true, 'data' => ['tables' => [], 'counters' => []]]),
+        ]);
+        $cashier = User::create(['name' => 'Cashier', 'username' => 'cashier', 'email' => 'c@example.com', 'password' => 'secret123',
+            'role' => 'cashier', 'store_id' => $this->store->id, 'is_active' => true]);
+        $this->withHeader('X-Company-Scope-Id', (string) $this->store->id); // The page always sends its store.
+        Sanctum::actingAs($cashier);
+        $this->postJson('/api/local-server-config/sync-now')->assertForbidden();
+
+        Sanctum::actingAs($this->admin);
+        $this->postJson('/api/local-server-config/sync-now')->assertOk()
+            ->assertJsonPath('message', 'Sent 1 and received 0 change(s).')
+            ->assertJsonPath('data.last_sync.pushed.sent', 1);
+        $this->postJson('/api/local-server-config/recopy')->assertOk()->assertJsonPath('message', 'Copied from the cloud: 0 record(s), 0 staff account(s).');
+        $this->assertNotNull($node->fresh()->last_catch_up_at);
+
+        \App\Services\Platform\SyncProgress::start('recopy', 'Copying store data from the cloud');
+        $this->getJson('/api/local-server-config/progress')->assertOk()->assertJsonPath('data.label', 'Copying store data from the cloud');
+        $this->postJson('/api/local-server-config/sync-now')->assertOk(); // Progress is not the lock.
+        $lock = Cache::lock(\App\Services\Platform\SyncCycleService::LOCK, 60);
+        $lock->get();
+        try {
+            $this->postJson('/api/local-server-config/sync-now')->assertStatus(409);
+            $this->postJson('/api/local-server-config/recopy')->assertStatus(422);
+        } finally {
+            $lock->release();
+        }
+
+        config(['sync.node_role' => 'cloud']);
+        $this->postJson('/api/local-server-config/sync-now')->assertStatus(409);
+    }
+
     public function test_the_on_prem_server_hands_a_counter_its_cloud_sign_in_and_swaps_one_back(): void
     {
         // Sign-in here needs no platform activation: an unlinked account.

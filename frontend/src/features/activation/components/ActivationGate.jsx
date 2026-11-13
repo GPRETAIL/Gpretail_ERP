@@ -6,6 +6,7 @@ import { Loader2, ServerCrash, RefreshCw } from "lucide-react";
 import { Box, Button, Typography } from "@mui/material";
 import ActivationWizard from "@/features/activation/ActivationWizard";
 import { getFailoverCloudApiBase } from "@/shared/api/runtimeRouting";
+import OnPremSetup from "@/features/activation/OnPremSetup";
 
 // Boot gate for the tenant deployment. On start it checks /api/activation/status:
 //  - activated  → render the app (children)
@@ -27,6 +28,7 @@ const DesktopActivationGate = ({ children }) => {
   const [cachedActivated] = useState(() => localStorage.getItem("vx_activated") === "1");
   const [phase, setPhase] = useState(cachedActivated ? "activated" : "loading");
   const [licence, setLicence] = useState(null);
+  const [onPremCloud, setOnPremCloud] = useState("");
 
   const fetchActivation = useCallback(async ({ signal }) => {
     const ask = async (url) => {
@@ -49,6 +51,12 @@ const DesktopActivationGate = ({ children }) => {
       if (ok && body?.data?.activated) {
         localStorage.setItem("vx_activated", "1");
         setPhase("activated");
+      } else if (ok && body?.data?.on_prem) {
+        // A fresh on-prem server: it is set up from its cloud, not through the sign-in page or a setup key.
+        localStorage.removeItem("vx_activated");
+        if (isAuthenticated) dispatch(logout());
+        setOnPremCloud(body.data.cloud || "");
+        setPhase("onprem");
       } else if (ok) {
         localStorage.removeItem("vx_activated");
         // An unactivated installation's public login URL must remain a sign-in
@@ -94,6 +102,10 @@ const DesktopActivationGate = ({ children }) => {
   //
   // Signed out: hand back the app so /login renders. An unactivated deployment still cannot be
   // USED, because every authenticated route below falls into the branch underneath.
+  if (phase === "onprem") {
+    return <OnPremSetup cloud={onPremCloud} onDone={() => { setPhase("loading"); check(); }} />;
+  }
+
   if (phase === "required" && !isAuthenticated) {
     return children;
   }

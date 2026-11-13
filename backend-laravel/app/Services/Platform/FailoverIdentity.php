@@ -6,6 +6,9 @@ use App\Models\StoreLocalNode;
 use App\Models\User;
 use App\Services\Security\FailedAttempts;
 use App\Services\Tenancy\StoreContext;
+use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -28,6 +31,11 @@ class FailoverIdentity
     private const USER_FIELDS = ['id', 'name', 'username', 'email', 'password', 'approval_pin_hash', 'role', 'store_id', 'phone', 'is_active',
         'must_change_password', 'counter_id', 'platform_company_code', 'platform_password_version', 'google_sub', 'platform_identity',
         'web_access', 'mobile_access', 'module_permissions', 'page_permissions'];
+
+    private const ACTIVATION_FIELDS = ['deployment_id', 'company_code', 'client_id', 'activated', 'status', 'active_till', 'limits', 'feature_flags',
+        'licence_token', 'licence_state', 'licence_expires_at', 'licence_grace_until', 'registered_at', 'tenant_admin_email', 'first_erp_login_at'];
+
+    private const STORE_SECRETS = ['admin_password', 'einvoice_password', 'gst_access_key', 'backup_settings'];
 
     public function __construct(private StoreContext $stores) {}
 
@@ -62,6 +70,15 @@ class FailoverIdentity
         if (! $store && $storeCode) {
             $store = (clone $available)->where('code', $storeCode)->first();
         }
+        if (! $store && ! $platformStoreId && ! $storeCode) {
+            // A fresh on-prem server doesn't know its store yet: the admin's only store, or the admin chooses.
+            $choices = (clone $available)->where('is_active', true)->orderBy('name')->get(['code', 'name']);
+            if ($choices->count() > 1) {
+                throw new HttpResponseException(response()->json(['success' => false, 'code' => 'CHOOSE_STORE',
+                    'message' => 'Choose the store this server runs.', 'stores' => $choices->map->only(['code', 'name'])->values()], 422));
+            }
+            $store = $choices->count() === 1 ? (clone $available)->where('code', $choices[0]->code)->first() : null;
+        }
         if (! $store) {
             throw ValidationException::withMessages(['store' => 'This store was not found on the cloud for this administrator. Check the cloud address and that the store is activated there.']);
         }
@@ -76,7 +93,27 @@ class FailoverIdentity
         }
         $node->save();
 
-        return ['tenant_key' => $node->tenant_key, 'sync_token' => $node->sync_token, 'store_id' => $store->id, 'store_code' => $store->code];
+        return ['tenant_key' => $node->tenant_key, 'sync_token' => $node->sync_token, 'store_id' => $store->id, 'store_code' => $store->code,
+            'identity' => $this->identityFor($node)];
+    }
+
+    /**
+     * What an on-prem server needs to run this store without ever talking to Vynerix admin: the company
+     * activation and the store with its signed licence, exactly as this cloud holds them (the licence is signed
+     * for this cloud's deployment, so the on-prem server carries the same deployment identity). Never this
+     * cloud's own Vynerix admin token, and none of the store's stored passwords or keys.
+     *
+     * @return array{activation: ?array, store: ?array}
+     */
+    public function identityFor(StoreLocalNode $node): array
+    {
+        $activation = DB::table('platform_activations')->orderByDesc('id')->first();
+        $store = DB::table('stores')->where('id', $node->store_id)->first();
+
+        return [
+            'activation' => $activation ? Arr::only((array) $activation, self::ACTIVATION_FIELDS) : null,
+            'store' => $store ? Arr::except((array) $store, self::STORE_SECRETS) : null,
+        ];
     }
 
     /** Everyone who can open this store, except the sync system users. */

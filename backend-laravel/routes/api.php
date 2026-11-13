@@ -52,9 +52,13 @@ Route::post('admin-auth/login', [AuthController::class, 'login'])->middleware('t
 Route::get('local-server-config', [AuthController::class, 'localServerConfig'])->middleware('auth:sanctum');
 Route::put('local-server-config', [AuthController::class, 'localServerConfigUpdate'])->middleware('auth:sanctum');
 Route::get('local-server-config/runtime', [AuthController::class, 'localServerConfigRuntime'])->middleware('auth:sanctum');
-Route::post('local-server-config/connect', [AuthController::class, 'connectToCloud'])->middleware(['auth:sanctum', 'throttle:10,1']);
-Route::post('auth/failover-session', [AuthController::class, 'failoverSession'])->middleware(['auth:sanctum', 'throttle:30,1']);
-Route::post('auth/failover-session/exchange', [AuthController::class, 'exchangeFailoverSession'])->middleware('throttle:20,1');
+Route::post('local-server-config/connect', [AuthController::class, 'connectToCloud'])->middleware(['auth:sanctum', 'throttle:10,1,onprem-connect']);
+Route::post('local-server-config/bootstrap', [AuthController::class, 'bootstrapOnPrem'])->middleware('throttle:5,1,onprem-bootstrap');
+Route::post('local-server-config/sync-now', [AuthController::class, 'syncNow'])->middleware(['auth:sanctum', 'throttle:20,1,onprem-sync-now']);
+Route::post('local-server-config/recopy', [AuthController::class, 'recopyFromCloud'])->middleware(['auth:sanctum', 'throttle:5,1,onprem-recopy']);
+Route::get('local-server-config/progress', [AuthController::class, 'syncProgress'])->middleware(['auth:sanctum', 'throttle:120,1,onprem-progress']);
+Route::post('auth/failover-session', [AuthController::class, 'failoverSession'])->middleware(['auth:sanctum', 'throttle:30,1,onprem-failover']);
+Route::post('auth/failover-session/exchange', [AuthController::class, 'exchangeFailoverSession'])->middleware('throttle:20,1,onprem-exchange');
 Route::match(['get', 'post'], 'local-server-config/test', [SettingsController::class, 'localServerTest'])->middleware(['auth:sanctum', 'throttle:10,1']);
 Route::match(['get', 'post'], 'local-server-config/test-cloud', [SettingsController::class, 'cloudServerTest'])->middleware(['auth:sanctum', 'throttle:10,1']);
 // Every counter polls this every 5 s; behind the on-prem Vite proxy they can share one address.

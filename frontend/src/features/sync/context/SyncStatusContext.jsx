@@ -2,18 +2,21 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import api from "@/shared/api/apiClient";
-import { getRuntimeRoutingSnapshot, RUNTIME_ROUTING_CHANGED_EVENT } from "@/shared/api/runtimeRouting";
+import { getRuntimeRoutingSnapshot, RUNTIME_ROUTING_CHANGED_EVENT, SYNC_STARTED_EVENT } from "@/shared/api/runtimeRouting";
 import { backgroundRequestIdentity } from "@/shared/api/backgroundRequestIdentity";
 
 const SyncStatusContext = createContext(null);
 
 const POLL_INTERVAL_MS = 20000;
+// While a sync runs, the footer follows it closely ("Syncing… 12 left").
+const PROGRESS_POLL_MS = 2000;
 
 const DEFAULT_STATE = {
   enabled: false,
   target: "cloud",
   healthy: false,
   catchingUp: false,
+  progress: null,
   outboxPending: 0,
   outboxFailed: 0,
 };
@@ -51,9 +54,11 @@ export const SyncStatusProvider = ({ children }) => {
           target: routing.currentTarget === "local" ? "local" : "cloud",
           healthy: Boolean(routing.localHealthy),
           catchingUp: Boolean(routing.localReachable && routing.handshakeState === "catching_up"),
+          progress: data.sync_progress || null,
           outboxPending: Number(data.outbox_pending || 0),
           outboxFailed: Number(data.outbox_failed || 0),
         } });
+        if (data.sync_progress) followProgress(); // Defined below; set up before any answer arrives.
       } catch {
         // Non-critical: leave the previous status in place rather than flashing to a wrong state.
       } finally { pending = false; }
@@ -81,10 +86,34 @@ export const SyncStatusProvider = ({ children }) => {
           catchingUp: Boolean(routing.localReachable && routing.handshakeState === "catching_up"),
         } };
       });
+
       if (typeof routing.enabled === "boolean" && routing.enabled !== enabled) void refresh(true);
     };
+    // While the server reports a sync in progress (or one was just started here), ask only for that every 2 s.
+    let progressTimer = null;
+    const followProgress = () => {
+      if (progressTimer || !alive) return;
+      progressTimer = setInterval(async () => {
+        if (document.visibilityState === "hidden") return;
+        try {
+          const res = await api.get("/local-server-config/progress", { signal: controller.signal });
+          if (!alive) return;
+          const progress = res.data?.data || null;
+          setResult((prev) => ({ identity, status: { ...(prev?.identity === identity ? prev.status : DEFAULT_STATE), progress } }));
+          if (!progress) {
+            clearInterval(progressTimer);
+            progressTimer = null;
+            void refresh(true); // The new waiting count once it is done.
+          }
+        } catch {
+          // Keep the last shown progress; the 20-second check corrects it.
+        }
+      }, PROGRESS_POLL_MS);
+    };
+    const onSyncStarted = () => followProgress();
     const onVisible = () => { if (document.visibilityState !== "hidden") void refresh(); };
     window.addEventListener(RUNTIME_ROUTING_CHANGED_EVENT, onRoutingChanged);
+    window.addEventListener(SYNC_STARTED_EVENT, onSyncStarted);
     document.addEventListener("visibilitychange", onVisible);
 
     return () => {
@@ -92,6 +121,8 @@ export const SyncStatusProvider = ({ children }) => {
       controller.abort();
       clearInterval(timer);
       window.removeEventListener(RUNTIME_ROUTING_CHANGED_EVENT, onRoutingChanged);
+      window.removeEventListener(SYNC_STARTED_EVENT, onSyncStarted);
+      if (progressTimer) clearInterval(progressTimer);
       document.removeEventListener("visibilitychange", onVisible);
     };
   }, [identity, userId]);

@@ -3,7 +3,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import ConfigureLocalServer from "@/features/settings/ConfigureLocalServer";
 const { get, put, post, toast, initialize } = vi.hoisted(() => ({ get: vi.fn(), put: vi.fn(), post: vi.fn(), toast: { error: vi.fn(), success: vi.fn(), info: vi.fn() }, initialize: vi.fn().mockResolvedValue(null) }));
 vi.mock("@/shared/api/apiClient", () => ({ default: { get, put, post } }));
-vi.mock("@/shared/api/runtimeRouting", () => ({ fetchAndApplyRuntimeRoutingConfig: initialize }));
+vi.mock("@/shared/api/runtimeRouting", () => ({ fetchAndApplyRuntimeRoutingConfig: initialize, SYNC_STARTED_EVENT: "vx-sync-started" }));
 vi.mock("react-toastify", () => ({ toast }));
 const saved = { tenant_key: "test-node", local_server_url: "http://192.168.1.25:8000", cloud_server_url: "https://cloud.example", connector_status: "offline" };
 beforeEach(() => { vi.clearAllMocks(); get.mockImplementation(async path => ({ data: { data: path === "/local-server-config" ? saved : { nodes: [] } } })); });
@@ -133,4 +133,26 @@ it("says failover is off for a store whose on-prem link was switched off, not th
   render(<ConfigureLocalServer />);
   expect(await screen.findByText("Failover off for this store")).toBeInTheDocument();
   expect(screen.queryByText("Seen, currently offline")).not.toBeInTheDocument();
+});
+
+it("on a connected on-prem server, Sync now and Re-copy (after confirming) run, and failed cloud changes are listed", async () => {
+  const connected = { ...saved, node_role: "local", enabled: true, cloud_server_url: "https://dev.gpsoftware.in", counter_url: "http://mainserver:5173",
+    last_sync: { pulled: { errors: ["POST /pos-sales: HTTP 422 Product not found"] } } };
+  get.mockImplementation(async path => ({ data: { data: path === "/local-server-config" ? connected : { nodes: [] } } }));
+  post.mockImplementation(async path => ({ data: { message: path.endsWith("recopy") ? "Copied from the cloud: 40 record(s), 4 staff account(s)." : "Sent 2 and received 1 change(s).", data: connected } }));
+  const started = vi.fn(); window.addEventListener("vx-sync-started", started);
+  render(<ConfigureLocalServer />);
+
+  expect(await screen.findByText("POST /pos-sales: HTTP 422 Product not found")).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Sync now" }));
+  await waitFor(() => expect(toast.success).toHaveBeenCalledWith("Sent 2 and received 1 change(s)."));
+  expect(post).toHaveBeenCalledWith("/local-server-config/sync-now", null, expect.anything());
+  expect(started).toHaveBeenCalledTimes(1);
+
+  fireEvent.click(screen.getByRole("button", { name: "Re-copy from cloud" }));
+  expect(post).toHaveBeenCalledTimes(1); // Nothing runs before confirming.
+  fireEvent.click(await screen.findByRole("button", { name: "Re-copy" }));
+  await waitFor(() => expect(toast.success).toHaveBeenCalledWith("Copied from the cloud: 40 record(s), 4 staff account(s)."));
+  expect(post).toHaveBeenLastCalledWith("/local-server-config/recopy", null, expect.anything());
+  window.removeEventListener("vx-sync-started", started);
 });

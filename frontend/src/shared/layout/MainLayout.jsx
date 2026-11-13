@@ -254,7 +254,13 @@ const PrintStatusFooter = () => {
                   <Typography component="span" sx={{ fontSize: "inherit", color: "warning.main" }}>{syncStatus.catchingUp ? "Cloud (on-prem catching up)" : "Cloud (on-prem down)"}</Typography>
                 </>
               )}
-              {(syncStatus.outboxPending > 0 || syncStatus.outboxFailed > 0) && (
+              {syncStatus.progress && (
+                <Box component="span" role="status" sx={{ display: "inline-flex", alignItems: "center", gap: 0.5, color: "info.main" }}>
+                  <Loader2 size={12} style={{ animation: "app-spin 1s linear infinite" }} />
+                  {syncStatus.progress.left != null ? `Syncing… ${syncStatus.progress.left} left` : `${syncStatus.progress.label}…`}
+                </Box>
+              )}
+              {!syncStatus.progress && (syncStatus.outboxPending > 0 || syncStatus.outboxFailed > 0) && (
                 <Box
                   component="span"
                   sx={{

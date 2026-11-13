@@ -25,6 +25,13 @@ class SyncCycleService
 {
     private const MAX_BATCH = 25;
 
+    /** Pull batches per cycle, so catching up after an outage takes seconds, not minutes. */
+    private const MAX_PULL_BATCHES = 8;
+
+    public const LOCK = 'sync:cycle';
+
+    private const LAST_RESULT = 'sync:last-result';
+
     public function run(): array
     {
         if (config('sync.node_role') !== 'local') {
@@ -50,19 +57,40 @@ class SyncCycleService
             return ['ran' => false, 'reason' => 'sync.cloud_api_base_url is not configured.'];
         }
 
-        $result = [
-            'ran' => true,
-            'pushed' => $this->pushPendingWrites($node, $cloudApi),
-            'pulled' => $this->pullAndApplyCloudWrites($node, $cloudApi),
-            // The cloud is the master for staff accounts; the counters sign in here with the same ones.
-            'users' => app(LocalNodeRegistration::class)->copyUsers($node),
-            'heartbeat_ok' => $this->sendHeartbeat($node, $cloudApi),
-        ];
-        $node->forceFill(['last_cycle_at' => now()])->save();
-        // Counters waiting on the cloud see the new backlog at once, not up to 10 s later.
-        Cache::forget(LocalNodeRegistration::STATE_CACHE_KEY);
+        // One sync at a time: the 15-second job, Sync now and Re-copy share this lock.
+        $lock = Cache::lock(self::LOCK, 900);
+        if (! $lock->get()) {
+            return ['ran' => false, 'busy' => true, 'reason' => 'A sync is already running. Try again in a moment.'];
+        }
+        try {
+            $waiting = SyncOutboxEvent::where('store_id', $node->store_id)->where('status', 'pending')->count();
+            if ($waiting > 0) {
+                SyncProgress::start('sync', 'Syncing', $waiting);
+            }
+            $result = [
+                'ran' => true,
+                'pushed' => $this->pushPendingWrites($node, $cloudApi),
+                'pulled' => $this->pullAndApplyCloudWrites($node, $cloudApi),
+                // The cloud is the master for staff accounts; the counters sign in here with the same ones.
+                'users' => app(LocalNodeRegistration::class)->copyUsers($node),
+                'heartbeat_ok' => $this->sendHeartbeat($node, $cloudApi),
+            ];
+            $node->forceFill(['last_cycle_at' => now()])->save();
+            Cache::forever(self::LAST_RESULT, ['at' => now()->toIso8601String()] + $result);
 
-        return $result;
+            return $result;
+        } finally {
+            SyncProgress::finish();
+            // Counters waiting on the cloud see the new backlog at once, not up to 10 s later.
+            Cache::forget(LocalNodeRegistration::STATE_CACHE_KEY);
+            $lock->release();
+        }
+    }
+
+    /** What the last sync did, for the on-prem page: counts, and why changes could not be applied. */
+    public static function lastResult(): ?array
+    {
+        return Cache::get(self::LAST_RESULT);
     }
 
     private function authHeaders(StoreLocalNode $node): array
@@ -97,31 +125,31 @@ class SyncCycleService
                 if ($response->successful() || $this->isIdempotentSuccess($event, $response)) {
                     $event->update(['status' => 'acked', 'synced_at' => now(), 'last_error' => null]);
                     $result['sent']++;
+                    SyncProgress::update(['left' => max(0, (int) (SyncProgress::current()['left'] ?? 1) - 1)]);
 
                     continue;
                 }
 
+                // A 5xx means the cloud itself is unhealthy right now: the write stays queued for the next cycle,
+                // and this cycle stops rather than try every remaining one. A 4xx is this write's own problem: it
+                // is marked failed (Retry on the Configure Local Server page) and the rest keep going.
+                $serverSide = $response->status() >= 500;
                 $event->update([
-                    'status' => 'failed',
+                    'status' => $serverSide ? 'pending' : 'failed',
                     'attempts' => $event->attempts + 1,
                     'last_error' => "HTTP {$response->status()}: ".mb_substr($response->body(), 0, 500),
                 ]);
-                $result['failed']++;
-
-                // A validation-style 4xx is this event's own problem -- skip it and keep
-                // draining the rest. A 5xx likely means cloud itself is unhealthy right
-                // now, so stop this cycle rather than fail every remaining event in order.
-                if ($response->status() >= 500) {
+                if ($serverSide) {
                     $result['stopped_early'] = true;
                     break;
                 }
-            } catch (\Throwable $e) {
-                $event->update([
-                    'status' => 'failed',
-                    'attempts' => $event->attempts + 1,
-                    'last_error' => $e->getMessage(),
-                ]);
                 $result['failed']++;
+            } catch (\Throwable $e) {
+                // The cloud could not be reached (internet down): nothing was saved there, so it stays queued.
+                $event->update([
+                    'attempts' => $event->attempts + 1,
+                    'last_error' => mb_substr($e->getMessage(), 0, 500),
+                ]);
                 $result['stopped_early'] = true;
                 break;
             }
@@ -149,17 +177,45 @@ class SyncCycleService
 
     private function pullAndApplyCloudWrites(StoreLocalNode $node, string $cloudApi): array
     {
-        $result = ['applied' => 0, 'failed' => 0];
+        $result = ['applied' => 0, 'failed' => 0, 'errors' => []];
+        for ($batch = 0; $batch < self::MAX_PULL_BATCHES; $batch++) {
+            $round = $this->pullBatch($node, $cloudApi);
+            $result['applied'] += $round['applied'];
+            $result['failed'] += $round['failed'];
+            $result['errors'] = array_slice(array_merge($result['errors'], $round['errors']), 0, 5);
+            // Stop when the cloud has nothing more, or when this batch could not all be applied (it comes back first).
+            if ($round['fetched'] < self::MAX_BATCH || $round['failed'] > 0) {
+                break;
+            }
+        }
 
-        $response = Http::withHeaders($this->authHeaders($node))
-            ->timeout(15)
-            ->get($cloudApi.'/sync/outbound/next', ['limit' => self::MAX_BATCH]);
+        return $result;
+    }
+
+    private function pullBatch(StoreLocalNode $node, string $cloudApi): array
+    {
+        $result = ['applied' => 0, 'failed' => 0, 'fetched' => 0, 'errors' => []];
+
+        try {
+            $response = Http::withHeaders($this->authHeaders($node))
+                ->timeout(15)
+                ->get($cloudApi.'/sync/outbound/next', ['limit' => self::MAX_BATCH]);
+        } catch (\Throwable) {
+            return $result;
+        }
 
         if (! $response->successful()) {
             return $result;
         }
 
         $events = $response->json('data.events') ?? [];
+        $result['fetched'] = count($events);
+        if ($events) {
+            $progress = SyncProgress::current();
+            $progress
+                ? SyncProgress::update(['left' => (int) ($progress['left'] ?? 0) + count($events)])
+                : SyncProgress::start('sync', 'Syncing', count($events));
+        }
         $ackIds = [];
         $localBase = $this->localBaseUrl($node);
 
@@ -179,6 +235,8 @@ class SyncCycleService
                     $result['applied']++;
                 } else {
                     $result['failed']++;
+                    $result['errors'][] = ($event['method'] ?? '').' '.($event['path'] ?? '').': HTTP '.$localResponse->status().' '
+                        .mb_substr((string) ($localResponse->json('message') ?? ''), 0, 200);
                 }
             } catch (\Throwable $e) {
                 Log::warning('sync:cycle failed applying a cloud-origin event locally', [
@@ -186,7 +244,9 @@ class SyncCycleService
                     'error' => $e->getMessage(),
                 ]);
                 $result['failed']++;
+                $result['errors'][] = ($event['method'] ?? '').' '.($event['path'] ?? '').': '.mb_substr($e->getMessage(), 0, 200);
             }
+            SyncProgress::update(['left' => max(0, (int) (SyncProgress::current()['left'] ?? 1) - 1)]);
         }
 
         if ($ackIds) {
@@ -206,6 +266,10 @@ class SyncCycleService
                 'advertised_local_server_url' => $node->advertised_local_server_url,
                 'counter_url' => $node->counter_url,
             ]);
+            if ($response->successful()) {
+                // Licence renewals and status changes made on the cloud side arrive here.
+                app(LocalNodeRegistration::class)->refreshIdentity($node, $response->json('data.identity'));
+            }
 
             return $response->successful();
         } catch (\Throwable $e) {

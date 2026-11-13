@@ -43,6 +43,8 @@ let consecutiveFailures = 0;
 let failoverRefreshAt = 0;
 let failoverPending = null;
 let returnPending = null;
+// Whether the last check of this page's own server got an answer (as opposed to no answer at all).
+let localAnswered = false;
 
 const isBrowser = () => typeof window !== "undefined";
 
@@ -141,6 +143,8 @@ const neverReachedLocal = (error) => {
 // since re-rendering on an identical snapshot is harmless and simpler than tracking a diff.
 export const RUNTIME_ROUTING_CHANGED_EVENT = "erp:runtime-routing-changed";
 export const FAILOVER_SESSION_EXPIRED_EVENT = "vx-failover-session-expired";
+/** A sync was started by hand on this page: the footer shows its progress at once instead of on its next check. */
+export const SYNC_STARTED_EVENT = "vx-sync-started";
 
 const persistState = () => {
   if (!isBrowser()) return;
@@ -451,8 +455,10 @@ const applyResolvedState = (next = {}) => {
 
 const resolveFromLocalConnector = async () => {
   if (!isBrowser()) return null;
+  localAnswered = false;
   try {
     const payload = await fetchJsonWithTimeout("/api/connector/web-config", { timeoutMs: 1200 });
+    localAnswered = true;
     const data = payload?.data || {};
     const cloudBaseUrl = toApiBase(data.cloud_api_base_url);
     if (!cloudBaseUrl) return null;
@@ -599,7 +605,11 @@ export const prepareRoutingForSignIn = async ({ apiClient } = {}) => {
   if (!isBrowser()) return runtimeState;
   const version = ++configurationVersion;
   const localState = await resolveFromLocalConnector();
-  if (version !== configurationVersion || !localState) return runtimeState;
+  if (version !== configurationVersion) return runtimeState;
+  // This page's own server answered and is not (yet) an on-prem failover server: whatever this browser
+  // remembered from an earlier setup on this address must not send the sign-in to some cloud.
+  if (!localState && localAnswered) return applyResolvedState({ ...DEFAULT_STATE });
+  if (!localState) return runtimeState;
   return applyResolvedState({ ...localState, currentTarget: localState.localReachable ? "local" : "cloud", localHealthy: localState.localReachable });
 };
 

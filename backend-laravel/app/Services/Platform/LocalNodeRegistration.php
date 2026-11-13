@@ -2,11 +2,15 @@
 
 namespace App\Services\Platform;
 
+use App\Models\PlatformActivation;
 use App\Models\Store;
 use App\Models\StoreLocalNode;
 use App\Models\SyncOutboxEvent;
 use App\Models\User;
 use App\Services\Backup\BackupService;
+use App\Support\RequestMemo;
+use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -27,6 +31,14 @@ class LocalNodeRegistration
         'direct_purchases', 'dealer_invoices', 'inventory_entries', 'vouchers'];
 
     public const STATE_CACHE_KEY = 'sync:handshake-state';
+
+    /** Copied from the cloud's activation. Never the cloud's own Vynerix admin token. */
+    private const ACTIVATION_FIELDS = ['deployment_id', 'company_code', 'client_id', 'activated', 'status', 'active_till', 'limits', 'feature_flags',
+        'licence_token', 'licence_state', 'licence_expires_at', 'licence_grace_until', 'registered_at', 'tenant_admin_email', 'first_erp_login_at'];
+
+    /** What a licence renewal changes on the store. */
+    private const STORE_LICENCE_FIELDS = ['platform_store_id', 'platform_company_code', 'platform_licence_token', 'platform_active_till',
+        'platform_subscription', 'activated_at', 'activation_required', 'is_active'];
 
     public function __construct(private BackupService $backup) {}
 
@@ -75,10 +87,139 @@ class LocalNodeRegistration
         Cache::forget(self::STATE_CACHE_KEY);
 
         // Users first: the store's bills and records point at them.
-        $this->copyUsers($node);
-        $this->pullSnapshot($node);
+        try {
+            SyncProgress::start('recopy', 'Copying staff accounts from the cloud');
+            $this->copyUsers($node);
+            SyncProgress::update(['label' => 'Copying store data from the cloud']);
+            $this->pullSnapshot($node);
+        } finally {
+            SyncProgress::finish();
+        }
 
         return $node->refresh();
+    }
+
+    /**
+     * First-time setup of a fresh on-prem server. Vynerix admin allows one installation per company, so this
+     * server takes its identity from its cloud instead: a cloud admin signs in, and the cloud hands over the
+     * company activation, the store with its signed licence, then the staff accounts and the store's data.
+     * The cloud is always the configured one (SYNC_CLOUD_API_BASE_URL), never an address from the request.
+     *
+     * @param  array{username: string, password: string, store_code?: ?string, counter_url: string}  $input
+     */
+    public function bootstrap(array $input, string $backendUrl): StoreLocalNode
+    {
+        abort_unless(config('sync.node_role') === 'local', 409, 'Only an on-prem server (SYNC_NODE_ROLE=local) is set up from a cloud.');
+        abort_if(PlatformActivation::current()?->activated, 409, 'This server is already activated. Sign in and use Configure Local Server.');
+        foreach (self::BUSINESS_TABLES as $table) {
+            abort_if(Schema::hasTable($table) && DB::table($table)->exists(), 409, "This server already holds data ({$table}). Set up a fresh install, or sign in and use Configure Local Server.");
+        }
+        $cloudApi = self::cloudApiBase(null);
+        abort_unless($cloudApi !== '', 409, 'No cloud is configured for this server (SYNC_CLOUD_API_BASE_URL).');
+
+        try {
+            $response = Http::acceptJson()->timeout(20)->post($cloudApi.'/sync/register-node', [
+                'username' => $input['username'],
+                'password' => $input['password'],
+                'store_code' => $input['store_code'] ?? null,
+                'counter_url' => $input['counter_url'],
+            ]);
+        } catch (\Throwable) {
+            throw ValidationException::withMessages(['cloud' => 'The cloud could not be reached at '.$cloudApi.'. Check this server\'s internet connection.']);
+        }
+        if ($response->status() === 422 && $response->json('code') === 'CHOOSE_STORE') {
+            throw new HttpResponseException(response()->json($response->json(), 422));
+        }
+        if (! $response->successful()) {
+            $message = collect($response->json('errors') ?? [])->flatten()->first() ?: $response->json('message') ?: 'The cloud refused the connection (HTTP '.$response->status().').';
+            throw ValidationException::withMessages(['username' => $message]);
+        }
+        $identity = $response->json('data.identity');
+        $cloudStoreId = (int) $response->json('data.store_id');
+        if (! is_array($identity['activation'] ?? null) || ! is_array($identity['store'] ?? null) || (int) ($identity['store']['id'] ?? 0) !== $cloudStoreId
+            || empty($identity['activation']['deployment_id']) || ! $response->json('data.tenant_key') || ! $response->json('data.sync_token')) {
+            throw ValidationException::withMessages(['cloud' => 'The cloud does not support setting up an on-prem server yet. Update the cloud ERP first.']);
+        }
+
+        Schema::disableForeignKeyConstraints();
+        try {
+            DB::transaction(function () use ($identity) {
+                // The install's built-in placeholder accounts go, so staff numbers match the cloud's.
+                DB::table('personal_access_tokens')->delete();
+                DB::table('users')->delete();
+                DB::table('platform_activations')->delete();
+                $this->saveIdentity($identity, true);
+            });
+        } finally {
+            Schema::enableForeignKeyConstraints();
+        }
+
+        $node = StoreLocalNode::firstOrNew(['store_id' => $cloudStoreId]);
+        $node->fill([
+            'tenant_key' => $response->json('data.tenant_key'),
+            'sync_token' => $response->json('data.sync_token'),
+            'enabled' => true,
+            'local_server_url' => $backendUrl,
+            'counter_url' => $input['counter_url'],
+            'cloud_server_url' => (string) preg_replace('~/api$~', '', $cloudApi),
+        ])->save();
+        Cache::forget(self::STATE_CACHE_KEY);
+
+        try {
+            SyncProgress::start('recopy', 'Copying staff accounts from the cloud');
+            $this->copyUsers($node);
+            SyncProgress::update(['label' => 'Copying store data from the cloud']);
+            $this->pullSnapshot($node);
+        } finally {
+            SyncProgress::finish();
+        }
+
+        return $node->refresh();
+    }
+
+    /**
+     * Applies what the cloud sent on a heartbeat (or a reconnect): the activation's status, dates and licence,
+     * and the store's licence fields. Only on a server that took its identity from the cloud, and never to
+     * switch it to another company or store.
+     */
+    public function refreshIdentity(StoreLocalNode $node, mixed $identity): void
+    {
+        $activation = PlatformActivation::current();
+        if (! $activation?->managed_by_cloud || ! is_array($identity) || ! is_array($identity['activation'] ?? null) || ! is_array($identity['store'] ?? null)
+            || ($identity['activation']['company_code'] ?? null) !== $activation->company_code || (int) ($identity['store']['id'] ?? 0) !== (int) $node->store_id) {
+            return;
+        }
+        $this->saveIdentity($identity, false);
+    }
+
+    private function saveIdentity(array $identity, bool $create): void
+    {
+        $activation = Arr::only($identity['activation'], self::ACTIVATION_FIELDS)
+            + ['managed_by_cloud' => true, 'onboarding_required' => false, 'sync_token' => null, 'updated_at' => now()];
+        $storeColumns = Schema::getColumnListing('stores');
+        $store = Arr::only($identity['store'], $create ? $storeColumns : self::STORE_LICENCE_FIELDS);
+        $changed = false;
+
+        if ($create) {
+            DB::table('platform_activations')->insert($activation + ['created_at' => now()]);
+            DB::table('stores')->updateOrInsert(['id' => $store['id']], Arr::except($store, ['id']));
+            $changed = true;
+        } else {
+            $current = (array) DB::table('platform_activations')->orderByDesc('id')->first();
+            $fresh = Arr::except($activation, ['updated_at']);
+            if (Arr::only($current, array_keys($fresh)) != $fresh) {
+                DB::table('platform_activations')->where('id', $current['id'])->update($activation);
+                $changed = true;
+            }
+            $currentStore = (array) DB::table('stores')->where('id', $identity['store']['id'])->first();
+            if ($store && Arr::only($currentStore, array_keys($store)) != $store) {
+                DB::table('stores')->where('id', $identity['store']['id'])->update($store);
+                $changed = true;
+            }
+        }
+        if ($changed) {
+            app(RequestMemo::class)->flush();
+        }
     }
 
     /**
@@ -143,6 +284,32 @@ class LocalNodeRegistration
             return $backup->mergeTablesFromExport($tables);
         } finally {
             Schema::enableForeignKeyConstraints();
+        }
+    }
+
+    /**
+     * Re-copy from the cloud (after a long outage or a reinstall): staff accounts, then the store's data and
+     * document numbers. Merges; never deletes what only this server has, never lowers a counter.
+     *
+     * @return array{users: ?int, rows: int}
+     */
+    public function recopy(StoreLocalNode $node): array
+    {
+        $lock = Cache::lock(SyncCycleService::LOCK, 900);
+        if (! $lock->get()) {
+            throw ValidationException::withMessages(['sync' => 'A sync is already running. Try again in a moment.']);
+        }
+        try {
+            SyncProgress::start('recopy', 'Copying staff accounts from the cloud');
+            $users = $this->copyUsers($node);
+            SyncProgress::update(['label' => 'Copying store data from the cloud']);
+            $rows = $this->pullSnapshot($node);
+
+            return ['users' => $users, 'rows' => $rows];
+        } finally {
+            SyncProgress::finish();
+            Cache::forget(self::STATE_CACHE_KEY);
+            $lock->release();
         }
     }
 

@@ -95,3 +95,11 @@ it("starts an on-prem page on the cloud when its server is already down at load"
   await fetchAndApplyRuntimeRoutingConfig({ token: "local-token" });
   expect(getRuntimeRoutingSnapshot()).toMatchObject({ runningOnLocalConnector: true, currentTarget: "cloud", cloudBaseUrl: CLOUD });
 });
+
+it("signs in on its own server when that server answers but is not a failover server, whatever this browser remembered", async () => {
+  onPrem({ currentTarget: "cloud", localHealthy: false, localReachable: false }); // Left over from an earlier setup on this address.
+  localStorage.setItem("erp_onprem_cloud_api", CLOUD);
+  vi.stubGlobal("fetch", vi.fn(async () => ok({ enabled: false })));
+  await prepareRoutingForSignIn();
+  expect(await prepareRoutingForRequest({ method: "post", url: "/auth/login" })).toMatchObject({ baseURL: "/api", __routingTarget: "deployment" });
+});

@@ -148,14 +148,20 @@ A store can run the ERP on a PC in the shop ("on-prem", `SYNC_NODE_ROLE=local`).
 address, e.g. `http://mainserver:5173` (Vite, forwarding `/api` to the on-prem backend). The cloud
 (dev.gpsoftware.in) is the master for staff accounts and the fallback when the on-prem server is down.
 
-- **Connecting.** On the on-prem server, Configure Local Server > Connect to cloud. A cloud company admin signs in
-  once (the password is not stored). The cloud (`POST /sync/register-node`) creates the store's node and a fresh
-  sync token. The on-prem server then pulls the store's data (catch-up) and its users. The on-prem store must
-  carry the cloud's store number; a fresh install is renumbered, one with business data is refused.
+- **Setting up.** Vynerix admin allows one ERP installation per company and signs each store licence for that
+  installation, so an on-prem server takes its identity from its cloud. A fresh on-prem server shows Connect to
+  cloud (`OnPremSetup.jsx`, `POST /local-server-config/bootstrap`): a cloud admin signs in once (checked by the
+  cloud, not stored). The cloud (`POST /sync/register-node`) creates the store's node and hands over the company
+  activation and the store with its signed licence, never its own Vynerix admin token. The on-prem server saves
+  them (`platform_activations.managed_by_cloud`), then copies staff accounts and the store's data. It never calls
+  Vynerix admin; licence renewals arrive in every heartbeat reply. Configure Local Server > Reconnect to cloud
+  is for a server that is already set up.
 - **Staying in step.** `sync:cycle` runs every 15 seconds on-prem (from `schedule:run`): it pushes on-prem
   writes, applies writes the cloud made for the store, copies the store's users from the cloud (same username,
   password and permissions; users removed on the cloud are switched off) and sends a heartbeat. Replayed writes
-  are saved under the person who made them (`X-Sync-Actor`), not the sync user.
+  are saved under the person who made them (`X-Sync-Actor`), not the sync user. One sync runs at a time. A write
+  the cloud could not take because it was unreachable stays queued; one it rejects is marked failed for Retry.
+  Admins can run Sync now or Re-copy from cloud on the on-prem page, and the footer shows "Syncing… N left".
 - **Two sign-ins per counter.** After signing in on-prem, the counter asks for a cloud sign-in for the same
   person (`POST /auth/failover-session`, store-locked, 24 h, kept when the person signs in elsewhere). A counter
   that signed in on the cloud during an outage swaps it for an on-prem one on return

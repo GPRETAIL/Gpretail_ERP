@@ -1,6 +1,6 @@
 # API reference
 
-Every endpoint under `/api`, grouped by module (660 endpoints). Generated from
+Every endpoint under `/api`, grouped by module (664 endpoints). Generated from
 `php artisan route:list --sort=definition --json`; regenerate it after changing routes.
 
 - Each signed-in endpoint is also served under `/api/v1/...` with the same behaviour.
@@ -53,6 +53,10 @@ Every endpoint under `/api`, grouped by module (660 endpoints). Generated from
 | PUT | `/api/local-server-config` | AuthController@localServerConfigUpdate | yes |
 | GET | `/api/local-server-config/runtime` | AuthController@localServerConfigRuntime | yes |
 | POST | `/api/local-server-config/connect` | AuthController@connectToCloud | yes |
+| POST | `/api/local-server-config/bootstrap` | AuthController@bootstrapOnPrem | no |
+| POST | `/api/local-server-config/sync-now` | AuthController@syncNow | yes |
+| POST | `/api/local-server-config/recopy` | AuthController@recopyFromCloud | yes |
+| GET | `/api/local-server-config/progress` | AuthController@syncProgress | yes |
 | POST | `/api/auth/failover-session` | AuthController@failoverSession | yes |
 | POST | `/api/auth/failover-session/exchange` | AuthController@exchangeFailoverSession | no |
 | GET | `/api/mobile/access` | MobileAccessController@status | yes |
