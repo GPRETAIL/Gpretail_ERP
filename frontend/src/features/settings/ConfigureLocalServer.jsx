@@ -26,6 +26,10 @@ import OnPremConnectionCard from "./OnPremConnectionCard";
 const cardSx = { borderRadius: "7px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", boxShadow: 1 };
 
 const toStatusTone = (config = {}) => {
+  // A store that once had an on-prem link which was then switched off: its old "last seen" is history.
+  if (config.tenant_key && config.enabled === false) {
+    return { label: "Failover off for this store", icon: WifiOff, token: null };
+  }
   if (config.connector_status === "online") {
     return { label: "Online", icon: CheckCircle2, token: "success" };
   }
@@ -274,7 +278,7 @@ export default function ConfigureLocalServer() {
           </Box>
           <Box>
             <Box sx={{ fontSize: TYPE.small, textTransform: "uppercase", letterSpacing: "0.03em", color: "text.secondary" }}>Connector Status</Box>
-            <Box sx={{ mt: 0.5, fontWeight: 500, color: "text.primary" }}>{config?.connector_status || "Not started"}</Box>
+            <Box sx={{ mt: 0.5, fontWeight: 500, color: "text.primary" }}>{config?.tenant_key && config?.enabled === false ? "off" : config?.connector_status || "Not started"}</Box>
           </Box>
           <Box>
             <Box sx={{ fontSize: TYPE.small, textTransform: "uppercase", letterSpacing: "0.03em", color: "text.secondary" }}>Last Seen</Box>

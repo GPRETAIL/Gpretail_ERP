@@ -125,3 +125,12 @@ it("on the on-prem server, connects to the cloud with a cloud admin and never ke
   await waitFor(() => expect(initialize).toHaveBeenCalled());
   await waitFor(() => expect(screen.queryByLabelText(/Cloud admin password/)).not.toBeInTheDocument());
 });
+
+it("says failover is off for a store whose on-prem link was switched off, not that it is offline", async () => {
+  get.mockImplementation(async path => ({ data: { data: path === "/local-server-config"
+    ? { ...saved, enabled: false, local_server_url: null, cloud_server_url: null, connector_status: "offline", connector_last_seen_at: "2026-11-13T04:40:10+05:30" }
+    : { nodes: [] } } }));
+  render(<ConfigureLocalServer />);
+  expect(await screen.findByText("Failover off for this store")).toBeInTheDocument();
+  expect(screen.queryByText("Seen, currently offline")).not.toBeInTheDocument();
+});
