@@ -43,18 +43,24 @@ class SyncCycleService
             return ['ran' => false, 'reason' => 'No enabled local-server configuration found.'];
         }
 
+        $cloudApi = LocalNodeRegistration::cloudApiBase($node->cloud_server_url);
+        if (! $cloudApi) {
+            return ['ran' => false, 'reason' => 'sync.cloud_api_base_url is not configured.'];
+        }
+
         $store = Store::find($node->store_id);
         $activation = PlatformActivation::current();
         if ($store && ($store->platform_store_id || $activation?->activated)) {
             $licence = app(StoreLicenceVerifier::class)->verify($store, $activation);
+            if (! $licence['ok'] && $activation?->managed_by_cloud) {
+                // This server's licence comes from its cloud in the heartbeat reply. Ask for it before giving up,
+                // or a lapsed licence could never be replaced by its renewal.
+                $this->sendHeartbeat($node, $cloudApi);
+                $licence = app(StoreLicenceVerifier::class)->verify($store->refresh(), PlatformActivation::current());
+            }
             if (! $licence['ok']) {
                 return ['ran' => false, 'reason' => $licence['message'] ?? 'Store licence is invalid or expired.'];
             }
-        }
-
-        $cloudApi = LocalNodeRegistration::cloudApiBase($node->cloud_server_url);
-        if (! $cloudApi) {
-            return ['ran' => false, 'reason' => 'sync.cloud_api_base_url is not configured.'];
         }
 
         // One sync at a time: the 15-second job, Sync now and Re-copy share this lock.

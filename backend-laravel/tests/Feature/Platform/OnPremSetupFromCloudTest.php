@@ -33,6 +33,9 @@ class OnPremSetupFromCloudTest extends TestCase
 
     private PlatformActivation $activation;
 
+    /** What the faked cloud answers a heartbeat with, when a test changes it after setup. */
+    private ?array $heartbeatReply = null;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -94,7 +97,7 @@ class OnPremSetupFromCloudTest extends TestCase
             'cloud.example.test/api/sync/register-node' => Http::response($cloud['register']),
             'cloud.example.test/api/sync/users' => Http::response($cloud['users']),
             'cloud.example.test/api/sync/catch-up-export' => Http::response(['success' => true, 'data' => ['tables' => [], 'counters' => []]]),
-            'cloud.example.test/api/sync/heartbeat' => Http::response($cloud['heartbeat']),
+            'cloud.example.test/api/sync/heartbeat' => fn () => Http::response($this->heartbeatReply ?? $cloud['heartbeat']),
             'cloud.example.test/api/sync/outbound/*' => Http::response(['success' => true, 'data' => ['events' => [], 'pending' => 0]]),
         ]);
     }
@@ -193,6 +196,27 @@ class OnPremSetupFromCloudTest extends TestCase
         $registration->refreshIdentity($node, $identity);
         $this->assertSame('suspended', PlatformActivation::current()->status);
         $this->assertSame('CMP-COFFEE', PlatformActivation::current()->company_code);
+    }
+
+    public function test_a_lapsed_licence_is_replaced_by_its_renewal_on_the_next_sync(): void
+    {
+        $cloud = $this->becomeFreshOnPrem();
+        $this->fakeCloud($cloud);
+        $this->postJson('/api/local-server-config/bootstrap', ['username' => 'owner', 'password' => 'secret123', 'counter_url' => 'http://mainserver:5173'])->assertOk();
+        $this->travel(3)->days(); // Past the licence's offline window, with no sync in between.
+        $this->assertFalse(app(StoreLicenceVerifier::class)->verify(Store::firstOrFail(), PlatformActivation::current())['ok']);
+
+        // Still lapsed on the cloud: the sync does not run, and says why.
+        $result = app(\App\Services\Platform\SyncCycleService::class)->run();
+        $this->assertFalse($result['ran']);
+        $this->assertStringContainsString('licence', $result['reason']);
+
+        // Renewed on the cloud: the heartbeat brings the new licence and the sync runs again.
+        $this->heartbeatReply = $cloud['heartbeat'];
+        $this->heartbeatReply['data']['identity']['store']['platform_licence_token'] = $this->licence(['iat' => now()->subMinute()->timestamp,
+            'exp' => now()->addDay()->timestamp, 'activeTill' => now()->addMonth()->timestamp, 'offline_until' => now()->addDays(2)->timestamp]);
+        $this->assertTrue(app(\App\Services\Platform\SyncCycleService::class)->run()['ran']);
+        $this->assertTrue(app(StoreLicenceVerifier::class)->verify(Store::firstOrFail(), PlatformActivation::current())['ok']);
     }
 
     public function test_a_cloud_managed_server_skips_the_vynerix_admin_jobs(): void
