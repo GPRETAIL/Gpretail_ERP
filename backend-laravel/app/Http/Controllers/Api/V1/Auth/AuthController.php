@@ -391,7 +391,9 @@ class AuthController extends Controller
         @set_time_limit(900);
         $node = $registration->bootstrap($data, $request->getSchemeAndHttpHost());
 
-        return response()->json(['success' => true, 'message' => "This server is set up. {$node->users_synced} staff account(s) copied. Sign in with your cloud account.",
+        $storeName = $node->store?->name ?: 'the store';
+
+        return response()->json(['success' => true, 'message' => "This server is set up for {$storeName}. {$node->users_synced} staff account(s) copied. Sign in with your cloud account.",
             'data' => ['store' => $node->store?->only(['code', 'name']), 'users_synced' => (int) $node->users_synced]]);
     }
 

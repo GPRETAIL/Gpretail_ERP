@@ -136,7 +136,8 @@ class OnPremSetupFromCloudTest extends TestCase
         $this->fakeCloud($cloud);
 
         $this->postJson('/api/local-server-config/bootstrap', ['username' => 'owner', 'password' => 'secret123', 'counter_url' => 'http://mainserver:5173'])
-            ->assertOk()->assertJsonPath('data.store.code', 'STR-COFFEE2')->assertJsonPath('data.users_synced', 1);
+            ->assertOk()->assertJsonPath('data.store.code', 'STR-COFFEE2')->assertJsonPath('data.users_synced', 1)
+            ->assertJsonPath('message', 'This server is set up for Coffee 2. 1 staff account(s) copied. Sign in with your cloud account.');
 
         $activation = PlatformActivation::current();
         $this->assertTrue($activation->managed_by_cloud);
