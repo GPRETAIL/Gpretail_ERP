@@ -234,6 +234,7 @@ class SyncCycleService
 
         $events = $response->json('data.events') ?? [];
         $result['fetched'] = count($events);
+        $failed = [];
         if ($events) {
             $progress = SyncProgress::current();
             $progress
@@ -260,8 +261,9 @@ class SyncCycleService
                     $this->driftNote($node, $localResponse);
                 } else {
                     $result['failed']++;
-                    $result['errors'][] = ($event['method'] ?? '').' '.($event['path'] ?? '').': HTTP '.$localResponse->status().' '
+                    $result['errors'][] = $error = ($event['method'] ?? '').' '.($event['path'] ?? '').': HTTP '.$localResponse->status().' '
                         .mb_substr((string) ($localResponse->json('message') ?? ''), 0, 200);
+                    $failed[] = ['id' => $event['id'], 'error' => $error];
                 }
             } catch (\Throwable $e) {
                 Log::warning('sync:cycle failed applying a cloud-origin event locally', [
@@ -269,15 +271,18 @@ class SyncCycleService
                     'error' => $e->getMessage(),
                 ]);
                 $result['failed']++;
-                $result['errors'][] = ($event['method'] ?? '').' '.($event['path'] ?? '').': '.mb_substr($e->getMessage(), 0, 200);
+                $result['errors'][] = $error = ($event['method'] ?? '').' '.($event['path'] ?? '').': '.mb_substr($e->getMessage(), 0, 200);
+                $failed[] = ['id' => $event['id'] ?? 0, 'error' => $error];
             }
             SyncProgress::update(['left' => max(0, (int) (SyncProgress::current()['left'] ?? 1) - 1)]);
         }
 
-        if ($ackIds) {
+        if ($ackIds || $failed) {
+            // The cloud also hears what could not be applied here, so a write that never can be is set aside
+            // there after a few tries instead of keeping this server "catching up" for ever.
             Http::withHeaders($this->authHeaders($node))
                 ->timeout(15)
-                ->post($cloudApi.'/sync/outbound/ack', ['event_ids' => $ackIds]);
+                ->post($cloudApi.'/sync/outbound/ack', ['event_ids' => $ackIds, 'failed' => $failed]);
         }
 
         return $result;

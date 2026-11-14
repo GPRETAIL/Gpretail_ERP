@@ -5,6 +5,7 @@ namespace App\Services\Backup;
 use App\Models\Backup;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
@@ -692,7 +693,14 @@ class BackupService
                     ? $this->filterNewerRows($table, $rows, $uniqueBy)
                     : $rows;
 
-                if ($toApply) {
+                if ($toApply && $table === 'stores') {
+                    // A store's identity fields (code, licence, activation) are stripped above, so a store row can
+                    // only update the store that is already here. Inserting it would lack its required code, and
+                    // the database refused the whole copy as soon as the store had changed on the other side.
+                    foreach ($toApply as $storeRow) {
+                        DB::table('stores')->where('id', $storeRow['id'] ?? 0)->update(Arr::except($storeRow, ['id']));
+                    }
+                } elseif ($toApply) {
                     $updateColumns = array_values(array_diff(array_keys($toApply[0]), $uniqueBy));
                     $this->upsertRows($table, $toApply, $uniqueBy, $updateColumns);
                 }

@@ -304,6 +304,26 @@ class OnPremFailoverTest extends TestCase
         $this->postJson('/api/local-server-config/sync-now')->assertStatus(409);
     }
 
+    public function test_a_cloud_write_the_on_prem_server_can_never_apply_is_set_aside_after_a_few_tries(): void
+    {
+        $this->node();
+        $event = SyncOutboxEvent::create(['store_id' => $this->store->id, 'method' => 'POST', 'path' => '/something', 'payload' => [],
+            'headers' => [], 'idempotency_key' => 'k1', 'status' => 'pending']);
+        $report = fn () => $this->withHeaders($this->nodeHeaders())->postJson('/api/sync/outbound/ack',
+            ['event_ids' => [], 'failed' => [['id' => $event->id, 'error' => 'POST /something: HTTP 422 Not here']]])->assertOk();
+
+        for ($try = 0; $try < 4; $try++) {
+            $report();
+        }
+        $this->assertSame('pending', $event->fresh()->status);
+        $this->withHeaders($this->nodeHeaders())->getJson('/api/sync/outbound/count')->assertJsonPath('data.pending', 1);
+
+        $report();
+        $this->assertSame('failed', $event->fresh()->status);
+        $this->assertStringContainsString('HTTP 422 Not here', $event->fresh()->last_error);
+        $this->withHeaders($this->nodeHeaders())->getJson('/api/sync/outbound/count')->assertJsonPath('data.pending', 0);
+    }
+
     public function test_routine_sync_calls_do_not_use_up_the_allowance_of_the_rarer_ones(): void
     {
         $this->node();

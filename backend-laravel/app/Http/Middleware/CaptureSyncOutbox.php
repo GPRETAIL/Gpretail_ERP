@@ -31,6 +31,7 @@ class CaptureSyncOutbox
         'auth/',
         'realtime/', // Socket subscription signatures belong to this browser/node, not replicated business data.
         'remote-support/',
+        'invoice-ai/', // An uploaded file sent to an outside AI service: nothing to replay, and it must not run twice.
         'sync/',
         'local-server-config',
         'backups', // Node-local archives/restore IDs and OCI/password fields must never be replayed.

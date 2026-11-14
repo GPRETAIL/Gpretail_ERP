@@ -197,6 +197,17 @@ class SyncController extends Controller
             ->whereIn('id', $ids)
             ->update(['status' => 'acked', 'synced_at' => now()]);
 
+        // Writes the on-prem server could not apply: after a few tries they are set aside as failed (shown under
+        // Queued writes, with Retry), so they stop counting as "still to catch up".
+        foreach (array_slice((array) $request->input('failed', []), 0, 100) as $failure) {
+            $event = SyncOutboxEvent::where('store_id', $node->store_id)->where('status', 'pending')->find((int) ($failure['id'] ?? 0));
+            if ($event) {
+                $attempts = $event->attempts + 1;
+                $event->update(['attempts' => $attempts, 'status' => $attempts >= 5 ? 'failed' : 'pending',
+                    'last_error' => 'On-prem: '.mb_substr((string) ($failure['error'] ?? 'could not be applied'), 0, 500)]);
+            }
+        }
+
         return response()->json(['success' => true, 'message' => 'Acknowledged']);
     }
 

@@ -235,7 +235,26 @@ class SyncCycleServiceTest extends TestCase
 
         $this->assertSame(1, $result['pulled']['applied']);
         Http::assertSent(fn ($request) => $request->url() === 'https://cloud.example.test/api/sync/outbound/ack'
-            && $request->data() === ['event_ids' => [55]]);
+            && $request->data() === ['event_ids' => [55], 'failed' => []]);
+    }
+
+    public function test_pull_tells_the_cloud_which_writes_could_not_be_applied_here(): void
+    {
+        Http::fake([
+            'cloud.example.test/api/sync/outbound/next*' => Http::response(['success' => true, 'data' => [
+                'events' => [['id' => 56, 'method' => 'POST', 'path' => '/pos-sales', 'payload' => [], 'headers' => []]],
+            ]]),
+            'cloud.example.test/api/sync/outbound/ack' => Http::response(['success' => true]),
+            'cloud.example.test/api/sync/heartbeat' => Http::response(['success' => true]),
+            '*/api/pos-sales' => Http::response(['message' => 'Product not found'], 422),
+        ]);
+
+        $result = app(SyncCycleService::class)->run();
+
+        $this->assertSame(1, $result['pulled']['failed']);
+        Http::assertSent(fn ($request) => $request->url() === 'https://cloud.example.test/api/sync/outbound/ack'
+            && $request['event_ids'] === [] && $request['failed'][0]['id'] === 56
+            && str_contains($request['failed'][0]['error'], 'HTTP 422 Product not found'));
     }
 
     public function test_pull_sends_node_trust_headers_on_the_local_replay_hop(): void

@@ -230,6 +230,23 @@ class OnPremSetupFromCloudTest extends TestCase
         $this->assertTrue(app(StoreLicenceVerifier::class)->verify(Store::firstOrFail(), PlatformActivation::current())['ok']);
     }
 
+    public function test_a_copy_from_the_cloud_updates_a_store_that_changed_there_and_keeps_its_identity(): void
+    {
+        // What the cloud's export sends for a store: every column, newer than the one here.
+        $row = (array) DB::table('stores')->where('id', $this->store->id)->first();
+        $row['name'] = 'Coffee 2 Renamed';
+        $row['code'] = 'SOMETHING-ELSE';
+        $row['updated_at'] = now()->addHour()->toDateTimeString();
+
+        $result = app(\App\Services\Backup\BackupService::class)->mergeTablesFromExport(['stores' => [$row]]);
+
+        $this->assertSame(1, $result['mergedRows']);
+        $store = $this->store->fresh();
+        $this->assertSame('Coffee 2 Renamed', $store->name);
+        $this->assertSame('STR-COFFEE2', $store->code, 'identity fields never come from a copy');
+        $this->assertNotEmpty($store->platform_licence_token);
+    }
+
     public function test_a_cloud_managed_server_skips_the_vynerix_admin_jobs(): void
     {
         $due = fn (string $command) => collect(app(Schedule::class)->events())
