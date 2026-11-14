@@ -7,14 +7,17 @@ use App\Models\Store;
 use App\Models\User;
 use App\Services\Accounting\LedgerPoster;
 use App\Services\Notifications\RealtimeService;
+use App\Services\Platform\SyncIds;
 use App\Services\Tenancy\StoreModelScope;
 use App\Services\Tenancy\StoreSchema;
 use App\Support\RequestMemo;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Events\ConnectionEstablished;
 use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Foundation\Http\Events\RequestHandled;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
@@ -32,6 +35,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->scoped(StoreSchema::class);
         $this->app->scoped(RealtimeService::class);
         $this->app->scoped(RequestMemo::class);
+        $this->app->scoped(SyncIds::class);
     }
 
     /**
@@ -79,6 +83,15 @@ class AppServiceProvider extends ServiceProvider
                 ? Limit::perMinute($perMinute)->by('user:'.($request->user()?->getAuthIdentifier() ?? $request->ip()))
                 : Limit::none();
         });
+        // Same record numbers on the cloud and on-prem (SyncIds): this install's id series, and reusing the
+        // source's ids when a synced write is replayed here.
+        $watchIds = fn ($connection) => $connection->beforeExecuting(
+            fn (string $sql, array $bindings, $connection) => $this->app->make(SyncIds::class)->beforeQuery($sql, $connection));
+        Event::listen(ConnectionEstablished::class, fn (ConnectionEstablished $event) => $watchIds($event->connection));
+        foreach (DB::getConnections() as $connection) {
+            $watchIds($connection);
+        }
+        Event::listen(QueryExecuted::class, fn (QueryExecuted $query) => $this->app->make(SyncIds::class)->afterQuery($query));
         $slowQueryMs = (int) config('logging.performance.slow_query_ms', 1000);
         Event::listen(QueryExecuted::class, function (QueryExecuted $query) use ($slowQueryMs): void {
             $metrics = request()->attributes->get('api_performance');

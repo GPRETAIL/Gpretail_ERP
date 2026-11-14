@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Models\StoreLocalNode;
 use App\Models\SyncOutboxEvent;
+use App\Services\Platform\SyncIds;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -40,6 +41,9 @@ class CaptureSyncOutbox
 
     public function handle(Request $request, Closure $next): Response
     {
+        if (in_array($request->method(), ['POST', 'PUT', 'PATCH', 'DELETE'], true)) {
+            app(SyncIds::class)->startRecording(); // The ids this write generates, for the other side to reuse.
+        }
         $response = $next($request);
 
         $this->maybeCapture($request, $response);
@@ -88,7 +92,10 @@ class CaptureSyncOutbox
             return;
         }
 
-        $payload = $request->except(['password', 'password_confirmation']);
+        $payload = $request->except(['password', 'password_confirmation', '_syncIds']);
+        if ($ids = app(SyncIds::class)->recorded()) {
+            $payload['_syncIds'] = $ids;
+        }
 
         $mintedNumbers = $request->attributes->get('_mintedDocumentNumbers', []);
         if ($mintedNumbers) {

@@ -15,7 +15,7 @@ class PosCheckoutAttempt
         }
         // "offline" is left out: a bill whose online save timed out may be queued offline with the
         // same key, and must then resolve to whichever save actually landed, not a 409.
-        $payload = $request->except(['checkoutKey', 'saleAt', 'offline', '_syncDocumentNumbers']);
+        $payload = $request->except(['checkoutKey', 'saleAt', 'offline', '_syncDocumentNumbers', '_syncIds']);
         $canonicalize = function (array $value) use (&$canonicalize): array {
             if (! array_is_list($value)) {
                 ksort($value);

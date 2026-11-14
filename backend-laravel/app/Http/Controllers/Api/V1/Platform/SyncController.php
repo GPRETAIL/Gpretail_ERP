@@ -252,6 +252,8 @@ class SyncController extends Controller
                 // server never re-issues a number the cloud already used (cloud failover bills use their own C series).
                 'counters' => \Illuminate\Support\Facades\DB::table('document_number_counters')->where('store_id', $node->store_id)
                     ->where('origin', 'normal')->get(['prefix', 'period', 'origin', 'last_seq']),
+                // The on-prem server starts its record numbers above every id used here (SyncIds).
+                'id_floors' => app(\App\Services\Platform\SyncIds::class)->floors(),
             ],
         ]);
     }

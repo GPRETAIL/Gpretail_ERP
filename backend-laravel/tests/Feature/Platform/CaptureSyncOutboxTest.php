@@ -75,6 +75,21 @@ class CaptureSyncOutboxTest extends TestCase
         $this->assertSame('testadmin', $event->actor_username);
     }
 
+    public function test_a_write_handled_by_a_form_request_still_queues_its_document_number(): void
+    {
+        config(['sync.node_role' => 'local']);
+        $sale = $this->makeSale()->assertCreated()->json('data');
+
+        // POS returns validate through a Form Request, which is a different request object from the middleware's.
+        $this->withHeader('X-Company-Scope-Id', (string) $this->store->id)->postJson('/api/pos-returns', [
+            'sourcePosSaleId' => $sale['id'], 'refundMode' => 'CASH',
+            'items' => [['productId' => $this->product->id, 'qty' => 1, 'price' => 100]],
+        ])->assertSuccessful();
+
+        $queued = SyncOutboxEvent::where('path', '/pos-returns')->firstOrFail();
+        $this->assertNotEmpty($queued->payload['_syncDocumentNumbers']['RET'] ?? null);
+    }
+
     public function test_cloud_node_queues_a_write_when_the_store_has_an_enabled_local_node(): void
     {
         config(['sync.node_role' => 'cloud']);

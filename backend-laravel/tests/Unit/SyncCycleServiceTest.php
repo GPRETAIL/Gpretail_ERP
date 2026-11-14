@@ -187,6 +187,14 @@ class SyncCycleServiceTest extends TestCase
         $this->assertStringContainsString('HTTP 500', $first->fresh()->last_error);
         // Never attempted -- the batch stopped before reaching it.
         $this->assertSame('pending', $second->fresh()->status);
+
+        // If it only ever gets a server error, it is set aside after a few tries and the queue moves on.
+        Http::fake(['cloud.example.test/api/purchases' => Http::response(['success' => true], 201)]);
+        for ($try = 0; $try < 4; $try++) {
+            app(SyncCycleService::class)->run();
+        }
+        $this->assertSame('failed', $first->fresh()->status);
+        $this->assertSame('acked', $second->fresh()->status);
     }
 
     public function test_an_unreachable_cloud_leaves_writes_queued_and_a_second_sync_waits_for_the_first(): void

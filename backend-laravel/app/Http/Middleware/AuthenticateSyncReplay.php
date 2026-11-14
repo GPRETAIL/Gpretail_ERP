@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Models\StoreLocalNode;
 use App\Models\User;
+use App\Services\Platform\SyncIds;
 use App\Services\Tenancy\StoreContext;
 use Closure;
 use Illuminate\Http\Request;
@@ -27,21 +28,32 @@ class AuthenticateSyncReplay
 {
     public function handle(Request $request, Closure $next): Response
     {
-        if ($request->header('X-Sync-Replay') === '1') {
-            $this->tryAuthenticate($request);
+        $replay = $request->header('X-Sync-Replay') === '1' && $this->tryAuthenticate($request);
+        // The source's record numbers are reused only for a replay that proved node trust; from anyone else
+        // the field is dropped, so a caller can never choose ids.
+        $ids = $request->input('_syncIds');
+        $request->request->remove('_syncIds');
+        $request->json()->remove('_syncIds');
+        if ($replay) {
+            app(SyncIds::class)->play($ids);
         }
 
-        return $next($request);
+        $response = $next($request);
+        if ($replay && ($drift = app(SyncIds::class)->drift())) {
+            $response->headers->set('X-Sync-Id-Drift', implode(',', $drift));
+        }
+
+        return $response;
     }
 
-    private function tryAuthenticate(Request $request): void
+    private function tryAuthenticate(Request $request): bool
     {
         $tenantKey = (string) $request->header('X-Tenant-Key', '');
         $syncToken = (string) $request->header('X-Sync-Token', '');
         $storeId = (int) ($request->header('X-Company-Scope-Id') ?: 0);
 
         if ($tenantKey === '' || $syncToken === '' || $storeId === 0) {
-            return;
+            return false;
         }
 
         $node = StoreLocalNode::where('store_id', $storeId)
@@ -50,7 +62,7 @@ class AuthenticateSyncReplay
             ->first();
 
         if (! $node || ! hash_equals($node->sync_token, $syncToken)) {
-            return;
+            return false;
         }
 
         // The person who made the write on the other server, when they also exist and can open the store here
@@ -65,6 +77,8 @@ class AuthenticateSyncReplay
 
         Auth::guard('sanctum')->setUser($actor);
         $request->setUserResolver(fn () => $actor);
+
+        return true;
     }
 
     private function actor(Request $request, StoreLocalNode $node): ?User

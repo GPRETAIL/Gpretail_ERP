@@ -145,6 +145,12 @@ export default function OnPremConnectionCard({ config, onConnected }) {
           </Box>
         </Box>
       )}
+      {config?.id_drift_count > 0 && (
+        <Typography role="alert" sx={{ mt: 1.5, fontSize: 12, color: "warning.main" }}>
+          {config.id_drift_count} synced write{config.id_drift_count === 1 ? "" : "s"} could not keep the same record numbers on both sides.
+          Open the queued writes below to see which, and tell your administrator.
+        </Typography>
+      )}
       {connected && !config?.last_cycle_at && (
         <Typography role="status" sx={{ mt: 1.5, fontSize: 12, color: "warning.main" }}>
           The sync job has not run yet. Add the Windows Task Scheduler entry for schedule:run (every minute), as in the setup guide.

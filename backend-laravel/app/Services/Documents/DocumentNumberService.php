@@ -49,6 +49,12 @@ class DocumentNumberService
         $minted = $request->attributes->get('_mintedDocumentNumbers', []);
         $minted[$prefix] = $number;
         $request->attributes->set('_mintedDocumentNumbers', $minted);
+        // A Form Request is its own object, not the one the middleware holds. Without this the number never
+        // reached the sync queue, and the replay of that write was refused on the other side.
+        $current = app('request');
+        if ($current !== $request) {
+            $current->attributes->set('_mintedDocumentNumbers', [...$current->attributes->get('_mintedDocumentNumbers', []), $prefix => $number]);
+        }
 
         return $number;
     }

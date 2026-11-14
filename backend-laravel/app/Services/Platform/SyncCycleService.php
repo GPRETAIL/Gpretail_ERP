@@ -28,6 +28,9 @@ class SyncCycleService
     /** Pull batches per cycle, so catching up after an outage takes seconds, not minutes. */
     private const MAX_PULL_BATCHES = 8;
 
+    /** Tries before a write that only ever gets a server error from the cloud is set aside as failed. */
+    private const MAX_SERVER_ERROR_TRIES = 5;
+
     public const LOCK = 'sync:cycle';
 
     private const LAST_RESULT = 'sync:last-result';
@@ -99,6 +102,19 @@ class SyncCycleService
         return Cache::get(self::LAST_RESULT);
     }
 
+    /** A synced write whose rows could not all keep the source's record numbers is counted and noted, not hidden. */
+    private function driftNote(StoreLocalNode $node, Response $response): ?string
+    {
+        $tables = trim((string) $response->header('X-Sync-Id-Drift'));
+        if ($tables === '') {
+            return null;
+        }
+        $node->increment('id_drift_count');
+        Log::warning('A synced write was saved with different record numbers', ['store' => $node->store_id, 'tables' => $tables]);
+
+        return 'Saved, but with different record numbers on the other side for: '.$tables;
+    }
+
     private function authHeaders(StoreLocalNode $node): array
     {
         return [
@@ -129,7 +145,7 @@ class SyncCycleService
                 ]);
 
                 if ($response->successful() || $this->isIdempotentSuccess($event, $response)) {
-                    $event->update(['status' => 'acked', 'synced_at' => now(), 'last_error' => null]);
+                    $event->update(['status' => 'acked', 'synced_at' => now(), 'last_error' => $this->driftNote($node, $response)]);
                     $result['sent']++;
                     SyncProgress::update(['left' => max(0, (int) (SyncProgress::current()['left'] ?? 1) - 1)]);
 
@@ -139,7 +155,9 @@ class SyncCycleService
                 // A 5xx means the cloud itself is unhealthy right now: the write stays queued for the next cycle,
                 // and this cycle stops rather than try every remaining one. A 4xx is this write's own problem: it
                 // is marked failed (Retry on the Configure Local Server page) and the rest keep going.
-                $serverSide = $response->status() >= 500;
+                // A write that keeps getting a 5xx is its own problem after all: after a few tries it is marked
+                // failed too, so one bad write can't hold up everything queued behind it.
+                $serverSide = $response->status() >= 500 && $event->attempts + 1 < self::MAX_SERVER_ERROR_TRIES;
                 $event->update([
                     'status' => $serverSide ? 'pending' : 'failed',
                     'attempts' => $event->attempts + 1,
@@ -239,6 +257,7 @@ class SyncCycleService
                 if ($localResponse->successful()) {
                     $ackIds[] = $event['id'];
                     $result['applied']++;
+                    $this->driftNote($node, $localResponse);
                 } else {
                     $result['failed']++;
                     $result['errors'][] = ($event['method'] ?? '').' '.($event['path'] ?? '').': HTTP '.$localResponse->status().' '

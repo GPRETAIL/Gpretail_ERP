@@ -81,6 +81,7 @@ class SyncCatchUp extends Command
         $tables = $response->json('data.tables') ?? [];
         $result = \App\Services\Platform\LocalNodeRegistration::mergeSnapshot($backupService, $tables);
         \App\Services\Platform\LocalNodeRegistration::continueNumbering($node->store_id, $response->json('data.counters') ?? []);
+        app(\App\Services\Platform\SyncIds::class)->raiseAbove($response->json('data.id_floors'));
 
         $node->last_catch_up_at = now();
         $node->save();

@@ -173,7 +173,17 @@ address, e.g. `http://mainserver:5173` (Vite, forwarding `/api` to the on-prem b
   the on-prem server said earlier.
 - **Coming back.** The on-prem server reports `ready`, `catching_up` or `cloud_unreachable`. Counters on the cloud
   return only when nothing is left to pull or push ("Cloud (on-prem server catching up)" until then).
+- **Same record numbers on both sides** (`Services/Platform/SyncIds`). A write is copied by replaying its
+  request, so two things keep its rows the same records everywhere:
+  - *Series.* Each server generates ids 1000 apart in its own series (the cloud ...001, on-prem slot s ...s+1;
+    `store_local_nodes.id_slot`, assigned by the cloud). It is a per-session MariaDB setting applied before the
+    first statement of a request, and the cloud turns it on once it has an on-prem server. A new on-prem server
+    starts its counters above the cloud's (`id_floors` in the catch-up export).
+  - *Tape.* The source records the first id of every plain INSERT (`_syncIds` in the queued payload, next to
+    `_syncDocumentNumbers`). The replay, only when it proved node trust, reuses them with `SET INSERT_ID`.
+    Upserts and each server's own bookkeeping tables are left alone. When the two sides don't insert the same
+    rows, the replay answers `X-Sync-Id-Drift`, and the node counts it (`id_drift_count`, shown on the page).
+  An on-prem server set up before this must be set up again from the cloud.
 - **Limits.** If the whole server PC is off, its address cannot load (a plain-http intranet page can't work
-  offline). Open tabs keep billing; after a reload the counter opens the cloud address. Records created on-prem
-  (items, customers) can get a different number on the cloud; keeping numbers identical is the next phase.
+  offline). Open tabs keep billing; after a reload the counter opens the cloud address.
 

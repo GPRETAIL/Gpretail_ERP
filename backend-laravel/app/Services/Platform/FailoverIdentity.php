@@ -87,13 +87,21 @@ class FailoverIdentity
         $node->tenant_key = $node->tenant_key ?: (string) Str::uuid();
         $node->sync_token = Str::random(48);
         $node->enabled = true;
+        // The on-prem server's own id series (SyncIds): the lowest free slot, kept across reconnects.
+        if (! $node->id_slot) {
+            $taken = StoreLocalNode::whereNotNull('id_slot')->pluck('id_slot')->all();
+            $node->id_slot = collect(range(1, SyncIds::STEP - 2))->first(fn ($slot) => ! in_array($slot, $taken, true));
+        }
         if ($counterUrl) {
             $node->counter_url = $counterUrl;
             $node->local_server_url = $counterUrl;
         }
         $node->save();
+        // From now on this cloud numbers in its own series too.
+        app(SyncIds::class)->refreshSeries();
 
         return ['tenant_key' => $node->tenant_key, 'sync_token' => $node->sync_token, 'store_id' => $store->id, 'store_code' => $store->code,
+            'id_slot' => $node->id_slot,
             'identity' => $this->identityFor($node)];
     }
 

@@ -569,6 +569,8 @@ class AuthController extends Controller
             'last_cycle_at' => optional($node->last_cycle_at)->toIso8601String(),
             'last_users_sync_at' => optional($node->last_users_sync_at)->toIso8601String(),
             'users_synced' => (int) $node->users_synced,
+            'id_slot' => $node->id_slot,
+            'id_drift_count' => (int) $node->id_drift_count,
             'last_heartbeat_at' => optional($node->last_heartbeat_at)->toIso8601String(),
             'handshake' => $onPrem && $node->enabled ? app(LocalNodeRegistration::class)->handshakeState($node) : null,
             'sync_progress' => $onPrem ? \App\Services\Platform\SyncProgress::current() : null,

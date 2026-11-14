@@ -83,8 +83,10 @@ class LocalNodeRegistration
             'local_server_url' => $backendUrl,
             'counter_url' => $input['counter_url'],
             'cloud_server_url' => rtrim($input['cloud_server_url'], '/'),
+            'id_slot' => $response->json('data.id_slot') ?: $node->id_slot,
         ])->save();
         Cache::forget(self::STATE_CACHE_KEY);
+        app(SyncIds::class)->refreshSeries();
 
         // Users first: the store's bills and records point at them.
         try {
@@ -162,8 +164,10 @@ class LocalNodeRegistration
             'local_server_url' => $backendUrl,
             'counter_url' => $input['counter_url'],
             'cloud_server_url' => (string) preg_replace('~/api$~', '', $cloudApi),
+            'id_slot' => $response->json('data.id_slot') ?: null,
         ])->save();
         Cache::forget(self::STATE_CACHE_KEY);
+        app(SyncIds::class)->refreshSeries();
 
         try {
             SyncProgress::start('recopy', 'Copying staff accounts from the cloud');
@@ -294,6 +298,7 @@ class LocalNodeRegistration
         }
         $result = self::mergeSnapshot($this->backup, $response->json('data.tables') ?? []);
         self::continueNumbering($node->store_id, $response->json('data.counters') ?? []);
+        app(SyncIds::class)->raiseAbove($response->json('data.id_floors'));
         $node->forceFill(['last_catch_up_at' => now()])->save();
 
         return (int) $result['mergedRows'];
