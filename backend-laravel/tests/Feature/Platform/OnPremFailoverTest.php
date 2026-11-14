@@ -304,6 +304,16 @@ class OnPremFailoverTest extends TestCase
         $this->postJson('/api/local-server-config/sync-now')->assertStatus(409);
     }
 
+    public function test_routine_sync_calls_do_not_use_up_the_allowance_of_the_rarer_ones(): void
+    {
+        $this->node();
+        for ($call = 0; $call < 15; $call++) {
+            $this->withHeaders($this->nodeHeaders())->getJson('/api/sync/outbound/count')->assertOk();
+        }
+        // More than the export's own 10 a minute were just made from this address; it still answers.
+        $this->withHeaders($this->nodeHeaders())->getJson('/api/sync/catch-up-export')->assertOk();
+    }
+
     public function test_the_on_prem_server_hands_a_counter_its_cloud_sign_in_and_swaps_one_back(): void
     {
         // Sign-in here needs no platform activation: an unlinked account.
