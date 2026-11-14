@@ -103,7 +103,7 @@ class FailoverIdentity
      * for this cloud's deployment, so the on-prem server carries the same deployment identity). Never this
      * cloud's own Vynerix admin token, and none of the store's stored passwords or keys.
      *
-     * @return array{activation: ?array, store: ?array}
+     * @return array{activation: ?array, store: ?array, warehouses: list<array>}
      */
     public function identityFor(StoreLocalNode $node): array
     {
@@ -113,6 +113,8 @@ class FailoverIdentity
         return [
             'activation' => $activation ? Arr::only((array) $activation, self::ACTIVATION_FIELDS) : null,
             'store' => $store ? Arr::except((array) $store, self::STORE_SECRETS) : null,
+            // The store's warehouses are created in Vynerix admin too, so they come from here as well.
+            'warehouses' => DB::table('warehouses')->where('store_id', $node->store_id)->orderBy('id')->get()->map(fn ($row) => (array) $row)->all(),
         ];
     }
 

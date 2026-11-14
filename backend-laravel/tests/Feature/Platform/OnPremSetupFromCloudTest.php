@@ -54,6 +54,8 @@ class OnPremSetupFromCloudTest extends TestCase
         $this->store->forceFill(['platform_licence_token' => $this->licence(), 'admin_password' => 'store-secret', 'gst_access_key' => 'gst-secret'])->save();
         User::create(['name' => 'Owner', 'username' => 'owner', 'email' => 'owner@example.com', 'password' => 'secret123', 'role' => 'admin',
             'store_id' => null, 'is_active' => true, 'platform_company_code' => 'CMP-COFFEE']);
+        DB::table('warehouses')->insert(['id' => 41, 'store_id' => $this->store->id, 'platform_warehouse_id' => 7, 'platform_company_code' => 'CMP-COFFEE',
+            'name' => 'Main Godown', 'code' => 'WH-1', 'is_active' => true, 'created_at' => now(), 'updated_at' => now()]);
     }
 
     private function licence(array $overrides = []): string
@@ -77,7 +79,7 @@ class OnPremSetupFromCloudTest extends TestCase
         $heartbeat = $this->withHeaders($headers)->postJson('/api/sync/heartbeat', ['local_healthy' => true])->assertOk()->json();
 
         Schema::disableForeignKeyConstraints();
-        foreach (['store_local_nodes', 'users', 'stores', 'platform_activations', 'personal_access_tokens'] as $table) {
+        foreach (['store_local_nodes', 'users', 'warehouses', 'stores', 'platform_activations', 'personal_access_tokens'] as $table) {
             DB::table($table)->delete();
         }
         Schema::enableForeignKeyConstraints();
@@ -150,6 +152,8 @@ class OnPremSetupFromCloudTest extends TestCase
         $this->assertSame('https://cloud.example.test', $node->cloud_server_url);
         $this->assertSame('http://mainserver:5173', $node->counter_url);
         $this->assertSame(['owner'], User::pluck('username')->all(), 'the built-in placeholder account is gone');
+        $this->assertSame(['id' => 41, 'store_id' => $store->id, 'name' => 'Main Godown', 'is_active' => 1],
+            (array) DB::table('warehouses')->first(['id', 'store_id', 'name', 'is_active']), "the store's warehouse came with it");
 
         // Staff sign in with their cloud account, and nothing here calls Vynerix admin.
         $this->postJson('/api/auth/login', ['username' => 'owner', 'password' => 'secret123'])->assertOk()->assertJsonPath('data.user.username', 'owner');
@@ -191,6 +195,12 @@ class OnPremSetupFromCloudTest extends TestCase
         $registration->refreshIdentity($node, $identity);
         $this->assertSame($renewed, Store::firstOrFail()->platform_licence_token);
         $this->assertSame('suspended', PlatformActivation::current()->status);
+
+        // A warehouse added on the cloud arrives; one removed there is switched off here.
+        $identity['warehouses'] = [['id' => 42, 'store_id' => $node->store_id, 'platform_warehouse_id' => 8, 'platform_company_code' => 'CMP-COFFEE',
+            'name' => 'Second Godown', 'code' => 'WH-2', 'is_active' => 1]];
+        $registration->refreshIdentity($node, $identity);
+        $this->assertSame([41 => 0, 42 => 1], DB::table('warehouses')->pluck('is_active', 'id')->map(fn ($v) => (int) $v)->all());
 
         $identity['activation']['company_code'] = 'CMP-OTHER';
         $identity['activation']['status'] = 'active';

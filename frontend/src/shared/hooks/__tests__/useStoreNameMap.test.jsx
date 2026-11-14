@@ -26,3 +26,29 @@ it("shares store-name reads and discards the previous login's names immediately"
   expect(result.current[1]).toEqual({ 2: "Second Store" });
   localStorage.removeItem("token");
 });
+
+it("keeps the store names on screen while the server in use changes, and reads again if that read fails", async () => {
+  vi.useFakeTimers();
+  localStorage.setItem("token", "map-login-three");
+  const store = configureStore({ reducer: { auth: (state = { token: "map-login-three" }) => state } });
+  const wrapper = ({ children }) => <Provider store={store}>{children}</Provider>;
+  api.get.mockReset();
+  api.get.mockResolvedValueOnce({ data: { data: [{ id: 2, name: "Coffee 1" }] } });
+  const { result, rerender } = renderHook(() => useStoreNameMap(), { wrapper });
+  await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+  expect(result.current[2]).toBe("Coffee 1");
+
+  // The counter moves to another server (same sign-in): the list is read again, and that read fails once.
+  api.get.mockRejectedValueOnce(new Error("Network Error")).mockResolvedValueOnce({ data: { data: [{ id: 2, name: "Coffee 1 renamed" }] } });
+  act(() => { sessionStorage.setItem("activeStoreId", "2"); rerender(); });
+  expect(result.current[2]).toBe("Coffee 1");
+  await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+  expect(result.current[2]).toBe("Coffee 1");
+  await act(async () => { await vi.advanceTimersByTimeAsync(3000); });
+  expect(result.current[2]).toBe("Coffee 1 renamed");
+  expect(api.get).toHaveBeenCalledTimes(3);
+
+  vi.useRealTimers();
+  localStorage.removeItem("token");
+  sessionStorage.removeItem("activeStoreId");
+});

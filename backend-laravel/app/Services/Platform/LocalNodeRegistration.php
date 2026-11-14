@@ -217,9 +217,35 @@ class LocalNodeRegistration
                 $changed = true;
             }
         }
+        $this->saveWarehouses((int) $identity['store']['id'], $identity['warehouses'] ?? null);
         if ($changed) {
             app(RequestMemo::class)->flush();
         }
+    }
+
+    /** The store's warehouses as the cloud has them: added, updated, and switched off when the cloud no longer lists them. */
+    private function saveWarehouses(int $storeId, mixed $warehouses): void
+    {
+        if (! is_array($warehouses) || ! Schema::hasTable('warehouses')) {
+            return; // An older cloud doesn't send them; leave what is here.
+        }
+        $columns = Schema::getColumnListing('warehouses');
+        $seen = [];
+        foreach ($warehouses as $row) {
+            if (! is_array($row) || empty($row['id']) || (int) ($row['store_id'] ?? 0) !== $storeId) {
+                continue;
+            }
+            $row = Arr::only($row, $columns);
+            $current = (array) DB::table('warehouses')->where('id', $row['id'])->first();
+            if (! $current) {
+                DB::table('warehouses')->insert($row);
+            } elseif (Arr::only($current, array_keys($row)) != $row) {
+                DB::table('warehouses')->where('id', $row['id'])->update(Arr::except($row, ['id']));
+            }
+            $seen[] = (int) $row['id'];
+        }
+        DB::table('warehouses')->where('store_id', $storeId)->whereNotNull('platform_warehouse_id')->whereNotIn('id', $seen)
+            ->where('is_active', true)->update(['is_active' => false, 'updated_at' => now()]);
     }
 
     /**
