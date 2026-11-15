@@ -2,7 +2,7 @@ import { TYPE } from "@/shared/theme/typeScale";
 import PageHeader from "@/shared/components/PageHeader";
 import SearchGridPanel from "@/shared/components/SearchGridPanel";
 import useSearchGrid from "@/shared/hooks/useSearchGrid";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ChevronDown, ChevronUp, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import api from "@/shared/api/apiClient";
@@ -188,13 +188,13 @@ const ItemLocator = ({ endpoint = "/barcodes/item-locator" }) => {
 
   // One server call (ItemLocatorService) returns each in-stock barcode with its source, product
   // details, prices, live stock and bin; the filters below then work on these rows in the browser.
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     const res = await api.get(endpoint);
     const mappedRows = (res.data?.data || []).map((row) => ({ ...row, mode: "stock", customerMobile: "-", billNo: row.invoiceNo }));
     setRawRows(mappedRows);
     setRows(mappedRows);
     return mappedRows;
-  };
+  }, [endpoint]);
 
   useEffect(() => {
     const init = async () => {
@@ -213,7 +213,7 @@ const ItemLocator = ({ endpoint = "/barcodes/item-locator" }) => {
       }
     };
     init();
-  }, []);
+  }, [loadData]);
 
   useEffect(() => {
     const main = document.querySelector('main[data-enter-scope="true"]');
