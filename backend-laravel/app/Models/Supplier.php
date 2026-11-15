@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\HasMasterDetails;
+use App\Models\Concerns\NumbersCodeFromId;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -10,6 +11,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Supplier extends Model
 {
     use HasFactory;
+    use NumbersCodeFromId;
+
+    /** A record saved without a code is numbered SUP<id> (NumbersCodeFromId). */
+    public const CODE_PREFIX = 'SUP';
+
     use HasMasterDetails;
 
     protected $fillable = [

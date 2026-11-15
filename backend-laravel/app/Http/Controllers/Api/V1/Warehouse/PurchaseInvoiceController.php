@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1\Warehouse;
 
+use App\Services\Documents\DocumentNumberService;
 use App\Exceptions\InsufficientStockException;
 use App\Http\Controllers\Controller;
 use App\Models\PurchaseInvoice;
@@ -134,7 +135,7 @@ class PurchaseInvoiceController extends Controller
                 $supplierId = $defaultSupplier ? $defaultSupplier->id : 1;
             }
 
-            $invoiceNo = $request->input('invoice_no') ?: 'PINV-'.date('Ymd').'-'.rand(1000, 9999);
+            $invoiceNo = $request->input('invoice_no') ?: DocumentNumberService::resolve($request, (int) $storeId, 'PINV');
 
             $subtotal = 0;
             $taxAmount = 0;

@@ -1,5 +1,6 @@
 import useResetOnChange from "@/shared/hooks/useResetOnChange";
 import useQrSources from "./hooks/useQrSources";
+import PrintAsSelect from "./components/PrintAsSelect";
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Search, Save, Printer, Eye, X } from "lucide-react";
 import QRCode from "qrcode";
@@ -283,11 +284,13 @@ const getItemBarcodeRows = (item, barcodeValuesMap, barcodeMap) => {
   return fallbackValue ? [{ barcode: fallbackValue }] : [];
 };
 
+// printAs ("barcode" / "code") prints every sticker in that format; without it each keeps the one it was generated with.
 // eslint-disable-next-line react-refresh/only-export-components -- shared with BarcodeSearchPage reprints
 export const buildStickerLabels = ({
   item,
   barcodeRows,
   customization,
+  printAs = "",
 }) => {
   const rows = Array.isArray(barcodeRows) ? barcodeRows.filter((row) => String(row?.barcode || "").trim()) : [];
   const itemQty = Math.max(0, Math.trunc(toNumber(item?.qty, 0)));
@@ -306,7 +309,7 @@ export const buildStickerLabels = ({
   const labels = previewRows.map((row, index) => ({
     key: `${item?.sourceItemId || item?.id || "item"}-${row?.id || "preview"}-${row?.__previewRepeatIndex ?? index}`,
     codeValue: String(row?.barcode || "").trim(),
-    codeType: String(row?.code_type || customization?.codeType || "barcode").trim().toLowerCase() === "code"
+    codeType: String(printAs || row?.code_type || customization?.codeType || "barcode").trim().toLowerCase() === "code"
       ? "code"
       : "barcode",
     productName: String(item?.productName || row?.product_name || "").trim() || "-",
@@ -2028,6 +2031,8 @@ const BarcodeGeneration = () => {
   const [itemFilters, setItemFilters] = useState(createDefaultItemFilters);
   const [labelCustomization, setLabelCustomization] = useState(DEFAULT_WAREHOUSE_BARCODE_CUSTOMIZATION);
   const [previewOpen, setPreviewOpen] = useState(false);
+  // Print format for already-generated stickers ("" = each keeps the format it was generated with).
+  const [printAs, setPrintAs] = useState("");
   const [directPrinting, setDirectPrinting] = useState(false);
 
   useEffect(() => {
@@ -2454,8 +2459,8 @@ const BarcodeGeneration = () => {
     && allItems.every((item) => Boolean(barcodeForItem(barcodeMap, item.sourceItemId)));
 
   const previewLabels = useMemo(() => !previewOpen ? [] : previewItems.flatMap(item => buildStickerLabels({
-    item, barcodeRows: getItemBarcodeRows(item, barcodeValuesMap, barcodeMap), customization: labelCustomization,
-  })), [previewOpen, previewItems, barcodeValuesMap, barcodeMap, labelCustomization]);
+    item, barcodeRows: getItemBarcodeRows(item, barcodeValuesMap, barcodeMap), customization: labelCustomization, printAs,
+  })), [previewOpen, previewItems, barcodeValuesMap, barcodeMap, labelCustomization, printAs]);
   const { sources: qrSources, loading: qrLoading } = useQrSources(previewLabels, { enabled: previewOpen, width: 360 });
 
 
@@ -2716,6 +2721,7 @@ const BarcodeGeneration = () => {
         item,
         barcodeRows: getItemBarcodeRows(item, barcodeValuesMap, barcodeMap),
         customization: labelCustomization,
+        printAs,
       })
     );
     return { labels, qrSrcs: await buildLabelQrSources(labels) };
@@ -2825,6 +2831,7 @@ const BarcodeGeneration = () => {
           >
             <Eye size={16} style={{marginRight: 4}} /> Preview Barcode
           </Button>
+          <PrintAsSelect value={printAs} onChange={setPrintAs} />
           <Button
             onClick={handleDirectPrint}
             disabled={!canPreviewBarcodes || qrLoading || directPrinting}
@@ -2931,6 +2938,8 @@ const BarcodeGeneration = () => {
             >
               <Eye size={16} style={{ display: "inline", marginRight: 4 }} /> Preview Barcode
             </Button>
+
+            <PrintAsSelect value={printAs} onChange={setPrintAs} fullWidth />
 
             <Button
               onClick={handleDirectPrint}

@@ -154,7 +154,7 @@ class TaxController extends Controller
 
     public function store(Request $request)
     {
-        $code = $request->input('code') ?: $request->input('taxCode') ?: $request->input('tax_code') ?: ('TAX_'.strtoupper(substr(uniqid(), -6)));
+        $code = $request->input('code') ?: $request->input('taxCode') ?: $request->input('tax_code') ?: \App\Models\Tax::pendingCode(); // Becomes TAX<id> once saved.
         $storeScopeId = $this->resolveStoreId($request, 1);
         $validator = Validator::make(['code' => $code], [
             'code' => ['required', 'string', 'max:50', Rule::unique('taxes', 'code')->where('store_id', $storeScopeId)],

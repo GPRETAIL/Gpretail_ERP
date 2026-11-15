@@ -16,6 +16,7 @@ import {
   fetchWarehouseBarcodeCustomization,
 } from "./utils/barcodeCustomisation";
 import { buildLabelQrSources, buildStickerLabels, printWarehouseBarcodeLabels } from "./BarcodeGeneration";
+import PrintAsSelect from "./components/PrintAsSelect";
 import { Box, Button, Chip, IconButton, Stack } from "@mui/material";
 import { createGroupFetchers } from "@/shared/utils/serverGrouping";
 
@@ -31,10 +32,11 @@ const formatDate = (value) => {
 const formatMoney = (value) => Number(value || 0).toFixed(2);
 
 // Each barcode row is one physical sticker, so a reprint renders exactly the stored number/price.
-const labelsForRows = (rows, customization) => rows.flatMap((row) => buildStickerLabels({
+const labelsForRows = (rows, customization, printAs) => rows.flatMap((row) => buildStickerLabels({
   item: { sourceItemId: `reprint-${row.id}`, productName: row.product?.name || row.product_name || "" },
   barcodeRows: [row],
   customization,
+  printAs,
 }));
 
 const BarcodeSearch = () => {
@@ -45,6 +47,7 @@ const BarcodeSearch = () => {
   const [toast, setToast] = useState({ open: false, type: "info", message: "" });
   const [selectedRows, setSelectedRows] = useState([]);
   const [printing, setPrinting] = useState(false);
+  const [printAs, setPrintAs] = useState("");
   const [labelCustomization, setLabelCustomization] = useState(DEFAULT_WAREHOUSE_BARCODE_CUSTOMIZATION);
   const showToast = (type, message) => setToast({ open: true, type, message });
 
@@ -164,7 +167,7 @@ const BarcodeSearch = () => {
     if (rows.length === 0 || printing) return;
     setPrinting(true);
     try {
-      const labels = labelsForRows(rows, labelCustomization);
+      const labels = labelsForRows(rows, labelCustomization, printAs);
       if (labels.length === 0) {
         showToast("error", "The selected rows have no barcode numbers to print.");
         return;
@@ -217,6 +220,7 @@ const BarcodeSearch = () => {
                 aria-label="Showing barcodes of one entry; remove to show all"
               />
             )}
+            <PrintAsSelect value={printAs} onChange={setPrintAs} />
             <Button
               variant="contained"
               size="small"

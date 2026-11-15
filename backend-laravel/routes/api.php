@@ -54,6 +54,8 @@ Route::put('local-server-config', [AuthController::class, 'localServerConfigUpda
 Route::get('local-server-config/runtime', [AuthController::class, 'localServerConfigRuntime'])->middleware('auth:sanctum');
 Route::post('local-server-config/connect', [AuthController::class, 'connectToCloud'])->middleware(['auth:sanctum', 'throttle:10,1,onprem-connect']);
 Route::post('local-server-config/bootstrap', [AuthController::class, 'bootstrapOnPrem'])->middleware('throttle:5,1,onprem-bootstrap');
+Route::get('local-server-config/counter-installer', [AuthController::class, 'localServerCounterInstaller'])->middleware(['auth:sanctum', 'throttle:10,1,onprem-counter-installer']);
+Route::post('local-server-config/pause', [AuthController::class, 'localServerPause'])->middleware(['auth:sanctum', 'throttle:20,1,onprem-pause']);
 Route::post('local-server-config/sync-now', [AuthController::class, 'syncNow'])->middleware(['auth:sanctum', 'throttle:20,1,onprem-sync-now']);
 Route::post('local-server-config/recopy', [AuthController::class, 'recopyFromCloud'])->middleware(['auth:sanctum', 'throttle:5,1,onprem-recopy']);
 Route::get('local-server-config/progress', [AuthController::class, 'syncProgress'])->middleware(['auth:sanctum', 'throttle:120,1,onprem-progress']);
@@ -65,6 +67,9 @@ Route::match(['get', 'post'], 'local-server-config/test-cloud', [SettingsControl
 // Each sync route counts on its own: an unnamed throttle shares one counter per address across routes, and the
 // 15-second sync of one shop then used up the allowance of the rarer calls (Re-copy from cloud was refused).
 Route::get('connector/web-config', [SyncController::class, 'webConfig'])->middleware('throttle:900,1,web-config');
+// The counter client (counter.js) keeps its copy of the web app current from its main server.
+Route::get('connector/app-version', [SyncController::class, 'counterAppVersion'])->middleware('throttle:120,1,counter-app-version');
+Route::get('connector/app-bundle', [SyncController::class, 'counterAppBundle'])->middleware('throttle:30,1,counter-app-bundle');
 Route::post('sync/heartbeat', [SyncController::class, 'heartbeat'])->middleware('throttle:120,1,sync-heartbeat');
 Route::get('sync/outbound/next', [SyncController::class, 'outboundNext'])->middleware('throttle:240,1,sync-next');
 Route::post('sync/outbound/ack', [SyncController::class, 'outboundAck'])->middleware('throttle:240,1,sync-ack');

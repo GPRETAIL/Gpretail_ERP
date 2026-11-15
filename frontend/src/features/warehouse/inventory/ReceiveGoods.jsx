@@ -1,4 +1,3 @@
-import { TYPE } from "@/shared/theme/typeScale";
 import PageHeader from "@/shared/components/PageHeader";
 import React, { useState } from "react";
 import { Search, User } from "lucide-react";
@@ -151,26 +150,6 @@ const ReceiveGoods = () => {
         </Box>
       </Box>
 
-      {/* --- Global Footer Bar --- */}
-      <Stack
-        direction="row"
-        spacing={1.5}
-        sx={{
-          position: "fixed",
-          bottom: 0,
-          width: "100%",
-          justifyContent: "flex-end",
-          p: 1.5,
-          bgcolor: "background.paper",
-          borderTop: 1,
-          borderColor: "divider",
-          zIndex: 10,
-        }}
-      >
-        <Typography component="span" sx={{ fontSize: TYPE.small, color: "text.secondary", alignSelf: "center" }}>
-          Customer Care **+91 93840 30115 / 6 / 7**
-        </Typography>
-      </Stack>
     </Box>
   );
 };

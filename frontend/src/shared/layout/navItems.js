@@ -618,6 +618,7 @@ export const navItems = [
     subItems: [
       { name: "Create User", path: "/user-access/user", icon: UserGroupIcon },
       { name: "Create Group", path: "/user-access/group", icon: UserGroupIcon },
+      { name: "Login Sessions", path: "/user-access/login-sessions", icon: UserGroupIcon },
     ],
     path: "/user-access",
   },

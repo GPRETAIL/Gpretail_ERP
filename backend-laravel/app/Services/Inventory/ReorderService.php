@@ -81,7 +81,7 @@ class ReorderService
         $created = $this->suggestions($storeId)->groupBy(fn ($line) => $line['supplier_id'] ?? 0)->map(function (Collection $lines, $supplierId) use ($storeId, $userId) {
             return DB::transaction(function () use ($lines, $supplierId, $storeId, $userId) {
                 $order = PurchaseOrder::create([
-                    'store_id' => $storeId, 'po_no' => DocumentNumberService::next($storeId, 'PO'), 'supplier_id' => $supplierId ?: null,
+                    'store_id' => $storeId, 'po_no' => DocumentNumberService::resolve(request(), $storeId, 'PO'), 'supplier_id' => $supplierId ?: null,
                     'po_date' => now()->toDateString(), 'status' => PurchaseOrderStatus::Draft->value, 'source' => 'AUTO', 'created_by' => $userId,
                     'notes' => 'Drafted by the reorder engine. Review the quantities, then approve.',
                 ]);

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\NumbersCodeFromId;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -9,6 +10,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Customer extends Model
 {
     use HasFactory;
+    use NumbersCodeFromId;
+
+    /** A record saved without a code is numbered CUST<id> (NumbersCodeFromId). */
+    public const CODE_PREFIX = 'CUST';
 
     protected $fillable = [
         'store_id',

@@ -126,7 +126,7 @@ const ModulePage = () => {
         {isWarehouse && (
           <Card
             component={Link}
-            to="/warehouse/new-page"
+            to="/warehouse/invoice/ai-import"
             sx={{
               display: "flex",
               alignItems: "center",

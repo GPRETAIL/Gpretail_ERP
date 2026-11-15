@@ -124,4 +124,27 @@ class PurchaseOrderReorderTest extends TestCase
         $this->assertSame(2, PurchaseOrder::withoutGlobalScopes()->where('status', 'DRAFT')->where('source', 'AUTO')->count());
         $this->assertDatabaseHas('app_notifications', ['type' => 'PURCHASE_ORDER_DRAFTS', 'store_id' => $this->fixture['store']->id, 'link' => '/store/purchase-order']);
     }
+
+    public function test_the_cloud_leaves_a_store_with_an_on_prem_server_to_that_server(): void
+    {
+        \App\Models\StoreLocalNode::create(['store_id' => $this->fixture['store']->id, 'tenant_key' => 't', 'sync_token' => 's', 'enabled' => true]);
+
+        $this->artisan('purchase-orders:generate')->expectsOutputToContain('drafted by its on-prem server')->assertSuccessful();
+        $this->assertSame(0, PurchaseOrder::withoutGlobalScopes()->count());
+    }
+
+    public function test_the_on_prem_server_drafts_through_the_api_so_the_cloud_gets_the_same_orders(): void
+    {
+        config(['sync.node_role' => 'local']);
+        \App\Models\StoreLocalNode::create(['store_id' => $this->fixture['store']->id, 'tenant_key' => 't', 'sync_token' => 's', 'enabled' => true]);
+
+        $this->artisan('purchase-orders:generate')->assertSuccessful();
+
+        $drafts = PurchaseOrder::withoutGlobalScopes()->orderBy('id')->pluck('po_no')->all();
+        $this->assertCount(2, $drafts);
+        $event = \App\Models\SyncOutboxEvent::sole();
+        $this->assertStringContainsString('purchase-orders/generate', $event->path);
+        $this->assertSame($drafts, (array) $event->payload['_syncDocumentNumbers']['PO'], 'the replay reuses these PO numbers');
+        $this->assertSame(0, \Laravel\Sanctum\PersonalAccessToken::where('name', 'reorder-job')->count(), 'the job leaves no sign-in behind');
+    }
 }

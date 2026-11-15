@@ -38,7 +38,7 @@ class SalaryStructureController extends Controller
     {
         $data = $request->validate(['name' => 'required|string|max:120']);
         $storeId = $this->storeId($request);
-        $structure = HrDepartment::forceCreate(['store_id' => $storeId, 'name' => $data['name'], 'code' => 'PAY-'.strtoupper(substr(uniqid(), -5)),
+        $structure = HrDepartment::forceCreate(['store_id' => $storeId, 'name' => $data['name'], 'code' => \App\Models\HrDepartment::pendingCode(),
             'configuration_type' => 'salary_structure', 'is_active' => true]);
         $this->saveLines($request, $structure);
 

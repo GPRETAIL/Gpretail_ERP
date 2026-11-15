@@ -295,7 +295,7 @@ class SizeController extends Controller
         $user = $request->user();
         $createdBy = $user?->name ?: $user?->username;
         $companyId = $this->resolveStoreId($request, (int) ($user?->store_id ?: 1));
-        $code = $request->input('code') ?: 'SG_'.strtoupper(substr(uniqid(), -6));
+        $code = $request->input('code') ?: \App\Models\SizeGroup::pendingCode(); // Becomes SG<id> once saved.
 
         $group = SizeGroup::create(array_replace($this->options($request, true), [
             'name' => $name,

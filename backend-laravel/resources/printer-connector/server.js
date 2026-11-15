@@ -1250,6 +1250,12 @@ function handleClientConnection(ws) {
 }
 
 if (require.main === module) {
+  // On a counter installed from Configure Local Server, the same service also serves the billing app (counter.js).
+  try {
+    require('./counter').startCounter();
+  } catch (err) {
+    console.error('[counter] Not started:', err.message);
+  }
   server.listen(PORT, '127.0.0.1', () => {
     console.log('================================================================');
     console.log(`  GP Retail ERP Silent Printer Connector v${VERSION}`);

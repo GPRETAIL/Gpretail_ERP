@@ -2,28 +2,24 @@
 
 namespace App\Http\Controllers\Api\V1\Sales;
 
+use App\Exceptions\PosReturnNotReturnableException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Sales\StorePosReturnRequest;
 use App\Models\Barcode;
 use App\Models\PosReturn;
 use App\Models\PosReturnItem;
 use App\Models\PosSale;
-use App\Models\PosSaleItem;
 use App\Models\Product;
-use App\Services\Approvals\ApprovalService;
 use App\Services\Documents\DocumentNumberService;
-use App\Services\Inventory\StockService;
-use App\Services\Pos\PosCounter;
+use App\Services\Pos\PosReturnWriter;
 use App\Support\GroupAggregationService;
 use App\Support\PaginationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
 
 class PosReturnController extends Controller
 {
     public function __construct(
-        private readonly StockService $stockService,
         private readonly PaginationService $paginationService,
         private readonly GroupAggregationService $groupAggregationService,
     ) {}
@@ -94,131 +90,21 @@ class PosReturnController extends Controller
 
     public function store(StorePosReturnRequest $request)
     {
-        $storeId = $this->resolveStoreId($request, 1);
-        $standalone = $request->boolean('standalone');
-        $sourcePosSaleId = $request->input('sourcePosSaleId');
-        $itemsData = $request->input('items', []);
-
-        // Recompute each item's returnable ceiling server-side - never
-        // trust the client's maxQty for a return against a real sale.
-        $saleLines = collect();
-        if (! $standalone && $sourcePosSaleId) {
-            // A product can sit on several lines of one bill; return against their combined totals.
-            $saleLines = PosSaleItem::where('pos_sale_id', $sourcePosSaleId)->get()->groupBy('product_id')
-                ->map(fn ($lines) => [
-                    'quantity' => (float) $lines->sum('quantity'),
-                    'price' => (float) $lines->first()->selling_price,
-                    'tax_rate' => (float) $lines->first()->tax_rate,
-                    'discount' => (float) $lines->sum('discount'),
-                    'tax_amount' => (float) $lines->sum('tax_amount'),
-                    'paid' => (float) $lines->sum('subtotal'),
-                ]);
-
-            foreach ($itemsData as $item) {
-                $qty = (float) ($item['qty'] ?? 1);
-                $originalQty = (float) ($saleLines->get($item['productId'])['quantity'] ?? 0);
-                $alreadyReturned = (float) PosReturnItem::where('product_id', $item['productId'])
-                    ->whereHas('posReturn', fn ($q) => $q->where('pos_sale_id', $sourcePosSaleId))
-                    ->sum('quantity');
-                $remaining = max(0, $originalQty - $alreadyReturned);
-
-                if ($qty > $remaining + 0.0001) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => "Cannot return {$qty} of this item: only {$remaining} remains returnable from this bill.",
-                    ], 422);
-                }
-            }
-        }
-
-        // Refund what the customer actually paid: a bill line's discount and tax are shared out by
-        // quantity, so returning 1 of 3 refunds a third of the discounted, taxed line.
-        $refundLines = array_map(function (array $item) use ($saleLines) {
-            $qty = (float) ($item['qty'] ?? 1);
-            $sold = $saleLines->get($item['productId']);
-            if ($sold && $sold['quantity'] > 0) {
-                $share = $qty / $sold['quantity'];
-                $discount = round($sold['discount'] * $share, 2);
-                $taxAmount = round($sold['tax_amount'] * $share, 2);
-                $paid = $sold['paid'] > 0
-                    ? round($sold['paid'] * $share, 2)
-                    : round($qty * $sold['price'] - $discount + $taxAmount, 2);
-
-                return [$item, $qty, $sold['price'], $sold['tax_rate'], $discount, $taxAmount, $paid];
-            }
-            $price = (float) ($item['price'] ?? 0);
-            $taxRate = (float) ($item['tax'] ?? 0);
-            $discount = round(max(0, (float) ($item['discount'] ?? 0)), 2);
-            $base = max(0, $qty * $price - $discount);
-            $taxAmount = round($base * $taxRate / 100, 2);
-
-            return [$item, $qty, $price, $taxRate, $discount, $taxAmount, round($base + $taxAmount, 2)];
-        }, $itemsData);
-
-        $return = DB::transaction(function () use ($request, $storeId, $standalone, $sourcePosSaleId, $refundLines) {
-            $totalRefund = round(array_sum(array_column($refundLines, 6)), 2);
-            // Refunds above the user's limit, or without the original bill, need an approval token.
-            $approval = app(ApprovalService::class)->authorizeRefund($request->user(), (int) $storeId, $totalRefund, $standalone || ! $sourcePosSaleId, $request->input('approvalToken'));
-            $returnNo = DocumentNumberService::resolve($request, (int) $storeId, 'RET');
-
-            $posReturn = PosReturn::create([
-                'store_id' => $storeId,
-                // The till's counter, so a cash refund comes out of that counter's drawer at Cash Closing.
-                'counter_id' => PosCounter::find($request->user()?->counter_id, (int) $storeId)?->id,
-                'pos_sale_id' => $standalone ? null : $sourcePosSaleId,
-                'customer_id' => $request->input('customerId'),
-                'return_no' => $returnNo,
-                'return_date' => now(),
-                'total_refund' => $totalRefund,
-                'refund_mode' => $request->input('refundMode', 'CASH'),
-                'status' => 'COMPLETED',
-                'created_by' => $request->user()->id ?? 1,
-                'return_reason_id' => $request->input('returnReasonId'),
-                'return_reason_name' => $request->input('returnReasonName'),
-                'standalone' => $standalone,
+        $storeId = (int) $this->resolveStoreId($request, 1);
+        try {
+            $return = app(PosReturnWriter::class)->write($request, $storeId, [
+                'standalone' => $request->boolean('standalone'),
+                'sourcePosSaleId' => $request->input('sourcePosSaleId'),
+                'items' => $request->input('items', []),
+                'customerId' => $request->input('customerId'),
+                'refundMode' => $request->input('refundMode', 'CASH'),
+                'returnReasonId' => $request->input('returnReasonId'),
+                'returnReasonName' => $request->input('returnReasonName'),
+                'approvalToken' => $request->input('approvalToken'),
             ]);
-            $approval?->forceFill(['status' => 'used', 'used_at' => now(), 'pos_return_id' => $posReturn->id])->save();
-
-            foreach ($refundLines as [$item, $qty, $price, $taxRate, $discount, $taxAmount, $paid]) {
-                $barcodeId = isset($item['barcodeId']) ? (int) $item['barcodeId'] : null;
-
-                PosReturnItem::create([
-                    'pos_return_id' => $posReturn->id,
-                    'product_id' => $item['productId'],
-                    'variant_id' => $item['variantId'] ?? null,
-                    'barcode_id' => $barcodeId,
-                    'quantity' => $qty,
-                    'refund_price' => $price,
-                    'subtotal' => $paid, // Like a sale line: after discount, tax included.
-                    'tax_rate' => $taxRate,
-                    'tax_amount' => $taxAmount,
-                    'cost_price' => $item['cost'] ?? null,
-                    'discount' => $discount,
-                ]);
-
-                // Locked, audited increment - also keeps available_quantity
-                // in sync, which the old raw ->quantity += ... write never did.
-                $this->stockService->adjust(
-                    storeId: (int) $storeId,
-                    productId: (int) $item['productId'],
-                    variantId: isset($item['variantId']) ? (int) $item['variantId'] : null,
-                    delta: $qty,
-                    referenceType: 'POS_RETURN',
-                    referenceId: $posReturn->id,
-                    costPrice: $price,
-                    userId: $request->user()?->id,
-                );
-
-                // The unit's physical label is back on the shelf and
-                // sellable again - reactivate it (no-op for PACK/CUT, whose
-                // shared barcode was never deactivated on sale).
-                if ($barcodeId) {
-                    Barcode::where('id', $barcodeId)->update(['is_active' => true]);
-                }
-            }
-
-            return $posReturn;
-        });
+        } catch (PosReturnNotReturnableException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+        }
 
         return response()->json([
             'success' => true,

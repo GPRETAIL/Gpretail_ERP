@@ -157,8 +157,11 @@ address, e.g. `http://mainserver:5173` (Vite, forwarding `/api` to the on-prem b
   Vynerix admin; licence renewals arrive in every heartbeat reply. Configure Local Server > Reconnect to cloud
   is for a server that is already set up.
 - **Staying in step.** `sync:cycle` runs every 15 seconds on-prem (from `schedule:run`): it pushes on-prem
-  writes, applies writes the cloud made for the store, copies the store's users from the cloud (same username,
-  password and permissions; users removed on the cloud are switched off) and sends a heartbeat. Replayed writes
+  writes at once. The cloud's own changes and the heartbeat are fetched once a minute when nothing is happening,
+  and every cycle for 5 minutes after any activity. Users are copied from the cloud (same username, password and
+  permissions; users removed on the cloud are switched off) only when the heartbeat's `users_version` changed.
+  Pause sync (Configure Local Server, `store_local_nodes.sync_paused`) stops the automatic sync; writes wait in
+  the queue, the footer says "Sync paused", and Sync now still works. Replayed writes
   are saved under the person who made them (`X-Sync-Actor`), not the sync user. One sync runs at a time. A write
   the cloud could not take because it was unreachable stays queued; one it rejects is marked failed for Retry.
   Admins can run Sync now or Re-copy from cloud on the on-prem page, and the footer shows "Syncing… N left".
@@ -184,6 +187,22 @@ address, e.g. `http://mainserver:5173` (Vite, forwarding `/api` to the on-prem b
     Upserts and each server's own bookkeeping tables are left alone. When the two sides don't insert the same
     rows, the replay answers `X-Sync-Id-Drift`, and the node counts it (`id_drift_count`, shown on the page).
   An on-prem server set up before this must be set up again from the cloud.
-- **Limits.** If the whole server PC is off, its address cannot load (a plain-http intranet page can't work
-  offline). Open tabs keep billing; after a reload the counter opens the cloud address.
+- **Same codes and numbers on both sides.** A code the server makes up comes from the record number
+  (`Models/Concerns/NumbersCodeFromId`: CUST<id>, SUP<id>, PRD<id>, TRP<id>, ...; new variants VAR-<product>-<id>),
+  and document numbers come from `DocumentNumberService`, never `rand()`/`uniqid()`. A request that mints several
+  numbers of one prefix (an import) queues them as a list, used in order by the replay, so imports (`/bulk`,
+  `/import`) sync too. Writes that belong to one server are never replayed: sign-ins and Login Sessions, AI
+  service keys and invoice reading, sync and backups.
+- **Nightly jobs.** Draft purchase orders are made once per store: the cloud skips stores with an on-prem server,
+  and the on-prem server runs the reorder as an API request (`purchase-orders:generate` → `POST
+  purchase-orders/generate`), so it is queued and replayed with the same drafts and PO numbers. Accounting
+  vouchers are derived from the synced documents on each side.
+- **Counter client** (`resources/printer-connector/counter.js`, with the print connector). Installed on each
+  counter from Configure Local Server > Download counter installer. It serves the web app at
+  `http://localhost:5050` and forwards `/api` and `/files` to the main server (`counter.json`: `upstream`,
+  `cloud_api`); when the main server cannot be reached it answers 502 with `X-Proxy-Error`, like the main
+  server's own proxy, so the app fails over to the cloud as above. So billing opens even when the main server PC is
+  off. It copies newer builds from the main server (`/api/connector/app-version`, `/api/connector/app-bundle`).
+  Without it, a counter whose main server PC is off cannot load the page (a plain-http intranet page can't work
+  offline); open tabs keep billing.
 

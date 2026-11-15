@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1\Sales;
 
 use App\Exceptions\InsufficientStockException;
 use App\Exceptions\PosReturnCreditUnavailableException;
+use App\Exceptions\PosReturnNotReturnableException;
 use App\Http\Controllers\Controller;
 use App\Models\Barcode;
 use App\Models\CreditLedger;
@@ -21,15 +22,17 @@ use App\Models\User;
 use App\Services\Approvals\ApprovalService;
 use App\Services\Dashboards\DashboardBroadcastService;
 use App\Services\Documents\DocumentNumberService;
-use App\Support\GroupAggregationService;
-use App\Services\Tenancy\PagePermissions;
-use App\Support\PaginationService;
-use App\Services\Pos\PosCheckoutAttempt;
 use App\Services\Inventory\StockRules;
+use App\Services\Inventory\StockService;
+use App\Services\Pos\PosCheckoutAttempt;
 use App\Services\Pos\PosCheckoutWriter;
 use App\Services\Pos\PosCounter;
 use App\Services\Pos\PosOfflineBilling;
-use App\Services\Inventory\StockService;
+use App\Services\Pos\PosReturnWriter;
+use App\Services\Tenancy\PagePermissions;
+use App\Support\GroupAggregationService;
+use App\Support\PaginationService;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -377,12 +380,9 @@ class PosSaleController extends Controller
      * store() logic rather than duplicating the sale-creation/stock/
      * batch/loyalty flow a second time.
      *
-     * Exchange checkout (isExchange: true) is explicitly rejected for
-     * now - the frontend only sends a net returnAmount figure, not which
-     * specific items were returned, so there's nothing here yet that can
-     * correctly reverse the returned items' stock or record a proper
-     * PosReturn - deferred as its own piece of work rather than silently
-     * completing a sale that drops the return side.
+     * Exchange (isExchange: true, with returnItems): the returned items become a POS return against the
+     * original bill (stock back, credit note) and its credit pays towards the new sale - both in one
+     * transaction, so a failed sale leaves no orphan return.
      */
     /** What the billing screens need to know about stock: Warehouse Customisation's "sell without stock" switch. */
     public function stockRules(Request $request)
@@ -395,10 +395,7 @@ class PosSaleController extends Controller
     public function storeLegacy(Request $request)
     {
         if ($request->boolean('isExchange')) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Exchange checkout is not supported yet - please record the return and the new sale separately.',
-            ], 422);
+            return $this->storeExchange($request);
         }
 
         $items = collect($request->input('items', []))->map(fn ($item) => [
@@ -418,6 +415,49 @@ class PosSaleController extends Controller
         ]);
 
         return $this->store($request);
+    }
+
+    private function storeExchange(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'returnItems' => 'required|array|list|min:1|max:500',
+            'returnItems.*.productId' => 'required|integer',
+            'returnItems.*.variantId' => 'nullable|integer|min:1',
+            'returnItems.*.qty' => 'required|numeric|min:0.01',
+            'returnItems.*.price' => 'nullable|numeric|min:0',
+            'returnSaleId' => 'nullable|integer',
+        ], ['returnItems.required' => 'Select the items being returned for this exchange.']);
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'errors' => $validator->errors(), 'message' => $validator->errors()->first()], 422);
+        }
+        $storeId = (int) ($request->header('X-Company-Scope-Id') ?: ($request->user()->store_id ?? 1));
+        // A return note or a scanned item has no bill to check against: a standalone return (needs approval).
+        $sourceSaleId = $request->input('returnSaleType', 'pos_sale') === 'pos_sale' ? $request->input('returnSaleId') : null;
+
+        try {
+            return DB::transaction(function () use ($request, $storeId, $sourceSaleId) {
+                $return = app(PosReturnWriter::class)->write($request, $storeId, [
+                    'sourcePosSaleId' => $sourceSaleId ? (int) $sourceSaleId : null,
+                    'items' => $request->input('returnItems'),
+                    'customerId' => $request->input('customerId'),
+                    'refundMode' => 'EXCHANGE',
+                    'returnReasonId' => $request->input('returnReasonId'),
+                    'returnReasonName' => $request->input('returnReasonName'),
+                    'approvalToken' => $request->input('approvalToken'),
+                ]);
+                $request->merge(['appliedPosReturnId' => $return->id, 'isExchange' => false]);
+                $response = $this->storeLegacy($request);
+                if ($response->getStatusCode() >= 300) {
+                    throw new HttpResponseException($response); // Undo the return with the failed sale.
+                }
+
+                return $response;
+            });
+        } catch (PosReturnNotReturnableException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+        } catch (HttpResponseException $e) {
+            return $e->getResponse();
+        }
     }
 
     public function store(Request $request)
@@ -473,7 +513,6 @@ class PosSaleController extends Controller
                 if (! $customerId && is_array($customerPayload) && ! empty($customerPayload['name'])) {
                     $customerId = Customer::create([
                         'name' => $customerPayload['name'],
-                        'code' => 'CUST_'.strtoupper(substr(uniqid(), -6)),
                         'phone' => $customerPayload['mobileNo'] ?? null,
                         'is_active' => true,
                     ])->id;

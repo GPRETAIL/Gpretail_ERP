@@ -36,7 +36,7 @@ class MobileAccess
         'DirectPurchaseController' => '/warehouse/direct-purchase', 'InventoryEntryController' => '/warehouse/inventory-entry',
         'PhysicalStockController' => '/warehouse/physical-stock', 'StockOutwardController' => '/warehouse/stock-outward',
         'WarehouseReportController' => '/warehouse/reports', 'WarehouseDashboardController' => '/warehouse/dashboard',
-        'TransportEntryController' => '/warehouse/transport-entry', 'BarcodeController' => '/warehouse/barcode',
+        'TransportEntryController' => '/warehouse/transport-entry', 'InvoiceAiController' => '/warehouse/invoice', 'BarcodeController' => '/warehouse/barcode',
         'ProductController' => '/masters/product', 'ItemController' => '/masters/item', 'LookupController' => '/masters/product',
         'BrandController' => '/masters/brand', 'CategoryController' => '/masters/category', 'TaxController' => '/masters/tax',
         'SizeController' => '/masters/size', 'ProductAttributeController' => '/masters/attribute',

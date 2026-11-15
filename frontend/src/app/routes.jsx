@@ -75,6 +75,7 @@ const BackupCenter = lazy(() => import("@/features/settings/BackupCenter"));
 const RemoteSupport = lazy(() => import("@/features/settings/RemoteSupport"));
 const UserAccess = lazy(() => import("@/features/settings/users/UserAccess"));
 const UserAccessHome = lazy(() => import("@/features/settings/users/UserAccessHome"));
+const LoginSessions = lazy(() => import("@/features/settings/users/LoginSessions"));
 const WarehouseDashboard = lazy(() => import("@/features/warehouse/WarehouseDashboard"));
 const PurchaseInvoiceImport = lazy(() => import("@/features/warehouse/purchase-invoice/PurchaseInvoiceImport"));
 const TransportEntry = lazy(() => import("@/features/warehouse/transport/TransportEntry"));
@@ -213,13 +214,16 @@ export const protectedLayoutRoutes = [
   { path: "/settings/remote-support", render: () => <RemoteSupport /> },
   { path: "/remote-support", render: () => <RemoteSupport /> },
   { path: "/user-access", render: () => <UserAccessHome /> },
+  { path: "/user-access/login-sessions", render: () => <LoginSessions /> },
   { path: "/user-access/:entity", render: () => <UserAccess /> },
   { path: "/user-access/:entity/create", render: () => <UserAccess /> },
   { path: "/user-access/:entity/:id/edit", render: () => <UserAccess /> },
   { path: "/settings/user-access", render: () => <Navigate to="/user-access" replace /> },
   { path: "/:moduleName", render: () => <ModulePage /> },
   { path: "/warehouse/dashboard", render: () => <WarehouseDashboard /> },
-  { path: "/warehouse/new-page", render: () => <PurchaseInvoiceImport /> },
+  // AI Purchase Invoice Inwarding sits under Purchase Invoice, so that page's permission opens it too.
+  { path: "/warehouse/invoice/ai-import", render: () => <PurchaseInvoiceImport /> },
+  { path: "/warehouse/new-page", render: () => <RedirectPreservingQuery to="/warehouse/invoice/ai-import" /> },
   { path: "/warehouse/courier", render: () => <ComingSoon /> },
   { path: "/warehouse/transport-entry", render: () => <TransportEntry /> },
   { path: "/warehouse/transport-entry/search", render: () => <TransportEntrySearch /> },
@@ -263,6 +267,7 @@ export const protectedLayoutRoutes = [
   { path: "/sales/dealer-invoice", render: () => <DealerInvoice /> },
   { path: "/sales/dealer-invoice-return", render: () => <DealerInvoiceReturn /> },
   { path: "/sales/sales-on-approval", render: () => <SalesOnApproval /> },
+  { path: "/sales/stock-item-locator", render: () => <ItemLocator endpoint="/item-locator" /> },
   { path: "/sales/approval-inbox", render: () => <ApprovalInbox /> },
   { path: "/sales/approvals", render: () => <Approvals /> },
   { path: "/sales/offline-bills", render: () => <OfflineBills /> },

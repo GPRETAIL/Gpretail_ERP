@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { toast } from "react-toastify";
 import { Box, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Stack, TextField, Typography } from "@mui/material";
-import { Cloud, CloudDownload, Loader2, RefreshCw } from "lucide-react";
+import { Cloud, CloudDownload, Download, Loader2, Pause, Play, RefreshCw } from "lucide-react";
 import api from "@/shared/api/apiClient";
 import { TYPE } from "@/shared/theme/typeScale";
 import { muiFieldSx } from "@/shared/theme/formControlSizes";
@@ -44,6 +44,44 @@ export default function OnPremConnectionCard({ config, onConnected }) {
   const [recopyOpen, setRecopyOpen] = useState(false);
   const busy = Boolean(running || config?.sync_progress);
   const pullErrors = config?.last_sync?.pulled?.errors || [];
+
+  const paused = Boolean(config?.sync_paused);
+  // Pause stops the automatic sync (writes made here wait in the queue); Sync now still works while paused.
+  const togglePause = async () => {
+    setRunning("pause");
+    try {
+      const res = await api.post("/local-server-config/pause", { paused: !paused });
+      toast.success(res.data?.message || (paused ? "Sync resumed." : "Sync paused."));
+      onConnected?.({ sync_paused: Boolean(res.data?.data?.sync_paused) });
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Could not change the sync");
+    } finally {
+      setRunning(null);
+    }
+  };
+
+  // The counter client: billing opens on a counter even when this server PC is off (unzip, run install_autostart.bat).
+  const downloadInstaller = async () => {
+    setRunning("installer");
+    try {
+      const res = await api.get("/local-server-config/counter-installer", { responseType: "blob", timeout: 300000 });
+      const url = URL.createObjectURL(res.data);
+      const link = Object.assign(document.createElement("a"), { href: url, download: "vynerix-counter.zip" });
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
+      toast.success("Counter installer downloaded. On each counter: unzip it and run install_autostart.bat.");
+    } catch (err) {
+      let message = err.response?.data?.message;
+      if (!message && err.response?.data instanceof Blob) {
+        try { message = JSON.parse(await err.response.data.text()).message; } catch { /* not JSON */ }
+      }
+      toast.error(message || "Could not prepare the counter installer");
+    } finally {
+      setRunning(null);
+    }
+  };
 
   const runSync = async (kind) => {
     if (busy) return;
@@ -111,6 +149,15 @@ export default function OnPremConnectionCard({ config, onConnected }) {
               <Button type="button" variant="outlined" color="inherit" disabled={busy} onClick={() => setRecopyOpen(true)}
                 startIcon={running === "recopy" ? <Loader2 size={16} style={{ animation: "app-spin 1s linear infinite" }} /> : <CloudDownload size={16} />}>
                 {running === "recopy" ? "Re-copying..." : "Re-copy from cloud"}
+              </Button>
+              <Button type="button" variant="outlined" color="inherit" disabled={busy} onClick={downloadInstaller}
+                title="Install on each counter: billing then opens there even when this server is off"
+                startIcon={running === "installer" ? <Loader2 size={16} style={{ animation: "app-spin 1s linear infinite" }} /> : <Download size={16} />}>
+                Download counter installer
+              </Button>
+              <Button type="button" variant="outlined" color={paused ? "warning" : "inherit"} disabled={busy} onClick={togglePause}
+                startIcon={paused ? <Play size={16} /> : <Pause size={16} />}>
+                {paused ? "Resume sync" : "Pause sync"}
               </Button>
             </>
           )}

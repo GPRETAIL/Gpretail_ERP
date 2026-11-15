@@ -21,23 +21,23 @@ use Symfony\Component\HttpFoundation\Response;
 class CaptureSyncOutbox
 {
     /**
-     * Administrative bulk-import endpoints can mint many document numbers in a
-     * single request; DocumentNumberService::resolve()'s replay-stash only tracks
-     * one number per prefix per request, so replaying one of these could re-mint
-     * different numbers than the original run actually used. Simplest safe choice:
-     * never queue these for replay rather than risk duplicate/renumbered data.
+     * Writes that are never replayed on the other server: this server's own sign-ins, keys, sync and backups.
+     * Imports (/bulk, /import) are synced: DocumentNumberService keeps every number a request mints (a list per
+     * prefix), SyncIds keeps every record number, and codes come from record numbers (NumbersCodeFromId).
      */
     private const EXCLUDED_PATH_FRAGMENTS = [
         'auth/',
         'realtime/', // Socket subscription signatures belong to this browser/node, not replicated business data.
         'remote-support/',
-        'invoice-ai/', // An uploaded file sent to an outside AI service: nothing to replay, and it must not run twice.
+        // Reading an uploaded invoice with an outside AI service: nothing to replay, and it must not run twice. The
+        // reviewed purchase (invoice-ai/process-flow) is ordinary data and is synced like any other write.
+        'invoice-ai/extract',
+        'invoice-ai/engine-config', // This server's own AI service keys.
         'sync/',
         'local-server-config',
         'backups', // Node-local archives/restore IDs and OCI/password fields must never be replayed.
+        'login-sessions', // Sign-ins belong to each server: ending one on-prem must never touch a cloud token.
         'connector/',
-        '/bulk',
-        '/import',
     ];
 
     public function handle(Request $request, Closure $next): Response

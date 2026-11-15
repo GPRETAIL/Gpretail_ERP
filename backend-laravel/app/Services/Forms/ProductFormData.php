@@ -47,7 +47,7 @@ class ProductFormData
             }
         }
         if (! $existing) {
-            $data['code'] = ($data['code'] ?? null) ?: (($data['sku'] ?? null) ?: 'PRD_'.strtoupper(substr(uniqid(), -6)));
+            $data['code'] = ($data['code'] ?? null) ?: (($data['sku'] ?? null) ?: \App\Models\Product::pendingCode());
             $data['barcode'] = $data['barcode'] ?? $data['code'];
             $data += ['cost_price' => 0, 'selling_price' => 0, 'mrp' => 0, 'min_stock' => 0, 'max_stock' => 1000, 'is_active' => true];
             if (! array_key_exists('purchase_tax_id', $data)) {

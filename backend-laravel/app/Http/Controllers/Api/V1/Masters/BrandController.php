@@ -122,7 +122,7 @@ class BrandController extends Controller
     public function store(Request $request)
     {
         if (! $request->filled('code')) {
-            $request->merge(['code' => 'BR_'.strtoupper(substr(uniqid(), -8))]);
+            $request->merge(['code' => \App\Models\Brand::pendingCode()]); // Becomes BR<id> once saved.
         }
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',

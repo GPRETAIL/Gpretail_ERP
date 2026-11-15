@@ -34,7 +34,7 @@ class SyncCycle extends Command
             $result['pushed']['stopped_early'] ? ' (stopped early)' : '',
             $result['pulled']['applied'],
             $result['pulled']['failed'],
-            $result['heartbeat_ok'] ? 'ok' : 'failed',
+            $result['heartbeat_ok'] === null ? 'not due' : ($result['heartbeat_ok'] ? 'ok' : 'failed'),
         ));
 
         return self::SUCCESS;

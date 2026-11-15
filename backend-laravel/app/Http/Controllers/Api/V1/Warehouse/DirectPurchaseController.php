@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1\Warehouse;
 
+use App\Services\Documents\DocumentNumberService;
 use App\Exceptions\InsufficientStockException;
 use App\Http\Controllers\Controller;
 use App\Models\DirectPurchase;
@@ -202,7 +203,7 @@ class DirectPurchaseController extends Controller
             $user = $request->user();
             $storeId = $data['company_id'] ?: ($user->store_id ?? 1);
 
-            $purchaseNo = 'PUR-'.date('Ymd').'-'.strtoupper(substr(uniqid(), -5));
+            $purchaseNo = DocumentNumberService::resolve($request, (int) $storeId, 'PUR');
 
             $purchase = DirectPurchase::create([
                 'store_id' => $storeId,
@@ -221,7 +222,7 @@ class DirectPurchaseController extends Controller
                 'bundles' => $data['bundles'],
                 'retail_location' => $data['retail_location'],
                 'purchase_date' => $data['invoice_date'] ?: now()->toDateString(),
-                'invoice_no' => $data['invoice_no'] ?: ('INV-'.rand(10000, 99999)),
+                'invoice_no' => $data['invoice_no'] ?: $purchaseNo,
                 'invoice_date' => $data['invoice_date'] ?: now()->toDateString(),
                 'igst' => $data['igst'],
                 'i_discount' => $data['i_discount'],
@@ -581,7 +582,6 @@ class DirectPurchaseController extends Controller
                 $supplier = $supplierName ? $suppliersByName->get($supplierName) : null;
                 if (! $supplier) {
                     $supplier = Supplier::create([
-                        'code' => 'SUP_'.strtoupper(substr(uniqid(), -5)),
                         'name' => $supplierName ?: 'Imported Supplier',
                         'active' => true,
                     ]);
@@ -590,13 +590,14 @@ class DirectPurchaseController extends Controller
                     }
                 }
 
+                $purchaseNo = DocumentNumberService::resolve($request, (int) $this->resolveStoreId($request, 1), 'PUR');
                 DirectPurchase::create([
                     'store_id' => $this->resolveStoreId($request, 1),
                     'company_id' => $row['company_id'] ?? 1,
                     'company_name' => $row['company'] ?? 'SBT Store',
                     'supplier_id' => $supplier->id,
                     'supplier_name' => $supplier->name,
-                    'purchase_no' => 'PUR-'.date('Ymd').'-'.strtoupper(substr(uniqid(), -5)),
+                    'purchase_no' => $purchaseNo,
                     'purchase_type' => $row['purchase_type'] ?? 'textile',
                     'po_no' => $row['po_no'] ?? null,
                     'transport_name' => $row['transport_name'] ?? null,
@@ -604,7 +605,7 @@ class DirectPurchaseController extends Controller
                     'lr_date' => $row['lr_date'] ?? null,
                     'bundles' => (int) ($row['bundles'] ?? 0),
                     'retail_location' => $row['retail_location'] ?? null,
-                    'invoice_no' => $row['invoice_no'] ?? ('INV-'.rand(10000, 99999)),
+                    'invoice_no' => $row['invoice_no'] ?? $purchaseNo,
                     'invoice_date' => $row['invoice_date'] ?? now()->toDateString(),
                     'purchase_date' => $row['invoice_date'] ?? now()->toDateString(),
                     'bill_value' => (float) ($row['bill_value'] ?? 0),

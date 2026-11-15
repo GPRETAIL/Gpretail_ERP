@@ -49,6 +49,9 @@ class AppServiceProvider extends ServiceProvider
             \Illuminate\Http\Middleware\TrustProxies::at(['127.0.0.1', '::1']);
         }
 
+        // Login Sessions: every sign-in records its device, IP and store, whichever screen created it.
+        \Laravel\Sanctum\PersonalAccessToken::creating(fn ($token) => \App\Services\Auth\LoginSessions::stamp($token));
+
         // Per-request lookups (RequestMemo) are dropped after each request and when what they read changes.
         Event::listen(RequestHandled::class, fn () => $this->app->make(RequestMemo::class)->flush());
         foreach ([PlatformActivation::class, Store::class, User::class] as $model) {

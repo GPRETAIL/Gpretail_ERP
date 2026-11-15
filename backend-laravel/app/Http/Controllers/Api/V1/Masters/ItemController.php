@@ -75,7 +75,7 @@ class ItemController extends Controller
 
         // Code mapping: item_code or code
         if (empty($data['code'])) {
-            $data['code'] = ! empty($data['item_code']) ? $data['item_code'] : (! empty($data['sku']) ? $data['sku'] : ($item->code ?? 'ITM_'.strtoupper(substr(uniqid(), -6))));
+            $data['code'] = ! empty($data['item_code']) ? $data['item_code'] : (! empty($data['sku']) ? $data['sku'] : ($item->code ?? \App\Models\Product::pendingCode()));
         }
         if (empty($data['barcode'])) {
             $data['barcode'] = $item->barcode ?? $data['code'];

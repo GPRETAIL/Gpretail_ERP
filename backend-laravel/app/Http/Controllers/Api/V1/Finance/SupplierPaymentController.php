@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1\Finance;
 
+use App\Services\Documents\DocumentNumberService;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Finance\StoreSupplierPaymentRequest;
 use App\Models\DirectPurchase;
@@ -94,7 +95,7 @@ class SupplierPaymentController extends Controller
         $storeId = $this->resolveStoreId($request, 1);
 
         $payment = DB::transaction(function () use ($request, $storeId) {
-            $paymentNo = 'PAY-'.date('Ymd').'-'.rand(1000, 9999);
+            $paymentNo = DocumentNumberService::resolve($request, (int) $storeId, 'SPAY');
             $amount = (float) $request->input('amount');
 
             $supplierPayment = SupplierPayment::create([

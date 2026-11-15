@@ -109,7 +109,7 @@ class TransportController extends Controller
             ], 422);
         }
 
-        $code = $request->input('code') ?: 'TRP_'.strtoupper(substr(uniqid(), -6));
+        $code = $request->input('code') ?: \App\Models\Transport::pendingCode(); // Becomes TRP<id> once saved.
 
         $data = MasterFormData::prepare($request, new Transport);
         $data['code'] = $code;

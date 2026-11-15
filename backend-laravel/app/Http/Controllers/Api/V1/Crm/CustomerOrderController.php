@@ -100,7 +100,6 @@ class CustomerOrderController extends Controller
                     ['phone' => $request->input('customerPhone') ?: '0000000000'],
                     [
                         'name' => $request->input('customerName'),
-                        'code' => 'CUST_'.strtoupper(substr(uniqid(), -6)),
                         'city' => $request->input('customerCity'),
                         'gstin' => $request->input('customerGst'),
                         'is_active' => true,
@@ -371,7 +370,7 @@ class CustomerOrderController extends Controller
                 if (! $customerId && ! empty($row['customerName'])) {
                     $cust = Customer::firstOrCreate(
                         ['phone' => $row['customerMobile'] ?? '0000000000'],
-                        ['name' => $row['customerName'], 'code' => 'CUST_'.strtoupper(substr(uniqid(), -6)), 'is_active' => true]
+                        ['name' => $row['customerName'], 'is_active' => true]
                     );
                     $customerId = $cust->id;
                 } elseif (! $customerId) {
@@ -423,11 +422,8 @@ class CustomerOrderController extends Controller
 
     public function customerQuickCreate(QuickCreateCustomerRequest $request)
     {
-        $code = 'CUST_'.strtoupper(substr(uniqid(), -6));
-
         $customer = Customer::create([
             'name' => $request->input('name'),
-            'code' => $code,
             'phone' => $request->input('phone'),
             'email' => $request->input('email'),
             'city' => $request->input('city'),

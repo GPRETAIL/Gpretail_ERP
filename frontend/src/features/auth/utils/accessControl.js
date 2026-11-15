@@ -172,6 +172,8 @@ export const getHomePathForUser = (user) => {
 
 export const canAccessPath = (pathname, user) => {
   const path = String(pathname || "").toLowerCase();
+  // The AI invoice page's old address redirects to its place under Purchase Invoice; same access.
+  if (path === "/warehouse/new-page") return canAccessPath("/warehouse/invoice/ai-import", user);
   // A personal inbox is available without a business module grant, including during expiry.
   if (path === "/notifications") return Boolean(user);
   // Match the API's registered tenant-owner gate; it must work before any store exists.
@@ -209,6 +211,8 @@ export const canAccessPath = (pathname, user) => {
   if (path.startsWith("/owner")) return cap.isOwner;
   if (cap.isOwner) return false;
   if (path === "/" || path === "/dashboard") return !user?.module_permissions || user.module_permissions.dashboard?.view === true;
+  // Login Sessions spans every store of the company: the tenant admin's page only.
+  if (path === "/user-access/login-sessions") return isTenantAdmin(user);
   if (path === "/user-access") return canAccessUserAccess(user);
   if (path.startsWith("/user-access")) return canAccessUserAccess(user);
   const module = firstSegment(path);

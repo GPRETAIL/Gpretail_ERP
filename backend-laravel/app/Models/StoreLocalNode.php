@@ -30,6 +30,8 @@ class StoreLocalNode extends Model
         'users_synced',
         'id_slot',
         'id_drift_count',
+        'sync_paused',
+        'users_version',
     ];
 
     protected function casts(): array

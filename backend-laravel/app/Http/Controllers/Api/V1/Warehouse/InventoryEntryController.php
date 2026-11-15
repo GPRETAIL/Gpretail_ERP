@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1\Warehouse;
 
+use App\Services\Documents\DocumentNumberService;
 use App\Exceptions\InsufficientStockException;
 use App\Http\Controllers\Controller;
 use App\Models\Barcode;
@@ -110,7 +111,7 @@ class InventoryEntryController extends Controller
         $storeId = $this->resolveStoreId($request, 1);
 
         $entry = DB::transaction(function () use ($request, $storeId) {
-            $entryNo = $request->input('entry_no') ?: 'INV-ENT-'.date('Ymd').'-'.rand(1000, 9999);
+            $entryNo = $request->input('entry_no') ?: DocumentNumberService::resolve($request, (int) $storeId, 'IE');
             $itemsData = $request->input('items', []);
             $totalAmount = 0;
 

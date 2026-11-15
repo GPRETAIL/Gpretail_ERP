@@ -38,9 +38,10 @@ class VariantResolverService
             return $match;
         }
 
-        $placeholder = 'VAR-' . $productId . '-' . strtoupper(substr(uniqid(), -8));
+        // Saved with a placeholder, then named from its record number, which is the same on the cloud and on-prem.
+        $placeholder = 'VAR-PENDING-'.str_replace('.', '', uniqid('', true));
 
-        return ProductVariant::create([
+        return tap(ProductVariant::create([
             'product_id' => $productId,
             'brand_id' => $brandId,
             'size_id' => $sizeId,
@@ -51,7 +52,9 @@ class VariantResolverService
             'cost_price' => 0,
             'selling_price' => 0,
             'mrp' => 0,
-        ]);
+        ]), function (ProductVariant $variant) use ($productId) {
+            $variant->forceFill(['sku' => 'VAR-'.$productId.'-'.$variant->id, 'barcode' => 'VAR-'.$productId.'-'.$variant->id])->saveQuietly();
+        });
     }
 
     /**
@@ -91,7 +94,7 @@ class VariantResolverService
         $colorId = $item['colorId'] ?? $item['color_id'] ?? null;
         $designNo = $item['designNo'] ?? $item['design_no'] ?? null;
 
-        if (!$brandId && !$size && !$colorId && !$designNo) {
+        if (! $brandId && ! $size && ! $colorId && ! $designNo) {
             return null;
         }
 

@@ -274,17 +274,6 @@ const Intray = () => {
         </Box>
       </Box>
 
-      {/* --- Footer License/Contact Bar --- */}
-      <Stack
-        direction="row"
-        sx={{ position: "fixed", bottom: 0, width: "100%", justifyContent: "space-between", alignItems: "center", px: 2, py: 0.5, fontSize: TYPE.small, color: "text.secondary", borderTop: 1, borderColor: "divider", bgcolor: "action.hover" }}
-      >
-        <Box component="span" sx={{ fontFamily: "monospace" }}>
-          License : 4J2A3G-SGND8T-L6A7EM-9CH16V @ **STORE SOFT SOLUTION PVT
-          LTD.**
-        </Box>
-        <Box component="span">Customer Care **+91 93840 30115 / 6 / 7**</Box>
-      </Stack>
     </Box>
   );
 };

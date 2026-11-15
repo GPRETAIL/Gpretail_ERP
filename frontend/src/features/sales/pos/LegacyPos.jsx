@@ -1198,6 +1198,20 @@ const LegacyPos = () => {
       returnSaleType: activeTab.returnSaleType || null,
       returnAmount: returnAmount,
       isExchange: !!activeTab.isExchange,
+      // The returned items: a return on the original bill whose credit pays towards this sale.
+      ...(activeTab.isExchange
+        ? {
+            returnItems: exchangeReturnLines.map((l) => ({
+              productId: l.productId ?? l.stockId,
+              variantId: l.variantId ?? null,
+              qty: Math.max(0, toNum(l.qty, 0)),
+              price: Math.max(0, toNum(l.price, 0)),
+              tax: Math.max(0, toNum(l.tax, 0)),
+            })),
+            returnReasonId: activeTab.returnReasonId || null,
+            returnReasonName: activeTab.returnReasonName || null,
+          }
+        : {}),
       items: positiveCartLines.map((l) => ({
         barcodeId: l.stockId,
         variantId: l.variantId ?? null,
@@ -1311,6 +1325,9 @@ const LegacyPos = () => {
       return {
         lineId: `exchange-draft-${item.id || index}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
         stockId: null,
+        // The product and size the exchange returns to stock.
+        productId: item.productId ?? item.product_id ?? null,
+        variantId: item.variantId ?? item.variant_id ?? null,
         barcode: item.barcode || "",
         productName: item.productName || item.barcode || "-",
         standaloneLine: false,
@@ -1375,6 +1392,8 @@ const LegacyPos = () => {
       return {
         lineId: `${item.barcodeId}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         stockId: item.barcodeId,
+        productId: item.productId ?? null,
+        variantId: item.variantId ?? null,
         barcode: item.barcode || "",
         productName: item.productName || "",
         standaloneLine: isStandalone,
@@ -1782,6 +1801,8 @@ const LegacyPos = () => {
       return {
         lineId: `exchange-return-${returnSourceSale.id || "draft"}-${line.stockId || index}-${Date.now()}`,
         stockId: line.stockId,
+        productId: line.productId ?? line.stockId ?? null,
+        variantId: line.variantId ?? null,
         barcode: line.barcode || "",
         productName: line.productName || line.barcode || "-",
         mrp: price,
@@ -1817,6 +1838,8 @@ const LegacyPos = () => {
           returnSaleType: returnSourceSale.sourceBillSaleType || "pos_sale",
           returnAmount,
           isExchange: true,
+          returnReasonId: selectedReturnReasonId || null,
+          returnReasonName: returnReasons.find((r) => r.value === selectedReturnReasonId)?.label || null,
           cart: [...exchangeLines, ...preservedSaleLines],
         };
       })
@@ -1827,6 +1850,7 @@ const LegacyPos = () => {
     activeTabId,
     closeExchangeDialog,
     returnCartDraft,
+    returnReasons,
     returnSourceSale,
     selectedReturnReasonId,
   ]);

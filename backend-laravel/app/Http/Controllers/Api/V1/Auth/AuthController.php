@@ -10,10 +10,15 @@ use App\Models\Store;
 use App\Models\StoreLocalNode;
 use App\Models\SyncOutboxEvent;
 use App\Models\User;
+use App\Services\Hr\StaffAppAccess;
+use App\Services\Platform\CounterClient;
 use App\Services\Platform\FailoverIdentity;
 use App\Services\Platform\LocalNodeRegistration;
 use App\Services\Platform\PlatformBootstrap;
 use App\Services\Platform\PlatformClient;
+use App\Services\Platform\RegisteredServerProbe;
+use App\Services\Platform\SyncCycleService;
+use App\Services\Platform\SyncProgress;
 use App\Services\Pos\PosCounter;
 use App\Services\Security\FailedAttempts;
 use App\Services\Security\GoogleIdTokenVerifier;
@@ -27,6 +32,9 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpFoundation\IpUtils;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class AuthController extends Controller
 {
@@ -171,7 +179,7 @@ class AuthController extends Controller
 
         // Create Sanctum Token. A new ERP sign-in replaces earlier ERP sessions; the staff app (/hr) keeps its own.
         // A counter's cloud failover sign-in (FailoverIdentity) also stays: it is used only while the on-prem server is down.
-        $user->tokens()->whereNotIn('name', [\App\Services\Hr\StaffAppAccess::TOKEN_NAME, FailoverIdentity::TOKEN_NAME])->delete();
+        $user->tokens()->whereNotIn('name', [StaffAppAccess::TOKEN_NAME, FailoverIdentity::TOKEN_NAME])->delete();
         $token = $user->createToken($client.'-token', ['client:'.$client])->plainTextToken;
 
         return response()->json([
@@ -304,7 +312,7 @@ class AuthController extends Controller
         $request->validate(['local_server_url' => 'nullable|url:http,https|max:2048', 'cloud_server_url' => 'nullable|url:http,https|max:2048']);
         $request->validate(['disable_failover' => 'sometimes|boolean']);
         if (! $request->boolean('disable_failover') && $localServerUrl === '') {
-            throw \Illuminate\Validation\ValidationException::withMessages(['local_server_url' => 'Enter the local server URL before saving. Use Disable local failover to turn it off.']);
+            throw ValidationException::withMessages(['local_server_url' => 'Enter the local server URL before saving. Use Disable local failover to turn it off.']);
         }
         abort_if($request->boolean('disable_failover') && ($localServerUrl !== '' || $cloudServerUrl !== ''), 422, 'Clear both server URLs when disabling local failover.');
 
@@ -318,7 +326,7 @@ class AuthController extends Controller
             abort_if(in_array((int) ($parts['port'] ?? 0), [5173, 5174, 4173, 4174], true), 422, 'This is a frontend preview port. Enter the ERP backend address, not the browser app URL.');
         }
         $localHost = strtolower(trim((string) parse_url($localServerUrl, PHP_URL_HOST), '[]'));
-        abort_if($localHost === 'localhost' || (filter_var($localHost, FILTER_VALIDATE_IP) && \Symfony\Component\HttpFoundation\IpUtils::checkIp($localHost, ['127.0.0.0/8', '::1/128'])), 422, 'Use the backend LAN address. Loopback addresses cannot provide store-wide failover.');
+        abort_if($localHost === 'localhost' || (filter_var($localHost, FILTER_VALIDATE_IP) && IpUtils::checkIp($localHost, ['127.0.0.0/8', '::1/128'])), 422, 'Use the backend LAN address. Loopback addresses cannot provide store-wide failover.');
         $localServerUrl = preg_replace('~/api/?$~', '', $localServerUrl);
 
         if ($cloudServerUrl !== '' && ! preg_match('#^https?://#i', $cloudServerUrl)) {
@@ -397,11 +405,36 @@ class AuthController extends Controller
             'data' => ['store' => $node->store?->only(['code', 'name']), 'users_synced' => (int) $node->users_synced]]);
     }
 
+    /** On-prem only: the installer for a counter (billing opens there even when this server is off). */
+    public function localServerCounterInstaller(Request $request)
+    {
+        $node = $this->onPremNodeForAdmin($request);
+        try {
+            $file = app(CounterClient::class)->installer($node);
+        } catch (\RuntimeException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+        }
+
+        return response()->download($file, 'vynerix-counter.zip', ['Content-Type' => 'application/zip'])->deleteFileAfterSend();
+    }
+
+    /** On-prem only: pause or resume the automatic sync (Sync now still works while paused). */
+    public function localServerPause(Request $request)
+    {
+        $node = $this->onPremNodeForAdmin($request);
+        $request->validate(['paused' => 'required|boolean']);
+        $node->forceFill(['sync_paused' => $request->boolean('paused')])->save();
+        Cache::forget(LocalNodeRegistration::STATE_CACHE_KEY);
+
+        return response()->json(['success' => true, 'data' => ['sync_paused' => (bool) $node->sync_paused],
+            'message' => $node->sync_paused ? 'Sync paused. Writes made here wait until you resume it.' : 'Sync resumed.']);
+    }
+
     /** On-prem only: sync with the cloud now instead of waiting for the 15-second job. */
     public function syncNow(Request $request)
     {
         $node = $this->onPremNodeForAdmin($request);
-        $result = app(\App\Services\Platform\SyncCycleService::class)->run();
+        $result = app(SyncCycleService::class)->run(now: true);
         if (! ($result['ran'] ?? false)) {
             return response()->json(['success' => false, 'message' => $result['reason'] ?? 'The sync did not run.'], ($result['busy'] ?? false) ? 409 : 422);
         }
@@ -431,7 +464,7 @@ class AuthController extends Controller
     /** On-prem only: what the sync is doing right now, for the footer. Cheap; counters ask every few seconds. */
     public function syncProgress()
     {
-        return response()->json(['success' => true, 'data' => config('sync.node_role') === 'local' ? \App\Services\Platform\SyncProgress::current() : null]);
+        return response()->json(['success' => true, 'data' => config('sync.node_role') === 'local' ? SyncProgress::current() : null]);
     }
 
     private function onPremNodeForAdmin(Request $request): StoreLocalNode
@@ -501,10 +534,10 @@ class AuthController extends Controller
     private function sameServerOrigin(string $one, string $two): bool
     {
         try {
-            $probe = app(\App\Services\Platform\RegisteredServerProbe::class);
+            $probe = app(RegisteredServerProbe::class);
 
             return $one !== '' && $probe->normalize($one) === $probe->normalize($two);
-        } catch (\Symfony\Component\HttpKernel\Exception\HttpException) {
+        } catch (HttpException) {
             return false; // normalize() rejects addresses on ports a store server may not use.
         }
     }
@@ -570,11 +603,12 @@ class AuthController extends Controller
             'last_users_sync_at' => optional($node->last_users_sync_at)->toIso8601String(),
             'users_synced' => (int) $node->users_synced,
             'id_slot' => $node->id_slot,
+            'sync_paused' => (bool) $node->sync_paused,
             'id_drift_count' => (int) $node->id_drift_count,
             'last_heartbeat_at' => optional($node->last_heartbeat_at)->toIso8601String(),
             'handshake' => $onPrem && $node->enabled ? app(LocalNodeRegistration::class)->handshakeState($node) : null,
-            'sync_progress' => $onPrem ? \App\Services\Platform\SyncProgress::current() : null,
-            'last_sync' => $onPrem ? \App\Services\Platform\SyncCycleService::lastResult() : null,
+            'sync_progress' => $onPrem ? SyncProgress::current() : null,
+            'last_sync' => $onPrem ? SyncCycleService::lastResult() : null,
             'local_server_url' => $node->local_server_url,
             'cloud_server_url' => $node->cloud_server_url,
             'effective_cloud_server_url' => $node->cloud_server_url ?: config('sync.cloud_api_base_url'),

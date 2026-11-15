@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1\Warehouse;
 
+use App\Services\Documents\DocumentNumberService;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Warehouse\StorePhysicalStockRequest;
 use App\Models\PhysicalStock;
@@ -54,7 +55,7 @@ class PhysicalStockController extends Controller
         $storeId = $this->resolveStoreId($request, 1);
 
         $audit = DB::transaction(function () use ($request, $storeId) {
-            $auditNo = $request->input('audit_no') ?: 'AUD-'.date('Ymd').'-'.rand(1000, 9999);
+            $auditNo = $request->input('audit_no') ?: DocumentNumberService::resolve($request, (int) $storeId, 'AUD');
 
             $physicalStock = PhysicalStock::create([
                 'store_id' => $storeId,

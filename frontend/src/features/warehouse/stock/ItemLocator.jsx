@@ -85,7 +85,8 @@ const applyFilters = (rows, filters) =>
     return true;
   });
 
-const ItemLocator = () => {
+// Warehouse > Item Locator and Sales > Stock Item Locator share this screen; each reads through its own page's API.
+const ItemLocator = ({ endpoint = "/barcodes/item-locator" }) => {
   const navigate = useNavigate();
 
   const [loading, setLoading] = useState(true);
@@ -185,10 +186,10 @@ const ItemLocator = () => {
     return { total, totalPages };
   }, [rows.length, limit]);
 
-  // One server call (BarcodeController@itemLocator) returns each in-stock barcode with its source, product
+  // One server call (ItemLocatorService) returns each in-stock barcode with its source, product
   // details, prices, live stock and bin; the filters below then work on these rows in the browser.
   const loadData = async () => {
-    const res = await api.get("/barcodes/item-locator");
+    const res = await api.get(endpoint);
     const mappedRows = (res.data?.data || []).map((row) => ({ ...row, mode: "stock", customerMobile: "-", billNo: row.invoiceNo }));
     setRawRows(mappedRows);
     setRows(mappedRows);

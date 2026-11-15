@@ -9,6 +9,12 @@ Route::post('v1/invoice-ai/extract', [InvoiceAiController::class, 'extract'])
 Route::post('v1/invoice-ai/process-flow', [InvoiceAiController::class, 'processPurchaseFlow'])
     ->middleware('auth:sanctum');
 
+Route::get('v1/invoice-ai/product-variants/{productId}', [InvoiceAiController::class, 'productVariants'])
+    ->whereNumber('productId')->middleware('auth:sanctum');
+
+Route::get('v1/invoice-ai/margins', [InvoiceAiController::class, 'margins'])
+    ->middleware('auth:sanctum');
+
 Route::get('v1/invoice-ai/engine-config', [InvoiceAiController::class, 'getEngineConfig'])
     ->middleware('auth:sanctum');
 

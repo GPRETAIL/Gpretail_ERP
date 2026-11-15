@@ -44,5 +44,8 @@ class ItemLocatorTest extends TestCase
 
         $all = collect($this->getJson('/api/barcodes/item-locator?in_stock=0')->assertOk()->json('data'))->pluck('barcode')->all();
         $this->assertEqualsCanonicalizing(['SAREE-001', 'SHIRT-001'], $all);
+
+        // Sales > Stock Item Locator reads the same rows through its own permission key.
+        $this->assertSame($this->getJson('/api/barcodes/item-locator')->json('data'), $this->getJson('/api/item-locator')->assertOk()->json('data'));
     }
 }

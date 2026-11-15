@@ -355,4 +355,52 @@ class SyncCycleServiceTest extends TestCase
         Http::assertSent(fn ($request) => str_ends_with($request->url(), '/sync/heartbeat')
             && $request['local_healthy'] === true);
     }
+
+    public function test_when_idle_the_cloud_is_called_once_a_minute_not_every_cycle(): void
+    {
+        $this->fakeIdlePullAndHeartbeat(['cloud.example.test/api/sync/users' => Http::response(['success' => true, 'data' => ['users' => []]])]);
+        $service = app(SyncCycleService::class);
+
+        $this->assertTrue($service->run()['remote']);
+        $calls = count(Http::recorded());
+        $this->assertFalse($service->run()['remote'], 'nothing to send and not due: no cloud call');
+        $this->assertCount($calls, Http::recorded());
+
+        $this->travel(61)->seconds();
+        $this->assertTrue($service->run()['remote']);
+    }
+
+    public function test_users_are_copied_only_when_the_clouds_list_changed(): void
+    {
+        Http::fake([
+            'cloud.example.test/api/sync/outbound/next*' => Http::response(['success' => true, 'data' => ['events' => []]]),
+            'cloud.example.test/api/sync/heartbeat' => Http::sequence()->push(['success' => true, 'data' => ['users_version' => 'v1']])
+                ->push(['success' => true, 'data' => ['users_version' => 'v1']])->push(['success' => true, 'data' => ['users_version' => 'v2']]),
+            'cloud.example.test/api/sync/users' => Http::response(['success' => true, 'data' => ['users' => []]]),
+        ]);
+        $service = app(SyncCycleService::class);
+        $copies = fn () => collect(Http::recorded())->filter(fn ($pair) => str_ends_with($pair[0]->url(), '/sync/users'))->count();
+
+        $service->run();
+        $this->assertSame(1, $copies(), 'first time: copied');
+        $this->travel(61)->seconds();
+        $service->run();
+        $this->assertSame(1, $copies(), 'same version: not copied again');
+        $this->travel(61)->seconds();
+        $service->run();
+        $this->assertSame(2, $copies(), 'the list changed on the cloud: copied');
+    }
+
+    public function test_a_paused_server_does_not_sync_until_resumed_but_sync_now_still_works(): void
+    {
+        $this->fakeIdlePullAndHeartbeat(['cloud.example.test/api/sync/users' => Http::response(['success' => true, 'data' => ['users' => []]])]);
+        $this->node->forceFill(['sync_paused' => true])->save();
+
+        $result = app(SyncCycleService::class)->run();
+        $this->assertFalse($result['ran']);
+        $this->assertTrue($result['paused']);
+        Http::assertNothingSent();
+
+        $this->assertTrue(app(SyncCycleService::class)->run(now: true)['ran']);
+    }
 }

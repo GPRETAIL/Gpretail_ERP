@@ -229,7 +229,7 @@ class ConfigurationController extends Controller
             'config_value' => is_array($val) ? json_encode($val) : (string) $val,
             'group' => $group,
             'group_name' => $group,
-            'code' => $request->input('code') ?: strtoupper(substr($key, 0, 5)).'_'.strtoupper(substr(uniqid(), -8)),
+            'code' => $request->input('code') ?: SystemConfiguration::pendingCode(), // Becomes <KEY>_<id> once saved.
             'is_active' => $request->boolean('is_active', true),
             'sort_order' => $request->input('sort_order', 0),
             'extra_data' => $request->input('extra_data'),

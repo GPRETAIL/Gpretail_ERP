@@ -42,18 +42,26 @@ class DocumentNumberService
     public static function resolve(Request $request, int $storeId, string $prefix): string
     {
         $isReplay = $request->header('X-Sync-Replay') === '1';
-        $suppliedNumber = $request->input("_syncDocumentNumbers.{$prefix}");
-
-        $number = self::next($storeId, $prefix, $isReplay, $suppliedNumber);
-
-        $minted = $request->attributes->get('_mintedDocumentNumbers', []);
-        $minted[$prefix] = $number;
-        $request->attributes->set('_mintedDocumentNumbers', $minted);
-        // A Form Request is its own object, not the one the middleware holds. Without this the number never
-        // reached the sync queue, and the replay of that write was refused on the other side.
         $current = app('request');
-        if ($current !== $request) {
-            $current->attributes->set('_mintedDocumentNumbers', [...$current->attributes->get('_mintedDocumentNumbers', []), $prefix => $number]);
+        $suppliedNumber = $request->input("_syncDocumentNumbers.{$prefix}");
+        // A request that minted several numbers of one prefix (an import) sends them as a list: the replay uses
+        // them in the same order. One number stays a plain string, as before.
+        if (is_array($suppliedNumber)) {
+            $used = $current->attributes->get('_replayedDocumentNumbers', []);
+            $index = $used[$prefix] ?? 0;
+            $current->attributes->set('_replayedDocumentNumbers', [...$used, $prefix => $index + 1]);
+            $suppliedNumber = $suppliedNumber[$index] ?? null;
+        }
+
+        $number = self::next($storeId, $prefix, $isReplay, is_string($suppliedNumber) ? $suppliedNumber : null);
+
+        // A Form Request is its own object, not the one the middleware holds. Without the second stash the number
+        // never reached the sync queue, and the replay of that write was refused on the other side.
+        foreach ($current === $request ? [$request] : [$request, $current] as $bag) {
+            $minted = $bag->attributes->get('_mintedDocumentNumbers', []);
+            $previous = $minted[$prefix] ?? null;
+            $minted[$prefix] = $previous === null ? $number : [...(array) $previous, $number];
+            $bag->attributes->set('_mintedDocumentNumbers', $minted);
         }
 
         return $number;

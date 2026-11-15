@@ -136,9 +136,7 @@ class CustomerController extends Controller
     public function store(StoreCustomerRequest $request)
     {
         $data = $this->mapCustomerPayload($request);
-        if (empty($data['code'])) {
-            $data['code'] = 'CUST_'.strtoupper(substr(uniqid(), -6));
-        }
+        // A blank code becomes CUST<id> (NumbersCodeFromId), the same on the cloud and on-prem.
 
         $customer = Customer::create($data);
         Cache::forget(StoreQuery::cacheKey('customers_total_unfiltered_count'));
@@ -254,7 +252,7 @@ class CustomerController extends Controller
 
                 Customer::create(array_filter([
                     'name' => $name,
-                    'code' => $row['code'] ?? ('CUST_'.strtoupper(substr(uniqid(), -6))),
+                    'code' => $row['code'] ?? null, // Blank: CUST<id> (NumbersCodeFromId).
                     'phone' => $row['mobile_no'] ?? $row['mobileNo'] ?? $row['phone'] ?? null,
                     'email' => $row['email_id'] ?? $row['emailId'] ?? $row['email'] ?? null,
                     'address' => $row['address'] ?? null,

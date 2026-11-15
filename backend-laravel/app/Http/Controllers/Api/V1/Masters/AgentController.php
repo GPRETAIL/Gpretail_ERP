@@ -238,9 +238,7 @@ class AgentController extends Controller
         }
 
         $data = $this->extractAgentData($request);
-        if (empty($data['code'])) {
-            $data['code'] = 'AGT_'.strtoupper(substr(uniqid(), -6));
-        }
+        // A blank code becomes AGT<id> (NumbersCodeFromId).
 
         $agent = Agent::create($data);
 

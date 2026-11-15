@@ -67,7 +67,7 @@ class HrConfigurationController extends Controller
             $deptId = $defaultDept->id;
         }
 
-        $code = $request->input('code') ?: 'DES_'.strtoupper(substr(uniqid(), -6));
+        $code = $request->input('code') ?: null; // Blank: DES<id> (NumbersCodeFromId).
 
         $data = $this->designationData($request, new HrDesignation);
         $data['department_id'] = $deptId;
@@ -169,7 +169,7 @@ class HrConfigurationController extends Controller
             ], 422);
         }
 
-        $code = $request->input('code') ?: 'DEPT_'.strtoupper(substr(uniqid(), -6));
+        $code = $request->input('code') ?: null; // Blank: DEPT<id> (NumbersCodeFromId).
 
         $data = $this->departmentData($request, new HrDepartment);
         $data['code'] = $code;

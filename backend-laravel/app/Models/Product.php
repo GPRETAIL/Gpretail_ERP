@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\HasMasterDetails;
+use App\Models\Concerns\NumbersCodeFromId;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -14,6 +15,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Product extends Model
 {
     use HasFactory;
+    use NumbersCodeFromId;
+
+    /** A record saved without a code is numbered PRD<id> (NumbersCodeFromId). */
+    public const CODE_PREFIX = 'PRD';
+
     use HasMasterDetails;
 
     protected $fillable = [

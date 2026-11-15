@@ -30,6 +30,7 @@ export default defineConfig(({ mode }) => {
   // On-prem counters open this server by its machine name, e.g. http://mainserver:5173 (comma list).
   const extraHosts = String(env.VITE_ALLOWED_HOSTS || "").split(",").map(host => host.trim()).filter(Boolean);
   const https = loadHttpsConfig(env);
+  const devServer = serverOptions({ extraHosts, https, proxyTarget });
 
   return {
     // The build date shown on the sign-in page's status line.
@@ -60,7 +61,15 @@ export default defineConfig(({ mode }) => {
         "@mui/material",
       ],
     },
-    server: {
+    server: devServer,
+    // The on-prem main server runs the production build ("npm run build" then "npm run preview -- --host --port 5173"):
+    // the same proxy and hosts as above, without the dev server. Counters may also run the counter client.
+    preview: devServer,
+  };
+});
+
+function serverOptions({ extraHosts, https, proxyTarget }) {
+  return {
       allowedHosts: ["home.gpretail.uk", "admin.gpretail.uk", "admin.home.gpretail.uk", ...extraHosts],
       ...(https ? { https } : {}),
       proxy: {
@@ -86,6 +95,5 @@ export default defineConfig(({ mode }) => {
           changeOrigin: true,
         },
       },
-    },
   };
-});
+}

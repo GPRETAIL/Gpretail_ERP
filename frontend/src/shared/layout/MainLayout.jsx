@@ -260,6 +260,9 @@ const PrintStatusFooter = () => {
                   {syncStatus.progress.left != null ? `Syncing… ${syncStatus.progress.left} left` : `${syncStatus.progress.label}…`}
                 </Box>
               )}
+              {!syncStatus.progress && syncStatus.paused && (
+                <Typography component="span" sx={{ fontSize: "inherit", color: "warning.main" }}>Sync paused</Typography>
+              )}
               {!syncStatus.progress && (syncStatus.outboxPending > 0 || syncStatus.outboxFailed > 0) && (
                 <Box
                   component="span"

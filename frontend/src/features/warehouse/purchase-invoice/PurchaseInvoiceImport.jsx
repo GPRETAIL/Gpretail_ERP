@@ -29,13 +29,26 @@ import {
   LinearProgress,
   CircularProgress,
   alpha,
+  useMediaQuery,
 } from "@mui/material";
 import api from "@/shared/api/apiClient";
+import AsyncSearchSelect from "@/shared/components/AsyncSearchSelect";
 
 const ACCEPTED_TYPES = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
 const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15 MB
 const INDIGO = "#6366f1";
 const INDIGO_HOVER = "#4f46e5";
+const DEFAULT_MARGINS = { selling_percent: 25, mrp_percent: 35 };
+
+// A price from the purchase rate plus a margin %, to the paisa.
+const withMargin = (rate, percent) => Math.round(Number(rate || 0) * (1 + Number(percent || 0) / 100) * 100) / 100;
+const productOption = (p) => ({
+  value: String(p.id),
+  label: `${p.name}${p.code ? ` (${p.code})` : ""}`,
+  selling_price: Number(p.selling_price || 0),
+  mrp: Number(p.mrp || 0),
+});
+const money = (value) => `₹${Number(value || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
 
 export default function PurchaseInvoiceImport() {
   const navigate = useNavigate();
@@ -91,6 +104,12 @@ export default function PurchaseInvoiceImport() {
   const [categories, setCategories] = useState([]);
   const [brands, setBrands] = useState([]);
   const [taxes, setTaxes] = useState([]);
+  // Selling price and MRP for lines without printed prices: purchase rate + these %, remembered per store.
+  const [margins, setMargins] = useState(DEFAULT_MARGINS);
+  // Existing products offered in each line's picker, with their current prices.
+  const [productOptions, setProductOptions] = useState([]);
+  // The line table needs ~1000px beside the document preview; below a very wide screen each line is a card.
+  const compactLines = useMediaQuery("(max-width:1599.95px)");
 
   // Barcode Generation Options
   const [generateBarcodes, setGenerateBarcodes] = useState(true);
@@ -123,6 +142,9 @@ export default function PurchaseInvoiceImport() {
           api.get("/brands", { params: { limit: 100 } }),
           api.get("/taxes", { params: { limit: 100 } }),
         ]);
+        api.get("/v1/invoice-ai/margins").then((res) => {
+          if (res.data?.data) setMargins({ ...DEFAULT_MARGINS, ...res.data.data });
+        }).catch(() => {});
 
         if (supRes.status === "fulfilled") {
           setSupplierList(supRes.value.data?.data || []);
@@ -231,7 +253,6 @@ export default function PurchaseInvoiceImport() {
         throw new Error(resData?.message || "Invoice extraction failed.");
       }
 
-      setRawExtraction(resData);
       const invData = resData.invoice || {};
 
       // 1. Map Supplier
@@ -335,8 +356,13 @@ export default function PurchaseInvoiceImport() {
           const taxPct = Number(item.tax_percent || 5);
           const lineTax = (qty * rate * taxPct) / 100;
           const lineTotal = qty * rate + lineTax;
-          const mrp = Number(item.mrp || rate * 1.35);
-          const selling = Number(item.selling_price || rate * 1.25);
+          // Prices printed on the invoice win; otherwise the store's margins.
+          const printed = Number(item.selling_price || 0) > 0 || Number(item.mrp || 0) > 0;
+          const selling = Number(item.selling_price || 0) || withMargin(rate, margins.selling_percent);
+          const mrp = Number(item.mrp || 0) || withMargin(rate, margins.mrp_percent);
+          if (matchedProduct) {
+            setProductOptions((prev) => (prev.some((o) => o.value === String(matchedProduct.id)) ? prev : [...prev, productOption(matchedProduct)]));
+          }
 
           return {
             id: `line-${idx}`,
@@ -351,7 +377,10 @@ export default function PurchaseInvoiceImport() {
             amount: lineTotal,
             selling_price: selling,
             mrp: mrp,
-            product_id: matchedProduct ? matchedProduct.id : "",
+            price_source: printed ? "invoice" : "margin",
+            current_selling: matchedProduct ? Number(matchedProduct.selling_price || 0) : null,
+            current_mrp: matchedProduct ? Number(matchedProduct.mrp || 0) : null,
+            product_id: matchedProduct ? String(matchedProduct.id) : "",
             is_new_product: !matchedProduct,
             new_product_data: {
               name: desc || `Product ${idx + 1}`,
@@ -371,6 +400,10 @@ export default function PurchaseInvoiceImport() {
       );
 
       setItems(mappedItems);
+      mappedItems.filter((it) => it.product_id).forEach((it) => loadSizes(it.id, it.product_id));
+      // Only now is the review ready: the lines are matched to products (setting this earlier showed an empty,
+      // approvable review while the matching was still running).
+      setRawExtraction(resData);
     } catch (err) {
       console.error("Extraction error:", err);
       setError(err.response?.data?.message || err.message || "Failed to extract invoice data.");
@@ -395,11 +428,65 @@ export default function PurchaseInvoiceImport() {
         const taxAmt = (q * r * tp) / 100;
         target.tax_amount = taxAmt;
         target.amount = q * r + taxAmt - d;
+        if (field === "rate" && target.price_source === "margin") {
+          target.selling_price = withMargin(r, margins.selling_percent);
+          target.mrp = withMargin(r, margins.mrp_percent);
+        }
+      }
+      if (field === "selling_price" || field === "mrp") {
+        target.price_source = "manual";
       }
 
       copy[index] = target;
       return copy;
     });
+  };
+
+  // Every line's selling price and MRP from its purchase rate and the margins.
+  const applyMarginsToAll = () => {
+    setItems((prev) => prev.map((it) => ({
+      ...it,
+      selling_price: withMargin(it.rate, margins.selling_percent),
+      mrp: withMargin(it.rate, margins.mrp_percent),
+      price_source: "margin",
+    })));
+  };
+
+  const searchProducts = _useCallback(async (query) => {
+    try {
+      const res = await api.get("/products", { params: { search: query, dropdown: true, limit: 20 } });
+      const found = (res.data?.data || []).map(productOption);
+      setProductOptions((prev) => [...prev, ...found.filter((o) => !prev.some((p) => p.value === o.value))]);
+      return found;
+    } catch {
+      return [];
+    }
+  }, []);
+
+  // Stock is kept per size: an existing product's sizes, for the line's Size picker (one size is picked for you).
+  const loadSizes = async (lineId, productId) => {
+    if (!productId) return;
+    const sizes = await api.get(`/v1/invoice-ai/product-variants/${productId}`).then((res) => res.data?.data || [], () => []);
+    setItems((prev) => prev.map((it) => (it.id === lineId && String(it.product_id) === String(productId)
+      ? { ...it, variant_options: sizes, variant_id: sizes.length === 1 ? String(sizes[0].id) : "" }
+      : it)));
+  };
+
+  const selectProduct = (index, productId) => {
+    const option = productOptions.find((o) => o.value === String(productId));
+    setItems((prev) => {
+      const copy = [...prev];
+      copy[index] = {
+        ...copy[index],
+        product_id: String(productId || ""),
+        current_selling: option ? option.selling_price : null,
+        current_mrp: option ? option.mrp : null,
+        variant_options: [],
+        variant_id: "",
+      };
+      return copy;
+    });
+    loadSizes(items[index]?.id, productId);
   };
 
   // Toggle New Product vs Existing Product for a line item
@@ -480,6 +567,13 @@ export default function PurchaseInvoiceImport() {
       return;
     }
 
+    const sizeMissing = items.findIndex((it) => !it.is_new_product && it.variant_options?.length > 0 && !it.variant_id);
+    if (sizeMissing >= 0) {
+      setError(`Line ${sizeMissing + 1} ("${items[sizeMissing].description}"): choose its size - this product keeps stock per size.`);
+      setActiveTab("items");
+      return;
+    }
+
     setExecuting(true);
     try {
       const payload = {
@@ -518,6 +612,7 @@ export default function PurchaseInvoiceImport() {
         items: items.map((it) => ({
           description: it.description,
           product_id: it.is_new_product ? undefined : Number(it.product_id),
+          variant_id: !it.is_new_product && it.variant_id ? Number(it.variant_id) : undefined,
           is_new_product: Boolean(it.is_new_product),
           new_product_data: it.is_new_product
             ? {
@@ -530,8 +625,8 @@ export default function PurchaseInvoiceImport() {
                 unit: it.new_product_data?.unit || it.unit || "Pcs",
                 hsn_code: it.new_product_data?.hsn_code || it.hsn || undefined,
                 cost_price: Number(it.rate || 0),
-                selling_price: Number(it.selling_price || it.rate * 1.25),
-                mrp: Number(it.mrp || it.rate * 1.35),
+                selling_price: Number(it.selling_price || withMargin(it.rate, margins.selling_percent)),
+                mrp: Number(it.mrp || withMargin(it.rate, margins.mrp_percent)),
               }
             : undefined,
           quantity: Number(it.quantity),
@@ -547,6 +642,7 @@ export default function PurchaseInvoiceImport() {
         })),
         generate_barcodes: Boolean(generateBarcodes),
         code_type: barcodeCodeType,
+        margins: { selling_percent: Number(margins.selling_percent || 0), mrp_percent: Number(margins.mrp_percent || 0) },
       };
 
       const response = await api.post("/v1/invoice-ai/process-flow", payload);
@@ -641,6 +737,7 @@ export default function PurchaseInvoiceImport() {
           amount: it.amount,
           selling_price: it.sp,
           mrp: it.mrp,
+          price_source: "invoice",
           product_id: catalogProducts[idx]?.id || "",
           is_new_product: !catalogProducts[idx],
           new_product_data: {
@@ -700,6 +797,127 @@ export default function PurchaseInvoiceImport() {
       freight_charges: 0,
     });
     setItems([]);
+    setProductOptions([]);
+  };
+
+  const fieldSx = { "& .MuiInputBase-input": { fontSize: TYPE.small, py: 0.6 } };
+
+  const renderDescription = (item, index) => (
+    <>
+      <TextField
+        size="small"
+        fullWidth
+        value={item.description}
+        onChange={(e) => updateItem(index, "description", e.target.value)}
+        slotProps={{ htmlInput: { "aria-label": `Line ${index + 1} description` } }}
+        sx={fieldSx}
+      />
+      {item.hsn && (
+        <Typography variant="caption" sx={{ color: "text.secondary", fontSize: TYPE.small }}>
+          HSN: {item.hsn}
+        </Typography>
+      )}
+    </>
+  );
+
+  const NUMBER_LABELS = { quantity: "Qty", rate: "Rate", tax_percent: "Tax %", selling_price: "Selling price", mrp: "MRP" };
+  const renderNumber = (item, index, field, label) => (
+    <TextField
+      type="number"
+      size="small"
+      fullWidth
+      label={label}
+      value={item[field]}
+      onChange={(e) => updateItem(index, field, e.target.value)}
+      slotProps={{ htmlInput: { min: 0, "aria-label": `Line ${index + 1} ${NUMBER_LABELS[field]}` } }}
+      sx={fieldSx}
+    />
+  );
+
+  const renderProduct = (item, index) => {
+    const priceChanges = !item.is_new_product && item.product_id && item.current_selling !== null
+      && (Math.abs(Number(item.selling_price || 0) - Number(item.current_selling || 0)) >= 0.01
+        || Math.abs(Number(item.mrp || 0) - Number(item.current_mrp || 0)) >= 0.01);
+    return (
+      <Stack spacing={1}>
+        <Stack direction="row" spacing={1} sx={{ alignItems: "center", flexWrap: "wrap", rowGap: 0.5 }}>
+          <Chip
+            size="small"
+            label={item.is_new_product ? "New Product" : "Existing"}
+            color={item.is_new_product ? "warning" : "success"}
+            variant={item.is_new_product ? "filled" : "outlined"}
+            sx={{ fontSize: TYPE.small, height: 20 }}
+          />
+          <FormControlLabel
+            control={<Switch size="small" checked={item.is_new_product} onChange={(e) => toggleNewProduct(index, e.target.checked)} />}
+            label={<Typography sx={{ fontSize: TYPE.small, color: "text.secondary" }}>Create as New</Typography>}
+            sx={{ m: 0 }}
+          />
+        </Stack>
+
+        {!item.is_new_product ? (
+          <>
+            <AsyncSearchSelect
+              name={`line-${index}-product`}
+              value={item.product_id || ""}
+              onChange={(e) => selectProduct(index, e.target.value)}
+              options={productOptions}
+              onAsyncSearch={searchProducts}
+              placeholder="Search existing product"
+              searchPlaceholder="Name, code or barcode"
+            />
+            {item.variant_options?.length > 0 && (
+              <TextField
+                select
+                label="Size"
+                size="small"
+                required
+                value={item.variant_id || ""}
+                onChange={(e) => updateItem(index, "variant_id", e.target.value)}
+                error={!item.variant_id}
+                helperText={!item.variant_id ? "Stock is kept per size" : undefined}
+                slotProps={{ htmlInput: { "aria-label": `Line ${index + 1} size` } }}
+                sx={fieldSx}
+              >
+                {item.variant_options.map((v) => (
+                  <MenuItem key={v.id} value={String(v.id)}>{v.label}</MenuItem>
+                ))}
+              </TextField>
+            )}
+            {priceChanges && (
+              <Typography variant="caption" sx={{ color: "warning.dark", lineHeight: 1.35 }}>
+                Now {money(item.current_selling)} / MRP {money(item.current_mrp)} → will be {money(item.selling_price)} / MRP {money(item.mrp)}
+              </Typography>
+            )}
+          </>
+        ) : (
+          <Box sx={{ p: 1.25, bgcolor: (t) => alpha(t.palette.warning.main, 0.08), borderRadius: "6px", border: "1px dashed", borderColor: "warning.main" }}>
+            <Stack spacing={1}>
+              <TextField
+                label="New Product Name"
+                size="small"
+                value={item.new_product_data?.name || ""}
+                onChange={(e) => updateNewProductField(index, "name", e.target.value)}
+                sx={fieldSx}
+              />
+              <TextField
+                select
+                label="Category"
+                size="small"
+                value={item.new_product_data?.category_id || ""}
+                onChange={(e) => updateNewProductField(index, "category_id", e.target.value)}
+                sx={fieldSx}
+              >
+                <MenuItem value="">No category</MenuItem>
+                {categories.map((c) => (
+                  <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>
+                ))}
+              </TextField>
+            </Stack>
+          </Box>
+        )}
+      </Stack>
+    );
   };
 
   const isImage = Boolean(file?.type?.startsWith("image/"));
@@ -735,6 +953,7 @@ export default function PurchaseInvoiceImport() {
             </Stack>
             <Typography component="span"
               sx={{
+  display: "block",
   mt: 0.25,
   color: "text.secondary",
   overflow: "hidden",
@@ -870,14 +1089,22 @@ export default function PurchaseInvoiceImport() {
               </Box>
             </Box>
 
+            {executionResult.prices_updated?.length > 0 && (
+              <Alert severity="info" sx={{ mb: 2.5, borderRadius: "8px" }}>
+                Selling price / MRP updated for {executionResult.prices_updated.length} existing product
+                {executionResult.prices_updated.length === 1 ? "" : "s"}:{" "}
+                {executionResult.prices_updated.map((p) => `${p.name}${p.selling_price ? ` ${money(p.selling_price)}` : ""}${p.mrp ? ` (MRP ${money(p.mrp)})` : ""}`).join(", ")}
+              </Alert>
+            )}
+
             {/* Quick Action Navigation Buttons */}
             <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
               <Button
                 variant="contained"
                 onClick={() =>
-                  navigate(
-                    `/warehouse/barcode?transport_entry_id=${executionResult.transport_entry?.id || ""}`
-                  )
+                  // Barcode Search lists this entry's stickers and prints them (as barcode or QR).
+                  navigate(`/warehouse/barcode/search?transport_entry_id=${executionResult.transport_entry?.id || ""}`
+                    + `&label=${encodeURIComponent(`LR ${executionResult.transport_entry?.lr_no || ""}`)}`)
                 }
                 startIcon={<Printer size={16} />}
                 sx={{
@@ -935,16 +1162,16 @@ export default function PurchaseInvoiceImport() {
             display: "grid",
             gridTemplateColumns: {
               xs: "1fr",
-              md: hasExtracted ? "350px 1fr" : "1fr",
-              lg: hasExtracted ? "390px 1fr" : "1fr",
-              xl: hasExtracted ? "440px 1fr" : "1fr",
+              // Side by side only where the review panel keeps a usable width (custom breakpoints: lg 1024, xl 1280).
+              lg: hasExtracted ? "320px minmax(0, 1fr)" : "1fr",
+              xl: hasExtracted ? "380px minmax(0, 1fr)" : "1fr",
             },
             gap: { xs: 2, md: 2.5 },
             alignItems: "start",
           }}
         >
-          {/* LEFT PANEL: UPLOAD & DOCUMENT PREVIEW */}
-          <Card variant="outlined" sx={{ borderRadius: "12px", overflow: "hidden" }}>
+          {/* LEFT PANEL: UPLOAD & DOCUMENT PREVIEW (below the review on narrower screens, once extracted) */}
+          <Card variant="outlined" sx={{ borderRadius: "12px", overflow: "hidden", order: { xs: hasExtracted ? 2 : 1, lg: 1 } }}>
             <Box sx={{ borderBottom: 1, borderColor: "divider", px: 2.5, py: 1.75, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
                 <FileText size={16} style={{ color: INDIGO }} />
@@ -1280,7 +1507,7 @@ export default function PurchaseInvoiceImport() {
 
           {/* RIGHT PANEL: INTERACTIVE REVIEW & VERIFICATION TABS */}
           {hasExtracted && (
-            <Card variant="outlined" sx={{ borderRadius: "12px", overflow: "hidden" }}>
+            <Card variant="outlined" sx={{ borderRadius: "12px", overflow: "hidden", order: { xs: 1, lg: 2 }, minWidth: 0 }}>
               <Box sx={{ borderBottom: 1, borderColor: "divider", bgcolor: "background.paper" }}>
                 <Tabs
                   value={activeTab}
@@ -1427,7 +1654,7 @@ export default function PurchaseInvoiceImport() {
                         size="small"
                         value={invoice.invoice_date}
                         onChange={(e) => setInvoice((prev) => ({ ...prev, invoice_date: e.target.value }))}
-                        InputLabelProps={{ shrink: true }}
+                        slotProps={{ inputLabel: { shrink: true } }}
                         fullWidth
                       />
 
@@ -1553,7 +1780,7 @@ export default function PurchaseInvoiceImport() {
                         size="small"
                         value={transport.lr_date}
                         onChange={(e) => setTransport((prev) => ({ ...prev, lr_date: e.target.value }))}
-                        InputLabelProps={{ shrink: true }}
+                        slotProps={{ inputLabel: { shrink: true } }}
                         fullWidth
                       />
 
@@ -1639,185 +1866,98 @@ export default function PurchaseInvoiceImport() {
                       </Button>
                     </Stack>
 
-                    <Box sx={{ overflowX: "auto", border: "1px solid", borderColor: "divider", borderRadius: "8px", WebkitOverflowScrolling: "touch" }}>
-                      <Table size="small" sx={{ minWidth: 720 }}>
-                        <TableHead sx={{ bgcolor: "action.hover" }}>
-                          <TableRow>
-                            <TableCell sx={{ fontSize: TYPE.small, fontWeight: 700, width: 40 }}>#</TableCell>
-                            <TableCell sx={{ fontSize: TYPE.small, fontWeight: 700, minWidth: 200 }}>
-                              Description (OCR)
-                            </TableCell>
-                            <TableCell sx={{ fontSize: TYPE.small, fontWeight: 700, width: 90 }}>Qty</TableCell>
-                            <TableCell sx={{ fontSize: TYPE.small, fontWeight: 700, width: 110 }}>Rate (₹)</TableCell>
-                            <TableCell sx={{ fontSize: TYPE.small, fontWeight: 700, width: 90 }}>Tax %</TableCell>
-                            <TableCell sx={{ fontSize: TYPE.small, fontWeight: 700, width: 120 }}>Total (₹)</TableCell>
-                            <TableCell sx={{ fontSize: TYPE.small, fontWeight: 700, minWidth: 260 }}>
-                              Product Assignment (Existing vs New)
-                            </TableCell>
-                          </TableRow>
-                        </TableHead>
-                        <TableBody>
-                          {items.map((item, index) => (
-                            <TableRow key={item.id} hover>
-                              <TableCell sx={{ fontSize: TYPE.small }}>{index + 1}</TableCell>
-
-                              {/* Description */}
-                              <TableCell>
-                                <TextField
-                                  size="small"
-                                  fullWidth
-                                  value={item.description}
-                                  onChange={(e) => updateItem(index, "description", e.target.value)}
-                                  sx={{ "& .MuiInputBase-input": { fontSize: TYPE.small, py: 0.5 } }}
-                                />
-                                {item.hsn && (
-                                  <Typography variant="caption" sx={{ color: "text.secondary", fontSize: TYPE.small }}>
-                                    HSN: {item.hsn}
-                                  </Typography>
-                                )}
-                              </TableCell>
-
-                              {/* Quantity */}
-                              <TableCell>
-                                <TextField
-                                  type="number"
-                                  size="small"
-                                  value={item.quantity}
-                                  onChange={(e) => updateItem(index, "quantity", e.target.value)}
-                                  sx={{ width: 80, "& .MuiInputBase-input": { fontSize: TYPE.small, py: 0.5 } }}
-                                />
-                              </TableCell>
-
-                              {/* Rate */}
-                              <TableCell>
-                                <TextField
-                                  type="number"
-                                  size="small"
-                                  value={item.rate}
-                                  onChange={(e) => updateItem(index, "rate", e.target.value)}
-                                  sx={{ width: 100, "& .MuiInputBase-input": { fontSize: TYPE.small, py: 0.5 } }}
-                                />
-                              </TableCell>
-
-                              {/* Tax % */}
-                              <TableCell>
-                                <TextField
-                                  type="number"
-                                  size="small"
-                                  value={item.tax_percent}
-                                  onChange={(e) => updateItem(index, "tax_percent", e.target.value)}
-                                  sx={{ width: 80, "& .MuiInputBase-input": { fontSize: TYPE.small, py: 0.5 } }}
-                                />
-                              </TableCell>
-
-                              {/* Line Total */}
-                              <TableCell sx={{ fontSize: 12, fontWeight: 600 }}>
-                                ₹{Number(item.amount || 0).toFixed(2)}
-                              </TableCell>
-
-                              {/* Product Matching & New Product Setup */}
-                              <TableCell>
-                                <Stack spacing={1}>
-                                  <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-                                    <Chip
-                                      size="small"
-                                      label={item.is_new_product ? "New Product" : "Existing"}
-                                      color={item.is_new_product ? "warning" : "success"}
-                                      variant={item.is_new_product ? "filled" : "outlined"}
-                                      sx={{ fontSize: TYPE.small, height: 20 }}
-                                    />
-                                    <FormControlLabel
-                                      control={
-                                        <Switch
-                                          size="small"
-                                          checked={item.is_new_product}
-                                          onChange={(e) => toggleNewProduct(index, e.target.checked)}
-                                        />
-                                      }
-                                      label={
-                                        <Typography sx={{ fontSize: TYPE.small, color: "text.secondary" }}>
-                                          Create as New
-                                        </Typography>
-                                      }
-                                      sx={{ m: 0 }}
-                                    />
-                                  </Stack>
-
-                                  {!item.is_new_product ? (
-                                    <TextField
-                                      select
-                                      size="small"
-                                      fullWidth
-                                      value={item.product_id || ""}
-                                      onChange={(e) => updateItem(index, "product_id", e.target.value)}
-                                      sx={{ "& .MuiInputBase-input": { fontSize: TYPE.small, py: 0.5 } }}
-                                    >
-                                      <MenuItem value="">-- Select Existing Product --</MenuItem>
-                                      {/* Preloaded catalog options */}
-                                      {item.product_id && (
-                                        <MenuItem value={item.product_id}>
-                                          Assigned Product (#{item.product_id})
-                                        </MenuItem>
-                                      )}
-                                      {categories.map((c) => (
-                                        <MenuItem key={c.id} value={c.id}>
-                                          {c.name}
-                                        </MenuItem>
-                                      ))}
-                                    </TextField>
-                                  ) : (
-                                    <Box
-                                      sx={{
-                                        p: 1.5,
-                                        bgcolor: (theme) => alpha(theme.palette.warning.main, 0.08),
-                                        borderRadius: "6px",
-                                        border: "1px dashed",
-                                        borderColor: "warning.main",
-                                      }}
-                                    >
-                                      <Stack spacing={1}>
-                                        <TextField
-                                          label="New Product Name"
-                                          size="small"
-                                          value={item.new_product_data?.name || ""}
-                                          onChange={(e) => updateNewProductField(index, "name", e.target.value)}
-                                          sx={{ "& .MuiInputBase-input": { fontSize: TYPE.small, py: 0.5 } }}
-                                        />
-
-                                        <Stack direction="row" spacing={1}>
-                                          <TextField
-                                            label="Selling Price (₹)"
-                                            type="number"
-                                            size="small"
-                                            value={item.selling_price}
-                                            onChange={(e) => {
-                                              updateItem(index, "selling_price", Number(e.target.value));
-                                              updateNewProductField(index, "selling_price", Number(e.target.value));
-                                            }}
-                                            sx={{ "& .MuiInputBase-input": { fontSize: TYPE.small, py: 0.5 } }}
-                                          />
-                                          <TextField
-                                            label="MRP (₹)"
-                                            type="number"
-                                            size="small"
-                                            value={item.mrp}
-                                            onChange={(e) => {
-                                              updateItem(index, "mrp", Number(e.target.value));
-                                              updateNewProductField(index, "mrp", Number(e.target.value));
-                                            }}
-                                            sx={{ "& .MuiInputBase-input": { fontSize: TYPE.small, py: 0.5 } }}
-                                          />
-                                        </Stack>
-                                      </Stack>
-                                    </Box>
-                                  )}
-                                </Stack>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
+                    {/* Margin on the purchase rate for selling price and MRP; remembered for this store. */}
+                    <Box sx={{ p: 1.5, border: "1px solid", borderColor: "divider", borderRadius: "8px", bgcolor: "action.hover" }}>
+                      <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} sx={{ alignItems: { xs: "stretch", sm: "center" } }}>
+                        <TextField
+                          label="Selling margin %"
+                          type="number"
+                          size="small"
+                          value={margins.selling_percent}
+                          onChange={(e) => setMargins((prev) => ({ ...prev, selling_percent: e.target.value }))}
+                          slotProps={{ htmlInput: { min: 0, step: "0.5" } }}
+                          sx={{ width: { xs: "100%", sm: 170 }, flexShrink: 0 }}
+                        />
+                        <TextField
+                          label="MRP margin %"
+                          type="number"
+                          size="small"
+                          value={margins.mrp_percent}
+                          onChange={(e) => setMargins((prev) => ({ ...prev, mrp_percent: e.target.value }))}
+                          slotProps={{ htmlInput: { min: 0, step: "0.5" } }}
+                          sx={{ width: { xs: "100%", sm: 170 }, flexShrink: 0 }}
+                        />
+                        <Button size="small" variant="contained" onClick={applyMarginsToAll} disabled={!items.length}
+                          sx={{ textTransform: "none", flexShrink: 0 }}>
+                          Apply to all lines
+                        </Button>
+                        <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                          On the purchase rate. Lines without printed prices use it; existing products take the new prices when you approve.
+                        </Typography>
+                      </Stack>
                     </Box>
+
+                    {compactLines ? (
+                      <Stack spacing={1.5}>
+                        {items.map((item, index) => (
+                          <Box key={item.id} data-testid="invoice-line" sx={{ p: 1.5, border: "1px solid", borderColor: "divider", borderRadius: "8px",
+                            display: "grid", gridTemplateColumns: { xs: "minmax(0, 1fr)", lg: "minmax(0, 1.15fr) minmax(0, 1fr)" }, gap: 1.5 }}>
+                            <Stack spacing={1.25} sx={{ minWidth: 0 }}>
+                              <Stack direction="row" spacing={1} sx={{ alignItems: "flex-start" }}>
+                                <Typography sx={{ fontSize: TYPE.small, fontWeight: 700, pt: 0.75 }}>{index + 1}.</Typography>
+                                <Box sx={{ flex: 1, minWidth: 0 }}>{renderDescription(item, index)}</Box>
+                              </Stack>
+                              <Box sx={{ display: "grid", gap: 1,
+                                gridTemplateColumns: { xs: "repeat(3, minmax(0, 1fr))", sm: "repeat(6, minmax(0, 1fr))", md: "repeat(3, minmax(0, 1fr))" } }}>
+                                {renderNumber(item, index, "quantity", "Qty")}
+                                {renderNumber(item, index, "rate", "Rate ₹")}
+                                {renderNumber(item, index, "tax_percent", "Tax %")}
+                                {renderNumber(item, index, "selling_price", "Selling ₹")}
+                                {renderNumber(item, index, "mrp", "MRP ₹")}
+                                <Box sx={{ alignSelf: "center" }}>
+                                  <Typography variant="caption" sx={{ color: "text.secondary", display: "block" }}>Total</Typography>
+                                  <Typography sx={{ fontSize: 12.5, fontWeight: 700 }}>{money(item.amount)}</Typography>
+                                </Box>
+                              </Box>
+                            </Stack>
+                            <Box sx={{ minWidth: 0 }}>{renderProduct(item, index)}</Box>
+                          </Box>
+                        ))}
+                      </Stack>
+                    ) : (
+                      <Box sx={{ overflowX: "auto", border: "1px solid", borderColor: "divider", borderRadius: "8px", WebkitOverflowScrolling: "touch" }}>
+                        <Table size="small" sx={{ minWidth: 980 }}>
+                          <TableHead sx={{ bgcolor: "action.hover" }}>
+                            <TableRow>
+                              <TableCell sx={{ fontSize: TYPE.small, fontWeight: 700, width: 36 }}>#</TableCell>
+                              <TableCell sx={{ fontSize: TYPE.small, fontWeight: 700, minWidth: 190 }}>Description (OCR)</TableCell>
+                              <TableCell sx={{ fontSize: TYPE.small, fontWeight: 700, width: 84 }}>Qty</TableCell>
+                              <TableCell sx={{ fontSize: TYPE.small, fontWeight: 700, width: 96 }}>Rate (₹)</TableCell>
+                              <TableCell sx={{ fontSize: TYPE.small, fontWeight: 700, width: 76 }}>Tax %</TableCell>
+                              <TableCell sx={{ fontSize: TYPE.small, fontWeight: 700, width: 96 }}>Selling (₹)</TableCell>
+                              <TableCell sx={{ fontSize: TYPE.small, fontWeight: 700, width: 96 }}>MRP (₹)</TableCell>
+                              <TableCell sx={{ fontSize: TYPE.small, fontWeight: 700, width: 96 }}>Total (₹)</TableCell>
+                              <TableCell sx={{ fontSize: TYPE.small, fontWeight: 700, minWidth: 260 }}>Product (Existing or New)</TableCell>
+                            </TableRow>
+                          </TableHead>
+                          <TableBody>
+                            {items.map((item, index) => (
+                              <TableRow key={item.id} hover data-testid="invoice-line" sx={{ verticalAlign: "top" }}>
+                                <TableCell sx={{ fontSize: TYPE.small }}>{index + 1}</TableCell>
+                                <TableCell>{renderDescription(item, index)}</TableCell>
+                                <TableCell>{renderNumber(item, index, "quantity")}</TableCell>
+                                <TableCell>{renderNumber(item, index, "rate")}</TableCell>
+                                <TableCell>{renderNumber(item, index, "tax_percent")}</TableCell>
+                                <TableCell>{renderNumber(item, index, "selling_price")}</TableCell>
+                                <TableCell>{renderNumber(item, index, "mrp")}</TableCell>
+                                <TableCell sx={{ fontSize: 12, fontWeight: 600 }}>{money(item.amount)}</TableCell>
+                                <TableCell>{renderProduct(item, index)}</TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </Box>
+                    )}
                   </Stack>
                 )}
 
@@ -1859,10 +1999,10 @@ export default function PurchaseInvoiceImport() {
                             size="small"
                             value={barcodeCodeType}
                             onChange={(e) => setBarcodeCodeType(e.target.value)}
-                            sx={{ width: 220 }}
+                            sx={{ width: { xs: "100%", sm: 220 } }}
                           >
-                            <MenuItem value="barcode">Standard Barcode (Code128)</MenuItem>
-                            <MenuItem value="code">Product Code Label</MenuItem>
+                            <MenuItem value="barcode">Barcode</MenuItem>
+                            <MenuItem value="code">QR code</MenuItem>
                           </TextField>
                         </Box>
                       )}

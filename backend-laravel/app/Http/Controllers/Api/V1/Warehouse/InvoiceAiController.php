@@ -5,13 +5,16 @@ namespace App\Http\Controllers\Api\V1\Warehouse;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Warehouse\ProcessPurchaseFlowRequest;
 use App\Models\Barcode;
+use App\Models\Category;
 use App\Models\InventoryEntry;
 use App\Models\InventoryEntryItem;
 use App\Models\Product;
+use App\Models\ProductVariant;
 use App\Models\PurchaseInvoice;
 use App\Models\PurchaseInvoiceItem;
 use App\Models\Supplier;
 use App\Models\SystemConfiguration;
+use App\Models\Tax;
 use App\Models\Transport;
 use App\Models\TransportEntry;
 use App\Services\Documents\DocumentNumberService;
@@ -189,8 +192,90 @@ class InvoiceAiController extends Controller
         ]);
     }
 
+    /** Default margins on the purchase rate for new prices (selling price and MRP), remembered per store. */
+    public const DEFAULT_MARGINS = ['selling_percent' => 25.0, 'mrp_percent' => 35.0];
+
+    private const MARGINS_KEY = 'price_margins';
+
+    /** The sizes (variants) of an existing product, for the line's Size picker: stock is kept per size. */
+    public function productVariants(int $productId)
+    {
+        Product::findOrFail($productId); // This store's product only (Product is store-scoped; variants are not).
+        $variants = ProductVariant::with('size:id,name')->where('product_id', $productId)->orderBy('id')->get()
+            ->map(fn (ProductVariant $v) => ['id' => $v->id, 'label' => collect([$v->size?->name, $v->design_no ? 'Design '.$v->design_no : null, $v->sku])
+                ->filter()->unique()->implode(' · ') ?: 'Variant #'.$v->id])->values();
+
+        return response()->json(['success' => true, 'data' => $variants]);
+    }
+
+    /** The store's saved margins (the page's starting values). */
+    public function margins()
+    {
+        return response()->json(['success' => true, 'data' => $this->storedMargins()]);
+    }
+
+    private function storedMargins(): array
+    {
+        $saved = Schema::hasTable('system_configurations')
+            ? json_decode((string) SystemConfiguration::where('group', 'invoice_ai')->where('key', self::MARGINS_KEY)->value('value'), true)
+            : null;
+
+        return array_map('floatval', array_merge(self::DEFAULT_MARGINS, array_intersect_key(is_array($saved) ? $saved : [], self::DEFAULT_MARGINS)));
+    }
+
+    /** The margins this invoice used become the store's default for the next one. SystemConfiguration is store-scoped. */
+    private function saveMargins(mixed $input): array
+    {
+        $margins = $this->storedMargins();
+        if (! is_array($input)) {
+            return $margins;
+        }
+        foreach (array_keys(self::DEFAULT_MARGINS) as $key) {
+            if (isset($input[$key]) && is_numeric($input[$key])) {
+                $margins[$key] = round((float) $input[$key], 2);
+            }
+        }
+        if (Schema::hasTable('system_configurations')) {
+            SystemConfiguration::updateOrCreate(['group' => 'invoice_ai', 'key' => self::MARGINS_KEY],
+                ['config_key' => self::MARGINS_KEY, 'group_name' => 'invoice_ai', 'value' => json_encode($margins)]);
+        }
+
+        return $margins;
+    }
+
+    private static function withMargin(float $rate, float $percent): float
+    {
+        return round($rate * (1 + $percent / 100), 2);
+    }
+
+    /** The selling price / MRP this invoice line sets on an existing product or variant, if they differ. */
+    private function priceChange(Product|ProductVariant $record, array $item): array
+    {
+        $change = [];
+        foreach (['selling_price', 'mrp'] as $field) {
+            $value = round((float) ($item[$field] ?? 0), 2);
+            if ($value > 0 && abs($value - (float) $record->{$field}) >= 0.01) {
+                $change[$field] = $value;
+            }
+        }
+
+        return $change;
+    }
+
     public function processPurchaseFlow(ProcessPurchaseFlowRequest $request)
     {
+        // Stock is kept per size: an existing product that has sizes needs the line's size, or the units would be
+        // booked to a row no bill or barcode uses.
+        foreach ($request->input('items', []) as $index => $item) {
+            if (! empty($item['is_new_product']) || empty($item['product_id']) || ! empty($item['variant_id']) || ! empty($item['variantId'])) {
+                continue;
+            }
+            if (ProductVariant::where('product_id', (int) $item['product_id'])->exists()) {
+                return response()->json(['success' => false,
+                    'message' => 'Line '.($index + 1).' ('.($item['description'] ?? 'item').'): choose its size - this product keeps stock per size.'], 422);
+            }
+        }
+
         $storeId = (int) $this->resolveStoreId($request, 1);
 
         try {
@@ -200,6 +285,9 @@ class InvoiceAiController extends Controller
                 $transportData = $request->input('transport', []);
                 $itemsData = $request->input('items', []);
                 $generateBarcodes = $request->boolean('generate_barcodes', true);
+                $margins = $this->saveMargins($request->input('margins'));
+                $newProductIds = [];
+                $pricesUpdated = [];
 
                 // 1. Resolve or create Supplier
                 $supplier = null;
@@ -240,7 +328,7 @@ class InvoiceAiController extends Controller
                 if (! $transport && ! empty($transportData['transport_name'])) {
                     $transport = Transport::create([
                         'name' => $transportData['transport_name'],
-                        'code' => 'TRP_'.strtoupper(substr(uniqid(), -6)),
+                        'code' => Transport::pendingCode(), // Becomes TRP<id> (NumbersCodeFromId).
                     ]);
                 }
                 if (! $transport) {
@@ -269,7 +357,7 @@ class InvoiceAiController extends Controller
                 // 3. Create Purchase Invoice
                 $invoiceNo = ! empty($invoiceData['invoice_no'])
                     ? $invoiceData['invoice_no']
-                    : 'PINV-'.date('Ymd').'-'.rand(1000, 9999);
+                    : DocumentNumberService::resolve($request, $storeId, 'PINV');
 
                 $subtotal = (float) ($invoiceData['subtotal'] ?? 0);
                 $taxAmount = (float) ($invoiceData['tax_amount'] ?? 0);
@@ -298,9 +386,12 @@ class InvoiceAiController extends Controller
                 // 4. Create Inventory Entry Shell
                 $inventoryEntry = InventoryEntry::create([
                     'store_id' => $storeId,
-                    'entry_no' => 'INV-ENT-'.date('Ymd').'-'.rand(1000, 9999),
+                    'entry_no' => DocumentNumberService::resolve($request, $storeId, 'IE'),
                     'entry_date' => $invoiceData['invoice_date'] ?? now()->toDateString(),
                     'type' => 'PURCHASE',
+                    // Linked to its LR and supplier, so its barcodes are found for this transport entry (Barcode Search).
+                    'transport_entry_id' => $transportEntry->id,
+                    'supplier_id' => $supplier->id,
                     'total_amount' => $grandTotal,
                     'notes' => "Invoice AI inward for PINV #{$invoiceNo}, Transport Entry #{$transportEntry->id}",
                     'status' => 'COMPLETED',
@@ -333,19 +424,21 @@ class InvoiceAiController extends Controller
                         // Create New Product in Master
                         $newProd = $item['new_product_data'] ?? [];
                         $pName = trim($newProd['name'] ?? $item['description'] ?? 'Product '.($idx + 1));
-                        $pCode = trim($newProd['code'] ?? '') ?: ('PRD_'.strtoupper(substr(uniqid(), -6)));
+                        // Without a code it is numbered PRD<id> (NumbersCodeFromId), the same on the cloud and on-prem.
+                        $pCode = trim($newProd['code'] ?? '') ?: Product::pendingCode();
                         $pRate = (float) ($item['rate'] ?? $newProd['cost_price'] ?? 0);
-                        $pSelling = (float) ($newProd['selling_price'] ?? $item['selling_price'] ?? ($pRate * 1.25));
-                        $pMrp = (float) ($newProd['mrp'] ?? $item['mrp'] ?? ($pRate * 1.35));
+                        $pSelling = (float) (($newProd['selling_price'] ?? null) ?: ($item['selling_price'] ?? null) ?: self::withMargin($pRate, $margins['selling_percent']));
+                        $pMrp = (float) (($newProd['mrp'] ?? null) ?: ($item['mrp'] ?? null) ?: self::withMargin($pRate, $margins['mrp_percent']));
 
                         $product = Product::create([
                             'name' => $pName,
                             'code' => $pCode,
                             'sku' => $newProd['sku'] ?? $pCode,
                             'barcode' => $newProd['barcode'] ?? $pCode,
-                            'category_id' => $newProd['category_id'] ?? 1,
+                            // Without a choice, this store's first category and tax (models are store-scoped).
+                            'category_id' => ($newProd['category_id'] ?? null) ?: Category::orderBy('id')->value('id'),
                             'brand_id' => $newProd['brand_id'] ?? null,
-                            'tax_id' => $newProd['tax_id'] ?? 1,
+                            'tax_id' => ($newProd['tax_id'] ?? null) ?: Tax::orderBy('id')->value('id'),
                             'unit' => $newProd['unit'] ?? $item['unit'] ?? 'Pcs',
                             'hsn_code' => $newProd['hsn_code'] ?? $item['hsn'] ?? null,
                             'cost_price' => $pRate,
@@ -355,6 +448,7 @@ class InvoiceAiController extends Controller
                         ]);
 
                         $newProductsCreated[] = $product;
+                        $newProductIds[$product->id] = true;
                     }
 
                     $qty = max(0.01, (float) ($item['quantity'] ?? 1));
@@ -405,9 +499,21 @@ class InvoiceAiController extends Controller
                         'inventory_item_id' => $invItem->id,
                         'quantity' => $qty,
                         'rate' => $rate,
-                        'selling_price' => (float) ($item['selling_price'] ?? $product->selling_price ?? ($rate * 1.25)),
-                        'mrp' => (float) ($item['mrp'] ?? $product->mrp ?? ($rate * 1.35)),
+                        'selling_price' => (float) (($item['selling_price'] ?? null) ?: ($product->selling_price ?: self::withMargin($rate, $margins['selling_percent']))),
+                        'mrp' => (float) (($item['mrp'] ?? null) ?: ($product->mrp ?: self::withMargin($rate, $margins['mrp_percent']))),
                     ];
+
+                    // An existing product takes this invoice's selling price and MRP (supplier prices go up).
+                    if (! isset($newProductIds[$product->id])) {
+                        if ($change = $this->priceChange($product, $item)) {
+                            $product->update($change);
+                            $pricesUpdated[] = ['product_id' => $product->id, 'name' => $product->name, ...$change];
+                        }
+                        $variant = $variantId ? ProductVariant::find($variantId) : null;
+                        if ($variant && ((float) $variant->selling_price > 0 || (float) $variant->mrp > 0) && ($change = $this->priceChange($variant, $item))) {
+                            $variant->update($change);
+                        }
+                    }
                 }
 
                 // 6. Generate Barcodes
@@ -415,7 +521,7 @@ class InvoiceAiController extends Controller
                 if ($generateBarcodes) {
                     foreach ($resolvedItems as $ritem) {
                         $prod = $ritem['product'];
-                        $barcodeVal = $prod->barcode ?: ('BC'.date('ymd').str_pad((string) rand(1, 99999), 5, '0', STR_PAD_LEFT));
+                        $barcodeVal = $prod->barcode ?: 'BC'.str_pad((string) $prod->id, 6, '0', STR_PAD_LEFT);
                         $barcode = Barcode::create([
                             'barcode' => $barcodeVal,
                             'batch_no' => 'BATCH-'.date('ymd').'-'.$inventoryEntry->id,
@@ -426,6 +532,7 @@ class InvoiceAiController extends Controller
                             'mrp' => $ritem['mrp'],
                             'selling_price' => $ritem['selling_price'],
                             'qty' => (int) ceil($ritem['quantity']),
+                            'code_type' => $request->input('code_type', 'barcode'),
                             'is_active' => 1,
                         ]);
                         $createdBarcodes[] = $barcode;
@@ -440,6 +547,7 @@ class InvoiceAiController extends Controller
                     'total_items_processed' => count($resolvedItems),
                     'barcodes' => $createdBarcodes,
                     'barcodes_count' => count($createdBarcodes),
+                    'prices_updated' => $pricesUpdated,
                 ];
             });
 

@@ -35,7 +35,17 @@ class SyncCycleService
 
     private const LAST_RESULT = 'sync:last-result';
 
-    public function run(): array
+    /** When idle, cloud changes are fetched and the heartbeat sent once a minute; after any activity, every cycle for 5 minutes. */
+    private const IDLE_SECONDS = 60;
+
+    private const BUSY_MINUTES = 5;
+
+    private const REMOTE_DUE_AT = 'sync:remote-due-at';
+
+    private const BUSY_UNTIL = 'sync:busy-until';
+
+    /** @param  bool  $now  Sync now / Re-copy: everything, at once, even when paused or idle */
+    public function run(bool $now = false): array
     {
         if (config('sync.node_role') !== 'local') {
             return ['ran' => false, 'reason' => 'This install is not configured as a local node (SYNC_NODE_ROLE=local).'];
@@ -44,6 +54,10 @@ class SyncCycleService
         $node = StoreLocalNode::where('enabled', true)->first();
         if (! $node) {
             return ['ran' => false, 'reason' => 'No enabled local-server configuration found.'];
+        }
+
+        if ($node->sync_paused && ! $now) {
+            return ['ran' => false, 'paused' => true, 'reason' => 'Sync is paused on this server. Resume it in Configure Local Server.'];
         }
 
         $cloudApi = LocalNodeRegistration::cloudApiBase($node->cloud_server_url);
@@ -76,14 +90,30 @@ class SyncCycleService
             if ($waiting > 0) {
                 SyncProgress::start('sync', 'Syncing', $waiting);
             }
-            $result = [
-                'ran' => true,
-                'pushed' => $this->pushPendingWrites($node, $cloudApi),
-                'pulled' => $this->pullAndApplyCloudWrites($node, $cloudApi),
-                // The cloud is the master for staff accounts; the counters sign in here with the same ones.
-                'users' => app(LocalNodeRegistration::class)->copyUsers($node),
-                'heartbeat_ok' => $this->sendHeartbeat($node, $cloudApi),
-            ];
+            // Writes made here go at once. The cloud's own changes, the heartbeat and the user list are fetched
+            // once a minute when nothing is happening, and every cycle for a few minutes after any activity.
+            $result = ['ran' => true, 'pushed' => $this->pushPendingWrites($node, $cloudApi),
+                'pulled' => ['applied' => 0, 'failed' => 0, 'errors' => []], 'users' => null, 'heartbeat_ok' => null, 'remote' => false];
+            $busy = (int) Cache::get(self::BUSY_UNTIL, 0) > now()->timestamp;
+            if ($now || $waiting > 0 || $busy || (int) Cache::get(self::REMOTE_DUE_AT, 0) <= now()->timestamp) {
+                $result['remote'] = true;
+                $result['pulled'] = $this->pullAndApplyCloudWrites($node, $cloudApi);
+                $heartbeat = $this->sendHeartbeat($node, $cloudApi);
+                $result['heartbeat_ok'] = $heartbeat['ok'];
+                // The cloud is the master for staff accounts; the counters sign in here with the same ones. Copied
+                // when the cloud's list changed (or on Sync now), not every cycle.
+                $version = $heartbeat['users_version'];
+                if ($now || $version === null || $version !== $node->users_version) {
+                    $result['users'] = app(LocalNodeRegistration::class)->copyUsers($node);
+                    if ($result['users'] !== null && $version !== null) {
+                        $node->forceFill(['users_version' => $version]);
+                    }
+                }
+                Cache::put(self::REMOTE_DUE_AT, now()->addSeconds(self::IDLE_SECONDS)->timestamp, 3600);
+            }
+            if ($result['pushed']['sent'] > 0 || $result['pulled']['applied'] > 0) {
+                Cache::put(self::BUSY_UNTIL, now()->addMinutes(self::BUSY_MINUTES)->timestamp, 3600);
+            }
             $node->forceFill(['last_cycle_at' => now()])->save();
             Cache::forever(self::LAST_RESULT, ['at' => now()->toIso8601String()] + $result);
 
@@ -288,7 +318,8 @@ class SyncCycleService
         return $result;
     }
 
-    private function sendHeartbeat(StoreLocalNode $node, string $cloudApi): bool
+    /** @return array{ok: bool, users_version: ?string} */
+    private function sendHeartbeat(StoreLocalNode $node, string $cloudApi): array
     {
         try {
             $response = Http::withHeaders($this->authHeaders($node))->timeout(10)->post($cloudApi.'/sync/heartbeat', [
@@ -301,9 +332,9 @@ class SyncCycleService
                 app(LocalNodeRegistration::class)->refreshIdentity($node, $response->json('data.identity'));
             }
 
-            return $response->successful();
+            return ['ok' => $response->successful(), 'users_version' => $response->successful() ? $response->json('data.users_version') : null];
         } catch (\Throwable $e) {
-            return false;
+            return ['ok' => false, 'users_version' => null];
         }
     }
 

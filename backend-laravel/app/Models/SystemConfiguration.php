@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\NumbersCodeFromId;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -12,6 +13,7 @@ use Illuminate\Database\Eloquent\Model;
 class SystemConfiguration extends Model
 {
     use HasFactory;
+    use NumbersCodeFromId;
 
     protected static function booted(): void
     {
@@ -37,4 +39,10 @@ class SystemConfiguration extends Model
         'extra_data' => 'array',
         'is_active' => 'boolean',
     ];
+
+    /** A setting saved without a code is numbered from its key, e.g. COUNT_12 (NumbersCodeFromId). */
+    protected function numberedCodePrefix(): string
+    {
+        return strtoupper(substr((string) $this->key, 0, 5)).'_';
+    }
 }

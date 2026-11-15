@@ -60,13 +60,20 @@ server as harmless leftovers. The optimised autoloader only points at the new lo
      (default dev.gpsoftware.in). The counters reach it through the Vite server on the same PC.
   2. Frontend `.env` (or the environment of the Vite process): `VITE_API_PROXY_TARGET` (the backend, e.g.
      `http://127.0.0.1:8000`), `VITE_FAILOVER_CLOUD_API_URL=https://dev.gpsoftware.in/api` and
-     `VITE_ALLOWED_HOSTS=mainserver` (the name the billing PCs use). Run Vite with `--host`.
+     `VITE_ALLOWED_HOSTS=mainserver` (the name the billing PCs use). Serve the production build, not the dev
+     server: `npm run build`, then `npm run preview -- --host --port 5173` (same proxy and hosts as `vite`;
+     run it from Task Scheduler at start-up). Rebuild after each update; counters pick up the new build.
   3. The Task Scheduler entry above (`schedule:run` every minute) runs the 15-second `sync:cycle`.
   4. Open the counter address. A fresh server shows **Connect to cloud**: sign in with an administrator of the
      cloud ERP (choose the store if they have several). The cloud hands over the company activation and the
      store's licence, then the staff accounts and data; staff sign in with their cloud accounts. Do not activate
      an on-prem server through Vynerix admin: it allows one installation per company, which is the cloud.
-     Later, admins use Configure Local Server for Sync now, Re-copy from cloud and Reconnect.
+     Later, admins use Configure Local Server for Sync now, Re-copy from cloud, Pause sync and Reconnect.
+  5. **Each counter** (so billing opens even when the main server PC is off): Configure Local Server >
+     **Download counter installer** on the main server, copy the zip to the counter, unzip it to a permanent
+     folder (e.g. `C:\Vynerix`) and run `install_autostart.bat` (needs Node.js, like the print connector). It
+     starts with Windows, adds the desktop shortcut **Vynerix Billing** (`http://localhost:5050`) and keeps its
+     copy of the app current from the main server. Staff sign in once on that shortcut.
 
   The cloud address must be public (https://dev.gpsoftware.in): Chrome refuses calls from a page it considers
   public to a private LAN address, and a PC name can resolve to a public IPv6 address.

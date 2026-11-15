@@ -146,7 +146,7 @@ class EmployeeController extends Controller
         }
 
         $phone = $this->contactNo($request, null);
-        $code = $request->input('code') ?: 'EMP_'.strtoupper(substr(uniqid(), -6));
+        $code = $request->input('code') ?: null; // Blank: EMP<id> (NumbersCodeFromId).
 
         $data = $this->linkLogin($request, MasterFormData::prepare($request, new Employee), null);
         $data['phone'] = $phone;

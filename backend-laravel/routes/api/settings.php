@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\V1\Platform\StoreActivationController;
 use App\Http\Controllers\Api\V1\Settings\BackupController;
+use App\Http\Controllers\Api\V1\Settings\LoginSessionController;
 use App\Http\Controllers\Api\V1\Settings\RemoteSupportController;
 use App\Http\Controllers\Api\V1\Settings\SettingsController;
 use App\Http\Controllers\Api\V1\Settings\StoreController;
@@ -93,3 +94,8 @@ Route::prefix('remote-support')->group(function () {
     Route::get('sessions', [RemoteSupportController::class, 'index']);
     Route::post('{id}/end', [RemoteSupportController::class, 'endSession']);
 });
+
+// User Access > Login Sessions (tenant admin): who is signed in, and ending a session. Never synced.
+Route::get('login-sessions', [LoginSessionController::class, 'index']);
+Route::delete('login-sessions/user/{userId}', [LoginSessionController::class, 'destroyUser'])->whereNumber('userId');
+Route::delete('login-sessions/{id}', [LoginSessionController::class, 'destroy'])->whereNumber('id');

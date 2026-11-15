@@ -13,7 +13,7 @@ vi.mock("@/features/warehouse/barcodes/utils/barcodeCustomisation", () => ({
   fetchWarehouseBarcodeCustomization: vi.fn().mockResolvedValue({ codeType: "barcode", printMode: "direct" }),
 }));
 vi.mock("@/features/warehouse/barcodes/BarcodeGeneration", () => ({
-  buildStickerLabels: ({ barcodeRows }) => barcodeRows.map(row => ({ key: row.id, codeValue: row.barcode, codeType: "barcode" })),
+  buildStickerLabels: ({ barcodeRows, printAs }) => barcodeRows.map(row => ({ key: row.id, codeValue: row.barcode, codeType: printAs || "barcode" })),
   buildLabelQrSources: vi.fn().mockResolvedValue({}),
   printWarehouseBarcodeLabels: (...args) => mocks.print(...args),
 }));
@@ -56,4 +56,14 @@ it("reprints a single row from its print button without going to barcode generat
   await waitFor(() => expect(mocks.print).toHaveBeenCalledTimes(1));
   expect(mocks.print.mock.calls[0][0].labels.map(label => label.codeValue)).toEqual(["SC00011"]);
   expect(mocks.navigate).not.toHaveBeenCalled();
+});
+
+it("reprints barcode stickers as QR codes when QR is chosen", async () => {
+  renderAt("/warehouse/barcode/search");
+  await screen.findByText("SC00011");
+  fireEvent.mouseDown(screen.getByRole("combobox", { name: "Print as" }));
+  fireEvent.click(await screen.findByRole("option", { name: "QR code" }));
+  fireEvent.click(screen.getByRole("button", { name: "Reprint SC00011" }));
+  await waitFor(() => expect(mocks.print).toHaveBeenCalledTimes(1));
+  expect(mocks.print.mock.calls[0][0].labels.map(label => `${label.codeValue}:${label.codeType}`)).toEqual(["SC00011:code"]);
 });

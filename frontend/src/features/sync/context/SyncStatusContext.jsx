@@ -19,6 +19,7 @@ const DEFAULT_STATE = {
   progress: null,
   outboxPending: 0,
   outboxFailed: 0,
+  paused: false,
 };
 
 export const SyncStatusProvider = ({ children }) => {
@@ -57,6 +58,7 @@ export const SyncStatusProvider = ({ children }) => {
           progress: data.sync_progress || null,
           outboxPending: Number(data.outbox_pending || 0),
           outboxFailed: Number(data.outbox_failed || 0),
+          paused: Boolean(data.sync_paused),
         } });
         if (data.sync_progress) followProgress(); // Defined below; set up before any answer arrives.
       } catch {

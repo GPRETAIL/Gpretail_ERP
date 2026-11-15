@@ -34,6 +34,12 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command "$WshShell = New-Object -
 echo [3/3] Starting Silent Printer Service right now...
 powershell -NoProfile -WindowStyle Hidden -Command "Start-Process -FilePath '%NODE_EXE%' -ArgumentList 'server.js' -WorkingDirectory '%~dp0' -WindowStyle Hidden"
 
+rem A counter installed from Configure Local Server also serves the billing app (counter.js) on this PC.
+if exist "%~dp0counter.json" (
+    powershell -NoProfile -Command "$f = Join-Path ([Environment]::GetFolderPath('Desktop')) 'Vynerix Billing.url'; Set-Content -Path $f -Value '[InternetShortcut]','URL=http://localhost:5050/'" >nul 2>nul
+    echo Desktop shortcut "Vynerix Billing" added: billing opens from this PC even when the main server is off.
+)
+
 echo.
 echo =================================================================
 echo   [SUCCESS] One-Click Auto-Start Installation Complete!

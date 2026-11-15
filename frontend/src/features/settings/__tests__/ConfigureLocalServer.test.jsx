@@ -156,3 +156,14 @@ it("on a connected on-prem server, Sync now and Re-copy (after confirming) run, 
   expect(post).toHaveBeenLastCalledWith("/local-server-config/recopy", null, expect.anything());
   window.removeEventListener("vx-sync-started", started);
 });
+
+it("pauses and resumes the automatic sync on a connected on-prem server", async () => {
+  const connected = { ...saved, node_role: "local", enabled: true, cloud_server_url: "https://dev.gpsoftware.in", counter_url: "http://mainserver:5173", sync_paused: false };
+  get.mockImplementation(async path => ({ data: { data: path === "/local-server-config" ? connected : { nodes: [] } } }));
+  post.mockImplementation(async (path, body) => ({ data: { message: body.paused ? "Sync paused." : "Sync resumed.", data: { sync_paused: body.paused } } }));
+  render(<ConfigureLocalServer />);
+
+  fireEvent.click(await screen.findByRole("button", { name: "Pause sync" }));
+  await waitFor(() => expect(post).toHaveBeenCalledWith("/local-server-config/pause", { paused: true }));
+  expect(await screen.findByRole("button", { name: "Resume sync" })).toBeInTheDocument();
+});

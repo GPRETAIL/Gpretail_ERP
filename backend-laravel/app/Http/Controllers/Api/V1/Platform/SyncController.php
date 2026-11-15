@@ -71,6 +71,24 @@ class SyncController extends Controller
     }
 
     /** Cloud. The store's users, for the on-prem server to copy (the cloud is the master for staff accounts). */
+    /** Public: the version of the web app this server shares with its counter clients. */
+    public function counterAppVersion(\App\Services\Platform\CounterClient $client)
+    {
+        $version = $client->version();
+
+        return response()->json(['success' => $version !== null, 'data' => ['version' => $version]], $version ? 200 : 404);
+    }
+
+    /** Public: the web app (a zip of the build) for counter clients; it is the same code every browser loads. */
+    public function counterAppBundle(\App\Services\Platform\CounterClient $client)
+    {
+        try {
+            return response()->download($client->bundle(), 'vynerix-app.zip', ['Content-Type' => 'application/zip']);
+        } catch (\RuntimeException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 404);
+        }
+    }
+
     public function users(Request $request, FailoverIdentity $identity)
     {
         $node = $this->authenticateNode($request);
@@ -151,7 +169,10 @@ class SyncController extends Controller
         $node->save();
 
         // The reply carries the current activation and store licence, so renewals reach the on-prem server by themselves.
-        return response()->json(['success' => true, 'message' => 'Heartbeat recorded', 'data' => ['identity' => app(FailoverIdentity::class)->identityFor($node)]]);
+        return response()->json(['success' => true, 'message' => 'Heartbeat recorded', 'data' => [
+            'identity' => app(FailoverIdentity::class)->identityFor($node),
+            'users_version' => hash('sha256', json_encode(app(FailoverIdentity::class)->storeUsers($node))),
+        ]]);
     }
 
     /**
