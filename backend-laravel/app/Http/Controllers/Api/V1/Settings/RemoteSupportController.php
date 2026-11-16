@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\ListRemoteSupportSessionsRequest;
 use App\Http\Requests\Settings\RequestRemoteSupportRequest;
 use App\Models\PlatformActivation;
+use App\Services\Platform\LocalNodeRegistration;
 use App\Services\Platform\PlatformClient;
 use App\Services\Tenancy\StoreContext;
 use Illuminate\Http\JsonResponse;
@@ -55,7 +56,11 @@ class RemoteSupportController extends Controller
     {
         $activation = PlatformActivation::current();
         abort_unless($activation?->activated && $activation->company_code === $request->user()->platform_company_code, 403, 'Activate this company deployment before requesting remote support.');
-        $result = app(PlatformClient::class)->remoteSupport($activation, $operation, array_merge($payload, ['requester_id' => $request->user()->id]));
+        $payload = array_merge($payload, ['requester_id' => $request->user()->id]);
+        // An on-prem server took its identity from the cloud without the platform token: the cloud forwards for it.
+        $result = $activation->managed_by_cloud && blank($activation->sync_token)
+            ? app(LocalNodeRegistration::class)->relayRemoteSupport($operation, $payload)
+            : app(PlatformClient::class)->remoteSupport($activation, $operation, $payload);
         if (! $result['ok']) {
             $status = in_array($result['status'], [403, 404, 409, 422, 429], true) ? $result['status'] : 503;
 

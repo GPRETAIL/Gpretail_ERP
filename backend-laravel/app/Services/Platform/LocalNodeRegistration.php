@@ -442,6 +442,29 @@ class LocalNodeRegistration
         });
     }
 
+    /**
+     * On-prem. Remote Support goes through the cloud: this server has no platform token. Returns the same shape as
+     * PlatformClient::remoteSupport().
+     *
+     * @return array{ok: bool, status: int, data: mixed, message: ?string}
+     */
+    public function relayRemoteSupport(string $operation, array $payload): array
+    {
+        $node = StoreLocalNode::where('enabled', true)->first();
+        if (! $node?->tenant_key || ! $node->sync_token) {
+            return ['ok' => false, 'status' => 503, 'data' => [], 'message' => 'This on-prem server is not connected to the cloud yet.'];
+        }
+        try {
+            $response = Http::withHeaders($this->nodeHeaders($node))->timeout(15)
+                ->post(self::cloudApiBase($node->cloud_server_url).'/sync/remote-support/'.$operation, $payload);
+        } catch (\Throwable) {
+            return ['ok' => false, 'status' => 0, 'data' => [], 'message' => 'Could not reach the cloud for Vynerix Support. Check the internet and retry.'];
+        }
+
+        return ['ok' => $response->successful() && $response->json('success') !== false, 'status' => $response->status(),
+            'data' => $response->json('data') ?? [], 'message' => $response->json('message')];
+    }
+
     private function nodeHeaders(StoreLocalNode $node): array
     {
         return ['X-Tenant-Key' => $node->tenant_key, 'X-Sync-Token' => $node->sync_token, 'Accept' => 'application/json'];

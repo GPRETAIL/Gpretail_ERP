@@ -3,15 +3,21 @@
 namespace App\Http\Controllers\Api\V1\Platform;
 
 use App\Http\Controllers\Controller;
+use App\Models\PlatformActivation;
+use App\Models\Store;
 use App\Models\StoreLocalNode;
 use App\Models\SyncOutboxEvent;
 use App\Services\Backup\BackupService;
+use App\Services\Platform\CounterClient;
 use App\Services\Platform\FailoverIdentity;
 use App\Services\Platform\LocalNodeRegistration;
+use App\Services\Platform\PlatformClient;
 use App\Services\Platform\RegisteredServerProbe;
 use App\Services\Platform\SyncCycleService;
+use App\Services\Platform\SyncIds;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\IpUtils;
 
 class SyncController extends Controller
@@ -72,7 +78,7 @@ class SyncController extends Controller
 
     /** Cloud. The store's users, for the on-prem server to copy (the cloud is the master for staff accounts). */
     /** Public: the version of the web app this server shares with its counter clients. */
-    public function counterAppVersion(\App\Services\Platform\CounterClient $client)
+    public function counterAppVersion(CounterClient $client)
     {
         $version = $client->version();
 
@@ -80,7 +86,7 @@ class SyncController extends Controller
     }
 
     /** Public: the web app (a zip of the build) for counter clients; it is the same code every browser loads. */
-    public function counterAppBundle(\App\Services\Platform\CounterClient $client)
+    public function counterAppBundle(CounterClient $client)
     {
         try {
             return response()->download($client->bundle(), 'vynerix-app.zip', ['Content-Type' => 'application/zip']);
@@ -124,6 +130,28 @@ class SyncController extends Controller
         return $username
             ? response()->json(['success' => true, 'data' => ['username' => $username]])
             : response()->json(['success' => false, 'message' => 'This cloud sign-in is not valid for this store.'], 401);
+    }
+
+    /**
+     * Cloud. Remote Support for an on-prem server: it holds no platform token (that stays on the cloud), so it sends
+     * its requests here and the cloud forwards them to Vynerix Support. The store is always the node's own.
+     */
+    public function remoteSupport(Request $request, PlatformClient $client, string $operation)
+    {
+        $node = $this->authenticateNode($request);
+        if (! $node) {
+            return response()->json(['success' => false, 'message' => 'Invalid tenant key or sync token'], 401);
+        }
+        $activation = PlatformActivation::current();
+        if (! $activation?->activated) {
+            return response()->json(['success' => false, 'message' => 'The cloud deployment is not activated.'], 503);
+        }
+        $payload = array_merge($request->except(['store_code', 'deployment_id']),
+            $operation === 'request' ? ['store_code' => Store::whereKey($node->store_id)->value('code')] : []);
+        $result = $client->remoteSupport($activation, $operation, $payload);
+
+        return response()->json(['success' => $result['ok'], 'data' => $result['data'] ?? [], 'message' => $result['message'] ?? null],
+            $result['ok'] ? 200 : ((int) $result['status'] ?: 503));
     }
 
     /** Cloud. How many cloud writes the on-prem server still has to apply. */
@@ -282,10 +310,10 @@ class SyncController extends Controller
                 'tables' => $exported,
                 // The on-prem server continues the store's document numbers from here, so a newly connected
                 // server never re-issues a number the cloud already used (cloud failover bills use their own C series).
-                'counters' => \Illuminate\Support\Facades\DB::table('document_number_counters')->where('store_id', $node->store_id)
+                'counters' => DB::table('document_number_counters')->where('store_id', $node->store_id)
                     ->where('origin', 'normal')->get(['prefix', 'period', 'origin', 'last_seq']),
                 // The on-prem server starts its record numbers above every id used here (SyncIds).
-                'id_floors' => app(\App\Services\Platform\SyncIds::class)->floors(),
+                'id_floors' => app(SyncIds::class)->floors(),
             ],
         ]);
     }

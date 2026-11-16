@@ -84,6 +84,7 @@ Route::get('sync/catch-up-export', [SyncController::class, 'catchUpExport'])->mi
 Route::post('sync/register-node', [SyncController::class, 'registerNode'])->middleware('throttle:10,1,sync-register');
 Route::get('sync/users', [SyncController::class, 'users'])->middleware('throttle:60,1,sync-users');
 Route::post('sync/failover-session', [SyncController::class, 'failoverSession'])->middleware('throttle:120,1,sync-failover');
+Route::post('sync/remote-support/{operation}', [SyncController::class, 'remoteSupport'])->whereIn('operation', ['request', 'active', 'sessions', 'cancel', 'end'])->middleware('throttle:60,1,sync-remote-support');
 Route::post('sync/session-user', [SyncController::class, 'sessionUser'])->middleware('throttle:60,1,sync-session');
 Route::get('sync/outbound/count', [SyncController::class, 'outboundCount'])->middleware('throttle:120,1,sync-count');
 Route::get('sync/nodes', [SyncController::class, 'nodes'])->middleware('auth:sanctum');
