@@ -121,7 +121,7 @@ const buildPresetPermissions = (presetRole) => {
       setActionsForPath(permissions, getPagePath("Sales", "Cash Opening"), OPERATE_ACTIONS);
       setActionsForPath(permissions, getPagePath("Sales", "Cash Closing"), OPERATE_ACTIONS);
       setActionsForPath(permissions, getPagePath("Sales", "Settlement"), OPERATE_ACTIONS);
-      setActionsForPath(permissions, getPagePath("CRM", "Bill Print"), VIEW_ONLY_ACTIONS);
+      setActionsForPath(permissions, getPagePath("Sales", "Bill Reprint"), { view: true, add: true });
       setActionsForPath(permissions, getPagePath("CRM", "Customer"), OPERATE_ACTIONS);
       setActionsForPath(permissions, getPagePath("CRM", "Loyalty Management"), VIEW_ONLY_ACTIONS);
       setActionsForPath(permissions, getPagePath("CRM", "Gift Voucher"), VIEW_ONLY_ACTIONS);

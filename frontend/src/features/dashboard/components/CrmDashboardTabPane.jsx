@@ -24,7 +24,7 @@ const QUICK_ACTIONS = [
   { label: "+ New Customer Order", path: "/crm/customer-orders/new", bg: "#4f46e5", hoverBg: "#4338ca" },
   { label: "Customer Orders List", path: "/crm/customer-orders", bg: "#9333ea", hoverBg: "#7e22ce" },
   { label: "Loyalty Management", path: "/crm/loyalty-management", bg: "#d97706", hoverBg: "#b45309" },
-  { label: "Bill & Receipts Print", path: "/crm/bill-print", bg: "#059669", hoverBg: "#047857" },
+  { label: "Bill & Receipts Print", path: "/sales/bill-reprint?types=customer_order", bg: "#059669", hoverBg: "#047857" },
   { label: "Customer 360 Profiles", path: "/crm/customer", bg: "#334155", hoverBg: "#1e293b" },
 ];
 

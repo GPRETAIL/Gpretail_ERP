@@ -4,6 +4,7 @@ import {
   fetchSalesReceiptCustomization,
   getSalesReceiptPaperSize,
   getPosBillBarcodeValue,
+  getPosReturnBarcodeValue,
   buildReceiptCodeMarkupAsync,
   buildPaymentQrMarkup,
   DEFAULT_SALES_RECEIPT_MESSAGE,
@@ -181,6 +182,53 @@ export const buildSimplePosSaleReceiptData = async (
     }),
   };
 };
+
+
+/**
+ * The POS return receipt's data from a saved return alone (GET /pos-returns/{id}), like buildSimplePosSaleReceiptData:
+ * no POS Return screen state, so Bill Reprint prints a return exactly as the counter printed it.
+ */
+export const buildSimplePosReturnReceiptData = async (savedReturn, { cashierName, counterName, receiptCustomization, companyInfo } = {}) => {
+  const displayReturnNo = getPosReturnBarcodeValue(savedReturn?.display_return_no || savedReturn?.return_no || savedReturn?.id);
+  const items = (savedReturn?.items || []).map((item) => {
+    const qty = Math.max(0, toNum(item.quantity, 0));
+    const rate = Math.max(0, toNum(item.refund_price, 0));
+    const discountAmount = round2(Math.max(0, toNum(item.discount, 0)));
+    const taxAmount = round2(toNum(item.tax_amount, 0));
+    const amount = round2(Math.abs(toNum(item.subtotal, qty * rate - discountAmount + taxAmount)));
+    return {
+      name: String(item.product?.name || "-").trim(), qty, rate, taxPerc: Math.max(0, toNum(item.tax_rate, 0)),
+      taxName: item.tax_name || "", taxType: item.tax_type || "", baseAmount: round2(amount - taxAmount), taxAmount,
+      discountAmount, amount, code: item.product?.barcode || "",
+    };
+  });
+  const discount = round2(items.reduce((sum, item) => sum + item.discountAmount, 0));
+  const net = round2(-Math.abs(toNum(savedReturn?.total_refund, 0)));
+  const fields = receiptCustomization?.generalFields || {};
+
+  return {
+    storeName: requireReceiptStoreName(companyInfo),
+    storeAddress: companyInfo?.storeAddress || "", storePhone: companyInfo?.storePhone || "", storeGstNo: companyInfo?.storeGstNo || "",
+    billNo: displayReturnNo, billBarcode: displayReturnNo,
+    dateTime: savedReturn?.return_date || new Date().toISOString(),
+    cashierName: String(cashierName || savedReturn?.creator?.name || "").trim(),
+    counterName: String(counterName || "").trim(),
+    customerName: String(savedReturn?.customer?.name || "").trim() || WALKING_CUSTOMER_NAME,
+    sourceBillNo: savedReturn?.pos_sale?.bill_no || savedReturn?.source_bill_no || "",
+    returnReason: String(savedReturn?.return_reason_name || "").trim(),
+    paperSize: getSalesReceiptPaperSize(receiptCustomization?.receiptWidthInches),
+    items,
+    billAmount: round2(net - discount), discountAmount: discount,
+    taxAmount: round2(items.reduce((sum, item) => sum + item.taxAmount, 0)),
+    total: net, paidAmount: 0, receivedAmount: 0, balanceAmount: 0, paymentMethod: "Return",
+    generalTaxVisible: Boolean(fields.tax?.visible), generalPaidVisible: Boolean(fields.paid?.visible),
+    generalReceivedVisible: Boolean(fields.receivedAmount?.visible), generalBalanceVisible: Boolean(fields.balanceAmt?.visible),
+    generalYouSavedVisible: Boolean(fields.youSaved?.visible),
+    message: receiptCustomization?.thankYouMessage || DEFAULT_SALES_RECEIPT_MESSAGE,
+    returnCodeMarkup: await buildReceiptCodeMarkupAsync(displayReturnNo, receiptCustomization, "return"),
+  };
+};
+
 
 /**
  * Prints a just-saved POS sale's receipt using the exact same template builder, store

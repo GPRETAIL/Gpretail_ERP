@@ -48,7 +48,7 @@ import {
   shouldShowSalesReceiptDiscountColumn,
   wrapSalesReceiptText,
 } from "@/features/sales/customisation/utils/salesReceiptCustomisation";
-import { Box, Stack, Typography, TextField, Button, IconButton, Switch, Table, TableHead, TableBody, TableRow, TableCell, Dialog, DialogTitle, DialogContent, Tabs, Tab, MenuItem, alpha } from "@mui/material";
+import { Box, Stack, Typography, TextField, Button, IconButton, Switch, FormControlLabel, Table, TableHead, TableBody, TableRow, TableCell, Dialog, DialogTitle, DialogContent, Tabs, Tab, MenuItem, alpha } from "@mui/material";
 import { FIELD_HEIGHT, muiFieldSx } from "@/shared/theme/formControlSizes";
 
 const fieldLabelSx = { mb: 0.5, display: "block", fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" };
@@ -1226,6 +1226,25 @@ export default function SalesSettingsEditor({ section = "sales", onDirtyChange }
               <MenuItem value="supervisor">Supervisors and above</MenuItem>
               <MenuItem value="off">Off (scan every item)</MenuItem>
             </TextField>
+          </Box>
+
+          <Box sx={{ ...baseCardSx, p: 2.5 }}>
+            <Typography component="label" htmlFor="reprint-reason-after" sx={fieldLabelSx}>Bill reprint</Typography>
+            <Typography sx={{ fontSize: TYPE.small, color: "text.secondary", mb: 1.5 }}>
+              Sales &gt; Bill Reprint prints any bill again with a small &quot;DUPLICATE&quot; mark and logs who reprinted it. Cashiers reprint
+              today&apos;s bills; an earlier day&apos;s bill needs a supervisor&apos;s approval.
+            </Typography>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2} sx={{ alignItems: { sm: "center" } }}>
+              <TextField id="reprint-reason-after" select size="small" value={settings.reprintReasonAfter ?? 1} sx={{ minWidth: 260 }}
+                onChange={(e) => updateSetting({ reprintReasonAfter: Number(e.target.value) })}>
+                <MenuItem value={0}>Never ask for a reason</MenuItem>
+                <MenuItem value={1}>Ask for a reason from the 2nd reprint</MenuItem>
+                <MenuItem value={2}>Ask for a reason from the 3rd reprint</MenuItem>
+                <MenuItem value={3}>Ask for a reason from the 4th reprint</MenuItem>
+              </TextField>
+              <FormControlLabel control={<Switch checked={Boolean(settings.reprintCopyLabels)} onChange={(e) => updateSetting({ reprintCopyLabels: e.target.checked })} />}
+                label="Offer copy labels (Original for recipient, Duplicate for transporter, ...)" />
+            </Stack>
           </Box>
 
           <Box sx={{ ...baseCardSx, p: 2.5 }}><Typography sx={{ mb: 1 }}>Receipt sizes, layout, fonts, barcode and payment QR settings are managed in Print Formats.</Typography><Button href="/sales/receipt-formats?section=thermal" variant="outlined">Edit Receipt Format</Button></Box>

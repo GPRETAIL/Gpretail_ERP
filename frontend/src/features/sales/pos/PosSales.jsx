@@ -24,6 +24,8 @@ import useSearchGrid, { createSearchGridAdapter } from "@/shared/hooks/useSearch
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FileText, Pencil, PlusCircle, Printer, Save, Search, Trash2, UserRound } from "lucide-react";
 import { toast } from "react-toastify";
+import useBillReprint from "@/features/sales/bill-reprint/hooks/useBillReprint";
+import { reprintErrorMessage, reprintLastBill } from "@/features/sales/bill-reprint/utils/reprintRules";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import api from "@/shared/api/apiClient";
@@ -37,14 +39,13 @@ import Breadcrumbs from "@/shared/components/Breadcrumbs";
 import { usePrintContext } from "@/features/printing/context/PrintContext";
 import { Box, Stack, Typography, TextField, MenuItem, IconButton, Button, Checkbox, alpha } from "@mui/material";
 import { downloadHtmlAsPdf } from "@/features/printing/utils/htmlToPdf";
-import { buildPosSaleReceiptHtml, buildPosReturnReceiptHtml } from "@/features/printing/utils/posReceiptHtml";
+import { buildPosSaleReceiptHtml } from "@/features/printing/utils/posReceiptHtml";
 
 import { openNativeSelect } from "@/shared/utils/enterToNextField";
 import {
   canDeleteLatestPosDocument,
   formatLatestPosDocumentNumber,
   getLatestPosDocumentDeletePath,
-  getLatestPosDocumentFetchPath,
   loadLatestPosDocument,
 } from "./utils/posLatestDocument";
 import { assignSalesperson, cachedSalespeople, cacheSalespeople, findSalesperson, linesWithoutSalesperson } from "./utils/posSalesperson";
@@ -61,7 +62,6 @@ import {
   getSalesReceiptFontCss as _getSalesReceiptFontCss,
   getSalesReceiptRateWithTax as _getSalesReceiptRateWithTax,
   getPosBillBarcodeValue,
-  getPosReturnBarcodeValue,
   getSalesReceiptPaperSize,
   getSalesReceiptWidthCss as _getSalesReceiptWidthCss,
   loadSalesReceiptCustomization,
@@ -2108,112 +2108,13 @@ const PosSales = () => {
     browserPrintHtml(browserReceiptHtml, { copies: printCopies });
   };
 
-  const printReturnReceipt = async (savedReturn) => {
-    const detail = savedReturn?.items?.length
-      ? savedReturn
-      : (await api.get(`/pos-returns/${savedReturn.id}`).catch(() => ({ data: { data: null } }))).data?.data;
-    if (!detail) {
-      toast.error("Failed to load POS return for printing");
-      return;
-    }
-
-    const receiptCustomization = loadSalesReceiptCustomization(authUser?.company_id || "default");
-    const companyInfo = await fetchReceiptCompanyInfo(getReceiptCompanyId(detail, { company_id: authUser?.company_id }));
-    const displayReturnNo = getPosReturnBarcodeValue(
-      detail?.display_return_no || detail?.return_no || detail?.id
-    );
-    const sourceBillNo = detail?.pos_sale?.id ? formatSaleBillNo(detail.pos_sale.id) : "";
-    const storeName =
-      requireReceiptStoreName(companyInfo);
-    const cashierName = String(authUser?.name || authUser?.email || "").trim();
-    const receiptItems = (detail?.items || []).map((item) => {
-      const qty = Math.max(0, toNum(item.quantity, 0));
-      const rate = Math.max(0, toNum(item.refund_price, 0));
-      const taxPerc = Math.max(0, toNum(item.tax_rate, 0));
-      const discountAmount = round2(Math.max(0, toNum(item.discount, 0)));
-      const taxAmount = round2(toNum(item.tax_amount, 0));
-      const amount = round2(Math.abs(toNum(item.subtotal, qty * rate - discountAmount + taxAmount)));
-      const subtotal = round2(amount - taxAmount);
-
-      return {
-        name: String(item.product?.name || "-").trim(),
-        qty,
-        rate,
-        taxPerc,
-        taxName: item.tax_name || "",
-        taxType: item.tax_type || "",
-        baseAmount: subtotal,
-        taxAmount,
-        discountAmount,
-        amount,
-        code: item.product?.barcode || "",
-      };
-    });
-    const receiptTotalDiscount = round2(receiptItems.reduce((sum, item) => sum + toNum(item.discountAmount, 0), 0));
-    const receiptNetAmount = round2(-Math.abs(toNum(detail?.total_refund, 0)));
-    const receiptData = {
-      storeName,
-      storeAddress: companyInfo.storeAddress,
-      storePhone: companyInfo.storePhone,
-      storeGstNo: companyInfo.storeGstNo,
-      billNo: displayReturnNo,
-      billBarcode: displayReturnNo,
-      dateTime: detail?.return_date || new Date().toISOString(),
-      cashierName,
-      counterName: String(authUser?.counter_name || "").trim(),
-      customerName: String(detail?.customer?.name || "").trim() || WALKING_CUSTOMER_NAME,
-      sourceBillNo,
-      returnReason: String(detail?.return_reason_name || "").trim(),
-      paperSize: getSalesReceiptPaperSize(receiptCustomization.receiptWidthInches),
-      items: receiptItems,
-      billAmount: round2(receiptNetAmount - receiptTotalDiscount),
-      discountAmount: receiptTotalDiscount,
-      taxAmount: round2(receiptItems.reduce((sum, item) => sum + toNum(item.taxAmount, 0), 0)),
-      total: receiptNetAmount,
-      paidAmount: 0,
-      receivedAmount: 0,
-      balanceAmount: 0,
-      paymentMethod: "Return",
-      generalTaxVisible: Boolean(receiptCustomization.generalFields?.tax?.visible),
-      generalPaidVisible: Boolean(receiptCustomization.generalFields?.paid?.visible),
-      generalReceivedVisible: Boolean(receiptCustomization.generalFields?.receivedAmount?.visible),
-      generalBalanceVisible: Boolean(receiptCustomization.generalFields?.balanceAmt?.visible),
-      generalYouSavedVisible: Boolean(receiptCustomization.generalFields?.youSaved?.visible),
-      message: receiptCustomization.thankYouMessage || DEFAULT_SALES_RECEIPT_MESSAGE,
-      returnCodeMarkup: await buildReceiptCodeMarkupAsync(displayReturnNo, receiptCustomization, "return"),
-    };
-    const browserReceiptHtml = buildPosReturnReceiptHtml(receiptData, receiptCustomization);
-
-    const isReturnDirectPrint = receiptCustomization.printMode !== "browser";
-    if (isReturnDirectPrint) {
-      await queuePrintHtml(browserReceiptHtml, {
-        label: `POSReturn-${displayReturnNo}`,
-        docType: "pos_return_receipt",
-        copies: 1,
-        companyId: authUser?.company_id,
-        receiptData,
-      });
-      return;
-    }
-
-    browserPrintHtml(browserReceiptHtml, { copies: 1 });
-  };
-
+  const { print: reprintDocument } = useBillReprint();
   const handlePrintLatestPosDocument = async () => {
     if (!latestPosDocument?.id) return;
-    const fetchPath = getLatestPosDocumentFetchPath(latestPosDocument);
-    if (!fetchPath) return;
-
     try {
-      const res = await api.get(fetchPath);
-      const detail = res.data?.data || latestPosDocument;
-      if (latestPosDocument.type === "return") {
-        await printReturnReceipt(detail);
-        return;
-      }
-      await printSaleReceipt(detail);
+      await reprintLastBill({ api, print: reprintDocument, document: latestPosDocument });
     } catch (err) {
-      toast.error(err?.response?.data?.message || "Failed to print last document");
+      toast.error(reprintErrorMessage(err) || "Failed to print last document");
     }
   };
 

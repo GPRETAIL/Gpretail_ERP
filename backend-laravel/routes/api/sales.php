@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\V1\Sales\ApprovalController;
+use App\Http\Controllers\Api\V1\Sales\BillReprintController;
 use App\Http\Controllers\Api\V1\Sales\CashRegisterController;
 use App\Http\Controllers\Api\V1\Sales\DealerInvoiceController;
 use App\Http\Controllers\Api\V1\Sales\DealerReceiptController;
@@ -28,6 +29,12 @@ Route::get('incentives/options', [IncentiveController::class, 'options']);
 Route::get('incentives/explain', [IncentiveController::class, 'explain']);
 Route::get('incentives/report', [IncentiveController::class, 'report']);
 Route::post('incentives/approve', [IncentiveController::class, 'approve']);
+
+// Sales > Bill Reprint: search every sales document, and the reprint log.
+Route::get('bill-reprints', [BillReprintController::class, 'index']);
+Route::get('bill-reprints/{type}/{id}', [BillReprintController::class, 'show'])->whereNumber('id');
+Route::get('bill-reprints/{type}/{id}/history', [BillReprintController::class, 'history'])->whereNumber('id');
+Route::post('bill-reprints/{type}/{id}/log', [BillReprintController::class, 'log'])->whereNumber('id');
 
 // Sales > Dealer Receipt: dues collected from dealers against their invoices.
 Route::get('dealer-receipts/dealers', [DealerReceiptController::class, 'dealers']);
@@ -109,6 +116,7 @@ Route::get('dealer-invoices/next-bill-no', [DealerInvoiceController::class, 'nex
 Route::get('dealer-invoice-returns/next-return-no', [DealerInvoiceController::class, 'nextReturnNo']);
 Route::get('dealer-invoice-returns/grouped', [DealerInvoiceController::class, 'returnsGroupedSummary']);
 Route::get('dealer-invoice-returns', [DealerInvoiceController::class, 'returnsIndex']);
+Route::get('dealer-invoice-returns/{id}', [DealerInvoiceController::class, 'returnShow'])->whereNumber('id');
 Route::post('dealer-invoice-returns', [DealerInvoiceController::class, 'returnsStore']);
 Route::get('dealer-invoices/grouped', [DealerInvoiceController::class, 'groupedSummary']);
 // No update: an invoice is cancelled (DELETE restores its stock) and re-entered, never edited in place.

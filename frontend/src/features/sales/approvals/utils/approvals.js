@@ -7,6 +7,7 @@ export const APPROVAL_REASONS = {
   wrong_item: "Wrong item sold",
   customer_complaint: "Customer complaint",
   item_missing: "Item missing / not available",
+  bill_lost: "Customer lost the bill / needs a copy",
   other: "Other",
 };
 

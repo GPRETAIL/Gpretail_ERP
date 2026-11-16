@@ -108,7 +108,7 @@ const CustomerForm = lazy(() => import("@/features/crm/CustomerForm"));
 const CustomerProfile = lazy(() => import("@/features/crm/CustomerProfile"));
 const CustomerOrderList = lazy(() => import("@/features/crm/CustomerOrderList"));
 const CustomerOrderForm = lazy(() => import("@/features/crm/CustomerOrderForm"));
-const BillPrint = lazy(() => import("@/features/crm/BillPrint"));
+const BillReprint = lazy(() => import("@/features/sales/bill-reprint/BillReprint"));
 const LoyaltyManagement = lazy(() => import("@/features/crm/LoyaltyManagement"));
 const PosSales = lazy(() => import("@/features/sales/pos/PosSales"));
 const PosReturn = lazy(() => import("@/features/sales/pos/PosReturn"));
@@ -265,13 +265,15 @@ export const protectedLayoutRoutes = [
   { path: "/crm/customer-orders", render: () => <CustomerOrderList /> },
   { path: "/crm/customer-orders/new", render: () => <CustomerOrderForm /> },
   { path: "/crm/customer-orders/:id", render: () => <CustomerOrderForm /> },
-  { path: "/crm/bill-print", render: () => <BillPrint /> },
+  // CRM > Bill Print became Sales > Bill Reprint (every sales document, not only customer orders).
+  { path: "/crm/bill-print", render: () => <Navigate to="/sales/bill-reprint?types=customer_order" replace /> },
   { path: "/crm/loyalty-management", render: () => <LoyaltyManagement /> },
   { path: "/sales/pos-sales", render: () => <PosSales /> },
   { path: "/sales/pos-sales-return", render: () => <PosReturn /> },
   { path: "/sales/dealer-invoice", render: () => <DealerInvoice /> },
   { path: "/sales/dealer-invoice-return", render: () => <DealerInvoiceReturn /> },
   { path: "/sales/dealer-receipt", render: () => <DealerReceipt /> },
+  { path: "/sales/bill-reprint", render: () => <BillReprint /> },
   { path: "/sales/sales-on-approval", render: () => <SalesOnApproval /> },
   { path: "/sales/stock-item-locator", render: () => <ItemLocator endpoint="/item-locator" /> },
   { path: "/sales/approval-inbox", render: () => <ApprovalInbox /> },

@@ -3,11 +3,12 @@ import { useState } from "react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 
-const mocks = vi.hoisted(() => ({ get: vi.fn(), post: vi.fn(), del: vi.fn() }));
+const mocks = vi.hoisted(() => ({ get: vi.fn(), post: vi.fn(), del: vi.fn(), printHtml: vi.fn() }));
 vi.mock("@/shared/api/apiClient", () => ({ default: { get: mocks.get, post: mocks.post, delete: mocks.del } }));
 vi.mock("react-redux", () => ({ useSelector: (selector) => selector({ auth: { user: { store_id: 1, company_name: "Coffee 1" } } }) }));
 vi.mock("@/shared/utils/tablePreferences", () => ({ fetchTablePreference: vi.fn().mockResolvedValue(null), saveTablePreference: vi.fn() }));
 vi.mock("react-toastify", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
+vi.mock("@/features/printing/context/PrintContext", () => ({ usePrintContext: () => ({ printHtml: mocks.printHtml, jobs: [], STATUS: { QUEUED: "queued", PRINTING: "printing", DONE: "done" } }) }));
 import DealerPaymentBlock from "@/features/sales/dealer/components/DealerPaymentBlock";
 import DealerReceipt from "@/features/sales/dealer/DealerReceipt";
 import { allocateOldestFirst, paymentsPayload } from "@/features/sales/dealer/utils/dealerPayments";

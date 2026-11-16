@@ -30,6 +30,8 @@ const describe = (row) => (row.action === "pos_discount"
     ? `Credit sale ₹${money(row.amount)}`
     : row.action === "delivery_short"
       ? `Short delivery: ${Number(row.payload?.short_units || 0)} item(s) on bill ${row.payload?.bill_no || "-"}${row.payload?.reason ? ` · ${row.payload.reason}` : ""}`
+    : row.action === "bill_reprint"
+      ? `Reprint ${row.payload?.doc_label || "bill"} ${row.payload?.bill_no || "-"} of ${row.payload?.bill_date || "-"}${row.payload?.reason ? ` · ${row.payload.reason}` : ""}`
     : `Refund ₹${money(row.amount)}${row.payload?.without_receipt ? " · no receipt" : ""}`);
 
 function Inbox() {

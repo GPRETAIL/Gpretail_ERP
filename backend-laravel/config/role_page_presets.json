@@ -144,6 +144,12 @@
       "edit": true,
       "delete": true
     },
+    "/sales/bill-reprint": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
     "/crm/bill-print": {
       "view": true,
       "add": true,
@@ -674,6 +680,12 @@
       "edit": true,
       "delete": false
     },
+    "/sales/bill-reprint": {
+      "view": true,
+      "add": true,
+      "edit": false,
+      "delete": false
+    },
     "/crm/bill-print": {
       "view": true,
       "add": false,
@@ -788,6 +800,12 @@
       "view": true,
       "add": true,
       "edit": true,
+      "delete": false
+    },
+    "/sales/bill-reprint": {
+      "view": true,
+      "add": true,
+      "edit": false,
       "delete": false
     },
     "/crm/bill-print": {

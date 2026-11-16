@@ -151,7 +151,6 @@ export const navItems = [
         path: "/crm/customer-orders",
         icon: DocumentTextIcon,
       },
-      { name: "Bill Print", path: "/crm/bill-print", icon: DocumentTextIcon },
       {
         name: "Loyalty Management",
         path: "/crm/loyalty-management",
@@ -219,6 +218,7 @@ export const navItems = [
         path: "/sales/dealer-receipt",
         icon: BanknotesIcon,
       },
+      { name: "Bill Reprint", path: "/sales/bill-reprint", icon: PrinterIcon },
       {
         name: "Touch Sales",
         path: "/sales/touch-sales",

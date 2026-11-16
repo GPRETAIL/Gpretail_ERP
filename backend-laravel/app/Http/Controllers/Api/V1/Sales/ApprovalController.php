@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\Hash;
  */
 class ApprovalController extends Controller
 {
-    public const REASONS = ['damaged_item', 'price_match', 'loyal_customer', 'bulk_purchase', 'manager_discretion', 'wrong_item', 'customer_complaint', 'item_missing', 'other'];
+    public const REASONS = ['damaged_item', 'price_match', 'loyal_customer', 'bulk_purchase', 'manager_discretion', 'wrong_item', 'customer_complaint', 'item_missing', 'bill_lost', 'other'];
 
     public function __construct(private ApprovalService $approvals) {}
 

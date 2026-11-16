@@ -22,7 +22,7 @@ use Illuminate\Validation\ValidationException;
  */
 class ApprovalService
 {
-    public const ACTIONS = ['pos_discount', 'pos_refund', 'pos_credit', 'delivery_short'];
+    public const ACTIONS = ['pos_discount', 'pos_refund', 'pos_credit', 'delivery_short', 'bill_reprint'];
 
     /** Roles that approve on their own authority (and so hand over a short delivery without asking anyone). */
     public const APPROVER_ROLES = ['supervisor', 'manager', 'admin', 'super_admin'];
@@ -170,6 +170,23 @@ class ApprovalService
         return $approval;
     }
 
+    /**
+     * Sales > Bill Reprint: a cashier reprinting a document from an earlier day. A supervisor or above reprints on
+     * their own; anyone else needs a supervisor's approval (PIN or request).
+     */
+    public function authorizeReprint(User $user, int $storeId, array $details, ?string $token): ?ApprovalRequest
+    {
+        if (in_array($user->role, self::APPROVER_ROLES, true)) {
+            return null;
+        }
+        $approval = $this->consumable($token, $storeId, 'bill_reprint', $user);
+        if (! $approval) {
+            throw new ApprovalRequiredException('bill_reprint', $details);
+        }
+
+        return $approval;
+    }
+
     /** Whether $approver may approve this request on their own authority. */
     public function canDecide(User $approver, ApprovalRequest $request): bool
     {
@@ -184,7 +201,7 @@ class ApprovalService
         return match ($request->action) {
             'pos_discount' => $limit['max_discount_percent'] === null || (float) $request->requested_percent <= $limit['max_discount_percent'] + 0.001,
             'pos_credit' => $limit['max_credit_amount'] === null || (float) $request->amount <= $limit['max_credit_amount'] + 0.001,
-            'delivery_short' => true,
+            'delivery_short', 'bill_reprint' => true,
             default => ($limit['max_refund_amount'] === null || (float) $request->amount <= $limit['max_refund_amount'] + 0.001)
                 && (! ($request->payload['without_receipt'] ?? false) || $limit['allow_no_receipt_refund']),
         };

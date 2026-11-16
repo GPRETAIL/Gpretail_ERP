@@ -159,6 +159,16 @@ class DealerInvoiceController extends Controller
         return response()->json(['success' => true, 'data' => $this->present($invoice)]);
     }
 
+    public function returnShow($id)
+    {
+        $return = DealerInvoiceReturn::with(['customer', 'items.product', 'creator', 'dealerInvoice:id,invoice_no'])->find($id);
+        if (! $return) {
+            return response()->json(['success' => false, 'message' => 'Dealer return not found'], 404);
+        }
+
+        return response()->json(['success' => true, 'data' => $this->present($return)]);
+    }
+
     public function store(Request $request)
     {
         return $this->saveDocument($request, false);

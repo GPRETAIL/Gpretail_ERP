@@ -2,8 +2,7 @@ import { TYPE } from "@/shared/theme/typeScale";
 import { browserPrintHtml } from "./utils/posSalesUtils";
 import ApprovalDialog from "@/features/sales/approvals/components/ApprovalDialog";
 import { approvalRequirementFrom, isApprovalRequired } from "@/features/sales/approvals/utils/approvals";
-import { buildPosSaleReceiptHtml, buildPosReturnReceiptHtml } from "@/features/printing/utils/posReceiptHtml";
-import { getSaleReceiptPaymentMethod } from "./utils/posSalesUtils";
+import { buildPosReturnReceiptHtml } from "@/features/printing/utils/posReceiptHtml";
 import { formatSaleBillNo } from "./utils/posBillNumbers";
 import PageHeader from "@/shared/components/PageHeader";
 import useStoreDisplayName from "@/shared/hooks/useStoreDisplayName";
@@ -13,6 +12,8 @@ import useSearchGrid, { createSearchGridAdapter } from "@/shared/hooks/useSearch
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Printer, Save, Search, Trash2 } from "lucide-react";
 import { toast } from "react-toastify";
+import useBillReprint from "@/features/sales/bill-reprint/hooks/useBillReprint";
+import { reprintErrorMessage, reprintLastBill } from "@/features/sales/bill-reprint/utils/reprintRules";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import api from "@/shared/api/apiClient";
@@ -26,14 +27,11 @@ import {
   canDeleteLatestPosDocument,
   formatLatestPosDocumentNumber,
   getLatestPosDocumentDeletePath,
-  getLatestPosDocumentFetchPath,
   loadLatestPosDocument,
 } from "./utils/posLatestDocument";
 import {
-  buildPaymentQrMarkup,
   buildReceiptCodeMarkupAsync,
   DEFAULT_SALES_RECEIPT_MESSAGE,
-  getPosBillBarcodeValue,
   getPosReturnBarcodeValue,
   getSalesReceiptPaperSize,
   loadSalesReceiptCustomization,
@@ -596,143 +594,13 @@ const PosReturn = () => {
     [authUser?.company_id, authUser?.counter_name, authUser?.email, authUser?.name, newCustomer.name, now, queuePrintHtml, returnNo, returnReasons, selectedReturnReasonId, sourceSale]
   );
 
-  const printSaleReceipt = useCallback(
-    async (savedSale) => {
-      const detail = savedSale?.items?.length
-        ? savedSale
-        : (await api.get(`/pos-sales/${savedSale.id}`).catch(() => ({ data: { data: null } }))).data?.data;
-      if (!detail) {
-        toast.error("Failed to load POS sale for printing");
-        return;
-      }
-
-      const receiptCustomization = loadSalesReceiptCustomization(authUser?.company_id || "default");
-      const appliedReturnId = toNum(detail?.applied_pos_return_id ?? detail?.appliedPosReturnId, 0);
-      const [companyInfo, linkedReturnRes] = await Promise.all([
-        fetchReceiptCompanyInfo(getReceiptCompanyId(detail, { company_id: authUser?.company_id })),
-        appliedReturnId
-          ? api.get(`/pos-returns/${appliedReturnId}`).catch(() => ({ data: { data: null } }))
-          : Promise.resolve({ data: { data: null } }),
-      ]);
-      const linkedReturn = linkedReturnRes?.data?.data || null;
-      const displayBillNo = getPosBillBarcodeValue(detail?.bill_no || detail?.id);
-      const storeName =
-        requireReceiptStoreName(companyInfo);
-      const cashierName = String(authUser?.name || authUser?.email || "").trim();
-      const allSalesMen = (detail?.items || []).map((item) => String(item.sales_man_name || "").trim());
-      const namedSalesMen = allSalesMen.filter(Boolean);
-      const uniqueSalesMen = [...new Set(namedSalesMen)];
-      const commonSalesMan =
-        namedSalesMen.length === (detail?.items || []).length && uniqueSalesMen.length === 1 ? uniqueSalesMen[0] : "";
-      const receiptItems = (detail?.items || []).map((item) => {
-        const qty = Math.max(0, toNum(item.quantity, 0));
-        const rate = Math.max(0, toNum(item.selling_price, 0));
-        const taxPerc = Math.max(0, toNum(item.tax_rate, 0));
-        const discountAmount = round2(Math.max(0, toNum(item.discount, 0)));
-        const taxAmount = round2(toNum(item.tax_amount, 0));
-        const amount = round2(toNum(item.subtotal, qty * rate - discountAmount + taxAmount));
-        const subtotal = round2(amount - taxAmount);
-        const salesManName = String(item.sales_man_name || "").trim();
-        const baseName = String(item.product?.name || item.barcode?.product_name || "-").trim();
-        const itemName = commonSalesMan || !salesManName ? baseName : `${baseName} / SM: ${salesManName}`;
-
-        return {
-          name: itemName,
-          qty,
-          rate,
-          taxPerc,
-          taxName: item.tax_name || "",
-          taxType: item.tax_type || "",
-          baseAmount: subtotal,
-          taxAmount,
-          discountAmount,
-          amount,
-          code: item.barcode?.barcode || item.product?.barcode || "",
-        };
-      });
-      const receiptTotalDiscount = Math.max(0, toNum(detail?.discount_amount, 0));
-      const receiptNetAmount = round2(toNum(detail?.grand_total, 0));
-      const receiptBillAmount = round2(toNum(detail?.subtotal, 0) + receiptTotalDiscount);
-      const receiptTaxAmount = round2(toNum(detail?.tax_amount, 0));
-      const receiptReturnItems = (linkedReturn?.items || []).map((item) => ({
-        name: String(item.product?.name || "-").trim(),
-        qty: Math.max(0, toNum(item.quantity, 0)),
-        amount: Math.abs(toNum(item.subtotal, 0)),
-      }));
-      const receiptReceivedAmount = Math.max(0, toNum(detail?.paid_amount, 0));
-      const receiptData = {
-        storeName,
-        storeAddress: companyInfo.storeAddress,
-        storePhone: companyInfo.storePhone,
-        storeGstNo: companyInfo.storeGstNo,
-        billNo: displayBillNo,
-        billBarcode: displayBillNo,
-        dateTime: detail?.sale_date || now.toISOString(),
-        cashierName,
-        counterName: String(authUser?.counter_name || "").trim(),
-        customerName: String(detail?.customer?.name || "").trim() || WALKING_CUSTOMER_NAME,
-        paperSize: getSalesReceiptPaperSize(receiptCustomization.receiptWidthInches),
-        items: receiptItems,
-        billAmount: receiptBillAmount,
-        discountAmount: receiptTotalDiscount,
-        taxAmount: receiptTaxAmount,
-        refundAmount: Math.max(0, toNum(detail?.return_refund_amount, 0)),
-        appliedReturnNo: linkedReturn?.display_return_no || detail?.applied_return_no || "",
-        returnItems: receiptReturnItems,
-        total: receiptNetAmount,
-        paidAmount: receiptReceivedAmount,
-        receivedAmount: receiptReceivedAmount,
-        balanceAmount: Math.max(0, receiptNetAmount - receiptReceivedAmount),
-        changeAmount: Math.max(0, toNum(detail?.change_amount, 0)),
-        paymentMethod: getSaleReceiptPaymentMethod(detail),
-        generalTaxVisible: Boolean(receiptCustomization.generalFields?.tax?.visible),
-        generalPaidVisible: Boolean(receiptCustomization.generalFields?.paid?.visible),
-        generalReceivedVisible: Boolean(receiptCustomization.generalFields?.receivedAmount?.visible),
-        generalBalanceVisible: Boolean(receiptCustomization.generalFields?.balanceAmt?.visible),
-        generalYouSavedVisible: Boolean(receiptCustomization.generalFields?.youSaved?.visible),
-        footerNote: commonSalesMan ? `Salesman: ${commonSalesMan}` : "",
-        message: receiptCustomization.thankYouMessage || DEFAULT_SALES_RECEIPT_MESSAGE,
-        billCodeMarkup: await buildReceiptCodeMarkupAsync(displayBillNo, receiptCustomization, "bill"),
-        paymentQrMarkup: await buildPaymentQrMarkup(receiptCustomization, {
-          billAmount: receiptNetAmount,
-          billNo: displayBillNo,
-          storeName,
-        }),
-      };
-      const browserReceiptHtml = buildPosSaleReceiptHtml(receiptData, receiptCustomization);
-      const isDirectPrint = receiptCustomization.printMode !== "browser";
-
-      if (isDirectPrint) {
-        await queuePrintHtml(browserReceiptHtml, {
-          label: `POSSale-${displayBillNo}`,
-          docType: "pos_sale_receipt",
-          copies: 1,
-          companyId: authUser?.company_id,
-          receiptData,
-        });
-        return;
-      }
-
-      browserPrintHtml(browserReceiptHtml, { copies: 1 });
-    },
-    [authUser?.company_id, authUser?.counter_name, authUser?.email, authUser?.name, now, queuePrintHtml]
-  );
-
+  const { print: reprintDocument } = useBillReprint();
   const handlePrintLatestPosDocument = async () => {
     if (!latestPosDocument?.id) return;
-    const fetchPath = getLatestPosDocumentFetchPath(latestPosDocument);
-    if (!fetchPath) return;
-
     try {
-      const res = await api.get(fetchPath);
-      const detail = res.data?.data || latestPosDocument;
-      if (latestPosDocument.type === "return") {
-        await printReturnReceipt(detail);
-        return;
-      }
-      await printSaleReceipt(detail);
+      await reprintLastBill({ api, print: reprintDocument, document: latestPosDocument });
     } catch (err) {
-      toast.error(err?.response?.data?.message || "Failed to print last document");
+      toast.error(reprintErrorMessage(err) || "Failed to print last document");
     }
   };
 

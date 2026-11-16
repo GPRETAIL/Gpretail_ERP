@@ -297,6 +297,8 @@ export const DEFAULT_SALES_RECEIPT_CUSTOMIZATION = {
   deliveryVerifyAll: "everyone",
   /** Bills made after a counter's cash closing: "off" (today), "auto" (next day) or "manual" (supervisor picks). */
   billingDateAfterClosing: "off",
+  reprintReasonAfter: 1,
+  reprintCopyLabels: false,
   /** Printed POS receipt copies when using the printer queue (1–3). */
   posReceiptPrintCopies: 1,
   generalFields: DEFAULT_SALES_RECEIPT_GENERAL_FIELDS,
@@ -562,6 +564,8 @@ export const normalizeSalesReceiptCustomization = (value = {}) => {
     posSalespersonScan: value.posSalespersonScan === true,
     deliveryVerifyAll: ["off", "supervisor", "everyone"].includes(value.deliveryVerifyAll) ? value.deliveryVerifyAll : "everyone",
     billingDateAfterClosing: ["off", "auto", "manual"].includes(value.billingDateAfterClosing) ? value.billingDateAfterClosing : "off",
+    reprintReasonAfter: Number.isFinite(Number(value.reprintReasonAfter)) ? Math.min(20, Math.max(0, Math.trunc(Number(value.reprintReasonAfter)))) : 1,
+    reprintCopyLabels: Boolean(value.reprintCopyLabels),
     posReceiptPrintCopies: normalizePosReceiptPrintCopies(value.posReceiptPrintCopies),
     generalFields,
     taxFields,

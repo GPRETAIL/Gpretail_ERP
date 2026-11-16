@@ -235,6 +235,8 @@ const buildCode39Bytes = (value) => {
 // away here rather than half-reproduced. See graceful-leaping-comet.md's "Scope decision" section.
 export const isEscposReceiptEligible = (receiptData, customization) => {
   if (!receiptData || !customization) return false;
+  // A reprint carries its DUPLICATE mark in the HTML, so it always prints as the rendered image.
+  if (receiptData.reprint) return false;
 
   const isA4 =
     String(receiptData?.paperSize || "").toUpperCase() === "A4"

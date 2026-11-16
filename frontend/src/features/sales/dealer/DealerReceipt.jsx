@@ -12,25 +12,11 @@ import SearchGridPanel from "@/shared/components/SearchGridPanel";
 import useSearchGrid from "@/shared/hooks/useSearchGrid";
 import { masterSearchAreaSx } from "@/shared/theme/erpUi";
 import { PAYMENT_MODES, allocateOldestFirst, modeLabel } from "@/features/sales/dealer/utils/dealerPayments";
+import useBillReprint from "@/features/sales/bill-reprint/hooks/useBillReprint";
+import { quickReprint, reprintErrorMessage } from "@/features/sales/bill-reprint/utils/reprintRules";
 
 const money = (v) => Number(v || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const today = () => new Date().toLocaleDateString("en-CA");
-const escapeHtml = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-
-
-const printReceipt = (receipt, storeName) => {
-  const win = window.open("", "_blank", "width=480,height=640");
-  if (!win) { toast.error("Allow pop-ups to print the receipt."); return; }
-  const rows = (receipt.allocations || []).map((a) => `<tr><td>${escapeHtml(a.bill_no)}</td><td style="text-align:right">${money(a.amount)}</td></tr>`).join("");
-  win.document.write(`<!doctype html><html><head><title>Receipt ${escapeHtml(receipt.bill_no)}</title><style>body{font-family:Arial,sans-serif;font-size:13px;padding:16px}h2{margin:0 0 4px}table{width:100%;border-collapse:collapse;margin-top:8px}td,th{border-bottom:1px solid #ddd;padding:4px}</style></head><body>
-<h2>${escapeHtml(storeName)}</h2><div>Receipt <b>${escapeHtml(receipt.bill_no)}</b> · ${escapeHtml(receipt.receipt_date)}</div>
-<p>Received from <b>${escapeHtml(receipt.customer_name)}</b><br/>Amount <b>₹${money(receipt.amount)}</b> by ${escapeHtml(modeLabel(receipt.mode))}${receipt.reference_no ? ` (${escapeHtml(receipt.reference_no)})` : ""}</p>
-<table><thead><tr><th style="text-align:left">Invoice</th><th style="text-align:right">Paid</th></tr></thead><tbody>${rows}</tbody></table>
-${receipt.notes ? `<p>${escapeHtml(receipt.notes)}</p>` : ""}</body></html>`);
-  win.document.close();
-  win.addEventListener("load", () => { win.focus(); win.print(); }, { once: true });
-};
-
 /**
  * Sales > Dealer Receipt: collect what a dealer owes on their dealer invoices. The amount is split across their open
  * invoices oldest first (editable); Search shows the receipts, which can be printed or cancelled.
@@ -50,7 +36,7 @@ export default function DealerReceipt() {
   const [listLoading, setListLoading] = useState(true);
   const grid = useSearchGrid({ sourceRows: rows, paginationMode: "client", scopeKey: String(authUser?.store_id || "") });
   const { page, limit, setPage, setLimit } = grid;
-  const storeName = String(authUser?.company_name || "").trim() || "Store";
+  const { print: printDocument } = useBillReprint();
 
   const loadDealers = useCallback(async () => {
     try {
@@ -115,7 +101,9 @@ export default function DealerReceipt() {
       });
       const receipt = res.data?.data;
       toast.success(`Receipt ${receipt?.bill_no} saved.`);
-      printReceipt(receipt, storeName);
+      // The first print of a new receipt: the store's A4 receipt layout, no DUPLICATE mark.
+      printDocument({ type: "dealer_receipt", id: receipt.id, store_id: receipt.store_id || authUser?.store_id, number: receipt.bill_no }, { original: true })
+        .catch((err) => toast.error(reprintErrorMessage(err)));
       setForm({ amount: "", mode: "CASH", reference_no: "", cheque_date: "", receipt_date: today(), notes: "" });
       setDealer(null);
       setInvoices([]);
@@ -143,10 +131,10 @@ export default function DealerReceipt() {
 
   const reprint = async (row) => {
     try {
-      const res = await api.get(`/dealer-receipts/${row.id}`);
-      printReceipt(res.data?.data, storeName);
+      await quickReprint({ api, print: printDocument, type: "dealer_receipt", id: row.id, reason: "Reprinted from Dealer Receipt" });
+      toast.success(`Reprinted ${row.bill_no}.`);
     } catch (err) {
-      toast.error(err?.response?.data?.message || "Could not load the receipt.");
+      toast.error(reprintErrorMessage(err));
     }
   };
 
