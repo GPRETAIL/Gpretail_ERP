@@ -6,16 +6,20 @@ use App\Models\PlatformActivation;
 use App\Models\Store;
 use App\Models\User;
 use App\Services\Accounting\LedgerPoster;
+use App\Services\Auth\LoginSessions;
 use App\Services\Notifications\RealtimeService;
 use App\Services\Platform\SyncIds;
 use App\Services\Tenancy\StoreModelScope;
 use App\Services\Tenancy\StoreSchema;
+use App\Support\Database\RetryingMariaDbConnector;
+use App\Support\Database\RetryingMySqlConnector;
 use App\Support\RequestMemo;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Events\ConnectionEstablished;
 use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Foundation\Http\Events\RequestHandled;
+use Illuminate\Http\Middleware\TrustProxies;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
@@ -23,6 +27,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
+use Laravel\Sanctum\PersonalAccessToken;
 use Laravel\Sanctum\Sanctum;
 
 class AppServiceProvider extends ServiceProvider
@@ -36,6 +41,9 @@ class AppServiceProvider extends ServiceProvider
         $this->app->scoped(RealtimeService::class);
         $this->app->scoped(RequestMemo::class);
         $this->app->scoped(SyncIds::class);
+        // Ride out the host's momentary connection-rate refusals instead of failing the request (see the connector).
+        $this->app->bind('db.connector.mysql', RetryingMySqlConnector::class);
+        $this->app->bind('db.connector.mariadb', RetryingMariaDbConnector::class);
     }
 
     /**
@@ -46,11 +54,11 @@ class AppServiceProvider extends ServiceProvider
         // On-prem, the counters reach this server through the Vite proxy on the same machine. Trusting only that
         // local proxy's X-Forwarded-For gives each counter its own address for sign-in limits and logs.
         if (config('sync.node_role') === 'local') {
-            \Illuminate\Http\Middleware\TrustProxies::at(['127.0.0.1', '::1']);
+            TrustProxies::at(['127.0.0.1', '::1']);
         }
 
         // Login Sessions: every sign-in records its device, IP and store, whichever screen created it.
-        \Laravel\Sanctum\PersonalAccessToken::creating(fn ($token) => \App\Services\Auth\LoginSessions::stamp($token));
+        PersonalAccessToken::creating(fn ($token) => LoginSessions::stamp($token));
 
         // Per-request lookups (RequestMemo) are dropped after each request and when what they read changes.
         Event::listen(RequestHandled::class, fn () => $this->app->make(RequestMemo::class)->flush());

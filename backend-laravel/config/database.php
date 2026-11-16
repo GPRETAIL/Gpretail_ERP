@@ -61,6 +61,9 @@ return [
             'engine' => null,
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 Mysql::ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+                // Reuse the connection across requests: Hostinger refuses more than 20 new MySQL connections a second
+                // per account ("[2002] Operation not permitted"). On by default in production, DB_PERSISTENT overrides.
+                PDO::ATTR_PERSISTENT => (bool) env('DB_PERSISTENT', env('APP_ENV') === 'production'),
             ]) : [],
         ],
 
@@ -81,6 +84,9 @@ return [
             'engine' => null,
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 Mysql::ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+                // Reuse the connection across requests: Hostinger refuses more than 20 new MySQL connections a second
+                // per account ("[2002] Operation not permitted"). On by default in production, DB_PERSISTENT overrides.
+                PDO::ATTR_PERSISTENT => (bool) env('DB_PERSISTENT', env('APP_ENV') === 'production'),
             ]) : [],
         ],
 

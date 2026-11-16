@@ -93,6 +93,9 @@ class SyncIds
         $offset = $this->seriesOffset($connection);
         if ($offset > 0) {
             $this->run($connection, 'SET SESSION auto_increment_increment='.self::STEP.', auto_increment_offset='.$offset);
+        } elseif ($this->supported($connection) && $connection->getPdo()->getAttribute(\PDO::ATTR_PERSISTENT)) {
+            // A reused (persistent) connection may still carry another request's replay series: back to plain numbering.
+            $this->run($connection, 'SET SESSION auto_increment_increment=1, auto_increment_offset=1');
         }
     }
 
