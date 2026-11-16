@@ -430,35 +430,41 @@ class AuthController extends Controller
             'message' => $node->sync_paused ? 'Sync paused. Writes made here wait until you resume it.' : 'Sync resumed.']);
     }
 
-    /** On-prem only: sync with the cloud now instead of waiting for the 15-second job. */
+    /** On-prem only: sync with the cloud now instead of waiting for the 15-second job (runs in the background). */
     public function syncNow(Request $request)
     {
-        $node = $this->onPremNodeForAdmin($request);
-        $result = app(SyncCycleService::class)->run(now: true);
-        if (! ($result['ran'] ?? false)) {
-            return response()->json(['success' => false, 'message' => $result['reason'] ?? 'The sync did not run.'], ($result['busy'] ?? false) ? 409 : 422);
-        }
-        $pushed = $result['pushed'];
-        $pulled = $result['pulled'];
-        $message = "Sent {$pushed['sent']} and received {$pulled['applied']} change(s).";
-        if ($pushed['failed'] || $pulled['failed'] || $pushed['stopped_early']) {
-            $message .= $pushed['stopped_early'] ? ' The cloud did not answer; waiting changes stay queued.' : '';
-            $message .= $pushed['failed'] ? " {$pushed['failed']} change(s) were refused by the cloud (see the list below)." : '';
-            $message .= $pulled['failed'] ? " {$pulled['failed']} cloud change(s) could not be applied here." : '';
-        }
-
-        return response()->json(['success' => true, 'message' => $message, 'data' => $this->presentLocalServerNode($node->refresh(), $node->store_id)]);
+        return $this->startManualSync($request, 'sync');
     }
 
-    /** On-prem only: copy staff accounts and the store's data from the cloud again. */
-    public function recopyFromCloud(Request $request, LocalNodeRegistration $registration)
+    /** On-prem only: copy the store's data from the cloud again (runs in the background). */
+    public function recopyFromCloud(Request $request)
+    {
+        return $this->startManualSync($request, 'recopy');
+    }
+
+    private function startManualSync(Request $request, string $kind)
     {
         $node = $this->onPremNodeForAdmin($request);
-        @set_time_limit(900);
-        $copied = $registration->recopy($node);
+        $manual = app(\App\Services\Platform\ManualSync::class);
+        if (config('sync.manual_inline')) {
+            $result = $manual->run($kind, $node);
+            if (! $result['ok'] && ($result['busy'] ?? false)) {
+                return response()->json(['success' => false, 'message' => $result['message']], 409);
+            }
+            if (! $result['ok'] && ! str_starts_with($result['message'], 'Sent ')) {
+                return response()->json(['success' => false, 'message' => $result['message']], 422);
+            }
 
-        return response()->json(['success' => true, 'message' => "Copied from the cloud: {$copied['rows']} record(s), ".($copied['users'] ?? 0).' staff account(s).',
-            'data' => $this->presentLocalServerNode($node->refresh(), $node->store_id)]);
+            return response()->json(['success' => true, 'message' => $result['message'], 'data' => $this->presentLocalServerNode($node->refresh(), $node->store_id)]);
+        }
+        if (! $manual->start($kind)) {
+            return response()->json(['success' => false, 'message' => 'A sync is already running. Try again in a moment.'], 409);
+        }
+
+        return response()->json(['success' => true, 'message' => $kind === 'recopy'
+            ? 'Re-copy started. The footer shows its progress; this page shows the result when it ends.'
+            : 'Sync started. The footer shows its progress; this page shows the result when it ends.',
+            'data' => $this->presentLocalServerNode($node->refresh(), $node->store_id)], 202);
     }
 
     /** On-prem only: what the sync is doing right now, for the footer. Cheap; counters ask every few seconds. */
@@ -604,6 +610,7 @@ class AuthController extends Controller
             'users_synced' => (int) $node->users_synced,
             'id_slot' => $node->id_slot,
             'sync_paused' => (bool) $node->sync_paused,
+            'manual_sync' => \App\Services\Platform\ManualSync::lastResult(),
             'id_drift_count' => (int) $node->id_drift_count,
             'last_heartbeat_at' => optional($node->last_heartbeat_at)->toIso8601String(),
             'handshake' => $onPrem && $node->enabled ? app(LocalNodeRegistration::class)->handshakeState($node) : null,

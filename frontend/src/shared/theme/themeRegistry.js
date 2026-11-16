@@ -258,7 +258,19 @@ function resolveBrandTheme(brand, mode, basePalette = {}) {
       ...baseThemeOptions.components,
       ...STYLE_COMPONENTS[style](mode),
       ...(mode === "dark" && !isHexColor(brand?.primary_color) ? { MuiLink: { styleOverrides: { root: { color: DARK_LINK } } } } : {}),
-      MuiButton: { ...STYLE_COMPONENTS[style](mode).MuiButton, styleOverrides: { root: { ...STYLE_COMPONENTS[style](mode).MuiButton?.styleOverrides?.root, borderRadius: "0.5rem" } } },
+      MuiButton: { ...STYLE_COMPONENTS[style](mode).MuiButton, styleOverrides: { root: {
+        ...STYLE_COMPONENTS[style](mode).MuiButton?.styleOverrides?.root, borderRadius: "0.5rem",
+        // MUI's dark disabled colours almost vanish on these dark surfaces: keep a disabled button readable.
+        ...(mode === "dark" ? {
+          // A colour="inherit" button takes the page's text colour, which is black where a page sets none (no
+          // CssBaseline here): give it the theme's text colour and a visible border instead.
+          "&.MuiButton-colorInherit:not(.Mui-disabled)": { color: mergedPalette.text?.primary || "#e2e8f0" },
+          "&.MuiButton-outlined.MuiButton-colorInherit:not(.Mui-disabled)": { borderColor: "rgba(226,232,240,0.4)" },
+          "&.Mui-disabled": { color: "rgba(226,232,240,0.55)" },
+          "&.MuiButton-outlined.Mui-disabled": { borderColor: "rgba(226,232,240,0.3)" },
+          "&.MuiButton-contained.Mui-disabled": { backgroundColor: "rgba(226,232,240,0.12)" },
+        } : {}),
+      } } },
       MuiOutlinedInput: { styleOverrides: { root: { ...STYLE_COMPONENTS[style](mode).MuiOutlinedInput?.styleOverrides?.root, borderRadius: "0.5rem", backgroundColor: advancedPalette.background?.paper || (mode === "dark" ? "#1e2030" : "#ffffff") } } },
       ...Object.fromEntries(
         ["MuiTableContainer", "MuiTableHead", "MuiMenu", "MuiPopover", "MuiDialog", "MuiAutocomplete"].map((name) => [name, {

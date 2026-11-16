@@ -90,7 +90,8 @@ export default function OnPremConnectionCard({ config, onConnected }) {
     window.dispatchEvent(new CustomEvent(SYNC_STARTED_EVENT));
     try {
       const res = await api.post(kind === "recopy" ? "/local-server-config/recopy" : "/local-server-config/sync-now", null, { timeout: 900000 });
-      toast.success(res.data?.message || "Done");
+      // 202: it runs on the server in the background; the footer follows it and the result shows below.
+      (res.status === 202 ? toast.info : toast.success)(res.data?.message || "Done");
       onConnected?.(res.data?.data || {});
     } catch (err) {
       const errors = err.response?.data?.errors;
@@ -184,6 +185,12 @@ export default function OnPremConnectionCard({ config, onConnected }) {
           {config?.handshake ? `${config.handshake.local_backlog ?? 0} to the cloud · ${config.handshake.cloud_backlog ?? "?"} from the cloud` : "—"}
         </Fact>
       </Box>
+      {config?.manual_sync && !config?.sync_progress && (
+        <Typography role="status" sx={{ mt: 1.5, fontSize: 12, color: config.manual_sync.ok ? "text.secondary" : "error.main" }}>
+          Last {config.manual_sync.kind === "recopy" ? "Re-copy" : "Sync now"}
+          {config.manual_sync.at ? ` (${new Date(config.manual_sync.at).toLocaleString()})` : ""}: {config.manual_sync.message}
+        </Typography>
+      )}
       {pullErrors.length > 0 && (
         <Box role="alert" sx={{ mt: 1.5, fontSize: 12, color: "error.main" }}>
           Changes from the cloud that could not be applied here (they are tried again on every sync):

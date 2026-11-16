@@ -1993,7 +1993,7 @@ const LegacyPos = () => {
       {
         key: "customer_name",
         label: "Customer",
-        valueGetter: (row) => row.customer?.name || "-",
+        valueGetter: (row) => row.customer?.name || row.customer_name || "Walk-in Customer", // No customer picked: a walk-in.
       },
       {
         key: "user_name",

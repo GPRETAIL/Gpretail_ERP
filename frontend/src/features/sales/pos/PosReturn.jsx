@@ -900,7 +900,7 @@ const PosReturn = () => {
       {
         key: "customer_name",
         label: "Customer",
-        valueGetter: (row) => row.customer_name || row.customer?.name || "-",
+        valueGetter: (row) => row.customer_name || row.customer?.name || "Walk-in Customer", // No customer picked: a walk-in.
       },
       {
         key: "user_name",

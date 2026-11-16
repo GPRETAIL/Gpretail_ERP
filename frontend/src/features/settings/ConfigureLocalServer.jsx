@@ -90,7 +90,13 @@ export default function ConfigureLocalServer() {
     onSuccess: next => { applyConfig(next); setLoading(false); setRefreshing(false); },
     onError: (err, { silent }) => { setLoading(false); setRefreshing(false); if (!silent) toast.error(err.response?.data?.message || "Failed to load local server configuration"); },
   });
-  const { reload: loadNodes } = useAsyncQuery(fetchNodes, { onSuccess: setNodes });
+  const { reload: loadNodes } = useAsyncQuery(fetchNodes, {
+    onSuccess: (next) => {
+      setNodes(next);
+      // A store whose queue has cleared closes its list, so the next click opens it fresh.
+      setExpandedStoreId((open) => (next.some((node) => node.store_id === open && ((node.outbox_pending || 0) > 0 || (node.outbox_failed || 0) > 0)) ? open : null));
+    },
+  });
   const loadConfig = () => {
     if (!draftDirty.current) draftLoaded.current = false;
     setRefreshing(true);
@@ -458,7 +464,8 @@ export default function ConfigureLocalServer() {
                       : { label: "Offline", token: null, Icon: WifiOff };
                   const NodeIcon = nodeTone.Icon;
                   const hasBacklog = (node.outbox_pending || 0) > 0 || (node.outbox_failed || 0) > 0;
-                  const isExpanded = expandedStoreId === node.store_id;
+                  // Opens only while the store has writes waiting, so a cleared queue never shows an old list.
+                  const isExpanded = expandedStoreId === node.store_id && hasBacklog;
 
                   return (
                     <Fragment key={node.store_id}>

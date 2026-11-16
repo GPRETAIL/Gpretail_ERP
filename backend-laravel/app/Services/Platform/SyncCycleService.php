@@ -164,6 +164,12 @@ class SyncCycleService
             ->get();
 
         foreach ($events as $event) {
+            // Queued before this kind of write was excluded from sync: it belongs here only, so it is not sent.
+            if (\App\Http\Middleware\CaptureSyncOutbox::neverSynced((string) $event->path)) {
+                $event->update(['status' => 'acked', 'synced_at' => now(), 'last_error' => 'Not sent: this kind of change belongs to each server.']);
+
+                continue;
+            }
             try {
                 $response = Http::withHeaders(array_merge($this->authHeaders($node), [
                     'X-Sync-Replay' => '1',
@@ -275,6 +281,12 @@ class SyncCycleService
         $localBase = $this->localBaseUrl($node);
 
         foreach ($events as $event) {
+            // A cloud change of a kind that belongs to each server (queued before it was excluded): skipped, not retried.
+            if (\App\Http\Middleware\CaptureSyncOutbox::neverSynced((string) ($event['path'] ?? ''))) {
+                $ackIds[] = $event['id'];
+
+                continue;
+            }
             try {
                 $localResponse = Http::withHeaders(array_merge($this->authHeaders($node), [
                     'X-Sync-Replay' => '1',
@@ -330,6 +342,9 @@ class SyncCycleService
             if ($response->successful()) {
                 // Licence renewals and status changes made on the cloud side arrive here.
                 app(LocalNodeRegistration::class)->refreshIdentity($node, $response->json('data.identity'));
+                // On this server the node's heartbeat fields mean "last heartbeat the cloud accepted": Configure Local
+                // Server shows it connected (and Stale once syncing stops), instead of "Not connected" forever.
+                $node->forceFill(['last_heartbeat_at' => now(), 'local_healthy' => true])->saveQuietly();
             }
 
             return ['ok' => $response->successful(), 'users_version' => $response->successful() ? $response->json('data.users_version') : null];

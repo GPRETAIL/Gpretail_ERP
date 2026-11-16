@@ -37,8 +37,21 @@ class CaptureSyncOutbox
         'local-server-config',
         'backups', // Node-local archives/restore IDs and OCI/password fields must never be replayed.
         'login-sessions', // Sign-ins belong to each server: ending one on-prem must never touch a cloud token.
+        'notifications/', // Each server's bell is its own (alerts, read marks, push devices).
         'connector/',
     ];
+
+    /** A write that belongs to one server and is never replayed on the other (also applied to writes queued before it was excluded). */
+    public static function neverSynced(string $path): bool
+    {
+        foreach (self::EXCLUDED_PATH_FRAGMENTS as $fragment) {
+            if (str_contains($path, $fragment)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 
     public function handle(Request $request, Closure $next): Response
     {
@@ -69,10 +82,8 @@ class CaptureSyncOutbox
         }
 
         $path = '/'.ltrim(preg_replace('#^api/#', '', $request->path()), '/');
-        foreach (self::EXCLUDED_PATH_FRAGMENTS as $fragment) {
-            if (str_contains($path, $fragment)) {
-                return;
-            }
+        if (self::neverSynced($path)) {
+            return;
         }
 
         $storeId = (int) $request->attributes->get('store_context_id');

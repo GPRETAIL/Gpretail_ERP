@@ -403,4 +403,41 @@ class SyncCycleServiceTest extends TestCase
 
         $this->assertTrue(app(SyncCycleService::class)->run(now: true)['ran']);
     }
+
+    public function test_changes_that_belong_to_one_server_are_skipped_not_retried(): void
+    {
+        $queued = SyncOutboxEvent::create([
+            'store_id' => $this->store->id, 'method' => 'POST', 'path' => '/notifications/12/read',
+            'payload' => [], 'headers' => ['Content-Type' => 'application/json'], 'idempotency_key' => 'k-note', 'status' => 'pending',
+        ]);
+        $localBase = rtrim(url('/'), '/');
+        Http::fake([
+            'cloud.example.test/api/sync/outbound/next*' => Http::sequence()->push(['success' => true, 'data' => ['events' => [
+                ['id' => 41, 'method' => 'POST', 'path' => '/v1/invoice-ai/extract', 'payload' => ['file' => ['name' => 'bill.jpg']], 'headers' => []],
+            ]]])->push(['success' => true, 'data' => ['events' => []]]),
+            'cloud.example.test/api/sync/outbound/ack' => Http::response(['success' => true]),
+            'cloud.example.test/api/sync/heartbeat' => Http::response(['success' => true]),
+            'cloud.example.test/api/sync/users' => Http::response(['success' => true, 'data' => ['users' => []]]),
+            $localBase.'/*' => Http::response(['success' => true]),
+        ]);
+
+        $result = app(SyncCycleService::class)->run();
+
+        $this->assertSame(0, $result['pulled']['failed']);
+        $this->assertSame('acked', $queued->refresh()->status, 'a queued notification read is not sent to the cloud');
+        Http::assertNotSent(fn ($request) => str_contains($request->url(), '/notifications/12/read') || str_contains($request->url(), '/v1/invoice-ai/extract'));
+        Http::assertSent(fn ($request) => str_ends_with($request->url(), '/sync/outbound/ack') && in_array(41, $request['event_ids'] ?? [], true));
+    }
+
+    public function test_the_on_prem_page_shows_the_last_heartbeat_the_cloud_accepted(): void
+    {
+        $this->fakeIdlePullAndHeartbeat(['cloud.example.test/api/sync/users' => Http::response(['success' => true, 'data' => ['users' => []]])]);
+        $this->assertNull($this->node->last_heartbeat_at);
+
+        app(SyncCycleService::class)->run();
+
+        $this->node->refresh();
+        $this->assertNotNull($this->node->last_heartbeat_at, 'otherwise Configure Local Server shows "Not connected" on a connected server');
+        $this->assertTrue($this->node->local_healthy);
+    }
 }

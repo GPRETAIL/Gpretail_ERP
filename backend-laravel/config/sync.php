@@ -13,4 +13,9 @@ return [
 
     // Shared secret for the externally-triggered sync cron endpoint (Phase 2).
     'cron_secret' => env('SYNC_CRON_SECRET'),
+
+    // Sync now / Re-copy run in a background process (ManualSync); tests run them in the request instead.
+    'manual_inline' => (bool) env('SYNC_MANUAL_INLINE', false),
+    // The PHP command line for that process, when it cannot be found next to php.ini (e.g. D:/xampp/php/php.exe).
+    'php_binary' => env('SYNC_PHP_BINARY'),
 ];
