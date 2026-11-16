@@ -12,6 +12,7 @@ use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\User;
 use App\Services\Approvals\ApprovalService;
+use App\Services\Documents\DocumentNumberService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -41,7 +42,8 @@ class DeliveryService
             return null;
         }
         // A dealer invoice number is matched exactly; a POS bill also by its short form (261031-0001).
-        $source = DealerInvoice::with(['items.product', 'customer'])->whereRaw('UPPER(invoice_no) = ?', [strtoupper($number)])->first();
+        $source = DealerInvoice::with(['items.product', 'customer'])
+            ->where(fn ($q) => DocumentNumberService::whereNumber($q, 'invoice_no', $number, 'D'))->first();
         if (! $source) {
             $matches = PosSale::with(['items.product', 'customer'])->billNumber($number)->get();
             abort_if($matches->count() > 1, 422, 'Select a store before looking up this bill number.');
@@ -248,7 +250,7 @@ class DeliveryService
 
     private function billNo(Model $source): string
     {
-        return $source instanceof DealerInvoice ? (string) $source->invoice_no : (string) $source->bill_no;
+        return $source instanceof DealerInvoice ? DocumentNumberService::short($source->invoice_no, 'D') : (string) $source->bill_no;
     }
 
     private function cancelled(Model $source): bool

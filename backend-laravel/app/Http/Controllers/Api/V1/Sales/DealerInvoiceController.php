@@ -47,6 +47,7 @@ class DealerInvoiceController extends Controller
             $search = $request->input('search');
             $query->where(function ($q) use ($search) {
                 $q->where('invoice_no', 'like', "%{$search}%")
+                    ->orWhere(fn ($n) => DocumentNumberService::whereNumber($n, 'invoice_no', (string) $search, 'D'))
                     ->orWhereHas('customer', function ($cq) use ($search) {
                         $cq->where('name', 'like', "%{$search}%");
                     });
@@ -66,6 +67,7 @@ class DealerInvoiceController extends Controller
             $search = $request->input('search');
             $query->where(function ($q) use ($search) {
                 $q->where('return_no', 'like', "%{$search}%")
+                    ->orWhere(fn ($n) => DocumentNumberService::whereNumber($n, 'return_no', (string) $search, 'DR'))
                     ->orWhereHas('customer', fn ($cq) => $cq->where('name', 'like', "%{$search}%"));
             });
         }
@@ -124,7 +126,8 @@ class DealerInvoiceController extends Controller
         $stamp = $date->toDateString().' '.($doc->created_at?->format('H:i:s') ?? '00:00:00');
 
         return array_merge($doc->toArray(), [
-            $isReturn ? 'return_no' : 'bill_no' => $isReturn ? $doc->return_no : $doc->invoice_no,
+            // Shown short, like POS bills (D261116-0001); invoice_no / return_no keep the full stored number.
+            $isReturn ? 'return_no' : 'bill_no' => $isReturn ? DocumentNumberService::short($doc->return_no, 'DR') : DocumentNumberService::short($doc->invoice_no, 'D'),
             $isReturn ? 'return_at' : 'sale_at' => $stamp,
             'customer_name' => $doc->customer?->name,
             'total_qty' => (float) $doc->items->sum('quantity'),
@@ -395,7 +398,7 @@ class DealerInvoiceController extends Controller
     public function nextBillNo(Request $request)
     {
         $storeId = (int) $this->resolveStoreId($request, 1);
-        $nextNo = DocumentNumberService::peek($storeId, 'DINV');
+        $nextNo = DocumentNumberService::short(DocumentNumberService::peek($storeId, 'DINV'), 'D');
 
         return response()->json([
             'success' => true,
@@ -407,7 +410,7 @@ class DealerInvoiceController extends Controller
     public function nextReturnNo(Request $request)
     {
         $storeId = (int) $this->resolveStoreId($request, 1);
-        $nextNo = DocumentNumberService::peek($storeId, 'DRET');
+        $nextNo = DocumentNumberService::short(DocumentNumberService::peek($storeId, 'DRET'), 'DR');
 
         return response()->json([
             'success' => true,

@@ -76,7 +76,7 @@ class DealerInvoiceStockTest extends TestCase
     public function test_a_return_adds_stock_back_and_reverses_the_sale_in_the_books(): void
     {
         $return = $this->postJson('/api/dealer-invoice-returns', $this->payload(3))->assertCreated()->json('data');
-        $this->assertStringStartsWith('DRET', (string) $return['return_no'] ?: 'DRET');
+        $this->assertMatchesRegularExpression('/^DR\d{6}-\d{4}$/', (string) $return['return_no']); // shown short, like POS bills
         $this->assertSame(1003.0, $this->stock(), 'a return adds stock back');
         $lines = $this->voucher('dealer_return', $return['id']);
         $this->assertSame(-305.0, $lines['Dealer One'] ?? null, 'the customer is credited the return total: 3 x 100 + 5% tax - 10');

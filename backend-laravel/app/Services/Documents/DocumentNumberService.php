@@ -123,6 +123,34 @@ class DocumentNumberService
     }
 
     /**
+     * The number as people read it: "DINV-STR-SMZOW9BT5O-20261116-C0001" shows as "D261116-C0001" (letter, YYMMDD,
+     * sequence), like POS bills show "261116-0001". The stored number is unchanged; a number in another format is
+     * returned as it is.
+     */
+    public static function short(?string $number, string $letter): string
+    {
+        $number = (string) $number;
+
+        return preg_match('/^[A-Z]+-.+-(\d{8})-(C?\d+|F\d+-\d+)$/', $number, $parts)
+            ? $letter.substr($parts[1], 2).'-'.$parts[2] : $number;
+    }
+
+    /**
+     * Narrows $query to a document number typed in full or in its short form ("D261116-C0001"). The short form
+     * matches every store's number for that day and sequence, so callers keep their own store scope.
+     */
+    public static function whereNumber($query, string $column, string $typed, string $letter): void
+    {
+        $typed = trim($typed);
+        $query->where(function ($q) use ($column, $typed, $letter) {
+            $q->where($column, $typed);
+            if (preg_match('/^'.preg_quote($letter, '/').'(\d{6})-(C?\d+|F\d+-\d+)$/i', $typed, $parts)) {
+                $q->orWhere($column, 'like', '%-20'.$parts[1].'-'.strtoupper($parts[2]));
+            }
+        });
+    }
+
+    /**
      * Read-only preview of what next() would mint right now, without consuming a
      * sequence number -- for "next bill no" UI previews, which must not create gaps
      * every time a cashier reopens/refreshes the screen.
