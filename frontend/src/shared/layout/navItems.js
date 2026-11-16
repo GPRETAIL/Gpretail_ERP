@@ -215,6 +215,11 @@ export const navItems = [
         icon: ArrowPathIcon,
       },
       {
+        name: "Dealer Receipt",
+        path: "/sales/dealer-receipt",
+        icon: BanknotesIcon,
+      },
+      {
         name: "Touch Sales",
         path: "/sales/touch-sales",
         icon: ShoppingCartIcon,

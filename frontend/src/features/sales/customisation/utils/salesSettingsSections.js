@@ -1,7 +1,7 @@
 // Existing store configuration keys remain unchanged during the editor migration.
 export const SALES_BEHAVIOUR_KEYS = [
   "billNumberReset", "billNumberOverride", "settlementNumberReset", "settlementNumberOverride",
-  "saleSaveAs", "posPaymentDialogVisible", "posSalespersonScan",
+  "saleSaveAs", "posPaymentDialogVisible", "posSalespersonScan", "deliveryVerifyAll",
 ];
 
 export const salesSettingsSectionPatch = (settings, section) => Object.fromEntries(

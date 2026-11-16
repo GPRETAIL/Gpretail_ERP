@@ -17,6 +17,7 @@ import FinanceActionRequiredBanner from "./finance/FinanceActionRequiredBanner";
 import FinanceBreakdown from "./finance/FinanceBreakdown";
 import FinanceTrendChart from "./finance/FinanceTrendChart";
 import FinanceTopPayables from "./finance/FinanceTopPayables";
+import FinanceDealerOutstanding from "./finance/FinanceDealerOutstanding";
 import FinanceRecentPayments from "./finance/FinanceRecentPayments";
 
 const QUICK_ACTIONS = [
@@ -37,6 +38,7 @@ export default function FinanceDashboardTabPane({ active, fromDate, toDate, comp
   const actionRequired = data?.action_required || EMPTY_ARRAY;
   const breakdown = data?.breakdown || EMPTY_OBJECT;
   const topPayables = data?.top_payables || EMPTY_ARRAY;
+  const dealerOutstanding = data?.dealer_outstanding || EMPTY_OBJECT;
   const recentPayments = data?.recent_payments || EMPTY_ARRAY;
   const trendChart = data?.charts?.purchase_payment_trend || EMPTY_ARRAY;
 
@@ -99,14 +101,21 @@ export default function FinanceDashboardTabPane({ active, fromDate, toDate, comp
         defaultLayout: { x: 8, y: 7, w: 4, h: 4, minW: 3, minH: 3 },
       },
       {
+        key: "dealer-outstanding",
+        title: "Dealer Outstanding",
+        component: FinanceDealerOutstanding,
+        props: { outstanding: dealerOutstanding, privacyMode },
+        defaultLayout: { x: 0, y: 11, w: 12, h: 4, minW: 6, minH: 3 },
+      },
+      {
         key: "recent-payments",
         title: "Recent Supplier Payments",
         component: FinanceRecentPayments,
         props: { recentPayments },
-        defaultLayout: { x: 0, y: 11, w: 12, h: 4, minW: 6, minH: 3 },
+        defaultLayout: { x: 0, y: 15, w: 12, h: 4, minW: 6, minH: 3 },
       },
     ],
-    [summary, loading, actionRequired, breakdown, trendChart, topPayables, recentPayments, privacyMode]
+    [summary, loading, actionRequired, breakdown, trendChart, topPayables, dealerOutstanding, recentPayments, privacyMode]
   );
 
   if (error) {

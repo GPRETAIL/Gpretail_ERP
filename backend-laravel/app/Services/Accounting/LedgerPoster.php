@@ -3,14 +3,17 @@
 namespace App\Services\Accounting;
 
 use App\Models\DealerInvoice;
+use App\Models\DealerInvoicePayment;
 use App\Models\DealerInvoiceReturn;
+use App\Models\DealerReceipt;
+use App\Models\DealerReceiptItem;
 use App\Models\DirectPurchase;
 use App\Models\HrExpenseClaim;
 use App\Models\HrLoan;
 use App\Models\HrLoanRecovery;
+use App\Models\HrPayrollRun;
 use App\Models\HrSettlement;
 use App\Models\HrTdsChallan;
-use App\Models\HrPayrollRun;
 use App\Models\PosPayment;
 use App\Models\PosReturn;
 use App\Models\PosReturnItem;
@@ -42,6 +45,7 @@ class LedgerPoster
         'settlement' => ['settlements', 'store_id', 'receipt'],
         'dealer_invoice' => ['dealer_invoices', 'store_id', 'sales'],
         'dealer_return' => ['dealer_invoice_returns', 'store_id', 'sales_return'],
+        'dealer_receipt' => ['dealer_receipts', 'store_id', 'receipt'],
         'direct_purchase' => ['direct_purchases', 'store_id', 'purchase'],
         'purchase_invoice' => ['purchase_invoices', 'store_id', 'purchase'],
         'purchase_return' => ['purchase_returns', 'store_id', 'purchase_return'],
@@ -74,6 +78,9 @@ class LedgerPoster
             Settlement::class => fn ($m) => [['settlement', $m->id]],
             DealerInvoice::class => fn ($m) => [['dealer_invoice', $m->id]],
             DealerInvoiceReturn::class => fn ($m) => [['dealer_return', $m->id]],
+            DealerInvoicePayment::class => fn ($m) => [['dealer_invoice', $m->dealer_invoice_id]],
+            DealerReceipt::class => fn ($m) => [['dealer_receipt', $m->id]],
+            DealerReceiptItem::class => fn ($m) => [['dealer_receipt', $m->dealer_receipt_id]],
             DirectPurchase::class => fn ($m) => [['direct_purchase', $m->id]],
             PurchaseInvoice::class => fn ($m) => [['purchase_invoice', $m->id]],
             PurchaseReturn::class => fn ($m) => [['purchase_return', $m->id]],
@@ -213,6 +220,7 @@ class LedgerPoster
             'settlement' => self::settlement($id),
             'dealer_invoice' => self::dealerInvoice($id),
             'dealer_return' => self::dealerReturn($id),
+            'dealer_receipt' => self::dealerReceipt($id),
             'direct_purchase' => self::directPurchase($id),
             'purchase_invoice' => self::purchaseInvoice($id),
             'purchase_return' => self::purchaseReturn($id),
@@ -397,9 +405,32 @@ class LedgerPoster
             ? ChartOfAccounts::party($store, 'customer', (int) $invoice->customer_id, self::partyName('customers', (int) $invoice->customer_id))
             : ChartOfAccounts::system($store, 'pos_receivable');
 
+        $lines = [[$customer, $total], [ChartOfAccounts::system($store, 'sales'), -($total - $tax)], ...self::gst($store, 'output', $tax, false, -1)];
+        // Paid on the spot: the till/bank takes it and the dealer's account is cleared by the same amount.
+        foreach (DB::table('dealer_invoice_payments')->where('dealer_invoice_id', $id)->get(['mode', 'amount']) as $payment) {
+            $lines[] = [self::tender($store, (string) $payment->mode), (float) $payment->amount];
+            $lines[] = [$customer, -(float) $payment->amount];
+        }
+
         return ['store_id' => $store, 'no' => $invoice->invoice_no, 'date' => $invoice->invoice_date ?: self::businessDate($invoice->created_at),
-            'narration' => 'Dealer invoice '.$invoice->invoice_no, 'created_by' => $invoice->created_by,
-            'lines' => [[$customer, $total], [ChartOfAccounts::system($store, 'sales'), -($total - $tax)], ...self::gst($store, 'output', $tax, false, -1)]];
+            'narration' => 'Dealer invoice '.$invoice->invoice_no, 'created_by' => $invoice->created_by, 'lines' => $lines];
+    }
+
+    /** Money collected from a dealer: the till/bank is debited, the dealer's account credited. */
+    private static function dealerReceipt(int $id): ?array
+    {
+        $receipt = DB::table('dealer_receipts')->where('id', $id)->first();
+        if (! $receipt || self::closed($receipt->status) || (float) $receipt->amount <= 0) {
+            return null;
+        }
+        $store = (int) $receipt->store_id;
+        $amount = (float) $receipt->amount;
+        $customer = ChartOfAccounts::party($store, 'customer', (int) $receipt->customer_id, self::partyName('customers', (int) $receipt->customer_id));
+
+        return ['store_id' => $store, 'no' => $receipt->receipt_no, 'reference' => $receipt->reference_no,
+            'date' => $receipt->receipt_date ?: self::businessDate($receipt->created_at), 'created_by' => $receipt->created_by,
+            'narration' => 'Dealer receipt '.$receipt->receipt_no.' ('.strtolower((string) $receipt->mode).')',
+            'lines' => [[self::tender($store, (string) $receipt->mode), $amount], [$customer, -$amount]]];
     }
 
     /** A dealer return reverses a dealer invoice: sales returns and output GST are debited, the customer credited. */

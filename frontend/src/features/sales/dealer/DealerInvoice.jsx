@@ -1,4 +1,6 @@
 import { TYPE } from "@/shared/theme/typeScale";
+import DealerPaymentBlock from "@/features/sales/dealer/components/DealerPaymentBlock";
+import { modeLabel, paymentsPayload } from "@/features/sales/dealer/utils/dealerPayments";
 import PageHeader from "@/shared/components/PageHeader";
 import useResetOnChange from "@/shared/hooks/useResetOnChange";
 import { masterSearchAreaSx } from "@/shared/theme/erpUi";
@@ -197,6 +199,7 @@ const DealerInvoice = () => {
   const [dealerSales, setDealerSales] = useState(true);
 
   const [addlDiscount, setAddlDiscount] = useState("0");
+  const [payments, setPayments] = useState([]); // money taken now (Payment block)
   const [addlCharge, setAddlCharge] = useState("0");
   const [taxLines, setTaxLines] = useState([]);
   const [taxDraft, setTaxDraft] = useState(createEmptyTaxLine);
@@ -651,6 +654,7 @@ const DealerInvoice = () => {
   };
 
   const handleResetEntry = () => {
+    setPayments([]);
     setCustomerId("");
     setSoNo("");
     setRemarks("");
@@ -694,6 +698,8 @@ const DealerInvoice = () => {
         taxAmount: row.taxAmount,
       })),
       saleAt: now.toISOString(),
+      // Money taken now; whatever is not paid stays on the dealer's account (credit).
+      payments: paymentsPayload(payments),
       items: cartWithTotals.map((line) => ({
         barcodeId: line.stockId,
         barcode: line.barcode,
@@ -822,6 +828,25 @@ const DealerInvoice = () => {
         label: "Amount",
         valueGetter: (row) => toNum(row.amount || 0),
         render: (value) => <Box sx={{ textAlign: "right" }}>{formatMoney(value || 0)}</Box>,
+      },
+      {
+        key: "paid_amount",
+        label: "Paid",
+        valueGetter: (row) => toNum(row.paid_amount || 0),
+        render: (value) => <Box sx={{ textAlign: "right" }}>{formatMoney(value || 0)}</Box>,
+      },
+      {
+        key: "balance",
+        label: "Balance",
+        valueGetter: (row) => toNum(row.balance || 0),
+        render: (value) => <Box sx={{ textAlign: "right", fontWeight: value > 0 ? 600 : 400 }}>{formatMoney(value || 0)}</Box>,
+      },
+      {
+        key: "payment_status",
+        label: "Payment",
+        valueGetter: (row) => row.payment_status || "Credit",
+        render: (value, row) => <Box component="span" title={(row.payments || []).map((p) => `${modeLabel(p.mode)} ${formatMoney(p.amount)}`).join(", ")}
+          sx={{ color: value === "Paid" ? "success.main" : value === "Part paid" ? "warning.main" : "text.secondary", fontWeight: 600 }}>{value}</Box>,
       },
       {
         key: "status",
@@ -1075,6 +1100,8 @@ const DealerInvoice = () => {
             </Stack>
           </Stack>
         </Box>
+
+        <DealerPaymentBlock total={summary.amount} payments={payments} onChange={setPayments} />
       </Stack>
 
       <Stack spacing={1.5} sx={{ gridColumn: { xl: "span 9" }, minWidth: 0, minHeight: { xs: 400, xl: 0 } }}>

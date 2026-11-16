@@ -8,6 +8,7 @@ use App\Models\Barcode;
 use App\Models\Customer;
 use App\Models\DealerInvoice;
 use App\Models\DealerInvoiceItem;
+use App\Models\DealerInvoicePayment;
 use App\Models\DealerInvoiceReturn;
 use App\Models\DealerInvoiceReturnItem;
 use App\Models\Product;
@@ -16,6 +17,7 @@ use App\Services\Approvals\ApprovalService;
 use App\Services\Documents\DocumentNumberService;
 use App\Services\Inventory\StockRules;
 use App\Services\Inventory\StockService;
+use App\Services\Sales\DealerBalances;
 use App\Support\GroupAggregationService;
 use App\Support\PaginationService;
 use Illuminate\Http\JsonResponse;
@@ -40,7 +42,7 @@ class DealerInvoiceController extends Controller
     private function filteredQuery(Request $request)
     {
         $storeId = $request->header('X-Company-Scope-Id');
-        $query = DealerInvoice::with(['customer', 'items.product', 'creator'])
+        $query = DealerInvoice::with(['customer', 'items.product', 'creator', 'payments'])
             ->when($storeId && $storeId !== 'all', fn ($q) => $q->where('store_id', $storeId));
 
         if ($request->filled('search')) {
@@ -104,7 +106,9 @@ class DealerInvoiceController extends Controller
         if ($request->boolean('all') || $request->input('limit') == 500 || $request->input('limit') == 1000) {
             $items = $query->orderBy($dateColumn, 'desc')->limit(2000)->get();
 
-            return response()->json(['success' => true, 'data' => $items->map(fn ($doc) => $this->present($doc)), 'total' => $items->count()]);
+            $balances = $resource === 'dealer_invoices' ? app(DealerBalances::class)->forInvoices($items->pluck('id')->all()) : [];
+
+            return response()->json(['success' => true, 'data' => $items->map(fn ($doc) => $this->present($doc, $balances[$doc->id] ?? null)), 'total' => $items->count()]);
         }
 
         $result = $this->paginationService->paginate($query, $resource, $request, [
@@ -113,15 +117,19 @@ class DealerInvoiceController extends Controller
             'tie_breaker' => 'id',
             'allowed_sorts' => ['id', $dateColumn, $numberColumn, 'created_at'],
         ]);
-        $result['data'] = collect($result['data'])->map(fn ($doc) => $this->present($doc))->all();
+        $balances = $resource === 'dealer_invoices' ? app(DealerBalances::class)->forInvoices(collect($result['data'])->pluck('id')->all()) : [];
+        $result['data'] = collect($result['data'])->map(fn ($doc) => $this->present($doc, $balances[$doc->id] ?? null))->all();
 
         return response()->json($result);
     }
 
     /** The list and detail shape both dealer screens read (bill_no/return_no, dates, customer, products, qty, amount). */
-    private function present(DealerInvoice|DealerInvoiceReturn $doc): array
+    private function present(DealerInvoice|DealerInvoiceReturn $doc, ?array $balance = null): array
     {
         $isReturn = $doc instanceof DealerInvoiceReturn;
+        if (! $isReturn) {
+            $balance ??= app(DealerBalances::class)->forInvoices([$doc->id])[$doc->id] ?? null;
+        }
         $date = $isReturn ? $doc->return_date : $doc->invoice_date;
         $stamp = $date->toDateString().' '.($doc->created_at?->format('H:i:s') ?? '00:00:00');
 
@@ -133,12 +141,17 @@ class DealerInvoiceController extends Controller
             'total_qty' => (float) $doc->items->sum('quantity'),
             'amount' => (float) $doc->grand_total,
             'items' => $doc->items->map(fn ($item) => array_merge($item->toArray(), ['product_name' => $item->product?->name]))->all(),
+        ], $isReturn ? [] : [
+            'paid_now' => $balance['paid_now'] ?? 0, 'received' => $balance['received'] ?? 0, 'returned' => $balance['returned'] ?? 0,
+            'paid_amount' => round(($balance['paid_now'] ?? 0) + ($balance['received'] ?? 0), 2),
+            'balance' => $balance['balance'] ?? (float) $doc->grand_total, 'payment_status' => $balance['status'] ?? 'Credit',
+            'payments' => $doc->relationLoaded('payments') ? $doc->payments->map->only(['mode', 'amount', 'reference_no', 'cheque_date'])->values()->all() : [],
         ]);
     }
 
     public function show($id)
     {
-        $invoice = DealerInvoice::with(['customer', 'items.product', 'creator', 'returns:id,dealer_invoice_id,return_no,status'])->find($id);
+        $invoice = DealerInvoice::with(['customer', 'items.product', 'creator', 'payments', 'returns:id,dealer_invoice_id,return_no,status'])->find($id);
         if (! $invoice) {
             return response()->json(['success' => false, 'message' => 'Dealer invoice not found'], 404);
         }
@@ -167,9 +180,15 @@ class DealerInvoiceController extends Controller
             return response()->json(['success' => false, 'message' => collect($e->errors())->flatten()->first(), 'errors' => $e->errors()], 422);
         }
         $totals = $this->totals($request, $lines);
+        try {
+            $payments = $isReturn ? [] : $this->payments($request, (float) $totals['total']);
+        } catch (ValidationException $e) {
+            return response()->json(['success' => false, 'message' => collect($e->errors())->flatten()->first(), 'errors' => $e->errors()], 422);
+        }
+        $paidNow = round(array_sum(array_column($payments, 'amount')), 2);
 
         try {
-            $document = DB::transaction(function () use ($request, $storeId, $isReturn, $lines, $customerId, $source, $totals) {
+            $document = DB::transaction(function () use ($request, $storeId, $isReturn, $lines, $customerId, $source, $totals, $payments, $paidNow) {
                 // As on POS, a discount or a credit beyond the user's limit needs a supervisor/manager approval (HTTP 428,
                 // then retried with the approval token). Dealer prices are wholesale, so only discounts typed on the bill
                 // count; the whole invoice goes on the dealer's account, so all of it is credit. Checked inside the
@@ -178,7 +197,8 @@ class DealerInvoiceController extends Controller
                 if (! $isReturn) {
                     $approvals = app(ApprovalService::class);
                     $used[] = $approvals->authorizeDiscount($request->user(), $storeId, $this->discountBasket($lines, $totals), $request->input('approvalToken'));
-                    $used[] = $approvals->authorizeCredit($request->user(), $storeId, (float) $totals['total'], $request->input('creditApprovalToken'));
+                    // Only what is left on the dealer's account is credit; money paid now needs no credit approval.
+                    $used[] = $approvals->authorizeCredit($request->user(), $storeId, max(0, round((float) $totals['total'] - $paidNow, 2)), $request->input('creditApprovalToken'));
                 }
                 $header = [
                     'store_id' => $storeId, 'customer_id' => $customerId, 'status' => 'COMPLETED',
@@ -215,6 +235,9 @@ class DealerInvoiceController extends Controller
                         ? DealerInvoiceReturnItem::create($row + ['dealer_invoice_return_id' => $document->id])
                         : DealerInvoiceItem::create($row + ['dealer_invoice_id' => $document->id, 'short_qty' => $sellWithoutStock ? StockRules::shortQty($line['qty'], (float) $stock->quantity) : 0]);
                 }
+                foreach ($payments as $payment) {
+                    DealerInvoicePayment::create($payment + ['dealer_invoice_id' => $document->id]);
+                }
                 foreach ($used as $approval) {
                     $approval?->forceFill(['status' => 'used', 'used_at' => now(), 'payload' => [...($approval->payload ?? []), 'dealer_invoice_id' => $document->id]])->save();
                 }
@@ -227,7 +250,7 @@ class DealerInvoiceController extends Controller
             return response()->json(['success' => false, 'message' => "Not enough stock for {$name}: {$e->available} available, {$e->requested} requested."], 422);
         }
 
-        $document->load(['customer', 'items.product']);
+        $document->load($isReturn ? ['customer', 'items.product'] : ['customer', 'items.product', 'payments']);
 
         return response()->json([
             'success' => true,
@@ -310,6 +333,34 @@ class DealerInvoiceController extends Controller
     }
 
     /** Same arithmetic as the screens: line totals + extra tax lines - tax discount - additional discount + charges. */
+    /**
+     * Money taken on the invoice now: [{mode, amount, reference_no?, card_type_id?, upi_provider_id?, cheque_date?}].
+     * None means the whole invoice goes on the dealer's account (credit). Paid now cannot exceed the invoice.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function payments(Request $request, float $total): array
+    {
+        $request->validate([
+            'payments' => 'nullable|array|max:10',
+            'payments.*.mode' => 'required|in:'.implode(',', DealerInvoicePayment::MODES),
+            'payments.*.amount' => 'required|numeric|min:0.01|max:999999999',
+            'payments.*.reference_no' => 'nullable|string|max:100|required_if:payments.*.mode,CHEQUE',
+            'payments.*.card_type_id' => 'nullable|integer',
+            'payments.*.upi_provider_id' => 'nullable|integer',
+            'payments.*.cheque_date' => 'nullable|date',
+        ], ['payments.*.reference_no.required_if' => 'Enter the cheque number.']);
+        $payments = array_map(fn ($p) => [
+            'mode' => $p['mode'], 'amount' => round((float) $p['amount'], 2), 'reference_no' => $p['reference_no'] ?? null,
+            'card_type_id' => $p['card_type_id'] ?? null, 'upi_provider_id' => $p['upi_provider_id'] ?? null, 'cheque_date' => $p['cheque_date'] ?? null,
+        ], array_values((array) $request->input('payments', [])));
+        if (array_sum(array_column($payments, 'amount')) > $total + 0.005) {
+            throw ValidationException::withMessages(['payments' => 'The payment is more than the invoice total (₹'.number_format($total, 2).').']);
+        }
+
+        return $payments;
+    }
+
     private function totals(Request $request, array $lines): array
     {
         $extraTax = 0.0;

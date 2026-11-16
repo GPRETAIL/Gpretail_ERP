@@ -3,9 +3,10 @@
 namespace App\Services\Dashboards;
 
 use App\Models\Store;
+use App\Services\Sales\DealerBalances;
+use App\Services\Tenancy\StoreQuery;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
-use App\Services\Tenancy\StoreQuery;
 
 /**
  * Finance tab of the main Dashboard -- sibling to the other dashboard
@@ -57,6 +58,7 @@ class FinanceDashboardService
         $actionRequired = $this->getActionRequired($storeId);
         $breakdown = $this->getFinanceBreakdown($storeId, $from, $to);
         $topPayables = $this->getTopOutstandingSuppliers($storeId, 10);
+        $dealerOutstanding = $this->getDealerOutstanding($storeId);
         $recentPayments = $this->getRecentSupplierPayments($storeId, 10);
         $trendChart = $this->getPurchasePaymentTrendChart($storeId, $from, $to);
         $stores = $this->getAvailableStores($user);
@@ -66,6 +68,7 @@ class FinanceDashboardService
             'action_required' => $actionRequired,
             'breakdown' => $breakdown,
             'top_payables' => $topPayables,
+            'dealer_outstanding' => $dealerOutstanding,
             'recent_payments' => $recentPayments,
             'charts' => [
                 'purchase_payment_trend' => $trendChart,
@@ -160,10 +163,8 @@ class FinanceDashboardService
             ->whereIn('status', ['pending', 'PENDING', 'draft', 'DRAFT', 'pending_approval'])
             ->count();
 
-        $unpaidDealerInvoices = StoreQuery::table('dealer_invoices')
-            ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
-            ->whereIn('status', ['pending', 'PENDING', 'draft', 'DRAFT'])
-            ->count();
+        // Dealer invoices with money still due (they are never "pending": the old count was always 0).
+        $unpaidDealerInvoices = $this->getDealerOutstanding($storeId)['invoices'];
 
         $overdueCredit = StoreQuery::table('pos_sales')
             ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
@@ -220,12 +221,12 @@ class FinanceDashboardService
             ],
             [
                 'key' => 'unpaid_dealer_invoices',
-                'label' => 'Unpaid Dealer Invoices',
+                'label' => 'Dealer Invoices with Dues',
                 'count' => $unpaidDealerInvoices,
                 'severity' => 'info',
                 'color' => 'yellow',
-                'route' => '/sales/dealer-invoice',
-                'filter_param' => 'status=pending',
+                'route' => '/sales/dealer-receipt',
+                'filter_param' => '',
             ],
         ];
     }
@@ -281,6 +282,44 @@ class FinanceDashboardService
             ]);
 
         return $rows->toArray();
+    }
+
+    /**
+     * What dealers owe on dealer invoices (Services/Sales/DealerBalances): total, ageing by invoice date and the top
+     * dealers. For one store, or every store the user is looking at.
+     *
+     * @return array{total_due: float, invoices: int, ageing: list<array{label: string, amount: float, invoices: int}>, top_dealers: list<array<string, mixed>>}
+     */
+    public function getDealerOutstanding(?int $storeId, int $limit = 5): array
+    {
+        $storeIds = $storeId ? [$storeId] : array_map('intval', (array) request()->attributes->get('store_context_ids', []));
+        $open = collect();
+        foreach ($storeIds as $id) {
+            $open = $open->concat(app(DealerBalances::class)->open($id));
+        }
+        $buckets = [[0, 30, '0–30 days'], [31, 60, '31–60 days'], [61, 90, '61–90 days'], [91, null, '90+ days']];
+        // Invoice dates are business (shop) dates; the app clock runs in UTC.
+        $today = Carbon::today(config('app.business_timezone'))->setTimezone(config('app.timezone'))->startOfDay();
+        $age = fn ($date) => max(0, (int) Carbon::parse($date)->startOfDay()->diffInDays($today, false));
+        $ageing = array_map(function ($bucket) use ($open, $age) {
+            $rows = $open->filter(function ($invoice) use ($bucket, $age) {
+                $days = $age($invoice['invoice_date']);
+
+                return $days >= $bucket[0] && ($bucket[1] === null || $days <= $bucket[1]);
+            });
+
+            return ['label' => $bucket[2], 'amount' => round($rows->sum('balance'), 2), 'invoices' => $rows->count()];
+        }, $buckets);
+
+        return [
+            'total_due' => round($open->sum('balance'), 2),
+            'invoices' => $open->count(),
+            'ageing' => $ageing,
+            'top_dealers' => $open->groupBy('customer_id')->map(fn ($rows, $id) => [
+                'customer_id' => (int) $id, 'customer_name' => $rows->first()['customer_name'] ?? 'Dealer', 'invoices' => $rows->count(),
+                'due' => round($rows->sum('balance'), 2), 'oldest_days' => $age($rows->min('invoice_date')),
+            ])->sortByDesc('due')->take($limit)->values()->all(),
+        ];
     }
 
     /**

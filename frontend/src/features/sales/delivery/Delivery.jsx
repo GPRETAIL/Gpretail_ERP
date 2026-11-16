@@ -3,7 +3,7 @@ import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { Alert, Box, Button, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Stack, TextField, ToggleButton, ToggleButtonGroup, Typography } from "@mui/material";
-import { Minus, PackageCheck, Plus, RefreshCw, ScanLine, Search, Trash2 } from "lucide-react";
+import { CheckCheck, Minus, PackageCheck, Plus, RefreshCw, ScanLine, Search, Trash2 } from "lucide-react";
 import api from "@/shared/api/apiClient";
 import PageHeader from "@/shared/components/PageHeader";
 import Breadcrumbs from "@/shared/components/Breadcrumbs";
@@ -13,7 +13,7 @@ import useSearchGrid from "@/shared/hooks/useSearchGrid";
 import { masterSearchAreaSx } from "@/shared/theme/erpUi";
 import ApprovalDialog from "@/features/sales/approvals/components/ApprovalDialog";
 import { approvalRequirementFrom, isApprovalRequired } from "@/features/sales/approvals/utils/approvals";
-import { countScan, deliverySummary, emptyCounts, setLineCount } from "@/features/sales/delivery/utils/deliveryCount";
+import { checkMethod, countScan, deliverySummary, emptyCounts, setLineCount, verifyAll } from "@/features/sales/delivery/utils/deliveryCount";
 
 const qtyText = (value) => Number(value || 0).toLocaleString("en-IN", { maximumFractionDigits: 3 });
 const items = (value) => `${qtyText(value)} ${Number(value) === 1 ? "item" : "items"}`;
@@ -181,6 +181,7 @@ export default function Delivery() {
       const res = await api.post("/deliveries", {
         source_type: bill.source_type,
         source_id: bill.source_id,
+        method: checkMethod(counts),
         items: lines.map((line) => ({ product_id: line.product_id, variant_id: line.variant_id, qty: counts.lines[line.key]?.qty || 0, barcodes: counts.lines[line.key]?.barcodes || [] }))
           .filter((item) => item.qty > 0),
         short_reason: summary.missing > 0 ? shortReason.trim() : null,
@@ -224,6 +225,7 @@ export default function Delivery() {
         </Box>
       ),
     },
+    { key: "check_label", label: "Checked", valueGetter: (row) => row.check_label || "Scanned" },
     { key: "delivered_by", label: "Delivered by", valueGetter: (row) => row.delivered_by || "-" },
     { key: "approved_by", label: "Approved by", valueGetter: (row) => row.approved_by || "-" },
   ], []);
@@ -355,6 +357,11 @@ export default function Delivery() {
                 </Typography>
                 <Stack direction="row" spacing={1}>
                   <Button onClick={() => { setBill(null); setCounts(emptyCounts()); setFeedback(null); setTimeout(() => billRef.current?.focus(), 0); }}>Cancel</Button>
+                  {bill.can_verify_all && summary.missing > 0 && (
+                    <Button variant="outlined" startIcon={<CheckCheck size={16} />} onClick={() => { setCounts((current) => verifyAll(lines, current)); setFeedback({ severity: "info", text: "All items marked as checked." }); }}>
+                      Verify all
+                    </Button>
+                  )}
                   <Button variant="contained" color={summary.missing > 0 ? "warning" : "success"} startIcon={saving ? <CircularProgress size={14} color="inherit" /> : <PackageCheck size={16} />}
                     disabled={saving || summary.extra > 0 || summary.counted <= 0} onClick={onHandOverClick}>
                     {summary.extra > 0 ? "Remove extra items first" : summary.missing > 0 ? "Hand over short" : "Hand over"}

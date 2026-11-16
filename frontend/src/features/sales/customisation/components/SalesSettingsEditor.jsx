@@ -48,7 +48,7 @@ import {
   shouldShowSalesReceiptDiscountColumn,
   wrapSalesReceiptText,
 } from "@/features/sales/customisation/utils/salesReceiptCustomisation";
-import { Box, Stack, Typography, TextField, Button, IconButton, Switch, Table, TableHead, TableBody, TableRow, TableCell, Dialog, DialogTitle, DialogContent, Tabs, Tab, alpha } from "@mui/material";
+import { Box, Stack, Typography, TextField, Button, IconButton, Switch, Table, TableHead, TableBody, TableRow, TableCell, Dialog, DialogTitle, DialogContent, Tabs, Tab, MenuItem, alpha } from "@mui/material";
 import { FIELD_HEIGHT, muiFieldSx } from "@/shared/theme/formControlSizes";
 
 const fieldLabelSx = { mb: 0.5, display: "block", fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" };
@@ -1200,6 +1200,19 @@ export default function SalesSettingsEditor({ section = "sales", onDirtyChange }
               }
             }}
           />
+
+          <Box sx={{ ...baseCardSx, p: 2.5 }}>
+            <Typography component="label" htmlFor="delivery-verify-all" sx={fieldLabelSx}>Delivery: "Verify all" in one click</Typography>
+            <Typography sx={{ fontSize: TYPE.small, color: "text.secondary", mb: 1.5 }}>
+              On Sales &gt; Delivery, marks every item of the bill as checked without scanning each one. The delivery register shows which bills were verified by click.
+            </Typography>
+            <TextField id="delivery-verify-all" select size="small" value={settings.deliveryVerifyAll || "everyone"} sx={{ minWidth: 260 }}
+              onChange={(e) => updateSetting({ deliveryVerifyAll: e.target.value })}>
+              <MenuItem value="everyone">Everyone</MenuItem>
+              <MenuItem value="supervisor">Supervisors and above</MenuItem>
+              <MenuItem value="off">Off (scan every item)</MenuItem>
+            </TextField>
+          </Box>
 
           <Box sx={{ ...baseCardSx, p: 2.5 }}><Typography sx={{ mb: 1 }}>Receipt sizes, layout, fonts, barcode and payment QR settings are managed in Print Formats.</Typography><Button href="/sales/receipt-formats?section=thermal" variant="outlined">Edit Receipt Format</Button></Box>
           </> : null}

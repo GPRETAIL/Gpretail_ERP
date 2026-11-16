@@ -14,7 +14,7 @@ class Delivery extends Model
     public const SHORT = 'short';
 
     protected $fillable = [
-        'store_id', 'source_type', 'source_id', 'bill_no', 'customer_id', 'status', 'expected_qty', 'delivered_qty',
+        'store_id', 'source_type', 'source_id', 'bill_no', 'customer_id', 'status', 'check_method', 'expected_qty', 'delivered_qty',
         'short_reason', 'approval_request_id', 'approved_by', 'delivered_by', 'delivered_at',
     ];
 

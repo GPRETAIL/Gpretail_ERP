@@ -4,7 +4,20 @@
  */
 const EPSILON = 0.0005;
 
-export const emptyCounts = () => ({ lines: {}, extras: [], nextId: 1 });
+export const emptyCounts = () => ({ lines: {}, extras: [], nextId: 1, verifiedByClick: false });
+
+/** "Verify all": every line counted as due in one click (scanned stickers are kept). */
+export const verifyAll = (lines, counts) => ({
+  ...counts,
+  verifiedByClick: true,
+  lines: Object.fromEntries(lines.map((line) => [line.key, { qty: line.expected_qty, barcodes: counts.lines[line.key]?.barcodes || [] }])),
+});
+
+/** How the bill was checked, for the delivery register: scan, click, or mixed (some items scanned first). */
+export const checkMethod = (counts) => {
+  if (!counts.verifiedByClick) return "scan";
+  return Object.values(counts.lines).some((entry) => entry.barcodes.length > 0) ? "mixed" : "click";
+};
 
 const round3 = (value) => Math.round(Number(value || 0) * 1000) / 1000;
 const label = (line) => `${line.name}${line.size ? ` (${line.size})` : ""}`;

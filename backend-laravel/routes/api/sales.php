@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\V1\Sales\ApprovalController;
 use App\Http\Controllers\Api\V1\Sales\CashRegisterController;
 use App\Http\Controllers\Api\V1\Sales\DealerInvoiceController;
+use App\Http\Controllers\Api\V1\Sales\DealerReceiptController;
 use App\Http\Controllers\Api\V1\Sales\DeliveryController;
 use App\Http\Controllers\Api\V1\Sales\IncentiveController;
 use App\Http\Controllers\Api\V1\Sales\PosOfflineController;
@@ -27,6 +28,14 @@ Route::get('incentives/options', [IncentiveController::class, 'options']);
 Route::get('incentives/explain', [IncentiveController::class, 'explain']);
 Route::get('incentives/report', [IncentiveController::class, 'report']);
 Route::post('incentives/approve', [IncentiveController::class, 'approve']);
+
+// Sales > Dealer Receipt: dues collected from dealers against their invoices.
+Route::get('dealer-receipts/dealers', [DealerReceiptController::class, 'dealers']);
+Route::get('dealer-receipts/open-invoices', [DealerReceiptController::class, 'openInvoices']);
+Route::get('dealer-receipts', [DealerReceiptController::class, 'index']);
+Route::post('dealer-receipts', [DealerReceiptController::class, 'store']);
+Route::get('dealer-receipts/{id}', [DealerReceiptController::class, 'show'])->whereNumber('id');
+Route::delete('dealer-receipts/{id}', [DealerReceiptController::class, 'destroy'])->whereNumber('id');
 
 // Sales > Delivery: check a bill's items at handover.
 Route::get('deliveries/bill', [DeliveryController::class, 'bill']);

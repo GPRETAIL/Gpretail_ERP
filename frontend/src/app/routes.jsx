@@ -114,6 +114,7 @@ const PosSales = lazy(() => import("@/features/sales/pos/PosSales"));
 const PosReturn = lazy(() => import("@/features/sales/pos/PosReturn"));
 const DealerInvoice = lazy(() => import("@/features/sales/dealer/DealerInvoice"));
 const DealerInvoiceReturn = lazy(() => import("@/features/sales/dealer/DealerInvoiceReturn"));
+const DealerReceipt = lazy(() => import("@/features/sales/dealer/DealerReceipt"));
 const SalesOnApproval = lazy(() => import("@/features/sales/approvals/SalesOnApproval"));
 const ApprovalInbox = lazy(() => import("@/features/sales/approvals/ApprovalInbox"));
 const Approvals = lazy(() => import("@/features/sales/approvals/Approvals"));
@@ -270,6 +271,7 @@ export const protectedLayoutRoutes = [
   { path: "/sales/pos-sales-return", render: () => <PosReturn /> },
   { path: "/sales/dealer-invoice", render: () => <DealerInvoice /> },
   { path: "/sales/dealer-invoice-return", render: () => <DealerInvoiceReturn /> },
+  { path: "/sales/dealer-receipt", render: () => <DealerReceipt /> },
   { path: "/sales/sales-on-approval", render: () => <SalesOnApproval /> },
   { path: "/sales/stock-item-locator", render: () => <ItemLocator endpoint="/item-locator" /> },
   { path: "/sales/approval-inbox", render: () => <ApprovalInbox /> },

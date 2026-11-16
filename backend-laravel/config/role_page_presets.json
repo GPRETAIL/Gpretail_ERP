@@ -240,6 +240,12 @@
       "edit": true,
       "delete": true
     },
+    "/sales/dealer-receipt": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": false
+    },
     "/sales/touch-sales": {
       "view": true,
       "add": true,
@@ -1066,6 +1072,12 @@
       "view": true,
       "add": false,
       "edit": false,
+      "delete": false
+    },
+    "/sales/dealer-receipt": {
+      "view": true,
+      "add": true,
+      "edit": true,
       "delete": false
     },
     "/sales/touch-sales": {

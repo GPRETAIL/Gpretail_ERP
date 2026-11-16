@@ -163,4 +163,30 @@ class DeliveryTest extends TestCase
             ->assertJsonPath('data.unique', false); // PACK items share one barcode, so each scan counts
         $this->getJson('/api/deliveries/scan?barcode=NOPE-123')->assertNotFound();
     }
+
+    public function test_verify_all_follows_the_store_setting_and_is_recorded(): void
+    {
+        $setting = fn (string $value) => DB::table('stores')->where('id', $this->fixture['store']->id)->update(['receipt_customization' => json_encode(['deliveryVerifyAll' => $value])]);
+        $handover = fn (array $bill) => ['source_type' => 'pos_sale', 'source_id' => $bill['source_id'], 'items' => [$this->counted(0, 1)], 'method' => 'click'];
+
+        // Default: everyone may verify all; the register says how the bill was checked.
+        $bill = $this->posBill([[0, 1]]);
+        $this->assertTrue($bill['can_verify_all']);
+        $this->postJson('/api/deliveries', $handover($bill))->assertCreated()->assertJsonPath('data.check_method', 'click');
+        $this->getJson('/api/deliveries')->assertJsonPath('data.0.check_label', 'Verified by click');
+
+        // Supervisors and above only: a cashier is refused and must scan; the store admin may.
+        $setting('supervisor');
+        $bill = $this->posBill([[0, 1]]);
+        Sanctum::actingAs($this->cashier());
+        $this->assertFalse($this->getJson('/api/deliveries/bill?no='.$bill['bill_no'])->json('data.can_verify_all'));
+        $this->postJson('/api/deliveries', $handover($bill))->assertForbidden();
+        $this->postJson('/api/deliveries', [...$handover($bill), 'method' => 'scan'])->assertCreated()->assertJsonPath('data.check_method', 'scan');
+
+        // Off: nobody, not even the admin.
+        $setting('off');
+        Sanctum::actingAs($this->fixture['user']);
+        $bill = $this->posBill([[0, 1]]);
+        $this->postJson('/api/deliveries', [...$handover($bill), 'method' => 'mixed'])->assertForbidden();
+    }
 }

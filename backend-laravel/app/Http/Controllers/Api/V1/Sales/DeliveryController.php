@@ -27,7 +27,7 @@ class DeliveryController extends Controller
             return response()->json(['success' => false, 'message' => 'No POS bill or dealer invoice '.$request->input('no').' in this store.'], 404);
         }
 
-        return response()->json(['success' => true, 'data' => $bill]);
+        return response()->json(['success' => true, 'data' => [...$bill, 'can_verify_all' => $this->deliveries->mayVerifyAll($request->user(), (int) $this->resolveStoreId($request, null))]]);
     }
 
     public function scan(Request $request): JsonResponse
@@ -44,6 +44,7 @@ class DeliveryController extends Controller
     {
         $data = $request->validate([
             'source_type' => 'required|in:pos_sale,dealer_invoice',
+            'method' => 'nullable|in:scan,click,mixed',
             'source_id' => 'required|integer|min:1',
             'items' => 'present|array|max:2000',
             'items.*.product_id' => 'required|integer',
@@ -84,6 +85,8 @@ class DeliveryController extends Controller
             'customer' => $row->customer?->name ?: 'Walk-in Customer',
             'status' => $row->status,
             'status_label' => $row->status === Delivery::SHORT ? 'Short delivered' : 'Delivered',
+            'check_method' => $row->check_method,
+            'check_label' => ['click' => 'Verified by click', 'mixed' => 'Mixed'][$row->check_method] ?? 'Scanned',
             'expected_qty' => (float) $row->expected_qty,
             'delivered_qty' => (float) $row->delivered_qty,
             'short_qty' => round((float) $row->expected_qty - (float) $row->delivered_qty, 3),

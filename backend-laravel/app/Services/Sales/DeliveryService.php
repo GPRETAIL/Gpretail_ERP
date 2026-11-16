@@ -94,7 +94,12 @@ class DeliveryService
      */
     public function deliver(User $user, int $storeId, array $input, bool $trustedReplay = false): Delivery
     {
-        return DB::transaction(function () use ($user, $storeId, $input, $trustedReplay) {
+        $method = in_array($input['method'] ?? 'scan', ['scan', 'click', 'mixed'], true) ? ($input['method'] ?? 'scan') : 'scan';
+        if ($method !== 'scan' && ! $trustedReplay && ! $this->mayVerifyAll($user, $storeId)) {
+            abort(403, 'Verify all is not allowed for you in this store. Scan each item.');
+        }
+
+        return DB::transaction(function () use ($user, $storeId, $input, $trustedReplay, $method) {
             $source = $this->source($input['source_type'], (int) $input['source_id']);
             $type = $this->typeOf($source);
             $source->newQuery()->whereKey($source->getKey())->lockForUpdate()->first();
@@ -142,7 +147,7 @@ class DeliveryService
 
             $delivery = Delivery::create([
                 'store_id' => $storeId, 'source_type' => $type, 'source_id' => $source->getKey(), 'bill_no' => $this->billNo($source),
-                'customer_id' => $source->customer_id, 'status' => $shortUnits > 0 ? Delivery::SHORT : Delivery::DELIVERED,
+                'customer_id' => $source->customer_id, 'status' => $shortUnits > 0 ? Delivery::SHORT : Delivery::DELIVERED, 'check_method' => $method,
                 'expected_qty' => round($lines->sum('expected_qty'), 3), 'delivered_qty' => round(collect($counted)->sum('qty'), 3),
                 'short_reason' => $shortUnits > 0 ? mb_substr($reason, 0, 500) : null,
                 'approval_request_id' => $approval?->id,
@@ -163,6 +168,26 @@ class DeliveryService
 
             return $delivery->load(['items', 'deliverer:id,name', 'approver:id,name']);
         });
+    }
+
+    /**
+     * Sales Customisation > Delivery "Verify all": everyone (default), supervisors and above, or off.
+     */
+    public function verifyAllSetting(int $storeId): string
+    {
+        $value = (string) (DB::table('stores')->where('id', $storeId)->value('receipt_customization') ?? '');
+        $setting = json_decode($value, true)['deliveryVerifyAll'] ?? 'everyone';
+
+        return in_array($setting, ['off', 'supervisor', 'everyone'], true) ? $setting : 'everyone';
+    }
+
+    public function mayVerifyAll(User $user, int $storeId): bool
+    {
+        return match ($this->verifyAllSetting($storeId)) {
+            'everyone' => true,
+            'supervisor' => in_array($user->role, ApprovalService::APPROVER_ROLES, true),
+            default => false,
+        };
     }
 
     /** @return array<string, mixed> */
@@ -190,7 +215,7 @@ class DeliveryService
     public function presentDelivery(Delivery $delivery): array
     {
         return [
-            'id' => $delivery->id, 'status' => $delivery->status, 'bill_no' => $delivery->bill_no,
+            'id' => $delivery->id, 'status' => $delivery->status, 'bill_no' => $delivery->bill_no, 'check_method' => $delivery->check_method,
             'expected_qty' => (float) $delivery->expected_qty, 'delivered_qty' => (float) $delivery->delivered_qty,
             'short_reason' => $delivery->short_reason,
             'delivered_by' => $delivery->deliverer?->name, 'approved_by' => $delivery->approver?->name,

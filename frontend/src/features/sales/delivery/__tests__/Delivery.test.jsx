@@ -110,7 +110,7 @@ it("hands over when every item is scanned, and blocks while an extra item is in 
   fireEvent.click(screen.getByRole("button", { name: "Hand over" }));
 
   await waitFor(() => expect(mocks.post).toHaveBeenCalledWith("/deliveries", {
-    source_type: "pos_sale", source_id: 7, short_reason: null,
+    source_type: "pos_sale", source_id: 7, short_reason: null, method: "scan",
     items: [{ product_id: 10, variant_id: 100, qty: 2, barcodes: ["SC001", "SC002"] }, { product_id: 20, variant_id: null, qty: 1, barcodes: ["CAP"] }],
   }));
   expect(await screen.findByText(/handed over: all 3 items/)).toBeInTheDocument();
@@ -144,4 +144,28 @@ it("a missing item asks for a reason, then a supervisor's approval, and sends th
   })));
   await waitFor(() => expect(mocks.post).toHaveBeenLastCalledWith("/deliveries", expect.objectContaining({ short_reason: "Cap out of stock", approvalToken: "tok-1" })));
   expect(await screen.findByText(/handed over short: 2 of 3 items, approved by Sup/)).toBeInTheDocument();
+});
+
+it("Verify all marks every item in one click and the handover says so", async () => {
+  mocks.get.mockImplementation(async (url, { params } = {}) => {
+    if (url === "/deliveries") return { data: { data: [] } };
+    if (url === "/deliveries/bill") return { data: { data: { ...BILL, can_verify_all: true } } };
+    if (url === "/deliveries/scan") return { data: { data: { ...SCANS[params.barcode], barcode: params.barcode } } };
+    throw new Error(`unexpected ${url}`);
+  });
+  mocks.post.mockResolvedValue({ data: { message: "Handed over.", data: { status: "delivered", bill_no: "261116-0007", delivered_qty: 3, expected_qty: 3 } } });
+  await openBill();
+  await scanItem("SC001");
+  fireEvent.click(screen.getByRole("button", { name: "Verify all" }));
+  expect(screen.queryByRole("button", { name: "Verify all" })).toBeNull(); // nothing left to verify
+  fireEvent.click(screen.getByRole("button", { name: "Hand over" }));
+  await waitFor(() => expect(mocks.post).toHaveBeenCalledWith("/deliveries", expect.objectContaining({
+    method: "mixed",
+    items: [{ product_id: 10, variant_id: 100, qty: 2, barcodes: ["SC001"] }, { product_id: 20, variant_id: null, qty: 1, barcodes: [] }],
+  })));
+});
+
+it("Verify all is hidden when the store does not allow it for this user", async () => {
+  await openBill();
+  expect(screen.queryByRole("button", { name: "Verify all" })).toBeNull();
 });

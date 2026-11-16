@@ -60,6 +60,12 @@ class DealerInvoice extends Model
         return $this->belongsTo(Customer::class);
     }
 
+    /** @return HasMany<DealerInvoicePayment, $this> */
+    public function payments(): HasMany
+    {
+        return $this->hasMany(DealerInvoicePayment::class);
+    }
+
     /** @return HasMany<DealerInvoiceItem, $this> */
     public function items(): HasMany
     {
