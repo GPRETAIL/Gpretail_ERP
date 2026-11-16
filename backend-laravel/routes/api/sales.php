@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\V1\Sales\ApprovalController;
 use App\Http\Controllers\Api\V1\Sales\CashRegisterController;
 use App\Http\Controllers\Api\V1\Sales\DealerInvoiceController;
+use App\Http\Controllers\Api\V1\Sales\DeliveryController;
 use App\Http\Controllers\Api\V1\Sales\PosOfflineController;
 use App\Http\Controllers\Api\V1\Sales\PosReturnController;
 use App\Http\Controllers\Api\V1\Sales\PosSaleController;
@@ -13,6 +14,12 @@ use Illuminate\Support\Facades\Route;
 
 // POS sales and returns, approvals, dealer invoices, cash register, settlements and sales reports.
 // Loaded inside the authenticated app-route group in routes/api.php.
+
+// Sales > Delivery: check a bill's items at handover.
+Route::get('deliveries/bill', [DeliveryController::class, 'bill']);
+Route::get('deliveries/scan', [DeliveryController::class, 'scan']);
+Route::get('deliveries', [DeliveryController::class, 'index']);
+Route::post('deliveries', [DeliveryController::class, 'store']);
 
 // POS Special Endpoints (Must be registered before apiResource)
 Route::get('pos-sales/next-bill-no', [PosSaleController::class, 'nextBillNo']);

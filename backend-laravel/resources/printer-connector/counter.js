@@ -24,6 +24,8 @@ const UPDATE_EVERY_MS = 10 * 60 * 1000;
 // Windows' own tar (bsdtar) reads zip files; a tar found earlier on PATH (Git's GNU tar) does not.
 const TAR = process.platform === 'win32' ? path.join(process.env.SystemRoot || 'C:/Windows', 'System32', 'tar.exe') : 'tar';
 const PROXY_TIMEOUT_MS = 30000;
+// Reading an invoice with the AI service can take a minute or more.
+const SLOW_PATHS = [{ prefix: '/api/v1/invoice-ai/', timeout: 180000 }];
 const PROXIED = ['/api/', '/files/'];
 const TYPES = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8',
@@ -78,7 +80,8 @@ function proxy(req, res, config) {
   const target = new URL(req.url, config.upstream + '/');
   const client = target.protocol === 'https:' ? https : http;
   const headers = { ...req.headers, host: target.host };
-  const upstream = client.request(target, { method: req.method, headers, timeout: PROXY_TIMEOUT_MS }, (answer) => {
+  const timeout = (SLOW_PATHS.find((p) => req.url.startsWith(p.prefix)) || { timeout: PROXY_TIMEOUT_MS }).timeout;
+  const upstream = client.request(target, { method: req.method, headers, timeout }, (answer) => {
     res.writeHead(answer.statusCode || 502, answer.headers);
     answer.pipe(res);
   });

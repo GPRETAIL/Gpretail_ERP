@@ -118,6 +118,7 @@ const SalesOnApproval = lazy(() => import("@/features/sales/approvals/SalesOnApp
 const ApprovalInbox = lazy(() => import("@/features/sales/approvals/ApprovalInbox"));
 const Approvals = lazy(() => import("@/features/sales/approvals/Approvals"));
 const OfflineBills = lazy(() => import("@/features/sales/pos/offline/OfflineBills"));
+const Delivery = lazy(() => import("@/features/sales/delivery/Delivery"));
 const Settlement = lazy(() => import("@/features/sales/settlement/Settlement"));
 const SalesReports = lazy(() => import("@/features/sales/reports/SalesReports"));
 const TouchSales = lazy(() => import("@/features/sales/pos/TouchSales"));
@@ -271,6 +272,7 @@ export const protectedLayoutRoutes = [
   { path: "/sales/approval-inbox", render: () => <ApprovalInbox /> },
   { path: "/sales/approvals", render: () => <Approvals /> },
   { path: "/sales/offline-bills", render: () => <OfflineBills /> },
+  { path: "/sales/delivery", render: () => <Delivery /> },
   { path: "/sales/settlement", render: () => <Settlement /> },
   { path: "/sales/reports", render: () => <SalesReports /> },
   { path: "/sales/touch-sales", render: () => <TouchSales /> },

@@ -1,6 +1,6 @@
 # API reference
 
-Every endpoint under `/api`, grouped by module (671 endpoints). Generated from
+Every endpoint under `/api`, grouped by module (677 endpoints). Generated from
 `php artisan route:list --sort=definition --json`; regenerate it after changing routes.
 
 - Each signed-in endpoint is also served under `/api/v1/...` with the same behaviour.
@@ -10,10 +10,11 @@ Every endpoint under `/api`, grouped by module (671 endpoints). Generated from
 - Route files: public entry routes in `routes/api.php`, signed-in routes in `routes/api/<module>.php`,
   invoice AI in `routes/invoice_ai.php`.
 
+
 ## Modules
 
 - [Analytical](#analytical) (2)
-- [Auth](#auth) (18)
+- [Auth](#auth) (25)
 - [Crm](#crm) (28)
 - [Dashboards](#dashboards) (25)
 - [Finance](#finance) (23)
@@ -21,11 +22,11 @@ Every endpoint under `/api`, grouped by module (671 endpoints). Generated from
 - [Masters](#masters) (120)
 - [Notifications](#notifications) (11)
 - [Other](#other) (1)
-- [Platform](#platform) (23)
-- [Sales](#sales) (94)
+- [Platform](#platform) (28)
+- [Sales](#sales) (98)
 - [Settings](#settings) (73)
 - [Store](#store) (18)
-- [Warehouse](#warehouse) (65)
+- [Warehouse](#warehouse) (67)
 
 ## Analytical
 
@@ -54,9 +55,9 @@ Every endpoint under `/api`, grouped by module (671 endpoints). Generated from
 | GET | `/api/local-server-config/runtime` | AuthController@localServerConfigRuntime | yes |
 | POST | `/api/local-server-config/connect` | AuthController@connectToCloud | yes |
 | POST | `/api/local-server-config/bootstrap` | AuthController@bootstrapOnPrem | no |
-| POST | `/api/local-server-config/sync-now` | AuthController@syncNow | yes |
-| POST | `/api/local-server-config/pause` | AuthController@localServerPause | yes |
 | GET | `/api/local-server-config/counter-installer` | AuthController@localServerCounterInstaller | yes |
+| POST | `/api/local-server-config/pause` | AuthController@localServerPause | yes |
+| POST | `/api/local-server-config/sync-now` | AuthController@syncNow | yes |
 | POST | `/api/local-server-config/recopy` | AuthController@recopyFromCloud | yes |
 | GET | `/api/local-server-config/progress` | AuthController@syncProgress | yes |
 | POST | `/api/auth/failover-session` | AuthController@failoverSession | yes |
@@ -502,6 +503,10 @@ Every endpoint under `/api`, grouped by module (671 endpoints). Generated from
 
 | Method | Path | Controller action | Auth |
 |---|---|---|---|
+| GET | `/api/deliveries/bill` | DeliveryController@bill | yes |
+| GET | `/api/deliveries/scan` | DeliveryController@scan | yes |
+| GET | `/api/deliveries` | DeliveryController@index | yes |
+| POST | `/api/deliveries` | DeliveryController@store | yes |
 | GET | `/api/pos-sales/next-bill-no` | PosSaleController@nextBillNo | yes |
 | GET | `/api/pos-sales/offline/series` | PosOfflineController@series | yes |
 | GET | `/api/pos-sales/offline/catalog` | PosOfflineController@catalog | yes |
@@ -670,10 +675,10 @@ Every endpoint under `/api`, grouped by module (671 endpoints). Generated from
 | GET | `/api/remote-support/active` | RemoteSupportController@activeSession | yes |
 | POST | `/api/remote-support/{id}/cancel` | RemoteSupportController@cancelSession | yes |
 | GET | `/api/remote-support/sessions` | RemoteSupportController@index | yes |
+| POST | `/api/remote-support/{id}/end` | RemoteSupportController@endSession | yes |
 | GET | `/api/login-sessions` | LoginSessionController@index | yes |
 | DELETE | `/api/login-sessions/user/{userId}` | LoginSessionController@destroyUser | yes |
 | DELETE | `/api/login-sessions/{id}` | LoginSessionController@destroy | yes |
-| POST | `/api/remote-support/{id}/end` | RemoteSupportController@endSession | yes |
 
 ## Store
 
@@ -702,6 +707,8 @@ Every endpoint under `/api`, grouped by module (671 endpoints). Generated from
 
 | Method | Path | Controller action | Auth |
 |---|---|---|---|
+| GET | `/api/phone-upload/{token}` | PhoneUploadController@phoneInfo | no |
+| POST | `/api/phone-upload/{token}` | PhoneUploadController@phoneStore | no |
 | GET | `/api/transport-entries/next-lr-number` | TransportEntryController@nextLrNumber | yes |
 | GET | `/api/transport-entries/duplicates` | TransportEntryController@duplicates | yes |
 | POST | `/api/transport-entries/{id}/attachments` | TransportEntryController@storeAttachment | yes |

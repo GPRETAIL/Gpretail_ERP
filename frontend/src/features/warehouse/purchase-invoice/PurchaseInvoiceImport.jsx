@@ -2,7 +2,7 @@ import { TYPE } from "@/shared/theme/typeScale";
 import PageHeader from "@/shared/components/PageHeader";
 import React, { useState, useEffect, useMemo, useCallback as _useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { CheckCircle2, FileText, Image as ImageIcon, Loader2, Package, Plus, Printer, Receipt, RotateCcw, Sparkles, Tag, Truck, UploadCloud, X } from "lucide-react";
+import { CheckCircle2, FileText, Image as ImageIcon, Loader2, Monitor, Package, Plus, Printer, Receipt, RotateCcw, Smartphone, Sparkles, Tag, Truck, UploadCloud, X } from "lucide-react";
 import {
   Box,
   Stack,
@@ -33,6 +33,7 @@ import {
 } from "@mui/material";
 import api from "@/shared/api/apiClient";
 import AsyncSearchSelect from "@/shared/components/AsyncSearchSelect";
+import PhoneUploadDialog from "./components/PhoneUploadDialog";
 
 const ACCEPTED_TYPES = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
 const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15 MB
@@ -56,11 +57,14 @@ export default function PurchaseInvoiceImport() {
 
   // Step 1: Upload state
   const [file, setFile] = useState(null);
+  const currentFile = file;
   const [dragging, setDragging] = useState(false);
   const [extracting, setExtracting] = useState(false);
   const [extractProgress, setExtractProgress] = useState(0);
   const [extractStep, setExtractStep] = useState("");
   const [error, setError] = useState("");
+  // Upload from phone: a QR code the phone scans to send the invoice here; it is read as soon as it arrives.
+  const [phoneOpen, setPhoneOpen] = useState(false);
 
   // Step 2: Extracted & Reviewed Form State
   const [activeTab, setActiveTab] = useState("invoice");
@@ -195,7 +199,9 @@ export default function PurchaseInvoiceImport() {
   };
 
   // Trigger OCR & AI Extraction with Live Progress
-  const handleExtract = async () => {
+  // With a file argument (Upload from phone) that file is read at once; otherwise the one chosen on the page.
+  const handleExtract = async (chosen) => {
+    const file = chosen instanceof File ? chosen : currentFile;
     if (!file || extracting) return;
     setExtracting(true);
     setExtractProgress(5);
@@ -411,6 +417,12 @@ export default function PurchaseInvoiceImport() {
       if (progressTimer) clearInterval(progressTimer);
       setExtracting(false);
     }
+  };
+
+  const handlePhoneFile = (picked) => {
+    setPhoneOpen(false);
+    handleFileSelect(picked);
+    handleExtract(picked);
   };
 
   // Line items updater
@@ -1002,6 +1014,8 @@ export default function PurchaseInvoiceImport() {
         </>}
       />
 
+      <PhoneUploadDialog open={phoneOpen} onClose={() => setPhoneOpen(false)} onFile={handlePhoneFile} />
+
       {/* Error Banner */}
       {error && (
         <Alert severity="error" onClose={() => setError("")} sx={{ mb: 2.5, borderRadius: "8px" }}>
@@ -1258,24 +1272,32 @@ export default function PurchaseInvoiceImport() {
                       PDF, JPG, PNG or WEBP (Up to 15 MB)
                     </Typography>
 
-                    <Button
-                      variant="contained"
-                      size="small"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        fileInputRef.current?.click();
-                      }}
-                      sx={{
-                        mt: 2,
-                        bgcolor: INDIGO,
-                        "&:hover": { bgcolor: INDIGO_HOVER },
-                        textTransform: "none",
-                        fontWeight: 600,
-                        borderRadius: "8px",
-                      }}
-                    >
-                      Browse Invoice File
-                    </Button>
+                    <Stack direction={{ xs: "column", sm: "row" }} spacing={1} sx={{ mt: 2, width: { xs: "100%", sm: "auto" } }}>
+                      <Button
+                        variant="contained"
+                        size="small"
+                        startIcon={<Monitor size={15} />}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          fileInputRef.current?.click();
+                        }}
+                        sx={{ bgcolor: INDIGO, "&:hover": { bgcolor: INDIGO_HOVER }, textTransform: "none", fontWeight: 600, borderRadius: "8px" }}
+                      >
+                        From this PC
+                      </Button>
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        startIcon={<Smartphone size={15} />}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setPhoneOpen(true);
+                        }}
+                        sx={{ textTransform: "none", fontWeight: 600, borderRadius: "8px" }}
+                      >
+                        From phone
+                      </Button>
+                    </Stack>
                   </Box>
 
                   {/* Sample Verification Quick Loader */}
@@ -1346,7 +1368,7 @@ export default function PurchaseInvoiceImport() {
                       </Box>
                       <Button
                         variant="contained"
-                        onClick={handleExtract}
+                        onClick={() => handleExtract()}
                         startIcon={<Sparkles size={16} />}
                         sx={{
                           bgcolor: INDIGO,
@@ -1485,7 +1507,7 @@ export default function PurchaseInvoiceImport() {
                     <Button
                       fullWidth
                       variant="contained"
-                      onClick={handleExtract}
+                      onClick={() => handleExtract()}
                       disabled={extracting}
                       startIcon={<Sparkles size={16} />}
                       sx={{

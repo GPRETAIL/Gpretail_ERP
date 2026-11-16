@@ -13,6 +13,7 @@ import PwaInstallPrompt from "@/shared/layout/PwaInstallPrompt";
 import StoreSelectionDialog from "@/shared/layout/StoreSelectionDialog";
 import PlatformNotificationBanner from "@/features/notifications/components/PlatformNotificationBanner";
 import { isStaffAppPath } from "@/shared/api/staffSession";
+import PhoneUpload from "@/features/warehouse/purchase-invoice/PhoneUpload";
 
 // A desktop login must not download the mobile workspace (and vice versa).
 const MainLayout = lazy(() => import("@/shared/layout/MainLayout"));
@@ -65,6 +66,8 @@ function App() {
                   />
                   <Route path="/login" element={isAuthenticated && authUser?.auth_client !== "mobile" ? <Navigate to={homePath} replace /> : <Login />} />
                   <Route path="/set-password" element={<SetPassword />} />
+                  {/* AI invoice Upload from phone: opened from a QR code, no sign-in (the one-time link is the permission). */}
+                  <Route path="/phone-upload/:token" element={<PhoneUpload />} />
                   <Route path="/app/*" element={<VynerixMobileApp />} />
                   {isAuthenticated && authUser?.web_access === false && <Route path="/notifications" element={<Navigate to="/app?notifications=1" replace />} />}
                   <Route element={<ProtectedRoute />}>

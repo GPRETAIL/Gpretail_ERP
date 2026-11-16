@@ -6,6 +6,7 @@ export const APPROVAL_REASONS = {
   manager_discretion: "Manager discretion",
   wrong_item: "Wrong item sold",
   customer_complaint: "Customer complaint",
+  item_missing: "Item missing / not available",
   other: "Other",
 };
 

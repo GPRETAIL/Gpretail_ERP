@@ -33,6 +33,7 @@ class CaptureSyncOutbox
         // reviewed purchase (invoice-ai/process-flow) is ordinary data and is synced like any other write.
         'invoice-ai/extract',
         'invoice-ai/engine-config', // This server's own AI service keys.
+        'phone-upload', // Upload from phone: a file handed to this server's page, for a few minutes.
         'sync/',
         'local-server-config',
         'backups', // Node-local archives/restore IDs and OCI/password fields must never be replayed.

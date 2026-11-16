@@ -28,6 +28,8 @@ const describe = (row) => (row.action === "pos_discount"
   ? `Discount ${row.requested_percent}%${row.approved_percent != null && row.approved_percent !== row.requested_percent ? ` (approved ${row.approved_percent}%)` : ""}`
   : row.action === "pos_credit"
     ? `Credit sale ₹${money(row.amount)}`
+    : row.action === "delivery_short"
+      ? `Short delivery: ${Number(row.payload?.short_units || 0)} item(s) on bill ${row.payload?.bill_no || "-"}${row.payload?.reason ? ` · ${row.payload.reason}` : ""}`
     : `Refund ₹${money(row.amount)}${row.payload?.without_receipt ? " · no receipt" : ""}`);
 
 function Inbox() {
@@ -157,9 +159,9 @@ function Inbox() {
             <Typography variant="body2">{deciding && describe(deciding.row)} · requested by {deciding?.row.requested_by?.name}</Typography>
             {deciding?.approve && deciding.row.action === "pos_discount" && (
               <TextField size="small" type="number" label="Approve up to (%)" value={percent} onChange={(e) => setPercent(e.target.value)}
-                helperText="Lower it to make a counter-offer." inputProps={{ min: 0, max: deciding.row.requested_percent, step: 0.5 }} />
+                helperText="Lower it to make a counter-offer." slotProps={{ htmlInput: { min: 0, max: deciding.row.requested_percent, step: 0.5 } }} />
             )}
-            <TextField size="small" label={deciding?.approve ? "Note (optional)" : "Reason for rejecting"} value={note} onChange={(e) => setNote(e.target.value)} inputProps={{ maxLength: 500 }} />
+            <TextField size="small" label={deciding?.approve ? "Note (optional)" : "Reason for rejecting"} value={note} onChange={(e) => setNote(e.target.value)} slotProps={{ htmlInput: { maxLength: 500 } }} />
           </Stack>
         </DialogContent>
         <DialogActions>
@@ -223,10 +225,10 @@ function Limits() {
             {data.limits.map((row) => (
               <TableRow key={row.role}>
                 <TableCell sx={{ fontWeight: 600 }}>{ROLE_LABELS[row.role] || row.role}</TableCell>
-                <TableCell><TextField size="small" type="number" disabled={!data.enabled} value={row.max_discount_percent ?? ""} onChange={(e) => update(row.role, "max_discount_percent", e.target.value)} inputProps={{ min: 0, max: 100, step: 0.5, "aria-label": `${row.role} discount limit` }} sx={{ width: 120 }} /></TableCell>
-                <TableCell><TextField size="small" type="number" disabled={!data.enabled} value={row.max_refund_amount ?? ""} onChange={(e) => update(row.role, "max_refund_amount", e.target.value)} inputProps={{ min: 0, step: 100, "aria-label": `${row.role} refund limit` }} sx={{ width: 140 }} /></TableCell>
-                <TableCell><TextField size="small" type="number" disabled={!data.enabled} value={row.max_credit_amount ?? ""} onChange={(e) => update(row.role, "max_credit_amount", e.target.value)} inputProps={{ min: 0, step: 500, "aria-label": `${row.role} credit limit` }} sx={{ width: 140 }} /></TableCell>
-                <TableCell><Switch size="small" disabled={!data.enabled} checked={Boolean(row.allow_no_receipt_refund)} onChange={(e) => update(row.role, "allow_no_receipt_refund", e.target.checked)} inputProps={{ "aria-label": `${row.role} may refund without bill` }} /></TableCell>
+                <TableCell><TextField size="small" type="number" disabled={!data.enabled} value={row.max_discount_percent ?? ""} onChange={(e) => update(row.role, "max_discount_percent", e.target.value)} slotProps={{ htmlInput: { min: 0, max: 100, step: 0.5, "aria-label": `${row.role} discount limit` } }} sx={{ width: 120 }} /></TableCell>
+                <TableCell><TextField size="small" type="number" disabled={!data.enabled} value={row.max_refund_amount ?? ""} onChange={(e) => update(row.role, "max_refund_amount", e.target.value)} slotProps={{ htmlInput: { min: 0, step: 100, "aria-label": `${row.role} refund limit` } }} sx={{ width: 140 }} /></TableCell>
+                <TableCell><TextField size="small" type="number" disabled={!data.enabled} value={row.max_credit_amount ?? ""} onChange={(e) => update(row.role, "max_credit_amount", e.target.value)} slotProps={{ htmlInput: { min: 0, step: 500, "aria-label": `${row.role} credit limit` } }} sx={{ width: 140 }} /></TableCell>
+                <TableCell><Switch size="small" disabled={!data.enabled} checked={Boolean(row.allow_no_receipt_refund)} onChange={(e) => update(row.role, "allow_no_receipt_refund", e.target.checked)} slotProps={{ input: { "aria-label": `${row.role} may refund without bill` } }} /></TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -259,7 +261,7 @@ function MyPin() {
   return (
     <Stack spacing={1.5} sx={{ maxWidth: 360 }}>
       <Typography variant="body2" color="text.secondary">Cashiers ask you to type your username and this PIN on their screen to approve a discount or refund. Keep it private.</Typography>
-      <TextField size="small" label="New PIN (4–8 digits)" type="password" value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))} inputProps={{ inputMode: "numeric", maxLength: 8, autoComplete: "new-password" }} />
+      <TextField size="small" label="New PIN (4–8 digits)" type="password" value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))} slotProps={{ htmlInput: { inputMode: "numeric", maxLength: 8, autoComplete: "new-password" } }} />
       <TextField size="small" label="Your current password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" />
       <Button variant="contained" onClick={save} disabled={saving || pin.length < 4 || !password}>{saving ? "Saving…" : "Save PIN"}</Button>
     </Stack>

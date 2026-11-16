@@ -128,6 +128,11 @@ class SendErrorAlerts extends Command
     /** "Message {"user_id":…}" → "Message": the JSON context differs per request and would split counts. */
     private function withoutContext(string $text): string
     {
+        // "Scheduled command ['/opt/.../php' 'artisan' 'x:y'] failed with exit code 1" → which task, readably.
+        if (preg_match('/Scheduled command \[.*?\'artisan\'\s+\'?([^\'\s\]]+)\'?.*?\] failed with exit code \[?(\d+)/', $text, $task)) {
+            return "Scheduled task {$task[1]} failed (exit {$task[2]})";
+        }
+
         return trim(preg_replace('/\s+[\{\[]\".*$/s', '', $text) ?? $text);
     }
 

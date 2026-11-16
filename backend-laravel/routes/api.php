@@ -67,6 +67,11 @@ Route::match(['get', 'post'], 'local-server-config/test-cloud', [SettingsControl
 // Each sync route counts on its own: an unnamed throttle shares one counter per address across routes, and the
 // 15-second sync of one shop then used up the allowance of the rarer calls (Re-copy from cloud was refused).
 Route::get('connector/web-config', [SyncController::class, 'webConfig'])->middleware('throttle:900,1,web-config');
+// AI invoice Upload from phone: the phone opens the one-time link (no sign-in; the token is the permission).
+Route::get('phone-upload/{token}', [\App\Http\Controllers\Api\V1\Warehouse\PhoneUploadController::class, 'phoneInfo'])
+    ->whereAlphaNumeric('token')->middleware('throttle:60,1,phone-upload-info');
+Route::post('phone-upload/{token}', [\App\Http\Controllers\Api\V1\Warehouse\PhoneUploadController::class, 'phoneStore'])
+    ->whereAlphaNumeric('token')->middleware('throttle:20,1,phone-upload-send');
 // The counter client (counter.js) keeps its copy of the web app current from its main server.
 Route::get('connector/app-version', [SyncController::class, 'counterAppVersion'])->middleware('throttle:120,1,counter-app-version');
 Route::get('connector/app-bundle', [SyncController::class, 'counterAppBundle'])->middleware('throttle:30,1,counter-app-bundle');

@@ -22,7 +22,7 @@ describe("ERP listing integration contract", () => {
 
   it("routes every ERP listing through common navigation and panel components", () => {
     const files = listingFiles(resolve("src/features")).filter(path => readFileSync(path, "utf8").includes("<FilterableDataTable"));
-    expect(files.length).toBe(64); // + User Access > Login Sessions
+    expect(files.length).toBe(65); // + Sales > Delivery
     expect(files.some(path => path.endsWith("WarehouseDashboard.jsx"))).toBe(true);
     for (const path of files) {
       const source = readFileSync(path, "utf8");

@@ -103,4 +103,17 @@ class ErrorAlertsTest extends TestCase
         $this->artisan('ops:error-alerts')->assertSuccessful();
         $this->assertStringContainsString('After rotation', (string) Notification::withoutGlobalScopes()->value('message'));
     }
+
+    public function test_a_failed_scheduled_task_is_named_not_shown_as_a_php_path(): void
+    {
+        $store = Store::create(['name' => 'Ops', 'code' => 'OPS-'.Str::random(5), 'is_active' => true]);
+        User::factory()->create(['username' => 'admin-'.Str::random(6), 'role' => 'admin', 'store_id' => $store->id]);
+        $this->artisan('ops:error-alerts')->assertSuccessful(); // First run: start at the end of the log.
+
+        $this->log('laravel.log', "[2026-11-16 10:00:00] production.ERROR: Scheduled command ['/opt/alt/php84/usr/bin/php' 'artisan' platform:notifications-sync] failed with exit code [1]. {\"exception\":\"[object] x\"}");
+        $this->artisan('ops:error-alerts')->assertSuccessful();
+
+        $this->assertStringContainsString('1× Server: Scheduled task platform:notifications-sync failed (exit 1)',
+            (string) Notification::withoutGlobalScopes()->where('type', 'SYSTEM_ERRORS')->latest('id')->value('message'));
+    }
 }

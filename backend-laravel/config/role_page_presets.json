@@ -638,6 +638,12 @@
       "edit": false,
       "delete": false
     },
+    "/sales/delivery": {
+      "view": true,
+      "add": true,
+      "edit": false,
+      "delete": false
+    },
     "/sales/cash-opening": {
       "view": true,
       "add": true,
@@ -737,6 +743,12 @@
       "delete": false
     },
     "/sales/pos-sales-return": {
+      "view": true,
+      "add": true,
+      "edit": false,
+      "delete": false
+    },
+    "/sales/delivery": {
       "view": true,
       "add": true,
       "edit": false,

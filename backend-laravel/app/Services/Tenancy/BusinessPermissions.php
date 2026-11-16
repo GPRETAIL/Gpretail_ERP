@@ -9,7 +9,7 @@ class BusinessPermissions
 {
     private const MASTERS = ['BrandController', 'CategoryController', 'TaxController', 'SupplierController', 'AgentController', 'TransportController', 'CustomerController', 'EmployeeController', 'ProductController', 'ProductAttributeController', 'SizeController', 'HrConfigurationController', 'ItemController'];
 
-    private const TRANSACTIONS = ['PosSaleController', 'PosReturnController', 'CustomerOrderController', 'DealerInvoiceController', 'PurchaseInvoiceController', 'PurchaseReturnController', 'DirectPurchaseController', 'InventoryEntryController', 'PhysicalStockController', 'SalesApprovalController', 'StockOutwardController', 'SupplierPaymentController', 'SettlementController', 'CashRegisterController', 'TransportEntryController', 'BarcodeController', 'PurchaseOrderController', 'PosOfflineController'];
+    private const TRANSACTIONS = ['PosSaleController', 'PosReturnController', 'CustomerOrderController', 'DealerInvoiceController', 'PurchaseInvoiceController', 'PurchaseReturnController', 'DirectPurchaseController', 'InventoryEntryController', 'PhysicalStockController', 'SalesApprovalController', 'StockOutwardController', 'SupplierPaymentController', 'SettlementController', 'CashRegisterController', 'TransportEntryController', 'BarcodeController', 'PurchaseOrderController', 'PosOfflineController', 'DeliveryController'];
 
     private const ADMINISTRATION = ['ThemeWorkspaceController', 'BackupController', 'SettingsController', 'ConfigurationController', 'CompanyController', 'StoreController', 'UserAccessController', 'StoreActivationController', 'SyncController', 'LoginSessionController'];
 
@@ -78,6 +78,9 @@ class BusinessPermissions
 
             return 'settings.manage';
         }
+        if ($controller === 'PhoneUploadController') {
+            return 'purchases.post'; // Upload from phone on the AI invoice page (the phone itself is not signed in).
+        }
         if ($controller === 'InvoiceAiController') {
             return in_array($action, ['getEngineConfig', 'saveEngineConfig'], true) ? 'settings.manage' : 'purchases.post';
         }
@@ -142,7 +145,7 @@ class BusinessPermissions
 
             // POS returns are a counter action (cashier preset allows them); refunds over the
             // user's limit are additionally gated by ApprovalService. A dealer invoice is a sale too.
-            return in_array($controller, ['PosSaleController', 'PosOfflineController', 'PosReturnController', 'CustomerOrderController', 'CashRegisterController', 'DealerInvoiceController'], true) ? 'sales.post' : 'purchases.post';
+            return in_array($controller, ['PosSaleController', 'PosOfflineController', 'PosReturnController', 'CustomerOrderController', 'CashRegisterController', 'DealerInvoiceController', 'DeliveryController'], true) ? 'sales.post' : 'purchases.post';
         }
 
         return 'unassigned';

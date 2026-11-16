@@ -22,7 +22,7 @@ export default function ApprovalDialog({ requirement, onApproved, onClose }) {
   const action = requirement?.action;
   const details = requirement?.details || {};
   const [mode, setMode] = useState("pin");
-  const [reason, setReason] = useState({ pos_refund: "wrong_item", pos_credit: "loyal_customer" }[action] || "damaged_item");
+  const [reason, setReason] = useState({ pos_refund: "wrong_item", pos_credit: "loyal_customer", delivery_short: "item_missing" }[action] || "damaged_item");
   const [note, setNote] = useState("");
   const [approver, setApprover] = useState("");
   const [pin, setPin] = useState("");
@@ -45,7 +45,9 @@ export default function ApprovalDialog({ requirement, onApproved, onClose }) {
       ? { requested_percent: details.requested_percent, payload: { lines: details.lines || [] } }
       : action === "pos_credit"
         ? { amount: details.amount }
-        : { amount: details.amount, payload: { without_receipt: Boolean(details.without_receipt) } }),
+        : action === "delivery_short"
+          ? { payload: { bill_no: details.bill_no, short_units: details.short_units, reason: details.reason, lines: details.lines || [] } }
+          : { amount: details.amount, payload: { without_receipt: Boolean(details.without_receipt) } }),
   });
 
   const submitPin = async () => {
@@ -119,7 +121,9 @@ export default function ApprovalDialog({ requirement, onApproved, onClose }) {
     onClose();
   };
 
-  const summary = action === "pos_discount"
+  const summary = action === "delivery_short"
+    ? `${details.short_units} item(s) missing on bill ${details.bill_no}. Handing over short needs a supervisor's approval.`
+    : action === "pos_discount"
     ? `Discount of ${details.requested_percent}% is above your limit of ${details.your_limit_percent ?? 0}%.`
     : action === "pos_credit"
       ? (Number(details.your_limit_amount) > 0
@@ -144,12 +148,21 @@ export default function ApprovalDialog({ requirement, onApproved, onClose }) {
           </Box>
         )}
 
+        {action === "delivery_short" && Array.isArray(details.lines) && details.lines.length > 0 && (
+          <Box sx={{ mb: 1.5, maxHeight: 110, overflowY: "auto", fontSize: 12, color: "text.secondary" }}>
+            {details.lines.map((line, index) => (
+              <div key={index}>{line.name}{line.size ? ` (${line.size})` : ""}: {line.delivered} of {line.expected}</div>
+            ))}
+            {details.reason && <div>Reason: {details.reason}</div>}
+          </Box>
+        )}
+
         {pending ? (
           <Stack spacing={1.5} sx={{ alignItems: "center", py: 2 }} role="status">
             <CircularProgress size={28} />
             <Typography sx={{ fontWeight: 600 }}>Waiting for a supervisor or manager…</Typography>
             <Typography variant="body2" color="text.secondary" sx={{ textAlign: "center" }}>
-              Request #{pending.id} is in the Approval Inbox. Keep this screen open; the sale continues automatically once approved.
+              Request #{pending.id} is in the Approval Inbox. Keep this screen open; {action === "delivery_short" ? "the handover" : "the sale"} continues automatically once approved.
             </Typography>
           </Stack>
         ) : (
@@ -162,12 +175,12 @@ export default function ApprovalDialog({ requirement, onApproved, onClose }) {
               <TextField select size="small" label="Reason" value={reason} onChange={(e) => setReason(e.target.value)}>
                 {Object.entries(APPROVAL_REASONS).map(([value, label]) => <MenuItem key={value} value={value}>{label}</MenuItem>)}
               </TextField>
-              <TextField size="small" label="Note (optional)" value={note} onChange={(e) => setNote(e.target.value)} inputProps={{ maxLength: 500 }} />
+              <TextField size="small" label="Note (optional)" value={note} onChange={(e) => setNote(e.target.value)} slotProps={{ htmlInput: { maxLength: 500 } }} />
               {mode === "pin" && (
                 <>
                   <TextField size="small" label="Approver username" value={approver} onChange={(e) => setApprover(e.target.value)} autoComplete="off" autoFocus />
                   <TextField size="small" label="Approval PIN" type="password" value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
-                    inputProps={{ inputMode: "numeric", maxLength: 8, autoComplete: "one-time-code" }}
+                    slotProps={{ htmlInput: { inputMode: "numeric", maxLength: 8, autoComplete: "one-time-code" } }}
                     onKeyDown={(e) => { if (e.key === "Enter" && approver && pin.length >= 4 && !busy) submitPin(); }} />
                 </>
               )}

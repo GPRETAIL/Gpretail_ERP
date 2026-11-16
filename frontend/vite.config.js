@@ -73,6 +73,20 @@ function serverOptions({ extraHosts, https, proxyTarget }) {
       allowedHosts: ["home.gpretail.uk", "admin.gpretail.uk", "admin.home.gpretail.uk", ...extraHosts],
       ...(https ? { https } : {}),
       proxy: {
+        // Reading an invoice with the AI service can take a minute or more: its own longer limit. Listed before
+        // "/api" so it matches first; everything else keeps 30 s, which lets counters notice a hung server.
+        "/api/v1/invoice-ai": {
+          target: proxyTarget,
+          changeOrigin: true,
+          xfwd: true,
+          configure: (proxy) => {
+            proxy.on("error", (err, _req, res) => {
+              if (res && typeof res.setHeader === "function" && !res.headersSent) res.setHeader("X-Proxy-Error", err?.code || "PROXY_ERROR");
+            });
+          },
+          timeout: 180_000,
+          proxyTimeout: 180_000,
+        },
         "/api": {
           target: proxyTarget,
           changeOrigin: true,

@@ -99,13 +99,17 @@ class PlatformNotificationSync
 
                 return ['ok' => true, 'imported' => count($data['messages'])];
             } catch (\Throwable $error) {
-                report($error);
+                // GP Admin slow or briefly unreachable: tried again next minute, so a warning, not an error alert.
+                $error instanceof \Illuminate\Http\Client\ConnectionException
+                    ? \Illuminate\Support\Facades\Log::warning('GP Admin notification sync: '.$error->getMessage())
+                    : report($error);
                 DB::table('platform_notification_syncs')->where('company_code', $activation->company_code)->update(['last_error' => 'Notification sync failed; retry pending.']);
 
                 return ['ok' => false, 'message' => 'Notification sync failed; retry pending.'];
             }
         });
 
-        return $result ?: ['ok' => false, 'message' => 'Notification sync is already running.'];
+        // Another run holds the lock (a slow GP Admin answer): not a failure, this minute's run just skips.
+        return $result ?: ['ok' => true, 'imported' => 0, 'message' => 'Notification sync is already running.'];
     }
 }

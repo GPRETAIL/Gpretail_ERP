@@ -2,17 +2,17 @@
 
 namespace App\Services\Approvals;
 
+use App\Exceptions\ApprovalRequiredException;
 use App\Models\ApprovalLimit;
 use App\Models\ApprovalRequest;
 use App\Models\Barcode;
 use App\Models\Product;
 use App\Models\User;
+use App\Services\Tenancy\StoreContext;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
-use App\Exceptions\ApprovalRequiredException;
-use App\Services\Tenancy\StoreContext;
 
 /**
  * Discount / refund / credit-sale approvals. A store's approval_limits rows switch the feature on; a store
@@ -22,7 +22,10 @@ use App\Services\Tenancy\StoreContext;
  */
 class ApprovalService
 {
-    public const ACTIONS = ['pos_discount', 'pos_refund', 'pos_credit'];
+    public const ACTIONS = ['pos_discount', 'pos_refund', 'pos_credit', 'delivery_short'];
+
+    /** Roles that approve on their own authority (and so hand over a short delivery without asking anyone). */
+    public const APPROVER_ROLES = ['supervisor', 'manager', 'admin', 'super_admin'];
 
     /** Lowest to highest authority; admins are always unlimited. */
     public const ROLE_ORDER = ['user', 'staff', 'store_user', 'warehouse_user', 'accountant', 'cashier', 'sales', 'supervisor', 'manager', 'admin', 'super_admin'];
@@ -150,13 +153,30 @@ class ApprovalService
         return $approval;
     }
 
+    /**
+     * Sales > Delivery: handing a bill over with items missing. A supervisor or above decides on their own; anyone
+     * else needs a supervisor's approval (PIN or request), whether or not approval limits are switched on.
+     */
+    public function authorizeDeliveryShort(User $user, int $storeId, float $shortUnits, array $details, ?string $token): ?ApprovalRequest
+    {
+        if ($shortUnits <= 0 || in_array($user->role, self::APPROVER_ROLES, true)) {
+            return null;
+        }
+        $approval = $this->consumable($token, $storeId, 'delivery_short', $user);
+        if (! $approval) {
+            throw new ApprovalRequiredException('delivery_short', ['short_units' => round($shortUnits, 3), ...$details]);
+        }
+
+        return $approval;
+    }
+
     /** Whether $approver may approve this request on their own authority. */
     public function canDecide(User $approver, ApprovalRequest $request): bool
     {
         if ((int) $approver->id === (int) $request->requested_by || ! $approver->is_active) {
             return false;
         }
-        if (! in_array($approver->role, ['supervisor', 'manager', 'admin', 'super_admin'], true)) {
+        if (! in_array($approver->role, self::APPROVER_ROLES, true)) {
             return false;
         }
         $limit = $this->limitFor($approver, (int) $request->store_id);
@@ -164,6 +184,7 @@ class ApprovalService
         return match ($request->action) {
             'pos_discount' => $limit['max_discount_percent'] === null || (float) $request->requested_percent <= $limit['max_discount_percent'] + 0.001,
             'pos_credit' => $limit['max_credit_amount'] === null || (float) $request->amount <= $limit['max_credit_amount'] + 0.001,
+            'delivery_short' => true,
             default => ($limit['max_refund_amount'] === null || (float) $request->amount <= $limit['max_refund_amount'] + 0.001)
                 && (! ($request->payload['without_receipt'] ?? false) || $limit['allow_no_receipt_refund']),
         };

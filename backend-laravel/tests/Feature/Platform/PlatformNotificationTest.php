@@ -134,4 +134,29 @@ class PlatformNotificationTest extends TestCase
         Sanctum::actingAs($other);
         $this->getJson('/api/notifications/banners')->assertOk()->assertJsonCount(1, 'data');
     }
+
+    public function test_a_slow_gp_admin_is_retried_quietly_and_alerts_only_after_half_an_hour(): void
+    {
+        $this->fixture();
+        config(['platform.base_url' => 'https://admin.example.test']);
+        $up = false;
+        Http::swap(new \Illuminate\Http\Client\Factory); // Instead of setUp's catch-all 503.
+        Http::fake(function () use (&$up) {
+            if (! $up) {
+                throw new \Illuminate\Http\Client\ConnectionException('cURL error 28: Operation timed out after 15001 milliseconds');
+            }
+
+            return Http::response(['success' => true, 'data' => ['messages' => [], 'cursor' => 0]]);
+        });
+
+        $this->artisan('platform:notifications-sync')->assertSuccessful(); // A miss: retried next minute, no alert.
+        $this->travel(31)->minutes();
+        $this->artisan('platform:notifications-sync')->assertFailed();     // Still failing after 30 minutes: alert.
+
+        $up = true;
+        $this->artisan('platform:notifications-sync')->assertSuccessful();
+        $up = false;
+        $this->travel(31)->minutes();
+        $this->artisan('platform:notifications-sync')->assertSuccessful(); // Recovered in between: a new miss starts over.
+    }
 }
