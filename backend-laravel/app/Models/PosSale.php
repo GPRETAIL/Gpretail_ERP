@@ -92,6 +92,7 @@ class PosSale extends Model
         'place_of_supply_state_id',
         'applied_pos_return_id',
         'offline_billed_at',
+        'billed_at',
         'sync_review',
     ];
 
@@ -100,6 +101,7 @@ class PosSale extends Model
         return [
             'sale_date' => 'datetime',
             'offline_billed_at' => 'datetime',
+            'billed_at' => 'datetime',
             'sync_review' => 'array',
             'sync_reviewed_at' => 'datetime',
             'total_items' => 'integer',

@@ -1202,6 +1202,20 @@ export default function SalesSettingsEditor({ section = "sales", onDirtyChange }
           />
 
           <Box sx={{ ...baseCardSx, p: 2.5 }}>
+            <Typography component="label" htmlFor="billing-date-after-closing" sx={fieldLabelSx}>Billing date after cash closing</Typography>
+            <Typography sx={{ fontSize: TYPE.small, color: "text.secondary", mb: 1.5 }}>
+              Bills made after a counter's Cash Closing can go on the next day, so the closed day's sales and cash stay as counted. They are counted
+              in the counter's next cash session; the bill keeps its real time too.
+            </Typography>
+            <TextField id="billing-date-after-closing" select size="small" value={settings.billingDateAfterClosing || "off"} sx={{ minWidth: 320 }}
+              onChange={(e) => updateSetting({ billingDateAfterClosing: e.target.value })}>
+              <MenuItem value="off">Off: always today</MenuItem>
+              <MenuItem value="auto">Automatic: next day once the counter is closed</MenuItem>
+              <MenuItem value="manual">Manual: a supervisor picks today or tomorrow on POS</MenuItem>
+            </TextField>
+          </Box>
+
+          <Box sx={{ ...baseCardSx, p: 2.5 }}>
             <Typography component="label" htmlFor="delivery-verify-all" sx={fieldLabelSx}>Delivery: "Verify all" in one click</Typography>
             <Typography sx={{ fontSize: TYPE.small, color: "text.secondary", mb: 1.5 }}>
               On Sales &gt; Delivery, marks every item of the bill as checked without scanning each one. The delivery register shows which bills were verified by click.

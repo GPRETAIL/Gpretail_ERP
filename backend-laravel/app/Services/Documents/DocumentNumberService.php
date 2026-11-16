@@ -39,7 +39,7 @@ class DocumentNumberService
      * lets a plain generic capture-and-replay pipeline preserve document numbers
      * without every controller/middleware needing to know each other's field names.
      */
-    public static function resolve(Request $request, int $storeId, string $prefix): string
+    public static function resolve(Request $request, int $storeId, string $prefix, ?\DateTimeInterface $date = null): string
     {
         $isReplay = $request->header('X-Sync-Replay') === '1';
         $current = app('request');
@@ -53,7 +53,7 @@ class DocumentNumberService
             $suppliedNumber = $suppliedNumber[$index] ?? null;
         }
 
-        $number = self::next($storeId, $prefix, $isReplay, is_string($suppliedNumber) ? $suppliedNumber : null);
+        $number = self::next($storeId, $prefix, $isReplay, is_string($suppliedNumber) ? $suppliedNumber : null, $date);
 
         // A Form Request is its own object, not the one the middleware holds. Without the second stash the number
         // never reached the sync queue, and the replay of that write was refused on the other side.
@@ -67,7 +67,8 @@ class DocumentNumberService
         return $number;
     }
 
-    public static function next(int $storeId, string $prefix, bool $isReplay = false, ?string $suppliedNumber = null): string
+    /** $date: the business date the number belongs to (a bill made after cash closing carries the next day). */
+    public static function next(int $storeId, string $prefix, bool $isReplay = false, ?string $suppliedNumber = null, ?\DateTimeInterface $date = null): string
     {
         if ($isReplay) {
             if (! $suppliedNumber) {
@@ -79,7 +80,7 @@ class DocumentNumberService
 
         $store = Store::find($storeId);
         $storeCode = $store?->code ?: (string) $storeId;
-        $period = now()->format('Ymd');
+        $period = ($date ?? now())->format('Ymd');
         $origin = self::resolveOrigin($storeId);
 
         $seq = DB::transaction(function () use ($storeId, $prefix, $period, $origin) {
@@ -155,14 +156,14 @@ class DocumentNumberService
      * sequence number -- for "next bill no" UI previews, which must not create gaps
      * every time a cashier reopens/refreshes the screen.
      */
-    public static function peek(int $storeId, string $prefix): string
+    public static function peek(int $storeId, string $prefix, ?\DateTimeInterface $date = null): string
     {
         $store = Store::find($storeId);
         $storeCode = $store?->code ?: (string) $storeId;
-        $period = now()->format('Ymd');
+        $period = ($date ?? now())->format('Ymd');
         $origin = self::resolveOrigin($storeId);
 
-        $padded = str_pad((string) self::peekSeq($storeId, $prefix), 4, '0', STR_PAD_LEFT);
+        $padded = str_pad((string) self::peekSeq($storeId, $prefix, $date), 4, '0', STR_PAD_LEFT);
         $suffix = $origin === 'cloud_failover' ? "C{$padded}" : $padded;
 
         return "{$prefix}-{$storeCode}-{$period}-{$suffix}";
@@ -172,9 +173,9 @@ class DocumentNumberService
      * Raw next sequence number (no prefix/store-code/date formatting) -- for callers
      * that only ever displayed a plain running counter, not the full document number.
      */
-    public static function peekSeq(int $storeId, string $prefix): int
+    public static function peekSeq(int $storeId, string $prefix, ?\DateTimeInterface $date = null): int
     {
-        $period = now()->format('Ymd');
+        $period = ($date ?? now())->format('Ymd');
         $origin = self::resolveOrigin($storeId);
 
         $counter = DocumentNumberCounter::where([

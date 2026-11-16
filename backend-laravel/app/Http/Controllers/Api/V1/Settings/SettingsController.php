@@ -162,7 +162,7 @@ class SettingsController extends Controller
                 $locked = Store::whereKey($store->id)->lockForUpdate()->firstOrFail();
                 $incoming = $request->except(['companyId', 'company_id', 'settingsSection']);
                 if ($request->has('settingsSection')) {
-                    $salesKeys = ['billNumberReset', 'billNumberOverride', 'settlementNumberReset', 'settlementNumberOverride', 'saleSaveAs', 'posPaymentDialogVisible', 'posSalespersonScan', 'deliveryVerifyAll'];
+                    $salesKeys = ['billNumberReset', 'billNumberOverride', 'settlementNumberReset', 'settlementNumberOverride', 'saleSaveAs', 'posPaymentDialogVisible', 'posSalespersonScan', 'deliveryVerifyAll', 'billingDateAfterClosing'];
                     $receiptKeys = ['showBarcodeOnBill', 'showBarcodeOnReturnSlip', 'receiptCodeType', 'showDiscountOnReceipt', 'discountDisplayMode', 'showTaxTableOnReceipt', 'receiptWidthInches', 'thankYouMessage', 'receiptFontFamily', 'receiptFormat', 'printMode', 'paymentQrMode', 'paymentUpiId', 'paymentQrImageUrl', 'paymentQrSize', 'posReceiptPrintCopies', 'generalFields', 'taxFields', 'productFields'];
                     $allowed = $request->input('settingsSection') === 'sales' ? $salesKeys : $receiptKeys;
                     $incoming = array_intersect_key($incoming, array_flip($allowed));

@@ -54,6 +54,8 @@ Route::get('pos-sales/latest-document', [PosSaleController::class, 'latestDocume
 Route::get('pos-sale/next-bill-no', [PosSaleController::class, 'nextBillNo']);
 Route::get('pos-sales/salesman-lookup', [PosSaleController::class, 'salesmanLookup']);
 Route::get('pos-sales/salespeople', [PosSaleController::class, 'salespeople']);
+Route::get('pos-sales/billing-date', [PosSaleController::class, 'billingDate']);
+Route::post('pos-sales/billing-date', [PosSaleController::class, 'setBillingDate']);
 Route::get('pos-sales/summary-report', [PosSaleController::class, 'summaryReport']);
 Route::get('pos-sales/stock-products', [PosSaleController::class, 'stockProducts']);
 Route::get('pos-sales/barcode-lookup', [PosSaleController::class, 'barcodes']);
@@ -113,6 +115,7 @@ Route::get('dealer-invoices/grouped', [DealerInvoiceController::class, 'groupedS
 Route::apiResource('dealer-invoices', DealerInvoiceController::class)->only(['index', 'store', 'show', 'destroy']);
 
 // Cash Register Sessions
+Route::get('cash-openings/late-bills', [CashRegisterController::class, 'lateBills']);
 Route::get('cash-openings/meta', [CashRegisterController::class, 'openingMeta']);
 Route::get('cash-openings', [CashRegisterController::class, 'openingIndex']);
 Route::post('cash-openings', [CashRegisterController::class, 'openingStore']);

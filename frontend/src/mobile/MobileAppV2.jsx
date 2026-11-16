@@ -25,6 +25,8 @@ import ReturnsScreen from "./screens/ReturnsScreen";
 import InventoryScreen from "./screens/InventoryScreen";
 import ProductDetailScreen from "./screens/ProductDetailScreen";
 import SupplierDuesScreen from "./screens/SupplierDuesScreen";
+import DealerDuesScreen from "./screens/DealerDuesScreen";
+import DealerInvoicesScreen from "./screens/DealerInvoicesScreen";
 import SuppliersScreen from "./screens/SuppliersScreen";
 import ApprovalsScreen from "./screens/ApprovalsScreen";
 import FastMovingScreen from "./screens/FastMovingScreen";
@@ -64,6 +66,8 @@ const TITLES = {
   inventory: "Inventory Summary",
   product_details: "Product Details",
   supplier_dues: "Supplier Dues",
+  dealer_dues: "Dealer Dues",
+  dealer_invoices: "Dealer Invoices",
   fast_moving: "Fast Moving Products",
   sales_summary: "Sales Summary",
   purchase_summary: "Purchase Summary",
@@ -420,6 +424,10 @@ function MobileWorkspace() {
         {visiblePage === "suppliers" && <SuppliersScreen onNavigate={navigateTo} />}
 
         {visiblePage === "supplier_dues" && <SupplierDuesScreen />}
+
+        {visiblePage === "dealer_dues" && <DealerDuesScreen />}
+
+        {visiblePage === "dealer_invoices" && <DealerInvoicesScreen />}
 
         {visiblePage === "fast_moving" && <FastMovingScreen />}
 

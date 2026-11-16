@@ -20,6 +20,7 @@ class MobileAccess
         'inventory_summary' => '/warehouse/dashboard',
         'returns' => '/sales/pos-sales-return', 'inventory' => '/masters/product', 'product_details' => '/masters/product',
         'customers' => '/crm/customer', 'suppliers' => '/masters/supplier', 'supplier_dues' => '/finance/supplier-payment',
+        'dealer_dues' => '/sales/dealer-receipt', 'dealer_invoices' => '/sales/dealer-invoice',
         'attendance' => '/hrms/employee-in-out', 'leave' => '/hrms/leave', 'approvals' => '/sales/sales-on-approval',
         'fast_moving' => '/analytical/dashboard', 'sales_summary' => '/sales/reports',
         'reports' => '/analytical/dashboard', 'report_profit_loss' => '/analytical/dashboard',

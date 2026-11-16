@@ -1,4 +1,5 @@
 import { TYPE } from "@/shared/theme/typeScale";
+import BillingDateBanner from "@/features/sales/pos/components/BillingDateBanner";
 import { browserPrintHtml } from "./utils/posSalesUtils";
 import PageHeader from "@/shared/components/PageHeader";
 import useCounterAssignmentPrompt from "./hooks/useCounterAssignmentPrompt";
@@ -682,6 +683,7 @@ const TouchSales = () => {
         </Stack>
         </>}
       />
+      <Box sx={{ px: 1, pt: 0.5 }}><BillingDateBanner /></Box>
 
       <Stack sx={{ minHeight: 0, flex: 1, p: { xs: 1.5, sm: 2 } }}>
         <Box sx={{ display: "grid", height: "100%", minHeight: 0, gridTemplateColumns: { xs: "1fr", lg: "repeat(12, 1fr)" }, gap: { xs: 1.5, sm: 2 } }}>

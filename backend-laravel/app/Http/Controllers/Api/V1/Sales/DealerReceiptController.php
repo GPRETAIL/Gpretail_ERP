@@ -29,7 +29,7 @@ class DealerReceiptController extends Controller
         $open = collect($this->balances->open($this->storeId($request)));
 
         return response()->json(['success' => true, 'data' => $open->groupBy('customer_id')->map(fn ($rows, $id) => [
-            'customer_id' => (int) $id, 'customer_name' => $rows->first()['customer_name'], 'invoices' => $rows->count(),
+            'customer_id' => (int) $id, 'customer_name' => $rows->first()['customer_name'], 'phone' => $rows->first()['customer_phone'] ?? null, 'invoices' => $rows->count(),
             'due' => round($rows->sum('balance'), 2), 'oldest' => $rows->min('invoice_date'),
         ])->sortByDesc('due')->values()]);
     }

@@ -10,7 +10,9 @@ use App\Models\PosSaleItem;
 use App\Services\Approvals\ApprovalService;
 use App\Services\Documents\DocumentNumberService;
 use App\Services\Inventory\StockService;
+use App\Services\Sales\BusinessDate;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -90,16 +92,20 @@ class PosReturnWriter
             $totalRefund = round(array_sum(array_column($refundLines, 6)), 2);
             // Refunds above the user's limit, or without the original bill, need an approval token.
             $approval = app(ApprovalService::class)->authorizeRefund($request->user(), $storeId, $totalRefund, $standalone, $input['approvalToken'] ?? null);
-            $returnNo = DocumentNumberService::resolve($request, $storeId, 'RET');
+            // After the counter's cash closing, the return belongs to the next business date (as a bill would).
+            $counterId = PosCounter::find($request->user()?->counter_id, $storeId)?->id;
+            $business = app(BusinessDate::class)->forCounter($storeId, $counterId);
+            $returnNo = DocumentNumberService::resolve($request, $storeId, 'RET', $business['shifted'] ? Carbon::parse($business['date']) : null);
 
             $posReturn = PosReturn::create([
                 'store_id' => $storeId,
                 // The till's counter, so a cash refund comes out of that counter's drawer at Cash Closing.
-                'counter_id' => PosCounter::find($request->user()?->counter_id, $storeId)?->id,
+                'counter_id' => $counterId,
                 'pos_sale_id' => $standalone ? null : $sourcePosSaleId,
                 'customer_id' => $input['customerId'] ?? null,
                 'return_no' => $returnNo,
-                'return_date' => now(),
+                'return_date' => app(BusinessDate::class)->stamp($business),
+                'billed_at' => now(),
                 'total_refund' => $totalRefund,
                 'refund_mode' => $input['refundMode'] ?? 'CASH',
                 'status' => 'COMPLETED',

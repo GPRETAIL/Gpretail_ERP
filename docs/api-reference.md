@@ -1,6 +1,6 @@
 # API reference
 
-Every endpoint under `/api`, grouped by module (695 endpoints). Generated from
+Every endpoint under `/api`, grouped by module (698 endpoints). Generated from
 `php artisan route:list --sort=definition --json`; regenerate it after changing routes.
 
 - Each signed-in endpoint is also served under `/api/v1/...` with the same behaviour.
@@ -23,7 +23,7 @@ Every endpoint under `/api`, grouped by module (695 endpoints). Generated from
 - [Notifications](#notifications) (11)
 - [Other](#other) (1)
 - [Platform](#platform) (29)
-- [Sales](#sales) (115)
+- [Sales](#sales) (118)
 - [Settings](#settings) (73)
 - [Store](#store) (18)
 - [Warehouse](#warehouse) (67)
@@ -533,6 +533,8 @@ Every endpoint under `/api`, grouped by module (695 endpoints). Generated from
 | GET | `/api/pos-sale/next-bill-no` | PosSaleController@nextBillNo | yes |
 | GET | `/api/pos-sales/salesman-lookup` | PosSaleController@salesmanLookup | yes |
 | GET | `/api/pos-sales/salespeople` | PosSaleController@salespeople | yes |
+| GET | `/api/pos-sales/billing-date` | PosSaleController@billingDate | yes |
+| POST | `/api/pos-sales/billing-date` | PosSaleController@setBillingDate | yes |
 | GET | `/api/pos-sales/summary-report` | PosSaleController@summaryReport | yes |
 | GET | `/api/pos-sales/stock-products` | PosSaleController@stockProducts | yes |
 | GET | `/api/pos-sales/barcode-lookup` | PosSaleController@barcodes | yes |
@@ -587,6 +589,7 @@ Every endpoint under `/api`, grouped by module (695 endpoints). Generated from
 | POST | `/api/dealer-invoices` | DealerInvoiceController@store | yes |
 | GET | `/api/dealer-invoices/{dealer_invoice}` | DealerInvoiceController@show | yes |
 | DELETE | `/api/dealer-invoices/{dealer_invoice}` | DealerInvoiceController@destroy | yes |
+| GET | `/api/cash-openings/late-bills` | CashRegisterController@lateBills | yes |
 | GET | `/api/cash-openings/meta` | CashRegisterController@openingMeta | yes |
 | GET | `/api/cash-openings` | CashRegisterController@openingIndex | yes |
 | POST | `/api/cash-openings` | CashRegisterController@openingStore | yes |

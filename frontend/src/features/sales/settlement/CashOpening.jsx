@@ -11,7 +11,7 @@ import { useNavigate } from "react-router-dom";
 import api from "@/shared/api/apiClient";
 import FilterableDataTable from "@/shared/components/FilterableDataTable";
 import Breadcrumbs from "@/shared/components/Breadcrumbs";
-import { Box, Stack, Typography, TextField, MenuItem, Button, Table, TableHead, TableBody, TableRow, TableCell, alpha } from "@mui/material";
+import { Alert, Box, Stack, Typography, TextField, MenuItem, Button, Table, TableHead, TableBody, TableRow, TableCell, alpha } from "@mui/material";
 import { muiFieldSx } from "@/shared/theme/formControlSizes";
 import { createGroupFetchers } from "@/shared/utils/serverGrouping";
 
@@ -43,6 +43,9 @@ const buildBlankCounts = () =>
   }, {});
 
 const CashOpening = () => {
+  // Bills made after this counter's last closing and dated its next business date (Billing date after cash closing).
+  const [lateBills, setLateBills] = useState(null);
+
   const navigate = useNavigate();
   const [now, setNow] = useState(new Date());
   const [showSearchPage, setShowSearchPage] = useState(false);
@@ -79,6 +82,15 @@ const CashOpening = () => {
     date: "",
   });
   const searchFiltersRef = useRef(searchFilters);
+
+  useEffect(() => {
+    if (!formData.counterId) return undefined;
+    let alive = true;
+    api.get("/cash-openings/late-bills", { params: { counterId: formData.counterId } })
+      .then((res) => alive && setLateBills(res.data?.data || null))
+      .catch(() => alive && setLateBills(null));
+    return () => { alive = false; };
+  }, [formData.counterId]);
 
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 1000);
@@ -323,6 +335,13 @@ const CashOpening = () => {
               formData.counterId,
               options.counters,
               (e) => setFormData((prev) => ({ ...prev, counterId: e.target.value }))
+            )}
+
+            {lateBills?.bills > 0 && (
+              <Alert severity="info" sx={{ py: 0.25 }} role="status">
+                ₹{Number(lateBills.cash || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })} cash already taken on {lateBills.bills} bill{lateBills.bills === 1 ? "" : "s"} made after
+                the last closing (dated {lateBills.business_date}). Count it in the opening cash.
+              </Alert>
             )}
 
             {renderSelect(

@@ -18,6 +18,7 @@ class PosReturn extends Model
         'customer_id',
         'return_no',
         'return_date',
+        'billed_at',
         'total_refund',
         'refund_mode',
         'status',
@@ -33,6 +34,7 @@ class PosReturn extends Model
     {
         return [
             'return_date' => 'datetime',
+            'billed_at' => 'datetime',
             'total_refund' => 'decimal:2',
             'standalone' => 'boolean',
             'credit_applied_at' => 'datetime',

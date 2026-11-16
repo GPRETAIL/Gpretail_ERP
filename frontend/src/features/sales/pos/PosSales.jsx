@@ -1,4 +1,5 @@
 import { TYPE } from "@/shared/theme/typeScale";
+import BillingDateBanner from "@/features/sales/pos/components/BillingDateBanner";
 import LiveDateTime from "@/shared/components/LiveDateTime";
 import ApprovalDialog from "@/features/sales/approvals/components/ApprovalDialog";
 import useStockRules, { noStockRowSx, shortQtyByStock } from "@/shared/hooks/useStockRules";
@@ -3235,6 +3236,7 @@ const PosSales = () => {
         </Stack>
         </>}
       />
+      {!showSearchPage && <Box sx={{ px: 1, pt: 0.5 }}><BillingDateBanner /></Box>}
 
       <Box sx={showSearchPage ? masterSearchAreaSx : { flex: 1, minHeight: 0, p: 2, display: "flex", flexDirection: "column", gap: 2, pb: { xs: 14, xl: 2 } }}>
         {showSearchPage ? renderSearchPage() : renderEntryPage()}

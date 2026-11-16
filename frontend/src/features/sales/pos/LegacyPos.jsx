@@ -1,4 +1,5 @@
 import { TYPE } from "@/shared/theme/typeScale";
+import BillingDateBanner from "@/features/sales/pos/components/BillingDateBanner";
 import { browserPrintHtml } from "./utils/posSalesUtils";
 import useStockRules, { noStockRowSx, shortQtyByStock } from "@/shared/hooks/useStockRules";
 import NoStockChip from "@/shared/components/NoStockChip";
@@ -2166,6 +2167,7 @@ const LegacyPos = () => {
   /* ───────────────── RENDER ───────────────── */
   return (
     <Box className="pos-billing" sx={{ height: "100%", display: "flex", flexDirection: "column", bgcolor: "background.default", color: "text.primary", overflow: "hidden", ...(showSearchPage ? { height: "100%", minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden" } : {}) }}>
+      {!showSearchPage && <Box sx={{ px: 1, pt: 0.5, flexShrink: 0 }}><BillingDateBanner /></Box>}
       {/* ─── TOP BAR ─── */}
       <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", px: 1.5, py: 0.75, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1, flexShrink: 0 }}>
         {/* Tabs */}

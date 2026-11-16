@@ -72,6 +72,8 @@ class CashRegisterService
             return CashRegisterSession::create([
                 'store_id' => $storeId,
                 'user_id' => $userId,
+                // Only with "Billing date after cash closing" on: the session then also counts late bills for its date.
+                'business_date' => ($state = app(BusinessDate::class)->forCounter($storeId, $counterId))['mode'] === 'off' ? null : $state['date'],
                 'counter_id' => $counterId,
                 'location_id' => ($data['locationId'] ?? null) ?: null,
                 'paid_by_employee_id' => ($data['paidByEmployeeId'] ?? null) ?: null,
@@ -93,8 +95,9 @@ class CashRegisterService
     public function position(CashRegisterSession $session, ?Carbon $until = null): array
     {
         $until ??= now();
+        $from = $this->countsFrom($session);
         $sales = PosSale::where('store_id', $session->store_id)
-            ->where('sale_date', '>=', $session->opened_at)->where('sale_date', '<=', $until)
+            ->where('sale_date', '>=', $from)->where('sale_date', '<=', $until)
             ->when($session->counter_id, fn ($q) => $q->where('counter_id', $session->counter_id), fn ($q) => $q->whereNull('counter_id'));
         $saleIds = (clone $sales)->select('id');
         $cashTaken = (float) DB::table('pos_payments')->whereIn('pos_sale_id', $saleIds)->where('payment_mode', 'CASH')->sum('amount');
@@ -103,7 +106,7 @@ class CashRegisterService
         // A return paid out in cash leaves the drawer. One applied as credit to a new bill only leaves it by
         // the part the bill didn't use up.
         $returns = PosReturn::where('store_id', $session->store_id)->where('refund_mode', 'CASH')
-            ->where('return_date', '>=', $session->opened_at)->where('return_date', '<=', $until)
+            ->where('return_date', '>=', $from)->where('return_date', '<=', $until)
             ->when($session->counter_id, fn ($q) => $q->where('counter_id', $session->counter_id), fn ($q) => $q->whereNull('counter_id'))
             ->get(['total_refund', 'credit_applied_to_sale_id']);
         $appliedTo = PosSale::whereIn('id', $returns->pluck('credit_applied_to_sale_id')->filter())->pluck('grand_total', 'id');
@@ -121,6 +124,44 @@ class CashRegisterService
             'cash_refunds' => $cashRefunds,
             'expected_before_expenses' => round($opening + $cashSales - $cashRefunds, 2),
         ];
+    }
+
+    /**
+     * Where a session's count starts: its opening, or earlier for bills made after the counter's previous closing
+     * that were dated this session's business date (Billing date after cash closing). Never before that closing.
+     */
+    public function countsFrom(CashRegisterSession $session): Carbon
+    {
+        $opened = Carbon::parse($session->opened_at);
+        if (! $session->business_date) {
+            return $opened;
+        }
+        $dayStart = Carbon::parse($session->business_date->format('Y-m-d'), config('app.business_timezone'))->startOfDay()->setTimezone(config('app.timezone'));
+        if ($dayStart->gte($opened)) {
+            return $opened;
+        }
+        $previousClose = CashRegisterSession::where('store_id', $session->store_id)->where('status', 'CLOSED')->where('id', '!=', $session->id)
+            ->when($session->counter_id, fn ($q) => $q->where('counter_id', $session->counter_id), fn ($q) => $q->whereNull('counter_id'))
+            ->where('closed_at', '<=', $opened)->max('closed_at');
+
+        return $previousClose ? $dayStart->max(Carbon::parse($previousClose)) : $dayStart;
+    }
+
+    /** Cash Opening: cash already taken on bills dated this counter's next business date, made after its closing. */
+    public function lateBillsCash(int $storeId, ?int $counterId): array
+    {
+        $state = app(BusinessDate::class)->forCounter($storeId, $counterId);
+        $dayStart = Carbon::parse($state['date'], config('app.business_timezone'))->startOfDay()->setTimezone(config('app.timezone'));
+        $lastClose = CashRegisterSession::where('store_id', $storeId)->where('status', 'CLOSED')
+            ->when($counterId, fn ($q) => $q->where('counter_id', $counterId), fn ($q) => $q->whereNull('counter_id'))->max('closed_at');
+        $from = $lastClose ? $dayStart->max(Carbon::parse($lastClose)) : $dayStart;
+        $sales = PosSale::where('store_id', $storeId)->where('sale_date', '>=', $from)->where('sale_date', '<', $dayStart->copy()->addDay())
+            ->whereColumn('billed_at', '<', 'sale_date')
+            ->when($counterId, fn ($q) => $q->where('counter_id', $counterId), fn ($q) => $q->whereNull('counter_id'));
+        $cash = (float) DB::table('pos_payments')->whereIn('pos_sale_id', (clone $sales)->select('id'))->where('payment_mode', 'CASH')->sum('amount')
+            - (float) (clone $sales)->sum('change_amount');
+
+        return ['business_date' => $state['date'], 'bills' => (clone $sales)->count(), 'cash' => round($cash, 2)];
     }
 
     public function close(int $storeId, array $data): CashRegisterSession

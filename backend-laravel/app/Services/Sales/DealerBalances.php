@@ -56,12 +56,12 @@ class DealerBalances
             ->where('d.store_id', $storeId)->whereNotIn('d.status', self::CANCELLED)
             ->when($customerId, fn ($q) => $q->where('d.customer_id', $customerId))
             ->orderBy('d.invoice_date')->orderBy('d.id')
-            ->get(['d.id', 'd.invoice_no', 'd.invoice_date', 'd.customer_id', 'd.grand_total', 'c.name as customer_name']);
+            ->get(['d.id', 'd.invoice_no', 'd.invoice_date', 'd.customer_id', 'd.grand_total', 'c.name as customer_name', 'c.phone as customer_phone']);
         $balances = $this->forInvoices($invoices->pluck('id')->all());
 
         return $invoices->map(fn ($i) => [
             'id' => (int) $i->id, 'invoice_no' => $i->invoice_no, 'bill_no' => DocumentNumberService::short($i->invoice_no, 'D'),
-            'invoice_date' => substr((string) $i->invoice_date, 0, 10), 'customer_id' => (int) $i->customer_id, 'customer_name' => $i->customer_name,
+            'invoice_date' => substr((string) $i->invoice_date, 0, 10), 'customer_id' => (int) $i->customer_id, 'customer_name' => $i->customer_name, 'customer_phone' => $i->customer_phone,
             ...$balances[(int) $i->id],
         ])->filter(fn ($i) => $i['balance'] >= 0.01)->values()->all();
     }

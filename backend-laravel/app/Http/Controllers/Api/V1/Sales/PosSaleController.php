@@ -28,6 +28,7 @@ use App\Services\Pos\PosCheckoutWriter;
 use App\Services\Pos\PosCounter;
 use App\Services\Pos\PosOfflineBilling;
 use App\Services\Pos\PosReturnWriter;
+use App\Services\Sales\BusinessDate;
 use App\Services\Sales\Salespeople;
 use App\Services\Tenancy\PagePermissions;
 use App\Support\GroupAggregationService;
@@ -50,7 +51,9 @@ class PosSaleController extends Controller
     public function nextBillNo(Request $request)
     {
         $storeId = (int) ($request->header('X-Company-Scope-Id') ?: $request->input('store_id', 1));
-        $billNo = DocumentNumberService::peek($storeId, 'INV');
+        $counterId = PosCounter::find($request->user()?->counter_id, (int) $storeId)?->id;
+        $business = app(BusinessDate::class)->forCounter((int) $storeId, $counterId);
+        $billNo = DocumentNumberService::peek($storeId, 'INV', $business['shifted'] ? Carbon::parse($business['date']) : null);
 
         return response()->json([
             'success' => true,
@@ -621,7 +624,10 @@ class PosSaleController extends Controller
                     ? ($isCredit ? 'CREDIT' : 'UNSETTLED')
                     : ($cashAmount > 0 ? 'CASH' : ($cardAmount > 0 ? 'CARD' : 'UPI'));
 
-                $invoiceNo = $offline['invoice_no'] ?? DocumentNumberService::resolve($request, (int) $storeId, 'INV');
+                // After the counter's cash closing (Sales Customisation), the bill belongs to the next business date.
+                $business = $offline ? null : app(BusinessDate::class)->forCounter((int) $storeId, $counter?->id);
+                $businessDay = $business && $business['shifted'] ? Carbon::parse($business['date']) : null;
+                $invoiceNo = $offline['invoice_no'] ?? DocumentNumberService::resolve($request, (int) $storeId, 'INV', $businessDay);
 
                 $sale = new PosSale([
                     'store_id' => $storeId,
@@ -630,7 +636,8 @@ class PosSaleController extends Controller
                     'customer_id' => $customerId,
                     'user_id' => $user->id ?? 1,
                     'invoice_no' => $invoiceNo,
-                    'sale_date' => $offline['billed_at'] ?? now(),
+                    'sale_date' => $offline['billed_at'] ?? ($business ? app(BusinessDate::class)->stamp($business) : now()),
+                    'billed_at' => $offline['billed_at'] ?? now(),
                     'offline_billed_at' => $offline['billed_at'] ?? null,
                     'total_items' => count($itemsData),
                     'total_qty' => $totalQty,
@@ -854,6 +861,29 @@ class PosSaleController extends Controller
         }
 
         return response()->json(['success' => true, 'data' => app(Salespeople::class)->present($employee)]);
+    }
+
+    /** The date this counter bills on now (Sales Customisation > Billing date after cash closing). */
+    public function billingDate(Request $request)
+    {
+        $storeId = (int) $this->resolveStoreId($request, 1);
+        $counterId = PosCounter::find($request->user()?->counter_id, $storeId)?->id;
+        $state = app(BusinessDate::class)->forCounter($storeId, $counterId);
+
+        return response()->json(['success' => true, 'data' => [...collect($state)->except('since')->all(),
+            'can_change' => $state['mode'] === 'manual' && in_array($request->user()->role, ApprovalService::APPROVER_ROLES, true)]]);
+    }
+
+    /** Manual mode: a supervisor sets this counter to bill today or tomorrow. */
+    public function setBillingDate(Request $request)
+    {
+        $request->validate(['date' => 'required|in:today,tomorrow']);
+        $storeId = (int) $this->resolveStoreId($request, 1);
+        $counterId = PosCounter::find($request->user()?->counter_id, $storeId)?->id;
+        $state = app(BusinessDate::class)->setForCounter($request->user(), $storeId, $counterId, (string) $request->input('date'));
+
+        return response()->json(['success' => true, 'message' => 'Billing date set to '.Carbon::parse($state['date'])->format('j M').'.',
+            'data' => [...collect($state)->except('since')->all(), 'can_change' => true]]);
     }
 
     /** The store's active salespeople, loaded once by the POS so a sticker scan resolves at once (and offline). */

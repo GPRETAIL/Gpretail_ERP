@@ -21,6 +21,8 @@ export const GATED_PAGES = new Set([
   "purchase_summary",
   "suppliers",
   "supplier_dues",
+  "dealer_dues",
+  "dealer_invoices",
   "reports",
   "report_profit_loss",
   "report_gst",

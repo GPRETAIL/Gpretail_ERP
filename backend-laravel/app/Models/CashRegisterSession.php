@@ -15,6 +15,7 @@ class CashRegisterSession extends Model
         'store_id',
         'user_id',
         'opened_at',
+        'business_date',
         'closed_at',
         'opening_cash',
         'closing_cash',
@@ -39,6 +40,7 @@ class CashRegisterSession extends Model
     {
         return [
             'opened_at' => 'datetime',
+            'business_date' => 'date',
             'closed_at' => 'datetime',
             'opening_cash' => 'decimal:2',
             'closing_cash' => 'decimal:2',

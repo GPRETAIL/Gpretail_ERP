@@ -34,6 +34,8 @@ const MODULE_TILES = [
   { key: "inventory", name: "Products", icon: Package, bg: "#10b981" },
   { key: "customers", name: "Customers", icon: Users, bg: "#3b82f6" },
   { key: "suppliers", name: "Suppliers", icon: Store, bg: "#0891b2" },
+  { key: "dealer_dues", name: "Dealer Dues", icon: HandCoins, bg: "#b45309" },
+  { key: "dealer_invoices", name: "Dealer Invoices", icon: ReceiptText, bg: "#7c2d12" },
   { key: "attendance", name: "Attendance", icon: UserCheck, bg: "#0d9488" },
   { key: "leave", name: "Leave", icon: CalendarDays, bg: "#7c3aed" },
   { key: "payslips", name: "Payslips", icon: ReceiptText, bg: "#4338ca" },
@@ -47,7 +49,7 @@ const MODULE_TILES = [
 /**
  * Modules Grid screen with recent activities from real API.
  */
-const RESTRICTED_TILE_KEYS = new Set(["purchase", "suppliers", "reports"]);
+const RESTRICTED_TILE_KEYS = new Set(["purchase", "suppliers", "reports", "dealer_dues", "dealer_invoices"]);
 
 export default function ModulesScreen({ onNavigate, authUser }) {
   const access = useMobileAccess();

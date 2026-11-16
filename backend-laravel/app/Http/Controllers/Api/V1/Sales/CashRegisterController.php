@@ -61,6 +61,15 @@ class CashRegisterController extends Controller
         ], 201);
     }
 
+    /** Cash Opening: cash already taken on bills dated this counter's business date after its last closing. */
+    public function lateBills(Request $request)
+    {
+        $storeId = (int) $this->resolveStoreId($request, 1);
+        $counterId = $request->filled('counterId') ? $request->integer('counterId') : null;
+
+        return response()->json(['success' => true, 'data' => $this->registers->lateBillsCash($storeId, $counterId)]);
+    }
+
     public function openingMeta(Request $request)
     {
         $storeId = (int) $this->resolveStoreId($request, 1);

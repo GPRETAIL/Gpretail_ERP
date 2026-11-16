@@ -295,6 +295,8 @@ export const DEFAULT_SALES_RECEIPT_CUSTOMIZATION = {
   posSalespersonScan: false,
   /** Sales > Delivery "Verify all" (mark every item checked in one click): everyone, supervisor (and above) or off. */
   deliveryVerifyAll: "everyone",
+  /** Bills made after a counter's cash closing: "off" (today), "auto" (next day) or "manual" (supervisor picks). */
+  billingDateAfterClosing: "off",
   /** Printed POS receipt copies when using the printer queue (1–3). */
   posReceiptPrintCopies: 1,
   generalFields: DEFAULT_SALES_RECEIPT_GENERAL_FIELDS,
@@ -559,6 +561,7 @@ export const normalizeSalesReceiptCustomization = (value = {}) => {
     posPaymentDialogVisible,
     posSalespersonScan: value.posSalespersonScan === true,
     deliveryVerifyAll: ["off", "supervisor", "everyone"].includes(value.deliveryVerifyAll) ? value.deliveryVerifyAll : "everyone",
+    billingDateAfterClosing: ["off", "auto", "manual"].includes(value.billingDateAfterClosing) ? value.billingDateAfterClosing : "off",
     posReceiptPrintCopies: normalizePosReceiptPrintCopies(value.posReceiptPrintCopies),
     generalFields,
     taxFields,
