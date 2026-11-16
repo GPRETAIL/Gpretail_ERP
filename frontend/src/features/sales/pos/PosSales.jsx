@@ -46,6 +46,7 @@ import {
   getLatestPosDocumentFetchPath,
   loadLatestPosDocument,
 } from "./utils/posLatestDocument";
+import { assignSalesperson, cachedSalespeople, cacheSalespeople, findSalesperson, linesWithoutSalesperson } from "./utils/posSalesperson";
 import {
   buildSalesReceiptGeneralLayout as _buildSalesReceiptGeneralLayout,
   buildSalesReceiptTaxRows as _buildSalesReceiptTaxRows,
@@ -193,7 +194,15 @@ const PosSales = () => {
     saleSaveAs: "paid_settled",
     paymentDialogVisible: true,
     receiptPrintCopies: 1,
+    salespersonScan: false,
   });
+  // Salesperson field (Sales Customisation): after each product, the salesperson's employee sticker is scanned.
+  const [salespeople, setSalespeople] = useState([]);
+  const [salespersonValue, setSalespersonValue] = useState("");
+  const [awaitingSalespersonId, setAwaitingSalespersonId] = useState(null);
+  const awaitingSalespersonRef = useRef(null);
+  const pendingSalespersonRef = useRef(null);
+  const salespersonInputRef = useRef(null);
   const [latestPosDocument, setLatestPosDocument] = useState(null);
   const [deletingLatestDocument, setDeletingLatestDocument] = useState(false);
   const [downloadingPosPdf, setDownloadingPosPdf] = useState(false);
@@ -451,6 +460,7 @@ const PosSales = () => {
           saleSaveAs: customization.saleSaveAs || "paid_settled",
           paymentDialogVisible: customization.posPaymentDialogVisible !== false,
           receiptPrintCopies: clampReceiptCopies(customization.posReceiptPrintCopies),
+          salespersonScan: customization.posSalespersonScan === true,
         });
       })
       .catch(() => {});
@@ -619,9 +629,30 @@ const PosSales = () => {
     [appliedReturnDisplayLines, cartWithTotals]
   );
 
+  // While an item waits for its salesperson, the cursor goes to the Salesperson field instead.
   const focusBarcodeInput = useCallback(() => {
-    setTimeout(() => barcodeInputRef.current?.focus(), 0);
+    setTimeout(() => (awaitingSalespersonRef.current && salespersonInputRef.current ? salespersonInputRef.current : barcodeInputRef.current)?.focus(), 0);
   }, []);
+  const setAwaitingSalesperson = useCallback((lineId) => {
+    awaitingSalespersonRef.current = lineId;
+    setAwaitingSalespersonId(lineId);
+  }, []);
+
+  // The store's salespeople, loaded once (and kept for offline billing) when the Salesperson field is on.
+  useEffect(() => {
+    if (!posCheckoutPrefs.salespersonScan) return undefined;
+    let alive = true;
+    const storeKey = authUser?.store_id;
+    api.get("/pos-sales/salespeople")
+      .then((res) => {
+        if (!alive) return;
+        const people = res.data?.data || [];
+        setSalespeople(people);
+        cacheSalespeople(storeKey, people);
+      })
+      .catch(() => alive && setSalespeople(cachedSalespeople(storeKey)));
+    return () => { alive = false; };
+  }, [posCheckoutPrefs.salespersonScan, authUser?.store_id]);
   const discountDialogSelectedSet = useMemo(
     () => new Set(discountSelectedLineIds),
     [discountSelectedLineIds]
@@ -1325,11 +1356,21 @@ const PosSales = () => {
 
   const handleAddLine = async ({ barcode = addBarcode, product = addProductKey, quantityInput = addQty } = {}) => {
     setPendingScans(count => count + 1);
+    // A queued salesperson belongs to the product being loaded: if that product is not added, it must not carry over.
+    let keepQueuedSalesperson = false;
     try {
       const quantity = Math.floor(toNum(quantityInput, 0));
 
       const barcodeQuery = normalize(barcode);
       const productQuery = normalize(product);
+      // A fast scanner can send the salesperson's sticker before the cursor has moved to the Salesperson field.
+      const scannedPerson = posCheckoutPrefs.salespersonScan ? findSalesperson(salespeople, barcode) : null;
+      if (scannedPerson) {
+        keepQueuedSalesperson = true;
+        setAddBarcode("");
+        creditSalesperson(scannedPerson);
+        return;
+      }
       if (barcodeQuery.startsWith("rr/") || barcodeQuery.startsWith("ro/")) {
         await applyReturnCredit(barcode);
         return;
@@ -1398,13 +1439,17 @@ const PosSales = () => {
       }
 
       setStockRows(previous => mergePosStockRows(previous, [source]));
+      // With the Salesperson field on, every scan is its own line until its salesperson is known (lines of the same
+      // item and salesperson are merged then).
+      const perItemSalesperson = posCheckoutPrefs.salespersonScan;
+      const newLineId = `${source.id}-${Date.now()}`;
       setCart((prev) => {
-        const index = prev.findIndex((line) => line.stockId === source.id);
+        const index = perItemSalesperson ? -1 : prev.findIndex((line) => line.stockId === source.id);
         if (index === -1) {
           return [
             ...prev,
             {
-              lineId: `${source.id}-${Date.now()}`,
+              lineId: newLineId,
               stockId: source.id,
               productId: source.productId,
               barcode: source.barcode,
@@ -1437,10 +1482,22 @@ const PosSales = () => {
         return next;
       });
 
+      keepQueuedSalesperson = true;
+      if (perItemSalesperson) {
+        const person = pendingSalespersonRef.current;
+        pendingSalespersonRef.current = null;
+        if (person) {
+          setCart((prev) => assignSalesperson(prev, newLineId, person));
+          setAwaitingSalesperson(null);
+        } else {
+          setAwaitingSalesperson(newLineId);
+        }
+      }
       setAddProductKey("");
       setAddQty("1");
       focusBarcodeInput();
     } finally {
+      if (!keepQueuedSalesperson) pendingSalespersonRef.current = null;
       setPendingScans(count => count - 1);
       focusBarcodeInput();
     }
@@ -1511,11 +1568,46 @@ const PosSales = () => {
     setLineFilters({ ...lineFilterDraft });
   };
 
+  /** Credits the item waiting for its salesperson (else the last one without) and goes back to the product box. */
+  function creditSalesperson(person) {
+    if (pendingScans > 0 && !awaitingSalespersonRef.current) {
+      // The product scanned just before is still loading: credit it as soon as it lands.
+      pendingSalespersonRef.current = person;
+      return;
+    }
+    const waiting = awaitingSalespersonRef.current && cart.some((line) => line.lineId === awaitingSalespersonRef.current)
+      ? awaitingSalespersonRef.current
+      : linesWithoutSalesperson(cart).at(-1)?.lineId;
+    if (!waiting) {
+      toast.info("Scan the product first, then the salesperson.");
+      focusBarcodeInput();
+      return;
+    }
+    setCart((prev) => assignSalesperson(prev, waiting, person));
+    setAwaitingSalesperson(null);
+    focusBarcodeInput();
+  }
+
+  const handleSalespersonKeyDown = (event) => {
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+    const value = salespersonValue.trim();
+    setSalespersonValue("");
+    if (!value) return;
+    const person = findSalesperson(salespeople, value);
+    if (!person) {
+      toast.error(`${value} is not a salesperson's sticker. Scan the salesperson.`);
+      setTimeout(() => salespersonInputRef.current?.focus(), 0);
+      return;
+    }
+    creditSalesperson(person);
+  };
+
   const openSalesManDialog = (line) => {
     setSalesManDialog({
       open: true,
       lineId: line.lineId,
-      value: String(line.salesManId || "").trim(),
+      value: String(line.salesManCode || "").trim(),
     });
   };
 
@@ -1531,7 +1623,7 @@ const PosSales = () => {
       setCart((prev) =>
         prev.map((line) =>
           line.lineId === salesManDialog.lineId
-            ? { ...line, salesManId: "", salesManName: "" }
+            ? { ...line, salesManId: "", salesManName: "", salesManCode: "" }
             : line
         )
       );
@@ -1540,21 +1632,13 @@ const PosSales = () => {
     }
 
     try {
-      const res = await api.get("/pos-sales/salesman-lookup", {
-        params: { employeeCode },
-      });
-      const employee = res.data?.data;
-      setCart((prev) =>
-        prev.map((line) =>
-          line.lineId === salesManDialog.lineId
-            ? {
-                ...line,
-                salesManId: employee?.employeeCode || employeeCode,
-                salesManName: employee?.name || "",
-              }
-            : line
-        )
-      );
+      // The salesperson is credited by employee id (incentives); a sticker or code is resolved to the employee.
+      const employee = findSalesperson(salespeople, employeeCode)
+        || (await api.get("/pos-sales/salesman-lookup", { params: { employeeCode } })).data?.data;
+      if (!employee?.id) throw new Error("not found");
+      const lineId = salesManDialog.lineId;
+      setCart((prev) => assignSalesperson(prev, lineId, employee));
+      if (awaitingSalespersonRef.current === lineId) setAwaitingSalesperson(null);
       closeSalesManDialog();
     } catch (err) {
       toast.error(err?.response?.data?.message || "Sales man code not found");
@@ -1585,6 +1669,15 @@ const PosSales = () => {
     if (cartWithTotals.length === 0) {
       toast.error("Add at least one product before save");
       return false;
+    }
+    if (posCheckoutPrefs.salespersonScan) {
+      const missing = linesWithoutSalesperson(cart);
+      if (missing.length) {
+        toast.error(`Scan the salesperson for: ${missing.map((line) => line.productName).join(", ")}`);
+        setAwaitingSalesperson(missing[0].lineId);
+        focusBarcodeInput();
+        return false;
+      }
     }
 
     return true;
@@ -2470,6 +2563,30 @@ const PosSales = () => {
                   sx={{ "& .MuiInputBase-input": { fontSize: TYPE.small, py: 0.75 } }}
                 />
               </Box>
+              {posCheckoutPrefs.salespersonScan && (() => {
+                const waitingLine = cart.find((line) => line.lineId === awaitingSalespersonId && !line.salesManId);
+                return (
+                  <Box sx={{ width: "100%", minWidth: { md: 220 }, flex: 1 }}>
+                    <Typography component="label" htmlFor="pos-salesperson" sx={{ mb: 0.5, display: "block", fontSize: TYPE.label, fontWeight: 700, color: waitingLine ? "warning.main" : "error.main" }}>
+                      Salesperson
+                    </Typography>
+                    <TextField
+                      id="pos-salesperson"
+                      inputRef={salespersonInputRef}
+                      value={salespersonValue}
+                      onChange={(e) => setSalespersonValue(e.target.value)}
+                      onKeyDown={handleSalespersonKeyDown}
+                      placeholder={waitingLine ? `Scan salesperson for ${waitingLine.productName}` : "Scan employee sticker"}
+                      slotProps={{ htmlInput: { "data-enter-ignore": "true", "aria-label": "Salesperson" } }}
+                      size="small"
+                      fullWidth
+                      color={waitingLine ? "warning" : "primary"}
+                      focused={waitingLine ? true : undefined}
+                      sx={{ "& .MuiInputBase-input": { fontSize: TYPE.small, py: 0.75 } }}
+                    />
+                  </Box>
+                );
+              })()}
               <Box sx={{ width: "100%", minWidth: { md: 280 }, flex: 1.3 }}>
                 <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: TYPE.label, fontWeight: 700, color: "error.main" }}>{allowSaleWithoutStock ? "Product (All Stock Levels)" : "Product (In Stock)"}</Typography>
                 <AsyncSearchSelect
@@ -2722,7 +2839,7 @@ const PosSales = () => {
                                 className={line.salesManId ? "glass-btn glass-btn-success" : "glass-btn glass-btn-primary"}
                                 sx={{ height: 36, width: 36, flexShrink: 0, borderRadius: "3.5px", p: 0.75 }}
                                 aria-label="Assign sales man"
-                                title={line.salesManId ? `Sales Man ID: ${line.salesManId}` : "Assign sales man"}
+                                title={line.salesManId ? `Salesperson: ${line.salesManName || line.salesManCode || line.salesManId}` : "Assign salesperson"}
                               >
                                 <UserRound size={20} style={{ color: "#334155" }} />
                               </IconButton>

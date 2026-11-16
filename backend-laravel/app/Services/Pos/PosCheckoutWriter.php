@@ -8,6 +8,7 @@ use App\Models\ProductVariant;
 use App\Models\Stock;
 use App\Models\StockBatch;
 use App\Services\Inventory\StockRules;
+use App\Services\Sales\Salespeople;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -39,6 +40,9 @@ class PosCheckoutWriter
                 }
             }
         }
+
+        // Salesperson = an employee of this store (incentives read the id); anything else is dropped, never fatal.
+        $salespeople = app(Salespeople::class)->validIds(array_column($items, 'salesManId'), (int) $sale->store_id);
 
         // Every stock/batch lock is acquired in deterministic order before writes.
         $stocks = Stock::where('store_id', $sale->store_id)->whereIn('product_id', $products->keys())
@@ -85,7 +89,8 @@ class PosCheckoutWriter
                 'barcode_id' => $item['barcodeId'] ?? null, 'quantity' => $qty, 'unit_mrp' => $item['mrp'] ?? $price,
                 'selling_price' => $price, 'discount' => $discount, 'tax_rate' => $taxRate, 'tax_amount' => $lineTax,
                 'subtotal' => $lineSub + $lineTax, 'tax_name' => $item['taxName'] ?? null, 'tax_type' => $item['taxType'] ?? null,
-                'cost_price' => $item['cost'] ?? null, 'sales_man_id' => $item['salesManId'] ?? null, 'sales_man_name' => $item['salesManName'] ?? null,
+                'cost_price' => $item['cost'] ?? null, 'sales_man_id' => isset($salespeople[(int) ($item['salesManId'] ?? 0)]) ? (int) $item['salesManId'] : null,
+                'sales_man_name' => ($item['salesManName'] ?? null) ?: null,
                 'short_qty' => $allowNegative ? StockRules::shortQty($qty, $after) : 0,
                 'created_at' => $timestamp, 'updated_at' => $timestamp,
             ];

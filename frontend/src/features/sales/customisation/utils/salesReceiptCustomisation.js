@@ -291,6 +291,8 @@ export const DEFAULT_SALES_RECEIPT_CUSTOMIZATION = {
   saleSaveAs: "paid_settled",
   /** When false, POS skips payment entry and applies cash = net (unless credit / refund rules). */
   posPaymentDialogVisible: true,
+  /** POS: a Salesperson field after each item (employee sticker scan), for sales incentives. Off by default. */
+  posSalespersonScan: false,
   /** Printed POS receipt copies when using the printer queue (1–3). */
   posReceiptPrintCopies: 1,
   generalFields: DEFAULT_SALES_RECEIPT_GENERAL_FIELDS,
@@ -553,6 +555,7 @@ export const normalizeSalesReceiptCustomization = (value = {}) => {
     paymentQrSize: normalizePaymentQrSize(value.paymentQrSize),
     saleSaveAs,
     posPaymentDialogVisible,
+    posSalespersonScan: value.posSalespersonScan === true,
     posReceiptPrintCopies: normalizePosReceiptPrintCopies(value.posReceiptPrintCopies),
     generalFields,
     taxFields,

@@ -18,7 +18,6 @@ use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\Stock;
 use App\Models\Store;
-use App\Models\User;
 use App\Services\Approvals\ApprovalService;
 use App\Services\Dashboards\DashboardBroadcastService;
 use App\Services\Documents\DocumentNumberService;
@@ -29,6 +28,7 @@ use App\Services\Pos\PosCheckoutWriter;
 use App\Services\Pos\PosCounter;
 use App\Services\Pos\PosOfflineBilling;
 use App\Services\Pos\PosReturnWriter;
+use App\Services\Sales\Salespeople;
 use App\Services\Tenancy\PagePermissions;
 use App\Support\GroupAggregationService;
 use App\Support\PaginationService;
@@ -844,38 +844,22 @@ class PosSaleController extends Controller
         ]);
     }
 
+    /** A salesperson by sticker (EMP-<id>), employee code or phone: the store's active employees. */
     public function salesmanLookup(Request $request)
     {
-        $code = $request->input('employeeCode') ?? $request->input('code') ?? $request->input('query');
-
-        if (! $code) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Salesman not found',
-            ], 404);
+        $code = (string) ($request->input('employeeCode') ?? $request->input('code') ?? $request->input('query') ?? '');
+        $employee = app(Salespeople::class)->resolve($code);
+        if (! $employee) {
+            return response()->json(['success' => false, 'message' => 'No salesperson with this code in this store.'], 404);
         }
 
-        $user = User::where('username', $code)
-            ->orWhere('name', 'like', "%{$code}%")
-            ->orWhere('phone', $code)
-            ->first();
+        return response()->json(['success' => true, 'data' => app(Salespeople::class)->present($employee)]);
+    }
 
-        if (! $user) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Salesman not found',
-            ], 404);
-        }
-
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'username' => $user->username,
-                'code' => $user->username,
-            ],
-        ]);
+    /** The store's active salespeople, loaded once by the POS so a sticker scan resolves at once (and offline). */
+    public function salespeople()
+    {
+        return response()->json(['success' => true, 'data' => app(Salespeople::class)->active()]);
     }
 
     public function summaryReport(Request $request)

@@ -22,7 +22,7 @@ beforeEach(() => {
     url === "/companies/1" ? { name: "Coffee" } :
     url === "/pos-sales/next-bill-no" ? { billNo: "261024-0001" } :
     url === "/pos-sales/barcode-lookup" ? { id: 1, name: "Coffee beans", barcode: "COFFEE", stock_qty: 20, selling_price: 100 } :
-    url === "/pos-sales/salesman-lookup" ? { employeeCode: config?.params?.employeeCode, name: "Ravi" } :
+    url === "/pos-sales/salesman-lookup" ? { id: 7, code: config?.params?.employeeCode, employeeCode: config?.params?.employeeCode, name: "Ravi" } :
     url === "/customers" && config?.params?.search ? [meena] : []
   } }));
 });
@@ -38,7 +38,7 @@ const scan = async (barcode, value) => {
   fireEvent.keyDown(barcode, { key: "Enter" });
 };
 
-it("Sales Man: looks up the ID typed for a line and marks the line", async () => {
+it("Sales Man: looks up the employee code typed for a line and credits the employee", async () => {
   const barcode = await renderPos();
   await scan(barcode, "COFFEE");
   await screen.findByText("Coffee beans");
@@ -49,14 +49,15 @@ it("Sales Man: looks up the ID typed for a line and marks the line", async () =>
   fireEvent.keyDown(field, { key: "Enter" });
   await waitFor(() => expect(api.get).toHaveBeenCalledWith("/pos-sales/salesman-lookup", { params: { employeeCode: "E01" } }));
   await waitFor(() => expect(screen.queryByPlaceholderText("Write or scan Sales Man ID")).not.toBeInTheDocument());
-  expect(screen.getByTitle("Sales Man ID: E01")).toBeInTheDocument();
+  // Credited by employee (incentives read the employee id); the line shows the name.
+  expect(screen.getByTitle("Salesperson: Ravi")).toBeInTheDocument();
 
   // Cancel keeps the line as it was.
-  fireEvent.click(screen.getByTitle("Sales Man ID: E01"));
+  fireEvent.click(screen.getByTitle("Salesperson: Ravi"));
   expect(screen.getByPlaceholderText("Write or scan Sales Man ID")).toHaveValue("E01");
   fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
   expect(screen.queryByPlaceholderText("Write or scan Sales Man ID")).not.toBeInTheDocument();
-  expect(screen.getByTitle("Sales Man ID: E01")).toBeInTheDocument();
+  expect(screen.getByTitle("Salesperson: Ravi")).toBeInTheDocument();
 });
 
 it("Quick Customer: opens with C, finds a customer by mobile number and selects them", async () => {

@@ -8,9 +8,9 @@ use App\Models\HrExpenseClaim;
 use App\Models\HrLeaveEncashment;
 use App\Models\HrSalaryComponent;
 use App\Models\HrSalaryStructureLine;
+use App\Services\Sales\IncentiveCalculator;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 
 /**
  * One employee's pay for a month. Gross is earned for payable days (monthly salary ÷ days in the month, or a
@@ -236,18 +236,13 @@ class PayrollCalculator
         return $earnings;
     }
 
-    /** The month's sales incentive: net sales billed by the employee × their Incentive %. */
+    /**
+     * The month's sales incentive: what Finance > Incentive Report approved for the employee (item, scheme, old-stock
+     * and target incentive less returns). Nothing until a manager approves the month.
+     */
     private function incentive(Employee $employee, array $details, string $month): float
     {
-        $pct = (float) ($details['incentive_pct'] ?? 0);
-        if ($pct <= 0) {
-            return 0;
-        }
-        $sales = (float) DB::table('pos_sale_items as i')->join('pos_sales as s', 's.id', '=', 'i.pos_sale_id')
-            ->where('i.sales_man_id', $employee->id)->whereNotIn('s.status', ['CANCELLED', 'CANCELED'])
-            ->where('s.sale_date', 'like', "{$month}%")->sum('i.subtotal');
-
-        return round($sales * $pct / 100, 2);
+        return round(app(IncentiveCalculator::class)->approvedTotal((int) $employee->id, $month), 2);
     }
 
     /** Adds to (or merges into) a line list, skipping zero amounts. */

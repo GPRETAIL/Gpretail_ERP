@@ -29,7 +29,7 @@ class MobileAccess
     private const PAGES = [
         'DashboardController' => '/dashboard', 'DashboardLayoutController' => '/dashboard',
         'PosSaleController' => '/sales/pos-sales', 'PosReturnController' => '/sales/pos-sales-return',
-        'DealerInvoiceController' => '/sales/dealer-invoice', 'SalesApprovalController' => '/sales/sales-on-approval', 'DeliveryController' => '/sales/delivery',
+        'DealerInvoiceController' => '/sales/dealer-invoice', 'SalesApprovalController' => '/sales/sales-on-approval', 'DeliveryController' => '/sales/delivery', 'IncentiveController' => '/finance/incentive-report',
         'SalesDashboardController' => '/sales/pos-sales', 'SalesReportController' => '/sales/reports',
         'SettlementController' => '/sales/settlement', 'CashRegisterController' => '/sales/cash-opening',
         'PurchaseInvoiceController' => '/warehouse/invoice', 'PurchaseReturnController' => '/warehouse/purchase-return',

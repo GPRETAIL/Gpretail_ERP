@@ -10,6 +10,7 @@ use App\Models\Store;
 use App\Models\User;
 use App\Services\Hr\PayrollCalculator;
 use App\Services\Hr\PayrollSetup;
+use App\Services\Sales\IncentiveCalculator;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -100,6 +101,10 @@ class PayrollTest extends TestCase
         $product = Product::create(['name' => 'Shirt', 'code' => 'SH1', 'company_id' => $this->store->id]);
         $sale = DB::table('pos_sales')->insertGetId(['store_id' => $this->store->id, 'user_id' => $this->user('cashier')->id, 'invoice_no' => 'B1', 'sale_date' => '2026-09-12 11:00:00', 'status' => 'PAID']);
         DB::table('pos_sale_items')->insert(['pos_sale_id' => $sale, 'product_id' => $product->id, 'quantity' => 1, 'subtotal' => 10000, 'sales_man_id' => $ravi->id]);
+
+        // The incentive is paid once a manager approves the month in Finance > Incentive Report.
+        $this->assertNull($this->line(app(PayrollCalculator::class)->slip($ravi, '2026-09')['earnings'], 'INCENTIVE'));
+        app(IncentiveCalculator::class)->approve($this->store->id, '2026-09', $this->user('manager'));
 
         $slip = app(PayrollCalculator::class)->slip($ravi, '2026-09');
         $this->assertSame(12000.0, (float) collect($slip['earnings'])->whereIn('code', ['BASIC', 'HRA', 'CONV', 'SPECIAL'])->sum('amount')); // 20 × ₹600.

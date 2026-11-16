@@ -1326,6 +1326,11 @@ export const printWarehouseBarcodeLabels = async ({ labels, qrSources, customiza
   return { ok: true, message: null };
 };
 
+/** The sheet as the browser print shows it, for an on-screen preview (Employee Sticker). */
+// eslint-disable-next-line react-refresh/only-export-components -- shared with Employee Sticker
+export const buildBarcodeSheetPreviewHtml = ({ labels, customization, storeName, qrSources }) =>
+  buildBarcodeSheetDocumentHtml(buildBarcodeSheetMarkup({ labels, customization, storeName, qrSources }));
+
 const renderBarcodeSheetToPngDataUrl = async (markup) => {
   const widthPx = Math.max(1, Math.ceil(markup.sheetWidthMm * MM_TO_PX));
   const heightPx = Math.max(1, Math.ceil(markup.sheetHeightMm * MM_TO_PX));

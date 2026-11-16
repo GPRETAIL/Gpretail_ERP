@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\V1\Sales\ApprovalController;
 use App\Http\Controllers\Api\V1\Sales\CashRegisterController;
 use App\Http\Controllers\Api\V1\Sales\DealerInvoiceController;
 use App\Http\Controllers\Api\V1\Sales\DeliveryController;
+use App\Http\Controllers\Api\V1\Sales\IncentiveController;
 use App\Http\Controllers\Api\V1\Sales\PosOfflineController;
 use App\Http\Controllers\Api\V1\Sales\PosReturnController;
 use App\Http\Controllers\Api\V1\Sales\PosSaleController;
@@ -14,6 +15,18 @@ use Illuminate\Support\Facades\Route;
 
 // POS sales and returns, approvals, dealer invoices, cash register, settlements and sales reports.
 // Loaded inside the authenticated app-route group in routes/api.php.
+
+// Salesperson incentives: Settings > Incentive Configuration and Finance > Incentive Report.
+Route::get('incentives/rules', [IncentiveController::class, 'rules']);
+Route::post('incentives/rules', [IncentiveController::class, 'storeRule']);
+Route::put('incentives/rules/{id}', [IncentiveController::class, 'updateRule'])->whereNumber('id');
+Route::delete('incentives/rules/{id}', [IncentiveController::class, 'destroyRule'])->whereNumber('id');
+Route::get('incentives/targets', [IncentiveController::class, 'targets']);
+Route::put('incentives/targets', [IncentiveController::class, 'saveTargets']);
+Route::get('incentives/options', [IncentiveController::class, 'options']);
+Route::get('incentives/explain', [IncentiveController::class, 'explain']);
+Route::get('incentives/report', [IncentiveController::class, 'report']);
+Route::post('incentives/approve', [IncentiveController::class, 'approve']);
 
 // Sales > Delivery: check a bill's items at handover.
 Route::get('deliveries/bill', [DeliveryController::class, 'bill']);
@@ -31,6 +44,7 @@ Route::post('pos-sales/offline/review/{id}', [PosOfflineController::class, 'mark
 Route::get('pos-sales/latest-document', [PosSaleController::class, 'latestDocument']);
 Route::get('pos-sale/next-bill-no', [PosSaleController::class, 'nextBillNo']);
 Route::get('pos-sales/salesman-lookup', [PosSaleController::class, 'salesmanLookup']);
+Route::get('pos-sales/salespeople', [PosSaleController::class, 'salespeople']);
 Route::get('pos-sales/summary-report', [PosSaleController::class, 'summaryReport']);
 Route::get('pos-sales/stock-products', [PosSaleController::class, 'stockProducts']);
 Route::get('pos-sales/barcode-lookup', [PosSaleController::class, 'barcodes']);

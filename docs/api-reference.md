@@ -1,6 +1,6 @@
 # API reference
 
-Every endpoint under `/api`, grouped by module (677 endpoints). Generated from
+Every endpoint under `/api`, grouped by module (689 endpoints). Generated from
 `php artisan route:list --sort=definition --json`; regenerate it after changing routes.
 
 - Each signed-in endpoint is also served under `/api/v1/...` with the same behaviour.
@@ -22,8 +22,8 @@ Every endpoint under `/api`, grouped by module (677 endpoints). Generated from
 - [Masters](#masters) (120)
 - [Notifications](#notifications) (11)
 - [Other](#other) (1)
-- [Platform](#platform) (28)
-- [Sales](#sales) (98)
+- [Platform](#platform) (29)
+- [Sales](#sales) (109)
 - [Settings](#settings) (73)
 - [Store](#store) (18)
 - [Warehouse](#warehouse) (67)
@@ -486,6 +486,7 @@ Every endpoint under `/api`, grouped by module (677 endpoints). Generated from
 | POST | `/api/sync/register-node` | SyncController@registerNode | no |
 | GET | `/api/sync/users` | SyncController@users | no |
 | POST | `/api/sync/failover-session` | SyncController@failoverSession | no |
+| POST | `/api/sync/remote-support/{operation}` | SyncController@remoteSupport | no |
 | POST | `/api/sync/session-user` | SyncController@sessionUser | no |
 | GET | `/api/sync/outbound/count` | SyncController@outboundCount | no |
 | GET | `/api/sync/nodes` | SyncController@nodes | yes |
@@ -503,6 +504,16 @@ Every endpoint under `/api`, grouped by module (677 endpoints). Generated from
 
 | Method | Path | Controller action | Auth |
 |---|---|---|---|
+| GET | `/api/incentives/rules` | IncentiveController@rules | yes |
+| POST | `/api/incentives/rules` | IncentiveController@storeRule | yes |
+| PUT | `/api/incentives/rules/{id}` | IncentiveController@updateRule | yes |
+| DELETE | `/api/incentives/rules/{id}` | IncentiveController@destroyRule | yes |
+| GET | `/api/incentives/targets` | IncentiveController@targets | yes |
+| PUT | `/api/incentives/targets` | IncentiveController@saveTargets | yes |
+| GET | `/api/incentives/options` | IncentiveController@options | yes |
+| GET | `/api/incentives/explain` | IncentiveController@explain | yes |
+| GET | `/api/incentives/report` | IncentiveController@report | yes |
+| POST | `/api/incentives/approve` | IncentiveController@approve | yes |
 | GET | `/api/deliveries/bill` | DeliveryController@bill | yes |
 | GET | `/api/deliveries/scan` | DeliveryController@scan | yes |
 | GET | `/api/deliveries` | DeliveryController@index | yes |
@@ -515,6 +526,7 @@ Every endpoint under `/api`, grouped by module (677 endpoints). Generated from
 | GET | `/api/pos-sales/latest-document` | PosSaleController@latestDocument | yes |
 | GET | `/api/pos-sale/next-bill-no` | PosSaleController@nextBillNo | yes |
 | GET | `/api/pos-sales/salesman-lookup` | PosSaleController@salesmanLookup | yes |
+| GET | `/api/pos-sales/salespeople` | PosSaleController@salespeople | yes |
 | GET | `/api/pos-sales/summary-report` | PosSaleController@summaryReport | yes |
 | GET | `/api/pos-sales/stock-products` | PosSaleController@stockProducts | yes |
 | GET | `/api/pos-sales/barcode-lookup` | PosSaleController@barcodes | yes |

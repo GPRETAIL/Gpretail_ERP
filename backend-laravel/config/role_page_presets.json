@@ -617,6 +617,12 @@
       "add": true,
       "edit": true,
       "delete": false
+    },
+    "/settings/incentive-configuration": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
     }
   },
   "cashier": {
@@ -749,6 +755,12 @@
       "delete": false
     },
     "/sales/delivery": {
+      "view": true,
+      "add": true,
+      "edit": false,
+      "delete": false
+    },
+    "/sales/employee-sticker": {
       "view": true,
       "add": true,
       "edit": false,

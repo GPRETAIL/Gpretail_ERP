@@ -1185,10 +1185,18 @@ export default function SalesSettingsEditor({ section = "sales", onDirtyChange }
                 label: "Payment dialogue",
                 visible: settings.posPaymentDialogVisible !== false,
               },
+              {
+                key: "salespersonScan",
+                label: "Scan salesperson for every item (employee sticker, for incentives)",
+                visible: settings.posSalespersonScan === true,
+              },
             ]}
             onToggleVisible={(key, visible) => {
               if (key === "paymentDialog") {
                 updateSetting({ posPaymentDialogVisible: visible });
+              }
+              if (key === "salespersonScan") {
+                updateSetting({ posSalespersonScan: visible });
               }
             }}
           />

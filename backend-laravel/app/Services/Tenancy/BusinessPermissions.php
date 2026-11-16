@@ -101,6 +101,10 @@ class BusinessPermissions
         if (in_array($controller, self::PAYROLL, true)) {
             return $read ? 'payroll.view' : 'payroll.manage';
         }
+        if ($controller === 'IncentiveController') {
+            // What each salesperson earns is pay data: managers and accountants read it; a manager sets rules and approves.
+            return $read ? 'costs.view' : ($action === 'approve' ? 'transactions.approve' : 'masters.write');
+        }
         if (in_array($controller, ['LeaveApplicationController', 'HrRequestController'], true) && in_array($action, ['approve', 'reject'], true)
             || ($controller === 'OvertimeController' && $action === 'decide')) {
             return 'approvals.decide';

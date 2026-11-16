@@ -119,6 +119,9 @@ const ApprovalInbox = lazy(() => import("@/features/sales/approvals/ApprovalInbo
 const Approvals = lazy(() => import("@/features/sales/approvals/Approvals"));
 const OfflineBills = lazy(() => import("@/features/sales/pos/offline/OfflineBills"));
 const Delivery = lazy(() => import("@/features/sales/delivery/Delivery"));
+const EmployeeSticker = lazy(() => import("@/features/sales/employee-sticker/EmployeeSticker"));
+const IncentiveConfiguration = lazy(() => import("@/features/settings/incentives/IncentiveConfiguration"));
+const IncentiveReport = lazy(() => import("@/features/finance/IncentiveReport"));
 const Settlement = lazy(() => import("@/features/sales/settlement/Settlement"));
 const SalesReports = lazy(() => import("@/features/sales/reports/SalesReports"));
 const TouchSales = lazy(() => import("@/features/sales/pos/TouchSales"));
@@ -273,6 +276,9 @@ export const protectedLayoutRoutes = [
   { path: "/sales/approvals", render: () => <Approvals /> },
   { path: "/sales/offline-bills", render: () => <OfflineBills /> },
   { path: "/sales/delivery", render: () => <Delivery /> },
+  { path: "/sales/employee-sticker", render: () => <EmployeeSticker /> },
+  { path: "/settings/incentive-configuration", render: () => <IncentiveConfiguration /> },
+  { path: "/finance/incentive-report", render: () => <IncentiveReport /> },
   { path: "/sales/settlement", render: () => <Settlement /> },
   { path: "/sales/reports", render: () => <SalesReports /> },
   { path: "/sales/touch-sales", render: () => <TouchSales /> },

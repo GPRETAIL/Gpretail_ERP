@@ -2,9 +2,11 @@
 
 namespace App\Services\Reports;
 
+use App\Services\Sales\IncentiveCalculator;
 use App\Services\Tenancy\StoreQuery;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Sales Reports tabs that need their own data (stock batches, physical audits, loyalty redemptions, salesman
@@ -101,32 +103,30 @@ class StoreReports
     }
 
     /**
-     * Salesman incentive per month: net sales on the lines they sold (bill lines carry the salesman) times the
-     * Incentive % on their Employee record. Cancelled bills do not count. Section is the employee's HR section.
+     * Salesperson incentive per month for the last 12 months, worked out by the same rules as Finance > Incentive
+     * Report (Services/Sales/IncentiveCalculator), so both reports agree.
      */
     private function incentives(): Collection
     {
-        $lines = StoreQuery::table('pos_sale_items as i')
-            ->join('pos_sales as s', 's.id', '=', 'i.pos_sale_id')
-            ->whereNotNull('i.sales_man_id')->whereNotIn('s.status', ['CANCELLED', 'CANCELED'])
-            ->select('i.sales_man_id', 'i.sales_man_name', 's.id as sale_id', 's.sale_date', 'i.quantity', 'i.subtotal')
-            ->limit(200000)->get();
-        $employees = StoreQuery::table('employees as e')->leftJoin('hr_departments as d', 'd.id', '=', 'e.department_id')
-            ->whereIn('e.id', $lines->pluck('sales_man_id')->unique())
-            ->select('e.id', 'e.code', 'e.name', 'e.master_details', 'd.name as section')->get()->keyBy('id');
+        $storeIds = array_map('intval', (array) request()->attributes->get('store_context_ids', []));
+        $calculator = app(IncentiveCalculator::class);
+        $rows = collect();
+        foreach ($storeIds as $storeId) {
+            $months = DB::table('pos_sale_items as i')->join('pos_sales as s', 's.id', '=', 'i.pos_sale_id')
+                ->where('s.store_id', $storeId)->whereNotNull('i.sales_man_id')->where('s.sale_date', '>=', now()->subMonths(11)->startOfMonth())
+                ->selectRaw('DISTINCT SUBSTR(s.sale_date, 1, 7) as m')->pluck('m');
+            foreach ($months as $month) {
+                foreach ($calculator->month($storeId, (string) $month)['rows'] as $row) {
+                    $rows->push([
+                        'month' => $month, 'employee_code' => $row['employee_code'] ?? '-', 'employee_name' => $row['employee_name'],
+                        'section' => $row['section'] ?? 'No section', 'bills' => $row['bills'], 'qty' => (float) $row['qty'], 'net_sales' => $row['net_sales'],
+                        'incentive_pct' => $row['net_sales'] > 0 ? round($row['total'] / $row['net_sales'] * 100, 2) : 0, 'incentive_amount' => $row['total'],
+                    ]);
+                }
+            }
+        }
 
-        return $lines->groupBy(fn ($line) => substr((string) $line->sale_date, 0, 7).'|'.$line->sales_man_id)->map(function (Collection $rows) use ($employees) {
-            $first = $rows->first();
-            $employee = $employees->get($first->sales_man_id);
-            $pct = (float) (json_decode($employee->master_details ?? '[]', true)['incentive_pct'] ?? 0);
-            $sales = round((float) $rows->sum('subtotal'), 2);
-
-            return [
-                'month' => substr((string) $first->sale_date, 0, 7), 'employee_code' => $employee->code ?? '-', 'employee_name' => $employee->name ?? $first->sales_man_name ?? '-',
-                'section' => $employee->section ?? 'No section', 'bills' => $rows->pluck('sale_id')->unique()->count(), 'qty' => (float) $rows->sum('quantity'),
-                'net_sales' => $sales, 'incentive_pct' => $pct, 'incentive_amount' => round($sales * $pct / 100, 2),
-            ];
-        })->sortBy([['month', 'desc'], ['incentive_amount', 'desc']])->values();
+        return $rows->sortBy([['month', 'desc'], ['incentive_amount', 'desc']])->values();
     }
 
     /** Unsold stock batches, oldest first, with the item they belong to. */

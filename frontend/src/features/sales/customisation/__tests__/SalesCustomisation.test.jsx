@@ -1,6 +1,6 @@
 import { configureStore } from "@reduxjs/toolkit";
 import React from "react";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import { Provider } from "react-redux";
 import authReducer from "@/features/auth/authSlice";
 import SalesCustomisation from "@/features/sales/customisation/SalesCustomisation";
@@ -86,5 +86,14 @@ describe("Sales Customisation", () => {
     expect(payload.companyId).toBe("1");
     expect(payload).not.toHaveProperty("receiptWidthInches");
     expect(payload).not.toHaveProperty("printMode");
+  });
+
+  it("saves the Salesperson field switch with the sales settings", async () => {
+    renderComponent();
+    const row = (await screen.findByText(/Scan salesperson for every item/)).closest("tr");
+    fireEvent.click(within(row).getAllByRole("radio")[1]);
+    fireEvent.click(screen.getByText("Save"));
+    await waitFor(() => expect(api.put).toHaveBeenCalled());
+    expect(api.put.mock.calls[0][1]).toMatchObject({ settingsSection: "sales", posSalespersonScan: true });
   });
 });
