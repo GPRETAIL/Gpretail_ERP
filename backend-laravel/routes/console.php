@@ -40,6 +40,9 @@ Artisan::command('backups:run-scheduled {--store= : Only this store id}', functi
 })->purpose('Run the Backup Center scheduled backups that are due');
 Schedule::command('backups:run-scheduled')->everyFifteenMinutes()->withoutOverlapping(120);
 
+// Settings > Scheduler: scheduled report emails (each schedule's own time, in the business time zone).
+Schedule::command('reports:run-scheduled')->everyFiveMinutes()->withoutOverlapping(30);
+
 // Lets /api/health report whether the server cron (schedule:run every minute) is running.
 Schedule::call(fn () => Cache::put('ops:scheduler-heartbeat', now()->timestamp, 600))->everyMinute()->name('ops:heartbeat');
 

@@ -1,6 +1,6 @@
 # API reference
 
-Every endpoint under `/api`, grouped by module (721 endpoints). Generated from
+Every endpoint under `/api`, grouped by module (734 endpoints). Generated from
 `php artisan route:list --sort=definition --json`; regenerate it after changing routes.
 
 - Each signed-in endpoint is also served under `/api/v1/...` with the same behaviour.
@@ -23,7 +23,7 @@ Every endpoint under `/api`, grouped by module (721 endpoints). Generated from
 - [Other](#other) (1)
 - [Platform](#platform) (29)
 - [Sales](#sales) (126)
-- [Settings](#settings) (76)
+- [Settings](#settings) (89)
 - [Store](#store) (18)
 - [Warehouse](#warehouse) (67)
 
@@ -722,6 +722,19 @@ Every endpoint under `/api`, grouped by module (721 endpoints). Generated from
 | GET | `/api/messaging-settings` | MessagingSettingsController@show | yes |
 | PUT | `/api/messaging-settings/{channel}` | MessagingSettingsController@update | yes |
 | POST | `/api/messaging-settings/{channel}/test` | MessagingSettingsController@test | yes |
+| GET | `/api/report-schedules/options` | ReportScheduleController@options | yes |
+| GET | `/api/report-schedules/runs` | ReportScheduleController@runs | yes |
+| GET | `/api/report-schedules/groups` | ReportScheduleController@groups | yes |
+| POST | `/api/report-schedules/groups` | ReportScheduleController@saveGroup | yes |
+| PUT | `/api/report-schedules/groups/{id}` | ReportScheduleController@saveGroup | yes |
+| DELETE | `/api/report-schedules/groups/{id}` | ReportScheduleController@destroyGroup | yes |
+| GET | `/api/report-schedules` | ReportScheduleController@index | yes |
+| POST | `/api/report-schedules` | ReportScheduleController@store | yes |
+| PUT | `/api/report-schedules/{id}` | ReportScheduleController@update | yes |
+| PATCH | `/api/report-schedules/{id}/active` | ReportScheduleController@toggle | yes |
+| DELETE | `/api/report-schedules/{id}` | ReportScheduleController@destroy | yes |
+| POST | `/api/report-schedules/{id}/send-now` | ReportScheduleController@sendNow | yes |
+| GET | `/api/report-schedules/{id}/preview` | ReportScheduleController@preview | yes |
 
 ## Store
 

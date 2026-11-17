@@ -19,7 +19,8 @@ class MessagingSettings
     public const FIELDS = [
         'sms' => ['secret' => ['auth_key'], 'plain' => ['sender_id', 'otp_template_id', 'country_code']],
         'whatsapp' => ['secret' => ['access_token'], 'plain' => ['phone_number_id', 'otp_template', 'language', 'country_code']],
-        'email' => ['secret' => [], 'plain' => ['from_name', 'reply_to']],
+        // SMTP is optional: without a host the server's own mailer (.env) sends (MailerFactory).
+        'email' => ['secret' => ['smtp_password'], 'plain' => ['from_name', 'reply_to', 'from_address', 'smtp_host', 'smtp_port', 'smtp_encryption', 'smtp_username']],
     ];
 
     /** @return array{enabled: bool, secrets: array<string, string>, plain: array<string, mixed>, last_test: ?array} */

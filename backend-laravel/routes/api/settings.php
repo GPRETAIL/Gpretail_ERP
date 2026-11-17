@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\V1\Platform\StoreActivationController;
 use App\Http\Controllers\Api\V1\Settings\BackupController;
 use App\Http\Controllers\Api\V1\Settings\LoginSessionController;
 use App\Http\Controllers\Api\V1\Settings\MessagingSettingsController;
+use App\Http\Controllers\Api\V1\Settings\ReportScheduleController;
 use App\Http\Controllers\Api\V1\Settings\RemoteSupportController;
 use App\Http\Controllers\Api\V1\Settings\SettingsController;
 use App\Http\Controllers\Api\V1\Settings\StoreController;
@@ -105,3 +106,20 @@ Route::delete('login-sessions/{id}', [LoginSessionController::class, 'destroy'])
 Route::get('messaging-settings', [MessagingSettingsController::class, 'show']);
 Route::put('messaging-settings/{channel}', [MessagingSettingsController::class, 'update']);
 Route::post('messaging-settings/{channel}/test', [MessagingSettingsController::class, 'test']);
+
+// Settings > Scheduler: reports emailed on a schedule, recipient groups and the delivery log.
+Route::prefix('report-schedules')->controller(ReportScheduleController::class)->group(function () {
+    Route::get('options', 'options');
+    Route::get('runs', 'runs');
+    Route::get('groups', 'groups');
+    Route::post('groups', 'saveGroup');
+    Route::put('groups/{id}', 'saveGroup')->whereNumber('id');
+    Route::delete('groups/{id}', 'destroyGroup')->whereNumber('id');
+    Route::get('/', 'index');
+    Route::post('/', 'store');
+    Route::put('{id}', 'update')->whereNumber('id');
+    Route::patch('{id}/active', 'toggle')->whereNumber('id');
+    Route::delete('{id}', 'destroy')->whereNumber('id');
+    Route::post('{id}/send-now', 'sendNow')->whereNumber('id');
+    Route::get('{id}/preview', 'preview')->whereNumber('id');
+});

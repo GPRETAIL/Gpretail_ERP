@@ -36,7 +36,7 @@ class MessageGateway
             'whatsapp' => ($data['secrets']['access_token'] ?? '') !== '' && ($data['plain']['phone_number_id'] ?? '') !== ''
                 && ($data['plain']['otp_template'] ?? '') !== '',
             // A mailer that only writes to the log sends nothing, except on a developer's machine (the code is in the log).
-            'email' => ! in_array(config('mail.default'), ['log', 'array'], true) || app()->environment('local'),
+            'email' => trim((string) ($data['plain']['smtp_host'] ?? '')) !== '' || ! in_array(config('mail.default'), ['log', 'array'], true) || app()->environment('local'),
             default => false,
         };
     }
@@ -52,7 +52,7 @@ class MessageGateway
             return match ($channel) {
                 'sms' => $this->msg91($data, $to, $vars),
                 'whatsapp' => $this->whatsapp($data, $to, $vars),
-                'email' => $this->email($data, $to, $vars),
+                'email' => $this->email($data, $to, [...$vars, 'store_id' => $storeId]),
             };
         } catch (Throwable $e) {
             Log::warning('Messaging send failed', ['channel' => $channel, 'store_id' => $storeId, 'error' => $e->getMessage()]);
@@ -110,7 +110,7 @@ class MessageGateway
         $text = "Your OTP is {$vars['otp']}."
             .(isset($vars['points']) ? " It approves redeeming {$vars['points']} points (Rs. {$vars['amount']}) at {$store}." : '')
             .' It is valid for 5 minutes. Do not share it with anyone except the cashier.';
-        Mail::raw($text, function ($message) use ($to, $store, $data) {
+        app(MailerFactory::class)->mailer((int) ($vars['store_id'] ?? 0))->raw($text, function ($message) use ($to, $store, $data) {
             $message->to($to)->subject("{$store}: your OTP");
             if ($from = ($data['plain']['from_name'] ?? '')) {
                 $message->from(config('mail.from.address'), $from);

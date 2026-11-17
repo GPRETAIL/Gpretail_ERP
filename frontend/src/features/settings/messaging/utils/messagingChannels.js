@@ -23,10 +23,16 @@ export const CHANNELS = [
   },
   {
     key: "email", title: "Email",
-    help: "Uses the app's mail server. The customer needs an email address on their record.",
+    help: "OTPs, reminders and scheduled reports (Settings > Scheduler). Leave the SMTP fields empty to use the server's mail account; or enter your own, e.g. your Hostinger mailbox (smtp.hostinger.com, 465, SSL) or Gmail with an app password.",
     fields: [
       { key: "from_name", label: "From name", help: "For example your store name" },
       { key: "reply_to", label: "Reply-to address" },
+      { key: "from_address", label: "From address (optional)", help: "Usually the SMTP mailbox itself" },
+      { key: "smtp_host", label: "SMTP host (optional)", help: "e.g. smtp.hostinger.com" },
+      { key: "smtp_port", label: "SMTP port", help: "465 for SSL, 587 for TLS" },
+      { key: "smtp_encryption", label: "Encryption", help: "ssl or tls" },
+      { key: "smtp_username", label: "SMTP username", help: "The full mailbox address" },
+      { key: "smtp_password", label: "SMTP password", secret: true },
     ],
   },
 ];

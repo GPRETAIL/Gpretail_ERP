@@ -74,6 +74,7 @@ const PrintingConfiguration = lazy(() => import("@/features/settings/PrintingCon
 const BackupCenter = lazy(() => import("@/features/settings/BackupCenter"));
 const RemoteSupport = lazy(() => import("@/features/settings/RemoteSupport"));
 const MessagingSettings = lazy(() => import("@/features/settings/messaging/MessagingSettings"));
+const Scheduler = lazy(() => import("@/features/settings/scheduler/Scheduler"));
 const UserAccess = lazy(() => import("@/features/settings/users/UserAccess"));
 const UserAccessHome = lazy(() => import("@/features/settings/users/UserAccessHome"));
 const LoginSessions = lazy(() => import("@/features/settings/users/LoginSessions"));
@@ -223,6 +224,7 @@ export const protectedLayoutRoutes = [
   { path: "/settings/backup", render: () => <BackupCenter /> },
   { path: "/settings/remote-support", render: () => <RemoteSupport /> },
   { path: "/settings/messaging", render: () => <MessagingSettings /> },
+  { path: "/settings/scheduler", render: () => <Scheduler /> },
   { path: "/remote-support", render: () => <RemoteSupport /> },
   { path: "/user-access", render: () => <UserAccessHome /> },
   { path: "/user-access/login-sessions", render: () => <LoginSessions /> },
