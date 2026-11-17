@@ -6,6 +6,10 @@ import NoStockChip from "@/shared/components/NoStockChip";
 import ApprovalDialog from "@/features/sales/approvals/components/ApprovalDialog";
 import { approvalRequirementFrom, isApprovalRequired, withApprovalTokens } from "@/features/sales/approvals/utils/approvals";
 import LoyaltyRedeemPanel from "@/features/sales/pos/components/LoyaltyRedeemPanel";
+import useBillingGate from "@/features/sales/pos/hooks/useBillingGate";
+import CashNotOpenedDialog from "@/features/sales/pos/components/CashNotOpenedDialog";
+import CheckoutPaymentDialog from "@/features/sales/pos/components/CheckoutPaymentDialog";
+import { checkoutPaymentPayload } from "@/features/sales/pos/utils/checkoutPayment";
 import { loyaltyRedeemPayload } from "@/features/sales/pos/utils/loyaltyRedeem";
 import {
   POS_OLD_SALE_IMPORT_CONFIG,
@@ -56,6 +60,7 @@ import {
   getPosReturnBarcodeValue,
   loadSalesReceiptCustomization,
   fetchSalesReceiptCustomization,
+  paymentDialogOn,
   buildPaymentQrMarkup,
   buildReceiptCodeMarkupAsync,
 } from "@/features/sales/customisation/utils/salesReceiptCustomisation";
@@ -73,6 +78,8 @@ const LegacyPos = () => {
   // Pops automatically once per login if this user has no counter assigned yet -- previously
   // they'd only discover this was required when a sale failed to save.
   const [counterAssignmentOpen, setCounterAssignmentOpen] = useCounterAssignmentPrompt(authUser);
+  // A bill needs the counter and (Sales Customisation) its cash opened: popups on load and on a refused save.
+  const billingGate = useBillingGate({ onCounterRequired: () => setCounterAssignmentOpen(true) });
 
   const { queuePrintHtml } = usePrintContext();
   const barcodeRef = useRef(null);
@@ -360,6 +367,10 @@ const LegacyPos = () => {
   const loyaltyCustomerId = activeTab.customerMode === "existing" ? activeTab.existingCustomerId : "";
   const loyaltyRedeem = loyaltyRedeemState && loyaltyCustomerId && String(loyaltyRedeemState.customerId) === String(loyaltyCustomerId) ? loyaltyRedeemState : null;
   const paidCash = Math.max(round2(totalAmount - (loyaltyRedeem?.amount || 0)), 0);
+  // Sales Customisation can make Save open the payment dialog (cash / card / UPI, points) on this page.
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const lastPaymentRef = useRef(null);
+  const paymentDialogMode = paymentDialogOn(loadSalesReceiptCustomization(authUser?.company_id || "default"), "pos_old");
   const balanceAmount = round2(-totalAmount);
 
   const discountDialogSelectedSet = useMemo(
@@ -1149,7 +1160,7 @@ const LegacyPos = () => {
     return null;
   }, [activeTab.customerMode, customers, updateActiveTab, handleAsyncCustomerSearch]);
 
-  const handleSave = async ({ approvalToken, approvalTokens } = {}) => {
+  const handleSave = async ({ approvalToken, approvalTokens, payment } = {}) => {
     if (!authUser?.counter_id) {
       setCounterAssignmentOpen(true);
       toast.error("Please assign a counter before checkout");
@@ -1185,6 +1196,13 @@ const LegacyPos = () => {
       }
     }
 
+    // With the payment dialog on, Save first asks how the bill is paid; an approval retry keeps that answer.
+    const pay = payment || (approvalToken || approvalTokens ? lastPaymentRef.current : null);
+    if (paymentDialogMode && !pay) {
+      setCheckoutOpen(true);
+      return;
+    }
+
     const payload = {
       customerMode: activeTab.customerMode,
       customerId: activeTab.customerMode === "existing" ? activeTab.existingCustomerId : null,
@@ -1199,8 +1217,9 @@ const LegacyPos = () => {
       saleAt: now.toISOString(),
       paymentMode: "cash",
       shipping: 0,
-      paidCash: paidCash,
-      ...loyaltyRedeemPayload(loyaltyRedeem),
+      paidCash: pay ? pay.cashAmount : paidCash,
+      ...(pay ? checkoutPaymentPayload(pay) : {}),
+      ...loyaltyRedeemPayload(pay ? pay.loyalty : loyaltyRedeem),
       returnSaleId: activeTab.returnSaleId || null,
       returnBillNo: activeTab.returnBillNo || null,
       returnSaleType: activeTab.returnSaleType || null,
@@ -1275,8 +1294,10 @@ const LegacyPos = () => {
       // reset tab
       updateActiveTab({ cart: [], paidCash: "", returnSaleId: null, returnBillNo: null, returnSaleType: null, returnAmount: 0, isExchange: false });
       setLoyaltyRedeemState(null);
+      lastPaymentRef.current = null;
       await Promise.all([loadMasterData(), loadNextBillNo()]);
     } catch (err) {
+      if (billingGate.handleError(err)) return;
       if (isApprovalRequired(err)) {
         setApprovalRequirement(approvalRequirementFrom(err));
         return;
@@ -2470,7 +2491,7 @@ const LegacyPos = () => {
 
           {/* Bottom summary */}
           <Stack sx={{ display: { xs: "none", lg: "block" }, bgcolor: "background.paper", borderTop: 1, borderColor: "divider", px: 1.5, py: 1, flexShrink: 0, gap: 1 }}>
-            {loyaltyCustomerId && totalAmount > 0 && (
+            {!paymentDialogMode && loyaltyCustomerId && totalAmount > 0 && (
               <LoyaltyRedeemPanel customerId={loyaltyCustomerId} billAmount={totalAmount} value={loyaltyRedeem}
                 onChange={(value) => setLoyaltyRedeemState(value ? { ...value, customerId: loyaltyCustomerId } : null)} />
             )}
@@ -3141,6 +3162,12 @@ const LegacyPos = () => {
         open={counterAssignmentOpen}
         onClose={() => setCounterAssignmentOpen(false)}
       />
+      <CashNotOpenedDialog block={billingGate.block} onClose={billingGate.close} />
+      {checkoutOpen && (
+        <CheckoutPaymentDialog netAmount={totalAmount} billAmount={subtotal} customerId={loyaltyCustomerId || null} saving={saving}
+          onClose={() => setCheckoutOpen(false)}
+          onConfirm={(payment) => { lastPaymentRef.current = payment; setCheckoutOpen(false); void handleSave({ payment }); }} />
+      )}
     </Box>
   );
 };

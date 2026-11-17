@@ -1,5 +1,7 @@
 import { TYPE } from "@/shared/theme/typeScale";
 import BillingDateBanner from "@/features/sales/pos/components/BillingDateBanner";
+import useBillingGate from "@/features/sales/pos/hooks/useBillingGate";
+import CashNotOpenedDialog from "@/features/sales/pos/components/CashNotOpenedDialog";
 import LoyaltyRedeemPanel from "@/features/sales/pos/components/LoyaltyRedeemPanel";
 import { loyaltyRedeemPayload } from "@/features/sales/pos/utils/loyaltyRedeem";
 import LiveDateTime from "@/shared/components/LiveDateTime";
@@ -132,6 +134,8 @@ const PosSales = () => {
   // Pops automatically once per login if this user has no counter assigned yet -- previously they'd
   // only discover this was required when a sale failed to save.
   const [counterAssignmentOpen, setCounterAssignmentOpen] = useCounterAssignmentPrompt(authUser);
+  // A bill needs the counter and (Sales Customisation) its cash opened: popups on load and on a refused save.
+  const billingGate = useBillingGate({ onCounterRequired: () => setCounterAssignmentOpen(true) });
   // Over-limit discount: holds the server's APPROVAL_REQUIRED details plus how to retry the save.
   const [approvalRequirement, setApprovalRequirement] = useState(null);
   // Keeps billing paid sales when the server can't be reached (see posOffline.js).
@@ -2341,6 +2345,7 @@ const PosSales = () => {
         return;
       }
       // No offline pack on this till: keep the same key so the cashier can retry this bill online.
+      if (billingGate.handleError(err)) return;
       if (isApprovalRequired(err)) {
         // Nothing was saved; the dialog retries this same checkout once a supervisor approves.
         setApprovalRequirement({ ...approvalRequirementFrom(err), retry: { shouldPrint, paymentFormOverride, allowUnsettledWithoutPayment, approvalTokens } });
@@ -3269,6 +3274,7 @@ const PosSales = () => {
         open={counterAssignmentOpen}
         onClose={() => setCounterAssignmentOpen(false)}
       />
+      <CashNotOpenedDialog block={billingGate.block} onClose={billingGate.close} />
       {approvalRequirement && (
         <ApprovalDialog
           requirement={approvalRequirement}

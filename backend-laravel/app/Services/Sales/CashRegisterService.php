@@ -40,6 +40,35 @@ class CashRegisterService
         return [$counts, (float) $total];
     }
 
+    /** Sales Customisation > "Require Cash Opening before billing" (on unless switched off). */
+    public function cashOpeningRequired(int $storeId): bool
+    {
+        $value = json_decode((string) (DB::table('stores')->where('id', $storeId)->value('receipt_customization') ?? ''), true) ?: [];
+
+        return (bool) ($value['requireCashOpening'] ?? true);
+    }
+
+    /**
+     * Whether a bill may be saved on this counter now: a counter is needed, and (when the store requires it) its
+     * cash must be opened first. Returns null when it may, else ['code' => COUNTER_REQUIRED|CASH_NOT_OPENED, 'message'].
+     */
+    public function billingBlock(int $storeId, ?int $counterId, ?string $counterName = null): ?array
+    {
+        if (! config('pos.billing_checks', true)) {
+            return null;
+        }
+        if (! $counterId) {
+            return ['code' => 'COUNTER_REQUIRED', 'message' => 'Select your counter before billing.'];
+        }
+        if ($this->cashOpeningRequired($storeId) && ! $this->openSession($storeId, $counterId)) {
+            $name = $counterName ?: 'this counter';
+
+            return ['code' => 'CASH_NOT_OPENED', 'message' => "Open the cash for {$name} (Sales > Cash Opening) before billing."];
+        }
+
+        return null;
+    }
+
     public function openSession(int $storeId, ?int $counterId): ?CashRegisterSession
     {
         return CashRegisterSession::where('store_id', $storeId)

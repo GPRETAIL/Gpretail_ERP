@@ -3,7 +3,7 @@ import BillingDateBanner from "@/features/sales/pos/components/BillingDateBanner
 import { browserPrintHtml } from "./utils/posSalesUtils";
 import PageHeader from "@/shared/components/PageHeader";
 import useCounterAssignmentPrompt from "./hooks/useCounterAssignmentPrompt";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
   Minus,
@@ -18,6 +18,10 @@ import { toast } from "react-toastify";
 import ApprovalDialog from "@/features/sales/approvals/components/ApprovalDialog";
 import { approvalRequirementFrom, isApprovalRequired, withApprovalTokens } from "@/features/sales/approvals/utils/approvals";
 import LoyaltyRedeemPanel from "@/features/sales/pos/components/LoyaltyRedeemPanel";
+import useBillingGate from "@/features/sales/pos/hooks/useBillingGate";
+import CashNotOpenedDialog from "@/features/sales/pos/components/CashNotOpenedDialog";
+import CheckoutPaymentDialog from "@/features/sales/pos/components/CheckoutPaymentDialog";
+import { checkoutPaymentPayload } from "@/features/sales/pos/utils/checkoutPayment";
 import { loyaltyRedeemPayload } from "@/features/sales/pos/utils/loyaltyRedeem";
 import useBillingDate from "@/features/sales/pos/hooks/useBillingDate";
 import { billDateText } from "@/features/sales/pos/utils/billingDate";
@@ -37,6 +41,7 @@ import {
   fetchSalesReceiptCustomization,
   buildPaymentQrMarkup,
   buildReceiptCodeMarkupAsync,
+  paymentDialogOn,
 } from "@/features/sales/customisation/utils/salesReceiptCustomisation";
 import { Box, Stack, Typography, IconButton, Button, Checkbox, Table, TableHead, TableBody, TableRow, TableCell, alpha } from "@mui/material";
 
@@ -105,6 +110,8 @@ const TouchSales = () => {
   // Pops automatically once per login if this user has no counter assigned yet -- previously
   // they'd only discover this was required when a sale failed to save.
   const [counterAssignmentOpen, setCounterAssignmentOpen] = useCounterAssignmentPrompt(authUser);
+  // A bill needs the counter and (Sales Customisation) its cash opened: popups on load and on a refused save.
+  const billingGate = useBillingGate({ onCounterRequired: () => setCounterAssignmentOpen(true) });
 
 
   const [now, setNow] = useState(new Date());
@@ -644,9 +651,18 @@ const TouchSales = () => {
   const loyaltyCustomerId = detectedCustomer?.id ? String(detectedCustomer.id) : "";
   const loyaltyRedeem = loyaltyRedeemState && loyaltyCustomerId && String(loyaltyRedeemState.customerId) === loyaltyCustomerId ? loyaltyRedeemState : null;
   const cashToCollect = round2(Math.max(0, billSummary.netAmount - (loyaltyRedeem?.amount || 0)));
+  // Sales Customisation can make Save open the payment dialog (cash / card / UPI, points) on this page.
+  const [checkout, setCheckout] = useState(null); // { shouldPrint } while the dialog is open
+  const lastPaymentRef = useRef(null);
+  const paymentDialogMode = paymentDialogOn(loadSalesReceiptCustomization(authUser?.company_id || "default"), "touch_sales");
 
   // Saved through the same checkout as POS Sales (POST /pos-sales): stock, bill number, books and loyalty alike.
-  const saveTouchSale = async ({ shouldPrint = false, approvalTokens = {} } = {}) => {
+  const saveTouchSale = async ({ shouldPrint = false, approvalTokens = {}, payment = null } = {}) => {
+    if (!authUser?.counter_id) {
+      setCounterAssignmentOpen(true);
+      toast.error("Please assign a counter before checkout");
+      return;
+    }
     if (cart.length === 0) {
       toast.error("Add at least one product");
       return;
@@ -659,12 +675,20 @@ const TouchSales = () => {
       return;
     }
 
+    // With the payment dialog on, Save first asks how the bill is paid; an approval retry keeps that answer.
+    const pay = payment || (Object.keys(approvalTokens).length ? lastPaymentRef.current : null);
+    if (paymentDialogMode && !pay && netAmount > 0) {
+      setCheckout({ shouldPrint });
+      return;
+    }
+
     const payload = withApprovalTokens({
       saleSaveAs: "paid_settled",
       saleAt: now.toISOString(),
       customerId: detectedCustomer?.id || null,
-      cashAmount: cashToCollect,
-      ...loyaltyRedeemPayload(loyaltyRedeem),
+      cashAmount: pay ? pay.cashAmount : cashToCollect,
+      ...(pay ? checkoutPaymentPayload(pay) : {}),
+      ...loyaltyRedeemPayload(pay ? pay.loyalty : loyaltyRedeem),
       appliedPosReturnId: appliedReturn?.id || null,
       appliedReturnNo:
         appliedReturn?.displayReturnNo || (appliedReturn?.returnNo ? formatReturnNo(appliedReturn.returnNo) : null),
@@ -693,9 +717,11 @@ const TouchSales = () => {
         catch (error) { toast.error(`Sale saved, but receipt was not printed. ${error.message || "Please retry printing."}`); }
       }
       setLoyaltyRedeemState(null);
+      lastPaymentRef.current = null;
       resetDraftAndCart();
       await Promise.all([loadMasterData(), loadNextBillNo()]);
     } catch (err) {
+      if (billingGate.handleError(err)) return;
       if (isApprovalRequired(err)) {
         setApprovalRequirement({ ...approvalRequirementFrom(err), retry: { shouldPrint, approvalTokens } });
         return;
@@ -1009,7 +1035,7 @@ const TouchSales = () => {
                 </Stack>
               </Stack>
 
-              {loyaltyCustomerId && billSummary.netAmount > 0 && (
+              {!paymentDialogMode && loyaltyCustomerId && billSummary.netAmount > 0 && (
                 <LoyaltyRedeemPanel customerId={loyaltyCustomerId} billAmount={billSummary.netAmount} value={loyaltyRedeem}
                   onChange={(value) => setLoyaltyRedeemState(value ? { ...value, customerId: loyaltyCustomerId } : null)} />
               )}
@@ -1070,6 +1096,16 @@ const TouchSales = () => {
         open={counterAssignmentOpen}
         onClose={() => setCounterAssignmentOpen(false)}
       />
+      <CashNotOpenedDialog block={billingGate.block} onClose={billingGate.close} />
+      {checkout && (
+        <CheckoutPaymentDialog netAmount={billSummary.netAmount} billAmount={billSummary.finalAmount} customerId={loyaltyCustomerId || null} saving={saving}
+          onClose={() => setCheckout(null)}
+          onConfirm={(payment, print) => {
+            lastPaymentRef.current = payment;
+            setCheckout(null);
+            void saveTouchSale({ shouldPrint: print || checkout.shouldPrint, payment });
+          }} />
+      )}
     </Stack>
   );
 };

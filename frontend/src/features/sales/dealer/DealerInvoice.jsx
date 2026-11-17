@@ -1,5 +1,7 @@
 import { TYPE } from "@/shared/theme/typeScale";
 import DealerPaymentBlock from "@/features/sales/dealer/components/DealerPaymentBlock";
+import DealerPaymentDialog from "@/features/sales/dealer/components/DealerPaymentDialog";
+import { paymentDialogOn } from "@/features/sales/customisation/utils/salesReceiptCustomisation";
 import { modeLabel, paymentsPayload } from "@/features/sales/dealer/utils/dealerPayments";
 import PageHeader from "@/shared/components/PageHeader";
 import useResetOnChange from "@/shared/hooks/useResetOnChange";
@@ -200,6 +202,14 @@ const DealerInvoice = () => {
 
   const [addlDiscount, setAddlDiscount] = useState("0");
   const [payments, setPayments] = useState([]); // money taken now (Payment block)
+  // Sales Customisation can make Save open the payment as a dialog instead of the block on the page.
+  const [paymentDialogMode, setPaymentDialogMode] = useState(false);
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    api.get("/sales-customization").then((res) => alive && setPaymentDialogMode(paymentDialogOn(res.data?.data || {}, "dealer_invoice"))).catch(() => {});
+    return () => { alive = false; };
+  }, []);
   const [addlCharge, setAddlCharge] = useState("0");
   const [taxLines, setTaxLines] = useState([]);
   const [taxDraft, setTaxDraft] = useState(createEmptyTaxLine);
@@ -672,7 +682,7 @@ const DealerInvoice = () => {
     setItemFilters(createDefaultItemFilters());
   };
 
-  const handleSave = async ({ approvalTokens } = {}) => {
+  const handleSave = async ({ approvalTokens, paymentConfirmed = false } = {}) => {
     if (!customerId) {
       toast.error("Please select customer");
       return;
@@ -680,6 +690,11 @@ const DealerInvoice = () => {
 
     if (cartWithTotals.length === 0) {
       toast.error("Add at least one product before save");
+      return;
+    }
+
+    if (paymentDialogMode && !paymentConfirmed && !approvalTokens) {
+      setPaymentDialogOpen(true);
       return;
     }
 
@@ -1101,7 +1116,7 @@ const DealerInvoice = () => {
           </Stack>
         </Box>
 
-        <DealerPaymentBlock total={summary.amount} payments={payments} onChange={setPayments} />
+        {!paymentDialogMode && <DealerPaymentBlock total={summary.amount} payments={payments} onChange={setPayments} />}
       </Stack>
 
       <Stack spacing={1.5} sx={{ gridColumn: { xl: "span 9" }, minWidth: 0, minHeight: { xs: 400, xl: 0 } }}>
@@ -1522,6 +1537,11 @@ const DealerInvoice = () => {
         onClose={() => setTaxChargeTypeDialog({ open: false, lineId: null, value: "" })}
         onConfirm={handleSaveTaxChargeType}
       />
+      {paymentDialogOpen && (
+        <DealerPaymentDialog total={summary.amount} payments={payments} onChange={setPayments} saving={saving}
+          onClose={() => setPaymentDialogOpen(false)}
+          onConfirm={() => { setPaymentDialogOpen(false); void handleSave({ paymentConfirmed: true }); }} />
+      )}
     </Box>
   );
 };

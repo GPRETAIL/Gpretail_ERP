@@ -49,6 +49,7 @@ import {
   saveSalesReceiptCustomization,
   shouldShowSalesReceiptDiscountColumn,
   wrapSalesReceiptText,
+  PAYMENT_DIALOG_PAGES,
 } from "@/features/sales/customisation/utils/salesReceiptCustomisation";
 import { Box, Stack, Typography, TextField, Button, IconButton, Switch, FormControlLabel, Table, TableHead, TableBody, TableRow, TableCell, Dialog, DialogTitle, DialogContent, Tabs, Tab, MenuItem, alpha } from "@mui/material";
 import { FIELD_HEIGHT, muiFieldSx } from "@/shared/theme/formControlSizes";
@@ -1184,8 +1185,18 @@ export default function SalesSettingsEditor({ section = "sales", onDirtyChange }
             rows={[
               {
                 key: "paymentDialog",
-                label: "Payment dialogue",
+                label: "Payment dialogue: POS Sales",
                 visible: settings.posPaymentDialogVisible !== false,
+              },
+              ...PAYMENT_DIALOG_PAGES.map((page) => ({
+                key: `paymentDialog:${page}`,
+                label: `Payment dialogue: ${{ pos_old: "POS Old", touch_sales: "Touch Sales", dealer_invoice: "Dealer Invoice" }[page]}`,
+                visible: (settings.paymentDialogPages || []).includes(page),
+              })),
+              {
+                key: "requireCashOpening",
+                label: "Require Cash Opening before billing (counter's cash must be opened first)",
+                visible: settings.requireCashOpening !== false,
               },
               {
                 key: "salespersonScan",
@@ -1196,6 +1207,15 @@ export default function SalesSettingsEditor({ section = "sales", onDirtyChange }
             onToggleVisible={(key, visible) => {
               if (key === "paymentDialog") {
                 updateSetting({ posPaymentDialogVisible: visible });
+              }
+              if (key.startsWith("paymentDialog:")) {
+                const page = key.slice("paymentDialog:".length);
+                const pages = new Set(settings.paymentDialogPages || []);
+                if (visible) pages.add(page); else pages.delete(page);
+                updateSetting({ paymentDialogPages: PAYMENT_DIALOG_PAGES.filter((p) => pages.has(p)) });
+              }
+              if (key === "requireCashOpening") {
+                updateSetting({ requireCashOpening: visible });
               }
               if (key === "salespersonScan") {
                 updateSetting({ posSalespersonScan: visible });

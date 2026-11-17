@@ -1,6 +1,6 @@
 # API reference
 
-Every endpoint under `/api`, grouped by module (742 endpoints). Generated from
+Every endpoint under `/api`, grouped by module (743 endpoints). Generated from
 `php artisan route:list --sort=definition --json`; regenerate it after changing routes.
 
 - Each signed-in endpoint is also served under `/api/v1/...` with the same behaviour.
@@ -22,7 +22,7 @@ Every endpoint under `/api`, grouped by module (742 endpoints). Generated from
 - [Notifications](#notifications) (11)
 - [Other](#other) (1)
 - [Platform](#platform) (29)
-- [Sales](#sales) (126)
+- [Sales](#sales) (127)
 - [Settings](#settings) (89)
 - [Store](#store) (18)
 - [Warehouse](#warehouse) (67)
@@ -617,6 +617,7 @@ Every endpoint under `/api`, grouped by module (742 endpoints). Generated from
 | GET | `/api/dealer-invoices/{dealer_invoice}` | DealerInvoiceController@show | yes |
 | DELETE | `/api/dealer-invoices/{dealer_invoice}` | DealerInvoiceController@destroy | yes |
 | GET | `/api/cash-openings/late-bills` | CashRegisterController@lateBills | yes |
+| GET | `/api/cash-openings/billing-status` | CashRegisterController@billingStatus | yes |
 | GET | `/api/cash-openings/meta` | CashRegisterController@openingMeta | yes |
 | GET | `/api/cash-openings` | CashRegisterController@openingIndex | yes |
 | POST | `/api/cash-openings` | CashRegisterController@openingStore | yes |

@@ -7,6 +7,7 @@ use App\Http\Requests\Sales\StoreCashClosingRequest;
 use App\Http\Requests\Sales\StoreCashOpeningRequest;
 use App\Models\CashRegisterSession;
 use App\Services\Dashboards\DashboardBroadcastService;
+use App\Services\Pos\PosCounter;
 use App\Services\Sales\CashRegisterService;
 use App\Support\PaginationService;
 use Illuminate\Database\Eloquent\Builder;
@@ -68,6 +69,19 @@ class CashRegisterController extends Controller
         $counterId = $request->filled('counterId') ? $request->integer('counterId') : null;
 
         return response()->json(['success' => true, 'data' => $this->registers->lateBillsCash($storeId, $counterId)]);
+    }
+
+    /** POS screens on load: may this user bill on their counter now (counter set, cash opened when required)? */
+    public function billingStatus(Request $request)
+    {
+        $storeId = (int) $this->resolveStoreId($request, 1);
+        $counter = PosCounter::find($request->user()?->counter_id, $storeId);
+        $block = $this->registers->billingBlock($storeId, $counter?->id, $counter?->value ?? $counter?->config_value);
+
+        return response()->json(['success' => true, 'data' => [
+            'counter_id' => $counter?->id, 'counter_name' => $counter?->value ?? $counter?->config_value,
+            'cash_required' => $this->registers->cashOpeningRequired($storeId), 'block' => $block,
+        ]]);
     }
 
     public function openingMeta(Request $request)

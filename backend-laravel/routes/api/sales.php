@@ -130,6 +130,7 @@ Route::apiResource('dealer-invoices', DealerInvoiceController::class)->only(['in
 
 // Cash Register Sessions
 Route::get('cash-openings/late-bills', [CashRegisterController::class, 'lateBills']);
+Route::get('cash-openings/billing-status', [CashRegisterController::class, 'billingStatus']);
 Route::get('cash-openings/meta', [CashRegisterController::class, 'openingMeta']);
 Route::get('cash-openings', [CashRegisterController::class, 'openingIndex']);
 Route::post('cash-openings', [CashRegisterController::class, 'openingStore']);

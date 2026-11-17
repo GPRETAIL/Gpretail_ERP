@@ -31,6 +31,7 @@ use App\Services\Pos\PosCounter;
 use App\Services\Pos\PosOfflineBilling;
 use App\Services\Pos\PosReturnWriter;
 use App\Services\Sales\BusinessDate;
+use App\Services\Sales\CashRegisterService;
 use App\Services\Sales\Salespeople;
 use App\Services\Tenancy\PagePermissions;
 use App\Support\GroupAggregationService;
@@ -512,6 +513,14 @@ class PosSaleController extends Controller
                 }
                 // A bill the till saved while it had no internet (see PosOfflineBilling).
                 $offline = PosOfflineBilling::prepare($request, (int) $storeId, $counter);
+                // A bill needs the cashier's counter, and (Sales Customisation) that counter's cash opened first.
+                // Offline bills and sync replays were billed already; they are not refused now.
+                if (! $offline && $request->header('X-Sync-Replay') !== '1' && ! $request->attributes->get('authenticated_sync_replay')) {
+                    $block = app(CashRegisterService::class)->billingBlock((int) $storeId, $counter?->id, $counter?->value ?? $counter?->config_value);
+                    if ($block) {
+                        throw new HttpResponseException(response()->json(['success' => false, ...$block], 422));
+                    }
+                }
 
                 // Resolve customer: an existing id, or a lightweight walk-in
                 // record from the ad-hoc {name, mobileNo} the UI collects for

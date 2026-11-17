@@ -306,6 +306,8 @@ export const DEFAULT_SALES_RECEIPT_CUSTOMIZATION = {
   /** Manual mode: roles and users (ids) the tenant admin allows to change the billing date (the tenant admin always can). */
   billingDateChangers: { roles: [], users: [] },
   reprintReasonAfter: 1,
+  requireCashOpening: true,
+  paymentDialogPages: [],
   reprintCopyLabels: false,
   /** Printed POS receipt copies when using the printer queue (1–3). */
   posReceiptPrintCopies: 1,
@@ -509,6 +511,14 @@ const normalizePaymentQrSize = (value) => {
   return Math.min(PAYMENT_QR_SIZE_MAX, Math.max(PAYMENT_QR_SIZE_MIN, n));
 };
 
+/** Pages besides POS Sales (posPaymentDialogVisible) that open the checkout payment dialog when ticked. */
+export const PAYMENT_DIALOG_PAGES = ["pos_old", "touch_sales", "dealer_invoice"];
+
+/** Whether a page opens the payment dialog at Save (Sales Customisation > POS checkout). */
+export const paymentDialogOn = (customization, page) => (page === "pos_sales"
+  ? customization?.posPaymentDialogVisible !== false
+  : Array.isArray(customization?.paymentDialogPages) && customization.paymentDialogPages.includes(page));
+
 const normalizePosPaymentDialogVisible = (value) => {
   if (value === undefined || value === null) return DEFAULT_SALES_RECEIPT_CUSTOMIZATION.posPaymentDialogVisible;
   if (value === false || value === "false" || value === 0 || value === "0") return false;
@@ -578,6 +588,8 @@ export const normalizeSalesReceiptCustomization = (value = {}) => {
     },
     reprintReasonAfter: Number.isFinite(Number(value.reprintReasonAfter)) ? Math.min(20, Math.max(0, Math.trunc(Number(value.reprintReasonAfter)))) : 1,
     reprintCopyLabels: Boolean(value.reprintCopyLabels),
+    requireCashOpening: value.requireCashOpening !== false && value.requireCashOpening !== "false",
+    paymentDialogPages: (Array.isArray(value.paymentDialogPages) ? value.paymentDialogPages : []).filter((page) => PAYMENT_DIALOG_PAGES.includes(page)),
     posReceiptPrintCopies: normalizePosReceiptPrintCopies(value.posReceiptPrintCopies),
     generalFields,
     taxFields,
