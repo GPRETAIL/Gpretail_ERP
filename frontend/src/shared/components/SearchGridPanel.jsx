@@ -1,5 +1,6 @@
 import { Card } from "@mui/material";
 import { erpControlSx } from "@/shared/theme/erpUi";
+import { SearchGridPanelContext } from "./searchGridPanelContext";
 
 // Standard listing surface; editable transaction lines keep their own layout.
 export default function SearchGridPanel({ children, sx, ...props }) {
@@ -8,6 +9,6 @@ export default function SearchGridPanel({ children, sx, ...props }) {
       height: "100%", width: "100%", boxSizing: "border-box", display: "flex", flexDirection: "column", minHeight: 0, minWidth: 0,
       p: 1, pb: 0.5, ...erpControlSx,
       "& > h2": { fontWeight: 600, mb: 1, fontSize: "var(--erp-font-heading, 16px)" }, ...sx,
-    }}>{children}</Card>
+    }}><SearchGridPanelContext.Provider value>{children}</SearchGridPanelContext.Provider></Card>
   );
 }

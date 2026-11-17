@@ -177,7 +177,7 @@ export default function BillReprint() {
         sx={{ px: { xs: 1, md: 2 }, pt: 1.5, display: "flex", flexDirection: "column", gap: 1.25 }}>
         <Box sx={{ display: "grid", gap: 1.25, gridTemplateColumns: { xs: "1fr", md: "2fr 1fr 1fr auto" }, alignItems: "start" }}>
           <TextField size="small" label="Bill number, phone or customer" value={filters.q} autoFocus
-            onChange={(e) => setFilters((f) => ({ ...f, q: e.target.value }))} helperText={filters.q.trim() ? "Searching all dates" : " "} />
+            onChange={(e) => setFilters((f) => ({ ...f, q: e.target.value }))} helperText={filters.q.trim() ? "Searching all dates" : undefined} />
           <TextField size="small" type="date" label="From" value={filters.from} disabled={Boolean(filters.q.trim())}
             onChange={(e) => setFilters((f) => ({ ...f, from: e.target.value }))} slotProps={{ inputLabel: { shrink: true } }} />
           <TextField size="small" type="date" label="To" value={filters.to} disabled={Boolean(filters.q.trim())}

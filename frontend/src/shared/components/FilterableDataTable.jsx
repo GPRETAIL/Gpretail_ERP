@@ -1,7 +1,8 @@
 import { TYPE } from "@/shared/theme/typeScale";
 import useResetOnChange from "@/shared/hooks/useResetOnChange";
 import TablePaginationFooter from "./TablePaginationFooter";
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { SearchGridPanelContext } from "./searchGridPanelContext";
+import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { ERP_UI, erpControlSx } from "@/shared/theme/erpUi";
 import {
   Filter,
@@ -1908,9 +1909,13 @@ export default function FilterableDataTable({
   // min-height:0 so it can still shrink/scroll within that space) instead of only being as tall as
   // its own rows -- otherwise a near-empty result set leaves the pagination footer stranded right
   // under the last row instead of pinned to the bottom of the container, same as every other state.
+  // In a SearchGridPanel (a listing with a bounded height) a fixed-height table also shrinks to the space left, so
+  // a filter bar above it can never push the pagination footer off the bottom; it still stops at 12 rows tall.
+  const inSearchPanel = useContext(SearchGridPanelContext);
+  const fitHeight = fillHeight || (inSearchPanel && fixedHeight);
   const tableViewportSx = fillHeight
     ? { flex: 1, minHeight: 0, ...(fixedHeight ? { maxHeight: { xs: "433px", lg: "none" } } : {}) }
-    : {};
+    : fitHeight ? { flex: "0 1 auto", minHeight: 0 } : {};
   const tableViewportStyle = !fillHeight && fixedHeight
     ? { maxHeight: `${FIXED_TABLE_HEIGHT}px` }
     : undefined;
@@ -1981,7 +1986,7 @@ export default function FilterableDataTable({
   const filterPanelDocked = showFilterPanel && filterPanelPinned;
 
   return (
-    <Box sx={{ minWidth: 0, ...erpControlSx, "& .MuiOutlinedInput-root": { borderRadius: controlBorderRadius }, ...(fillHeight ? { display: "flex", flex: 1, minHeight: 0, flexDirection: "column" } : {}) }}>
+    <Box sx={{ minWidth: 0, ...erpControlSx, "& .MuiOutlinedInput-root": { borderRadius: controlBorderRadius }, ...(fitHeight ? { display: "flex", flex: fillHeight ? 1 : "0 1 auto", minHeight: 0, flexDirection: "column" } : {}) }}>
       <Stack
         direction="row"
         spacing={compact ? 0.75 : 1}
@@ -2144,7 +2149,7 @@ export default function FilterableDataTable({
       <Box
         data-testid="table-and-filter-panel"
         sx={filterPanelDocked
-          ? { display: "flex", gap: 1, minWidth: 0, ...(fillHeight ? { flex: 1, minHeight: 0 } : {}) }
+          ? { display: "flex", gap: 1, minWidth: 0, ...(fitHeight ? { flex: fillHeight ? 1 : "0 1 auto", minHeight: 0 } : {}) }
           : { display: "contents" }}
       >
       <TableContainer
