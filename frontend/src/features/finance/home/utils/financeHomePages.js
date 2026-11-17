@@ -2,7 +2,7 @@
 export const FINANCE_PAGE_GROUPS = [
   { title: "Money in and out", paths: ["/finance/voucher-entry", "/finance/supplier-payment", "/finance/credit-sale-collection", "/finance/transport-payment", "/finance/petty-cash", "/finance/cheque-book"] },
   { title: "Books", paths: ["/finance/manage-ledger", "/finance/opening-balance", "/finance/daybook", "/finance/loan-reconciliation"] },
-  { title: "Reports", paths: ["/finance/receivable", "/finance/payable", "/finance/trial-balance", "/finance/trading-account", "/finance/p-l-account", "/finance/balance-sheet", "/finance/incentive-report"] },
+  { title: "Reports", paths: ["/finance/dashboard", "/finance/receivable", "/finance/payable", "/finance/trial-balance", "/finance/trading-account", "/finance/p-l-account", "/finance/balance-sheet", "/finance/incentive-report"] },
   { title: "GST and Tally", paths: ["/finance/gst-inbox", "/finance/tally-configuration", "/finance/tally-integration"] },
 ];
 

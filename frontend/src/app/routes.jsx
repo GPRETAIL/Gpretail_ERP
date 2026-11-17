@@ -141,6 +141,7 @@ const SupplierProductAnalyzer = lazy(() => import("@/features/analytical/Supplie
 const SalesPivotAnalyzer = lazy(() => import("@/features/analytical/SalesPivotAnalyzer"));
 const StockValuationAnalyzer = lazy(() => import("@/features/analytical/StockValuationAnalyzer"));
 const FinanceHome = lazy(() => import("@/features/finance/home/FinanceHome"));
+const FinanceDashboard = lazy(() => import("@/features/finance/dashboard/FinanceDashboard"));
 const FastMovingProducts = lazy(() => import("@/features/dashboard/fast-moving/FastMovingProducts"));
 const OpeningBalance = lazy(() => import("@/features/finance/opening-balance/OpeningBalance"));
 const SupplierPayment = lazy(() => import("@/features/finance/SupplierPayment"));
@@ -309,6 +310,7 @@ export const protectedLayoutRoutes = [
   { path: "/analytical/sales-analyzer", render: () => <SalesPivotAnalyzer /> },
   { path: "/analytical/stock-marker-analyzer", render: () => <StockValuationAnalyzer /> },
   { path: "/finance", render: () => <FinanceHome /> },
+  { path: "/finance/dashboard", render: () => <FinanceDashboard /> },
   { path: "/finance/opening-balance", render: () => <OpeningBalance /> },
   { path: "/finance/supplier-payment", render: () => <SupplierPayment /> },
   { path: "/finance/manage-ledger", render: () => <ManageLedger /> },

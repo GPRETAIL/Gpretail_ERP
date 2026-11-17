@@ -297,6 +297,7 @@ export const navItems = [
     name: "Finance",
     icon: BanknotesIcon,
     subItems: [
+      { name: "Dashboard", path: "/finance/dashboard", icon: ChartBarSquareIcon },
       {
         name: "Supplier Payment",
         path: "/finance/supplier-payment",

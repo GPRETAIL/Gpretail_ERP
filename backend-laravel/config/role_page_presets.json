@@ -378,6 +378,12 @@
       "edit": false,
       "delete": false
     },
+    "/finance/dashboard": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
     "/finance/manage-ledger": {
       "view": true,
       "add": true,
@@ -948,6 +954,12 @@
     }
   },
   "accountant": {
+    "/finance/dashboard": {
+      "view": true,
+      "add": false,
+      "edit": false,
+      "delete": false
+    },
     "/finance/supplier-payment": {
       "view": true,
       "add": true,
