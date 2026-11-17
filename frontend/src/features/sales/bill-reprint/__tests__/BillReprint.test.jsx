@@ -91,8 +91,11 @@ it("asks for a reason once a bill was reprinted before", async () => {
   const dialog = await screen.findByRole("dialog");
   const printButton = within(dialog).getByRole("button", { name: "Print" });
   expect(printButton).toBeDisabled();
-  fireEvent.change(within(dialog).getByLabelText(/Reason for reprint/), { target: { value: "Customer lost it" } });
-  fireEvent.click(printButton);
+  const reason = within(dialog).getByLabelText(/Reason for reprint/);
+  fireEvent.change(reason, { target: { value: "Customer lost it" } });
+  // Enter in the reason box submits the dialog's form (the app's Enter-to-next-field handler leaves it alone).
+  expect(reason.closest("form")).toHaveAttribute("data-enter-ignore", "true");
+  fireEvent.submit(reason.closest("form"));
   await waitFor(() => expect(mocks.post).toHaveBeenCalledWith("/bill-reprints/dealer_invoice/7/log", expect.objectContaining({ reason: "Customer lost it" }), { storeScopeId: 1 }));
 });
 

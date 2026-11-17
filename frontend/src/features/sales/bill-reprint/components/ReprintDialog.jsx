@@ -14,10 +14,14 @@ export default function ReprintDialog({ rows, mode = "print", busy = false, onCo
   const needsReason = rows.some((r) => r.reason_required);
   const needsApproval = rows.filter((r) => r.approval_required);
   const copyLabels = rows.some((r) => r.copy_labels);
+  const canConfirm = !busy && !(needsReason && !reason.trim());
+  const confirm = () => onConfirm({ copyLabel, reason: reason.trim() });
   const title = single ? `${mode === "share" ? "Share" : "Reprint"} ${single.type_label} ${single.number}` : `Reprint ${rows.length} documents`;
 
   return (
-    <Dialog open onClose={busy ? undefined : onClose} maxWidth="xs" fullWidth aria-labelledby="reprint-dialog-title">
+    // A form, so Enter in the reason box prints; data-enter-ignore keeps the app's Enter-to-next-field handler out.
+    <Dialog open onClose={busy ? undefined : onClose} maxWidth="xs" fullWidth aria-labelledby="reprint-dialog-title"
+      slotProps={{ paper: { component: "form", noValidate: true, "data-enter-ignore": "true", onSubmit: (e) => { e.preventDefault(); if (canConfirm) confirm(); } } }}>
       <DialogTitle id="reprint-dialog-title" sx={{ pb: 1 }}>{title}</DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ pt: 0.5 }}>
@@ -46,7 +50,7 @@ export default function ReprintDialog({ rows, mode = "print", busy = false, onCo
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose} disabled={busy}>Cancel</Button>
-        <Button variant="contained" disabled={busy || (needsReason && !reason.trim())} onClick={() => onConfirm({ copyLabel, reason: reason.trim() })}
+        <Button type="submit" variant="contained" disabled={!canConfirm}
           startIcon={mode === "share" ? <MessageCircle size={15} /> : <Printer size={15} />}>
           {busy ? "Working..." : mode === "share" ? "Share PDF" : single?.approval_required ? "Ask approval & print" : "Print"}
         </Button>
