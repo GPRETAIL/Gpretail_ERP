@@ -2,6 +2,7 @@
 
 namespace App\Services\Dashboards;
 
+use App\Support\BusinessDay;
 use App\Services\Tenancy\StoreQuery;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -34,7 +35,7 @@ class FastMovingProducts
         $in = fn (array $types) => "'".implode("','", $types)."'";
 
         $moves = StoreQuery::table('stock_transactions as st')
-            ->whereBetween('st.created_at', [$start->toDateTimeString(), $end->toDateTimeString()])
+            ->whereBetween('st.created_at', BusinessDay::range($start->toDateTimeString(), $end->toDateTimeString()))
             ->whereIn('st.reference_type', [...self::SOLD, ...self::RETURNED, ...self::BOUGHT])
             ->when($search, fn ($q) => $q->whereIn('st.product_id', DB::table('products')->where(fn ($p) => $p->where('name', 'like', "%{$search}%")
                 ->orWhere('code', 'like', "%{$search}%")->orWhere('sku', 'like', "%{$search}%"))->select('id')))
@@ -90,7 +91,7 @@ class FastMovingProducts
             ->join('stock_batch_allocations as a', 'a.stock_transaction_id', '=', 'st.id')
             ->join('stock_batches as b', 'b.id', '=', 'a.stock_batch_id')
             ->whereIn('st.product_id', $productIds)->whereIn('st.reference_type', self::SOLD)->where('st.type', 'OUT')
-            ->whereBetween('st.created_at', [$start->toDateTimeString(), $end->toDateTimeString()])
+            ->whereBetween('st.created_at', BusinessDay::range($start->toDateTimeString(), $end->toDateTimeString()))
             ->get(['st.product_id', 'st.created_at as sold_at', 'b.received_at', 'a.quantity']);
 
         return $rows->groupBy('product_id')->map(function (Collection $group) {

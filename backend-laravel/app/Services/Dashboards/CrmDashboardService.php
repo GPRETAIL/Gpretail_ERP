@@ -2,6 +2,7 @@
 
 namespace App\Services\Dashboards;
 
+use App\Support\BusinessDay;
 use App\Models\Customer;
 use App\Models\LoyaltyTransaction;
 use App\Models\Store;
@@ -91,7 +92,7 @@ class CrmDashboardService
 
         $newCustQuery = StoreQuery::table('customers');
         if ($from && $to) {
-            $newCustQuery->whereBetween('created_at', [$from, $to]);
+            $newCustQuery->whereBetween('created_at', BusinessDay::range($from, $to));
         } else {
             $newCustQuery->whereMonth('created_at', Carbon::now()->month)->whereYear('created_at', Carbon::now()->year);
         }
@@ -486,9 +487,9 @@ class CrmDashboardService
 
         // New customers count
         $custs = StoreQuery::table('customers')
-            ->whereBetween('created_at', [$startDate->startOfDay(), $endDate->endOfDay()])
-            ->selectRaw('DATE(created_at) as d, COUNT(*) as c')
-            ->groupBy(DB::raw('DATE(created_at)'))
+            ->whereBetween('created_at', BusinessDay::range($startDate->startOfDay(), $endDate->endOfDay()))
+            ->selectRaw(BusinessDay::dateSql('created_at').' as d, COUNT(*) as c')
+            ->groupBy(DB::raw(BusinessDay::dateSql('created_at')))
             ->get();
 
         foreach ($custs as $c) {
@@ -551,7 +552,7 @@ class CrmDashboardService
         // the same window.
         $pointsQuery = fn ($type) => StoreQuery::table('loyalty_transactions')
             ->where('type', $type)
-            ->when($from && $to, fn ($q) => $q->whereBetween('created_at', [$from, $to]));
+            ->when($from && $to, fn ($q) => $q->whereBetween('created_at', BusinessDay::range($from, $to)));
         $pointsEarned = (float) $pointsQuery('EARN')->sum('points');
         $pointsRedeemed = (float) $pointsQuery('REDEEM')->sum('points');
         $redemptionRate = $pointsEarned > 0 ? round(($pointsRedeemed / $pointsEarned) * 100, 1) : 0;
@@ -567,14 +568,14 @@ class CrmDashboardService
         $prevCustomerIds = StoreQuery::table('pos_sales')
             ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
             ->whereNotNull('customer_id')
-            ->whereBetween('sale_date', [$prevFrom, $prevTo])
+            ->whereBetween('sale_date', BusinessDay::range($prevFrom, $prevTo))
             ->distinct()
             ->pluck('customer_id');
 
         $retainedCount = $prevCustomerIds->isEmpty() ? 0 : StoreQuery::table('pos_sales')
             ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
             ->whereIn('customer_id', $prevCustomerIds)
-            ->whereBetween('sale_date', [$periodFrom, $periodTo])
+            ->whereBetween('sale_date', BusinessDay::range($periodFrom, $periodTo))
             ->distinct()
             ->count('customer_id');
 

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1\Sales;
 
+use App\Support\BusinessDay;
 use App\Http\Controllers\Controller;
 use App\Models\PosSale;
 use App\Models\Product;
@@ -35,10 +36,10 @@ class SalesReportController extends Controller
             $query->where('pos_sales.store_id', $storeId);
         }
         if ($request->filled('dateFrom')) {
-            $query->whereDate('pos_sales.sale_date', '>=', $request->input('dateFrom'));
+            $query->where('pos_sales.sale_date', '>=', BusinessDay::start($request->input('dateFrom')));
         }
         if ($request->filled('dateTo')) {
-            $query->whereDate('pos_sales.sale_date', '<=', $request->input('dateTo'));
+            $query->where('pos_sales.sale_date', '<=', BusinessDay::end($request->input('dateTo')));
         }
 
         $result = $this->groupAggregationService->crossTab($query, 'pos_sales', $request);
@@ -78,7 +79,7 @@ class SalesReportController extends Controller
         }
 
         if ($request->filled('start_date') && $request->filled('end_date')) {
-            $query->whereBetween('sale_date', [$request->input('start_date'), $request->input('end_date')]);
+            $query->whereBetween('sale_date', BusinessDay::range($request->input('start_date'), $request->input('end_date')));
         }
 
         if ($request->filled('payment_mode')) {
@@ -114,7 +115,7 @@ class SalesReportController extends Controller
     {
         $date = $request->input('date', date('Y-m-d'));
 
-        $summary = PosSale::whereDate('sale_date', $date)
+        $summary = PosSale::whereBetween('sale_date', BusinessDay::range($date))
             ->whereIn('status', ['COMPLETED', 'PAID', 'SETTLED', 'UNSETTLED', 'CREDIT'])
             ->selectRaw('COUNT(id) as total_invoices, SUM(total_qty) as total_items_sold, SUM(subtotal) as subtotal, SUM(tax_amount) as tax_total, SUM(discount_amount) as discount_total, SUM(grand_total) as grand_total')
             ->first();
@@ -277,10 +278,10 @@ class SalesReportController extends Controller
                     $q->where('h.store_id', $storeId);
                 }
                 if ($saleFrom) {
-                    $q->whereDate('h.sale_date', '>=', $saleFrom);
+                    $q->where('h.sale_date', '>=', BusinessDay::start($saleFrom));
                 }
                 if ($saleTo) {
-                    $q->whereDate('h.sale_date', '<=', $saleTo);
+                    $q->where('h.sale_date', '<=', BusinessDay::end($saleTo));
                 }
             },
         ], [
@@ -296,10 +297,10 @@ class SalesReportController extends Controller
                     $q->where('h.store_id', $storeId);
                 }
                 if ($saleFrom) {
-                    $q->whereDate('h.return_date', '>=', $saleFrom);
+                    $q->where('h.return_date', '>=', BusinessDay::start($saleFrom));
                 }
                 if ($saleTo) {
-                    $q->whereDate('h.return_date', '<=', $saleTo);
+                    $q->where('h.return_date', '<=', BusinessDay::end($saleTo));
                 }
             },
         ], [
@@ -367,10 +368,10 @@ class SalesReportController extends Controller
                     $q->where('h.store_id', $storeId);
                 }
                 if ($saleFrom) {
-                    $q->whereDate('h.sale_date', '>=', $saleFrom);
+                    $q->where('h.sale_date', '>=', BusinessDay::start($saleFrom));
                 }
                 if ($saleTo) {
-                    $q->whereDate('h.sale_date', '<=', $saleTo);
+                    $q->where('h.sale_date', '<=', BusinessDay::end($saleTo));
                 }
             },
         ], [
@@ -384,10 +385,10 @@ class SalesReportController extends Controller
                     $q->where('h.store_id', $storeId);
                 }
                 if ($saleFrom) {
-                    $q->whereDate('h.return_date', '>=', $saleFrom);
+                    $q->where('h.return_date', '>=', BusinessDay::start($saleFrom));
                 }
                 if ($saleTo) {
-                    $q->whereDate('h.return_date', '<=', $saleTo);
+                    $q->where('h.return_date', '<=', BusinessDay::end($saleTo));
                 }
             },
         ], [
@@ -519,10 +520,10 @@ class SalesReportController extends Controller
                     $q->where('h.store_id', $storeId);
                 }
                 if ($dateFrom) {
-                    $q->whereDate('h.sale_date', '>=', $dateFrom);
+                    $q->where('h.sale_date', '>=', BusinessDay::start($dateFrom));
                 }
                 if ($dateTo) {
-                    $q->whereDate('h.sale_date', '<=', $dateTo);
+                    $q->where('h.sale_date', '<=', BusinessDay::end($dateTo));
                 }
             },
         ], [

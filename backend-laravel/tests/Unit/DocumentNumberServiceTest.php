@@ -40,7 +40,7 @@ class DocumentNumberServiceTest extends TestCase
         $number = DocumentNumberService::next($this->store->id, 'INV');
 
         $this->assertStringNotContainsString('-C', $number);
-        $this->assertSame("INV-STR-001-".now()->format('Ymd')."-0001", $number);
+        $this->assertSame("INV-STR-001-".now(config('app.business_timezone'))->format('Ymd')."-0001", $number);
     }
 
     public function test_cloud_node_without_an_enabled_local_node_mints_a_normal_number(): void
@@ -61,7 +61,7 @@ class DocumentNumberServiceTest extends TestCase
 
         $number = DocumentNumberService::next($this->store->id, 'INV');
 
-        $this->assertSame("INV-STR-001-".now()->format('Ymd')."-C0001", $number);
+        $this->assertSame("INV-STR-001-".now(config('app.business_timezone'))->format('Ymd')."-C0001", $number);
     }
 
     public function test_cloud_node_with_a_disabled_local_node_mints_a_normal_number(): void

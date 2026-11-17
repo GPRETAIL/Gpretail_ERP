@@ -2,6 +2,7 @@
 
 namespace App\Services\Dashboards;
 
+use App\Support\BusinessDay;
 use App\Models\Store;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -77,7 +78,7 @@ class StoreDashboardService
 
         $salesRange = StoreQuery::table('pos_sales')
             ->whereIn('store_id', $storeIds)
-            ->when($from && $to, fn ($q) => $q->whereBetween('sale_date', [$from, $to]))
+            ->when($from && $to, fn ($q) => $q->whereBetween('sale_date', BusinessDay::range($from, $to)))
             ->sum('grand_total');
 
         $totalStaff = StoreQuery::table('employees')->whereIn('store_id', $storeIds)->where('is_active', true)->count();
@@ -172,7 +173,7 @@ class StoreDashboardService
 
         $salesByStore = StoreQuery::table('pos_sales')
             ->whereIn('store_id', $storeIds)
-            ->when($from && $to, fn ($q) => $q->whereBetween('sale_date', [$from, $to]))
+            ->when($from && $to, fn ($q) => $q->whereBetween('sale_date', BusinessDay::range($from, $to)))
             ->selectRaw('store_id, COUNT(*) as bills, COALESCE(SUM(grand_total), 0) as amount')
             ->groupBy('store_id')
             ->get()
@@ -224,7 +225,7 @@ class StoreDashboardService
         $rows = StoreQuery::table('pos_sales as s')
             ->join('stores as st', 'st.id', '=', 's.store_id')
             ->whereIn('s.store_id', $storeIds)
-            ->when($from && $to, fn ($q) => $q->whereBetween('s.sale_date', [$from, $to]))
+            ->when($from && $to, fn ($q) => $q->whereBetween('s.sale_date', BusinessDay::range($from, $to)))
             ->selectRaw('st.id as store_id, st.name as store_name, COALESCE(SUM(s.grand_total), 0) as amount')
             ->groupBy('st.id', 'st.name')
             ->orderByDesc('amount')

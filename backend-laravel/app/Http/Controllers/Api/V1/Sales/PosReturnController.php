@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1\Sales;
 
+use App\Support\BusinessDay;
 use App\Exceptions\PosReturnNotReturnableException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Sales\StorePosReturnRequest;
@@ -15,7 +16,6 @@ use App\Services\Pos\PosReturnWriter;
 use App\Support\GroupAggregationService;
 use App\Support\PaginationService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
 
 class PosReturnController extends Controller
 {
@@ -36,10 +36,7 @@ class PosReturnController extends Controller
         }
 
         if ($request->filled('from') && $request->filled('to')) {
-            $query->whereBetween('return_date', [
-                Carbon::parse($request->input('from'))->startOfDay(),
-                Carbon::parse($request->input('to'))->endOfDay(),
-            ]);
+            $query->whereBetween('return_date', BusinessDay::range($request->input('from'), $request->input('to')));
         }
 
         if ($request->filled('search')) {

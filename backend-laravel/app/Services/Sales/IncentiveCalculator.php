@@ -2,6 +2,7 @@
 
 namespace App\Services\Sales;
 
+use App\Support\BusinessDay;
 use App\Models\IncentivePayout;
 use App\Models\IncentiveRule;
 use App\Models\User;
@@ -42,7 +43,7 @@ class IncentiveCalculator
         [$start, $end] = $this->bounds($month);
         $this->rules = IncentiveRule::withoutGlobalScopes()->where('store_id', $storeId)->where('is_active', true)->get();
 
-        $lines = $this->saleLines($storeId, fn ($q) => $q->whereBetween('s.sale_date', [$start, $end]));
+        $lines = $this->saleLines($storeId, fn ($q) => $q->whereBetween('s.sale_date', BusinessDay::range($start, $end)));
         $this->loadEmployees($storeId, $lines->pluck('sales_man_id')->all());
         $lines = $this->priceLines($lines);
         $returns = $this->returnLines($storeId, $month, $start, $end);
@@ -251,7 +252,7 @@ class IncentiveCalculator
         $items = DB::table('pos_return_items as ri')->join('pos_returns as r', 'r.id', '=', 'ri.pos_return_id')
             ->leftJoin('pos_sales as s', 's.id', '=', 'r.pos_sale_id')
             ->where('r.store_id', $storeId)->whereNotNull('r.pos_sale_id')->whereNotIn('r.status', self::CANCELLED)
-            ->where(fn ($q) => $q->whereBetween('r.return_date', [$start, $end])->orWhereBetween('r.created_at', [$start, $end]))
+            ->where(fn ($q) => $q->whereBetween('r.return_date', BusinessDay::range($start, $end))->orWhereBetween('r.created_at', BusinessDay::range($start, $end)))
             ->get(['ri.product_id', 'ri.variant_id', 'ri.quantity', 'r.pos_sale_id', 'r.return_date', 'r.created_at', 's.invoice_no']);
 
         $items = $items->filter(function ($item) use ($start, $end, $approvedAt, $thisApproved) {

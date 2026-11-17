@@ -2,6 +2,7 @@
 
 namespace App\Services\Dashboards;
 
+use App\Support\BusinessDay;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use App\Services\Tenancy\StoreQuery;
@@ -180,7 +181,7 @@ class AnalyticalDashboardService
             ->join('products as p', 'p.id', '=', 'i.product_id')
             ->leftJoin('categories as c', 'p.category_id', '=', 'c.id')
             ->when($storeId, fn ($q) => $q->where('s.store_id', $storeId))
-            ->when($from && $to, fn ($q) => $q->whereBetween('s.sale_date', [$from, $to]))
+            ->when($from && $to, fn ($q) => $q->whereBetween('s.sale_date', BusinessDay::range($from, $to)))
             ->selectRaw('COALESCE(c.name, "(Blank)") as name, COALESCE(SUM(i.subtotal), 0) as value')
             ->groupBy(DB::raw('COALESCE(c.name, "(Blank)")'))
             ->orderByDesc('value')

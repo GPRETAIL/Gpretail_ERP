@@ -2,6 +2,7 @@
 
 namespace App\Services\Dashboards;
 
+use App\Support\BusinessDay;
 use App\Models\Store;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -92,13 +93,13 @@ class SalesDashboardService
      */
     public function getSummary(?int $storeId, ?Carbon $from, ?Carbon $to): array
     {
-        $today = Carbon::today();
-        $monthStart = Carbon::now()->startOfMonth();
-        $monthEnd = Carbon::now()->endOfMonth();
+        $today = Carbon::today(BusinessDay::tz());
+        $monthStart = Carbon::now(BusinessDay::tz())->startOfMonth();
+        $monthEnd = Carbon::now(BusinessDay::tz())->endOfMonth();
 
         $todayQuery = StoreQuery::table('pos_sales')
             ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
-            ->whereDate('sale_date', $today);
+            ->whereBetween('sale_date', BusinessDay::range($today));
 
         $todayAgg = (clone $todayQuery)->selectRaw('
             COUNT(*) as bills,
@@ -108,7 +109,7 @@ class SalesDashboardService
 
         $monthAgg = StoreQuery::table('pos_sales')
             ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
-            ->whereBetween('sale_date', [$monthStart, $monthEnd])
+            ->whereBetween('sale_date', BusinessDay::range($monthStart, $monthEnd))
             ->selectRaw('
                 COUNT(*) as bills,
                 COALESCE(SUM(grand_total), 0) as amount
@@ -116,7 +117,7 @@ class SalesDashboardService
 
         $rangeQuery = StoreQuery::table('pos_sales')
             ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
-            ->when($from && $to, fn ($q) => $q->whereBetween('sale_date', [$from, $to]));
+            ->when($from && $to, fn ($q) => $q->whereBetween('sale_date', BusinessDay::range($from, $to)));
 
         $rangeAgg = (clone $rangeQuery)->selectRaw('
             COUNT(*) as bills,
@@ -130,13 +131,13 @@ class SalesDashboardService
         $distinctProducts = StoreQuery::table('pos_sale_items as i')
             ->join('pos_sales as s', 's.id', '=', 'i.pos_sale_id')
             ->when($storeId, fn ($q) => $q->where('s.store_id', $storeId))
-            ->when($from && $to, fn ($q) => $q->whereBetween('s.sale_date', [$from, $to]))
+            ->when($from && $to, fn ($q) => $q->whereBetween('s.sale_date', BusinessDay::range($from, $to)))
             ->distinct('i.product_id')
             ->count('i.product_id');
 
         $returnsAgg = StoreQuery::table('pos_returns')
             ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
-            ->when($from && $to, fn ($q) => $q->whereBetween('return_date', [$from, $to]))
+            ->when($from && $to, fn ($q) => $q->whereBetween('return_date', BusinessDay::range($from, $to)))
             ->selectRaw('COUNT(*) as count, COALESCE(SUM(total_refund), 0) as amount')
             ->first();
 
@@ -204,7 +205,7 @@ class SalesDashboardService
             ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
             ->where('is_credit', true)
             ->whereRaw('grand_total > paid_amount')
-            ->whereDate('sale_date', '<', Carbon::today()->subDays(7))
+            ->where('sale_date', '<', BusinessDay::start(BusinessDay::today())->subDays(7))
             ->count();
 
         $pendingDealerInvoices = StoreQuery::table('dealer_invoices')
@@ -288,7 +289,7 @@ class SalesDashboardService
     {
         $salesQuery = StoreQuery::table('pos_sales')
             ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
-            ->when($from && $to, fn ($q) => $q->whereBetween('sale_date', [$from, $to]));
+            ->when($from && $to, fn ($q) => $q->whereBetween('sale_date', BusinessDay::range($from, $to)));
 
         $cashSales = (clone $salesQuery)->where('is_credit', false)
             ->selectRaw('COUNT(*) as count, COALESCE(SUM(grand_total), 0) as amount')->first();
@@ -297,7 +298,7 @@ class SalesDashboardService
 
         $returnsQuery = StoreQuery::table('pos_returns')
             ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
-            ->when($from && $to, fn ($q) => $q->whereBetween('return_date', [$from, $to]));
+            ->when($from && $to, fn ($q) => $q->whereBetween('return_date', BusinessDay::range($from, $to)));
 
         $totalReturns = (clone $returnsQuery)
             ->selectRaw('COUNT(*) as count, COALESCE(SUM(total_refund), 0) as amount')->first();
@@ -322,7 +323,7 @@ class SalesDashboardService
     {
         $rows = StoreQuery::table('pos_sales')
             ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
-            ->when($from && $to, fn ($q) => $q->whereBetween('sale_date', [$from, $to]))
+            ->when($from && $to, fn ($q) => $q->whereBetween('sale_date', BusinessDay::range($from, $to)))
             ->selectRaw('
                 UPPER(COALESCE(payment_mode, "CASH")) as mode,
                 COUNT(*) as bills,
@@ -349,7 +350,7 @@ class SalesDashboardService
             ->join('pos_sales as s', 's.id', '=', 'i.pos_sale_id')
             ->join('products as p', 'p.id', '=', 'i.product_id')
             ->when($storeId, fn ($q) => $q->where('s.store_id', $storeId))
-            ->when($from && $to, fn ($q) => $q->whereBetween('s.sale_date', [$from, $to]))
+            ->when($from && $to, fn ($q) => $q->whereBetween('s.sale_date', BusinessDay::range($from, $to)))
             ->selectRaw('
                 i.product_id,
                 p.name as product_name,
@@ -380,7 +381,7 @@ class SalesDashboardService
         $rows = StoreQuery::table('pos_sale_items as i')
             ->join('pos_sales as s', 's.id', '=', 'i.pos_sale_id')
             ->when($storeId, fn ($q) => $q->where('s.store_id', $storeId))
-            ->when($from && $to, fn ($q) => $q->whereBetween('s.sale_date', [$from, $to]))
+            ->when($from && $to, fn ($q) => $q->whereBetween('s.sale_date', BusinessDay::range($from, $to)))
             ->selectRaw('
                 COALESCE(i.sales_man_name, "Unassigned") as sales_man_name,
                 COUNT(DISTINCT i.pos_sale_id) as bills,
@@ -433,9 +434,9 @@ class SalesDashboardService
             ->when($storeId, fn ($q) => $q->where('store_id', $storeId));
 
         $pending = (clone $query)->whereIn('status', ['pending', 'PENDING', 'draft', 'DRAFT'])->count();
-        $completedToday = (clone $query)->whereIn('status', ['completed', 'COMPLETED'])->whereDate('return_date', Carbon::today())->count();
+        $completedToday = (clone $query)->whereIn('status', ['completed', 'COMPLETED'])->whereBetween('return_date', BusinessDay::range(BusinessDay::today()))->count();
         $rangeValue = (clone $query)
-            ->when($from && $to, fn ($q) => $q->whereBetween('return_date', [$from, $to]))
+            ->when($from && $to, fn ($q) => $q->whereBetween('return_date', BusinessDay::range($from, $to)))
             ->sum('total_refund');
 
         return [
@@ -473,7 +474,7 @@ class SalesDashboardService
             ->when($storeId, fn ($q) => $q->where('store_id', $storeId));
 
         $open = (clone $query)->whereNull('closed_at')->count();
-        $closedToday = (clone $query)->whereNotNull('closed_at')->whereDate('closed_at', Carbon::today())->count();
+        $closedToday = (clone $query)->whereNotNull('closed_at')->whereBetween('closed_at', BusinessDay::range(BusinessDay::today()))->count();
         $varianceCount = (clone $query)->whereNotNull('closed_at')->where('difference', '!=', 0)->count();
         $varianceAmount = (clone $query)->whereNotNull('closed_at')->sum(DB::raw('ABS(difference)'));
 
@@ -494,7 +495,7 @@ class SalesDashboardService
     {
         $rangeQuery = StoreQuery::table('pos_sales')
             ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
-            ->when($from && $to, fn ($q) => $q->whereBetween('sale_date', [$from, $to]));
+            ->when($from && $to, fn ($q) => $q->whereBetween('sale_date', BusinessDay::range($from, $to)));
 
         $agg = (clone $rangeQuery)->selectRaw('
             COUNT(*) as bills,
@@ -512,7 +513,7 @@ class SalesDashboardService
 
         $returnsAmount = (float) StoreQuery::table('pos_returns')
             ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
-            ->when($from && $to, fn ($q) => $q->whereBetween('return_date', [$from, $to]))
+            ->when($from && $to, fn ($q) => $q->whereBetween('return_date', BusinessDay::range($from, $to)))
             ->sum('total_refund');
 
         $avgBasket = $bills > 0 ? round($amount / $bills, 2) : 0;
@@ -551,9 +552,9 @@ class SalesDashboardService
 
         $sales = StoreQuery::table('pos_sales')
             ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
-            ->whereBetween('sale_date', [$startDate->copy()->startOfDay(), $endDate->copy()->endOfDay()])
-            ->selectRaw('DATE(sale_date) as d, COALESCE(SUM(grand_total), 0) as amount')
-            ->groupBy(DB::raw('DATE(sale_date)'))
+            ->whereBetween('sale_date', BusinessDay::range($startDate->copy()->startOfDay(), $endDate->copy()->endOfDay()))
+            ->selectRaw(BusinessDay::dateSql('sale_date').' as d, COALESCE(SUM(grand_total), 0) as amount')
+            ->groupBy(DB::raw(BusinessDay::dateSql('sale_date')))
             ->get();
 
         foreach ($sales as $row) {
@@ -564,9 +565,9 @@ class SalesDashboardService
 
         $returns = StoreQuery::table('pos_returns')
             ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
-            ->whereBetween('return_date', [$startDate->copy()->startOfDay(), $endDate->copy()->endOfDay()])
-            ->selectRaw('DATE(return_date) as d, COALESCE(SUM(total_refund), 0) as amount')
-            ->groupBy(DB::raw('DATE(return_date)'))
+            ->whereBetween('return_date', BusinessDay::range($startDate->copy()->startOfDay(), $endDate->copy()->endOfDay()))
+            ->selectRaw(BusinessDay::dateSql('return_date').' as d, COALESCE(SUM(total_refund), 0) as amount')
+            ->groupBy(DB::raw(BusinessDay::dateSql('return_date')))
             ->get();
 
         foreach ($returns as $row) {

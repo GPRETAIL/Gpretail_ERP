@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1\Dashboards;
 
+use App\Support\BusinessDay;
 use App\Http\Controllers\Controller;
 use App\Models\Attendance;
 use App\Models\Customer;
@@ -50,18 +51,18 @@ class DashboardController extends Controller
         // below used to ignore them entirely and return all-time totals regardless of selection.
         $from = $request->filled('from')
             ? Carbon::parse($request->input('from'))->startOfDay()
-            : now()->startOfMonth();
+            : now(BusinessDay::tz())->startOfMonth();
         $to = $request->filled('to')
             ? Carbon::parse($request->input('to'))->endOfDay()
-            : now()->endOfDay();
-        $dateScope = fn ($q) => $q->whereBetween('sale_date', [$from, $to]);
+            : now(BusinessDay::tz())->endOfDay();
+        $dateScope = fn ($q) => $q->whereBetween('sale_date', BusinessDay::range($from, $to));
 
         // Previous period of equal length immediately preceding $from, for real trend percentages
         // (period-over-period) instead of the hardcoded "+12.5%"-style strings this used to send.
         $periodDays = max(1, $from->copy()->startOfDay()->diffInDays($to->copy()->startOfDay()) + 1);
         $prevTo = $from->copy()->subSecond();
         $prevFrom = $prevTo->copy()->subDays($periodDays - 1)->startOfDay();
-        $prevDateScope = fn ($q) => $q->whereBetween('sale_date', [$prevFrom, $prevTo]);
+        $prevDateScope = fn ($q) => $q->whereBetween('sale_date', BusinessDay::range($prevFrom, $prevTo));
 
         $computeTrend = fn ($current, $previous) => DashboardMetricHistory::trend((float) $current, (float) $previous);
 
@@ -83,7 +84,7 @@ class DashboardController extends Controller
             return PosSale::query()
                 ->leftJoin('pos_returns as applied_return', 'applied_return.id', '=', 'pos_sales.applied_pos_return_id')
                 ->when($storeId && $storeId !== 'all', fn ($q) => $q->where('pos_sales.store_id', $storeId))
-                ->whereBetween('pos_sales.sale_date', [$rangeFrom, $rangeTo])
+                ->whereBetween('pos_sales.sale_date', BusinessDay::range($rangeFrom, $rangeTo))
                 ->selectRaw('COALESCE(SUM(pos_sales.grand_total), 0) as total, COUNT(*) as cnt, '
                     .'COALESCE(SUM(pos_sales.tax_amount), 0) as tax, '
                     ."COALESCE(SUM(CASE WHEN {$open} THEN 1 ELSE 0 END), 0) as unsettled_count, "
@@ -101,14 +102,14 @@ class DashboardController extends Controller
         // Returns - real count+amount for the selected range (previously the only place this was
         // aggregated was buried as one row inside settlementDetails, with no standalone metric a
         // KPI card could read the way totalBills/stockValue already can).
-        $returnDateScope = fn ($q) => $q->whereBetween('return_date', [$from, $to]);
+        $returnDateScope = fn ($q) => $q->whereBetween('return_date', BusinessDay::range($from, $to));
         $returnScope = fn ($q) => ($storeId && $storeId !== 'all') ? $q->where('store_id', $storeId) : $q;
         $returnsAgg = $returnDateScope($returnScope(StoreQuery::table('pos_returns')))
             ->selectRaw('COALESCE(SUM(total_refund), 0) as total, COUNT(*) as cnt')
             ->first();
         $totalReturns = (float) $returnsAgg->total;
         $totalReturnCount = (int) $returnsAgg->cnt;
-        $prevReturnDateScope = fn ($q) => $q->whereBetween('return_date', [$prevFrom, $prevTo]);
+        $prevReturnDateScope = fn ($q) => $q->whereBetween('return_date', BusinessDay::range($prevFrom, $prevTo));
         $prevTotalReturns = (float) ($prevReturnDateScope($returnScope(StoreQuery::table('pos_returns')))->sum('total_refund'));
 
         // Purchase Return - goods sent back to a supplier, a real, separate
@@ -184,7 +185,7 @@ class DashboardController extends Controller
         // aggregation instead of two separate passes over the same joined row set.
         $profitAgg = StoreQuery::table('pos_sale_items')
             ->join('pos_sales', 'pos_sale_items.pos_sale_id', '=', 'pos_sales.id')
-            ->whereBetween('pos_sales.sale_date', [$from, $to])
+            ->whereBetween('pos_sales.sale_date', BusinessDay::range($from, $to))
             ->when($storeId && $storeId !== 'all', fn ($q) => $q->where('pos_sales.store_id', $storeId))
             ->selectRaw(
                 'COALESCE(SUM(CASE WHEN pos_sale_items.cost_price IS NOT NULL '
@@ -197,7 +198,7 @@ class DashboardController extends Controller
         $itemsMissingCost = (int) $profitAgg->missing_cost_count;
         $prevProfitQuery = StoreQuery::table('pos_sale_items')
             ->join('pos_sales', 'pos_sale_items.pos_sale_id', '=', 'pos_sales.id')
-            ->whereBetween('pos_sales.sale_date', [$prevFrom, $prevTo])
+            ->whereBetween('pos_sales.sale_date', BusinessDay::range($prevFrom, $prevTo))
             ->when($storeId && $storeId !== 'all', fn ($q) => $q->where('pos_sales.store_id', $storeId))
             ->whereNotNull('pos_sale_items.cost_price');
         $prevGrossProfit = (float) ($prevProfitQuery->sum(DB::raw('pos_sale_items.quantity * (pos_sale_items.selling_price - pos_sale_items.cost_price)')));
@@ -220,7 +221,7 @@ class DashboardController extends Controller
         $topSellingQuery = StoreQuery::table('pos_sale_items')
             ->join('products', 'pos_sale_items.product_id', '=', 'products.id')
             ->join('pos_sales', 'pos_sale_items.pos_sale_id', '=', 'pos_sales.id')
-            ->whereBetween('pos_sales.sale_date', [$from, $to])
+            ->whereBetween('pos_sales.sale_date', BusinessDay::range($from, $to))
             ->when($storeId && $storeId !== 'all', fn ($q) => $q->where('pos_sales.store_id', $storeId))
             ->select(
                 'products.name',
@@ -241,7 +242,7 @@ class DashboardController extends Controller
         // Top Customers
         $topCustomerQuery = StoreQuery::table('pos_sales')
             ->join('customers', 'pos_sales.customer_id', '=', 'customers.id')
-            ->whereBetween('pos_sales.sale_date', [$from, $to])
+            ->whereBetween('pos_sales.sale_date', BusinessDay::range($from, $to))
             ->when($storeId && $storeId !== 'all', fn ($q) => $q->where('pos_sales.store_id', $storeId))
             ->select(
                 'customers.name',
@@ -476,7 +477,7 @@ class DashboardController extends Controller
             ? "CAST(strftime('%H', sale_date) AS INTEGER)"
             : 'HOUR(sale_date)';
         $todaySalesByHour = $scope(PosSale::query())
-            ->whereDate('sale_date', now()->toDateString())
+            ->whereBetween('sale_date', BusinessDay::range(BusinessDay::today()))
             ->selectRaw("{$hourExpr} as hr, COUNT(*) as bills, SUM(grand_total) as amt")
             ->groupBy('hr')
             ->get()
@@ -501,11 +502,11 @@ class DashboardController extends Controller
         // reflects the selected range instead of all-time, so it's dropped. This used to run 2
         // individual queries per day (20 total for the 10-day window); replaced with one grouped
         // query across the whole window, same consolidation pattern as the per-store sections above.
-        $trendRangeStart = now()->subDays(9)->startOfDay();
-        $trendRangeEnd = now()->endOfDay();
+        $trendRangeStart = now(BusinessDay::tz())->subDays(9)->startOfDay();
+        $trendRangeEnd = now(BusinessDay::tz())->endOfDay();
         $dailyTrendByDate = $scope(PosSale::query())
-            ->whereBetween('sale_date', [$trendRangeStart, $trendRangeEnd])
-            ->selectRaw('DATE(sale_date) as d, COALESCE(SUM(grand_total), 0) as sales, COALESCE(SUM(total_qty), 0) as units')
+            ->whereBetween('sale_date', BusinessDay::range($trendRangeStart, $trendRangeEnd))
+            ->selectRaw(BusinessDay::dateSql('sale_date').' as d, COALESCE(SUM(grand_total), 0) as sales, COALESCE(SUM(total_qty), 0) as units')
             ->groupBy('d')
             ->get()
             ->keyBy('d');
@@ -528,7 +529,7 @@ class DashboardController extends Controller
         $salesPersonQuery = StoreQuery::table('pos_sale_items')
             ->leftJoin('employees', 'pos_sale_items.sales_man_id', '=', 'employees.id')
             ->join('pos_sales', 'pos_sale_items.pos_sale_id', '=', 'pos_sales.id')
-            ->whereBetween('pos_sales.sale_date', [$from, $to])
+            ->whereBetween('pos_sales.sale_date', BusinessDay::range($from, $to))
             ->when($storeId && $storeId !== 'all', fn ($q) => $q->where('pos_sales.store_id', $storeId))
             ->select(
                 DB::raw('COALESCE(pos_sale_items.sales_man_name, employees.name, "Store Admin") as name'),

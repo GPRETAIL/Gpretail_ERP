@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1\Sales;
 
+use App\Support\BusinessDay;
 use App\Exceptions\InsufficientStockException;
 use App\Exceptions\PosReturnCreditUnavailableException;
 use App\Exceptions\PosReturnNotReturnableException;
@@ -304,10 +305,7 @@ class PosSaleController extends Controller
             // ever read it - every keystroke silently no-opped and kept showing the same
             // unfiltered recent-sales list regardless of what was typed.
             ->when($request->filled('from') && $request->filled('to'), function ($q) use ($request) {
-                $q->whereBetween('sale_date', [
-                    Carbon::parse($request->input('from'))->startOfDay(),
-                    Carbon::parse($request->input('to'))->endOfDay(),
-                ]);
+                $q->whereBetween('sale_date', BusinessDay::range($request->input('from'), $request->input('to')));
             })
             ->when($request->filled('billNo'), fn ($query) => $query->billNumber((string) $request->input('billNo')))
             ->when($request->filled('search'), function ($q) use ($request) {
@@ -921,12 +919,12 @@ class PosSaleController extends Controller
 
         // Fallback for simple dashboard summary if mode is omitted
         if (! $mode) {
-            $today = now()->toDateString();
-            $totalSales = PosSale::where('store_id', $storeId)->whereDate('sale_date', $today)->sum('grand_total');
-            $totalBills = PosSale::where('store_id', $storeId)->whereDate('sale_date', $today)->count();
+            $today = BusinessDay::today();
+            $totalSales = PosSale::where('store_id', $storeId)->whereBetween('sale_date', BusinessDay::range($today))->sum('grand_total');
+            $totalBills = PosSale::where('store_id', $storeId)->whereBetween('sale_date', BusinessDay::range($today))->count();
 
             $tenderTotals = PosPayment::whereHas('posSale', function ($q) use ($storeId, $today) {
-                $q->where('store_id', $storeId)->whereDate('sale_date', $today);
+                $q->where('store_id', $storeId)->whereBetween('sale_date', BusinessDay::range($today));
             })
                 ->selectRaw('payment_mode, SUM(amount) as total')
                 ->groupBy('payment_mode')
@@ -950,12 +948,12 @@ class PosSaleController extends Controller
         }
 
         // Full Multi-Mode Aggregate Summary
-        $from = $request->input('from') ?: now()->subDays(30)->toDateString();
-        $to = $request->input('to') ?: now()->toDateString();
+        $from = $request->input('from') ?: now(BusinessDay::tz())->subDays(30)->toDateString();
+        $to = $request->input('to') ?: BusinessDay::today();
 
         $query = PosSale::with(['appliedReturn', 'settlement', 'customer', 'store', 'items.product', 'payments'])
-            ->whereDate('sale_date', '>=', $from)
-            ->whereDate('sale_date', '<=', $to);
+            ->where('sale_date', '>=', BusinessDay::start($from))
+            ->where('sale_date', '<=', BusinessDay::end($to));
 
         if ($request->filled('company_id')) {
             $query->where('store_id', $request->input('company_id'));

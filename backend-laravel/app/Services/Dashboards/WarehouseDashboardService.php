@@ -2,6 +2,7 @@
 
 namespace App\Services\Dashboards;
 
+use App\Support\BusinessDay;
 use App\Models\Category;
 use App\Models\Stock;
 use App\Models\Store;
@@ -446,7 +447,7 @@ class WarehouseDashboardService
 
         $pending = (clone $query)->whereIn('status', ['pending', 'draft', 'in_transit'])->count();
         $partial = (clone $query)->where('status', 'partially_received')->count();
-        $completedToday = (clone $query)->whereIn('status', ['received', 'completed'])->whereDate('updated_at', Carbon::today())->count();
+        $completedToday = (clone $query)->whereIn('status', ['received', 'completed'])->whereBetween('updated_at', BusinessDay::range(BusinessDay::today()))->count();
         $overdue = (clone $query)->whereIn('status', ['pending', 'draft'])->whereDate('purchase_date', '<', Carbon::today()->subDays(3))->count();
 
         return [
@@ -527,7 +528,7 @@ class WarehouseDashboardService
 
         $pendingApproval = (clone $query)->whereIn('status', ['pending', 'draft', 'pending_approval'])->count();
         $awaitingReturn = (clone $query)->where('status', 'awaiting_return')->count();
-        $returnedToday = (clone $query)->whereIn('status', ['returned', 'completed'])->whereDate('return_date', Carbon::today())->count();
+        $returnedToday = (clone $query)->whereIn('status', ['returned', 'completed'])->whereBetween('return_date', BusinessDay::range(BusinessDay::today()))->count();
         $totalValue = (float) (clone $query)->whereIn('status', ['pending', 'pending_approval', 'awaiting_return'])->sum('total_amount');
 
         return [
@@ -691,9 +692,9 @@ class WarehouseDashboardService
         $outwards = StoreQuery::table('stock_transactions')
             ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
             ->whereIn('type', ['outward', 'sale', 'transfer_out'])
-            ->whereBetween('created_at', [$startDate->startOfDay(), $endDate->endOfDay()])
-            ->selectRaw('DATE(created_at) as d, COALESCE(SUM(ABS(quantity)), 0) as qty')
-            ->groupBy(DB::raw('DATE(created_at)'))
+            ->whereBetween('created_at', BusinessDay::range($startDate->startOfDay(), $endDate->endOfDay()))
+            ->selectRaw(BusinessDay::dateSql('created_at').' as d, COALESCE(SUM(ABS(quantity)), 0) as qty')
+            ->groupBy(DB::raw(BusinessDay::dateSql('created_at')))
             ->get();
 
         foreach ($outwards as $out) {

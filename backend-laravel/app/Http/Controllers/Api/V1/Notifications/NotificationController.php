@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1\Notifications;
 
+use App\Support\BusinessDay;
 use App\Services\Hr\StaffAppAccess;
 use App\Http\Controllers\Controller;
 use App\Models\Notification;
@@ -427,7 +428,7 @@ class NotificationController extends Controller
             ->leftJoin('customers', 'pos_sales.customer_id', '=', 'customers.id')
             ->where('pos_sales.is_credit', true)
             ->whereRaw('pos_sales.grand_total > pos_sales.paid_amount')
-            ->whereDate('pos_sales.sale_date', '<', now()->subDays(self::CREDIT_SALE_DUE_SOON_DAYS))
+            ->where('pos_sales.sale_date', '<', BusinessDay::start(now())->subDays(self::CREDIT_SALE_DUE_SOON_DAYS))
             ->get([
                 'pos_sales.id', 'pos_sales.invoice_no', 'pos_sales.sale_date', 'pos_sales.grand_total',
                 'pos_sales.paid_amount', 'pos_sales.store_id', 'customers.name as customer_name',

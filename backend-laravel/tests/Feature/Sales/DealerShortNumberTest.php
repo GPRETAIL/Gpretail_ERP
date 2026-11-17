@@ -31,12 +31,12 @@ class DealerShortNumberTest extends TestCase
         $invoice = $this->postJson('/api/dealer-invoices', ['customerId' => $customerId, 'addlDiscount' => 0, 'addlCharge' => 0, 'taxLines' => [], 'items' => [$line]])
             ->assertCreated()->json('data');
 
-        $short = 'D'.now()->format('ymd').'-0001';
+        $short = 'D'.now(config('app.business_timezone'))->format('ymd').'-0001';
         $this->assertSame($short, $invoice['bill_no']);
         $this->assertStringStartsWith('DINV-', $invoice['invoice_no'], 'the stored number is unchanged');
         $this->assertSame($short, $this->getJson('/api/dealer-invoices')->json('data.0.bill_no'));
         $this->assertSame(1, $this->getJson('/api/dealer-invoices?search='.$short)->json('total') ?? count($this->getJson('/api/dealer-invoices?search='.$short)->json('data')));
-        $this->assertSame('D'.now()->format('ymd').'-0002', $this->getJson('/api/dealer-invoices/next-bill-no')->json('next_bill_no'));
+        $this->assertSame('D'.now(config('app.business_timezone'))->format('ymd').'-0002', $this->getJson('/api/dealer-invoices/next-bill-no')->json('next_bill_no'));
         $this->getJson('/api/deliveries/bill?no='.$short)->assertOk()->assertJsonPath('data.bill_no', $short)->assertJsonPath('data.bill_type', 'Dealer invoice');
     }
 }

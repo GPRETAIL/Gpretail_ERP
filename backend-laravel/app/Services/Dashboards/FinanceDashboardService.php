@@ -2,6 +2,7 @@
 
 namespace App\Services\Dashboards;
 
+use App\Support\BusinessDay;
 use App\Models\Store;
 use App\Services\Sales\DealerBalances;
 use App\Services\Tenancy\StoreQuery;
@@ -140,7 +141,7 @@ class FinanceDashboardService
      */
     public function getActionRequired(?int $storeId): array
     {
-        $overdueThreshold = Carbon::today()->subDays(30);
+        $overdueThreshold = Carbon::today(BusinessDay::tz())->subDays(30);
 
         $overduePayables = StoreQuery::table('direct_purchases')
             ->when($storeId, fn ($q) => $q->where(fn ($sq) => $sq->where('store_id', $storeId)->orWhere('company_id', $storeId)))
@@ -170,7 +171,7 @@ class FinanceDashboardService
             ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
             ->where('is_credit', true)
             ->whereRaw('grand_total > paid_amount')
-            ->whereDate('sale_date', '<', $overdueThreshold)
+            ->where('sale_date', '<', BusinessDay::start($overdueThreshold))
             ->count();
 
         return [
@@ -240,7 +241,7 @@ class FinanceDashboardService
 
         $creditSales = StoreQuery::table('pos_sales')
             ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
-            ->when($from && $to, fn ($q) => $q->whereBetween('sale_date', [$from, $to]))
+            ->when($from && $to, fn ($q) => $q->whereBetween('sale_date', BusinessDay::range($from, $to)))
             ->where('is_credit', true)
             ->selectRaw('COUNT(*) as count, COALESCE(SUM(grand_total), 0) as amount')
             ->first();

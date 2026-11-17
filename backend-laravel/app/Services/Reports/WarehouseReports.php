@@ -2,6 +2,7 @@
 
 namespace App\Services\Reports;
 
+use App\Support\BusinessDay;
 use App\Enums\PurchaseOrderStatus;
 use App\Enums\TransferStatus;
 use Illuminate\Support\Collection;
@@ -227,8 +228,8 @@ class WarehouseReports
     /** Stock on hand per item against the last 30 days' sales: how many days the shelf stock lasts at that rate. */
     private function retailStock(array $storeIds): Collection
     {
-        $since = now()->subDays(30)->toDateString();
-        $sold = DB::table('pos_sales as s')->whereIn('s.store_id', $storeIds)->whereDate('s.sale_date', '>=', $since)
+        $since = now(BusinessDay::tz())->subDays(30)->toDateString();
+        $sold = DB::table('pos_sales as s')->whereIn('s.store_id', $storeIds)->where('s.sale_date', '>=', BusinessDay::start($since))
             ->where(fn ($q) => $q->whereNull('s.status')->orWhereNotIn('s.status', ['CANCELLED', 'CANCELED']))
             ->join('pos_sale_items as i', 'i.pos_sale_id', '=', 's.id')
             ->groupBy('i.product_id')->selectRaw('i.product_id, SUM(i.quantity) as qty, MAX(s.sale_date) as last_sale')->get()->keyBy('product_id');

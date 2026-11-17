@@ -27,7 +27,7 @@ class PosOfflineBillingTest extends TestCase
         $this->fixture = PosPerformanceFixture::create(2);
         Sanctum::actingAs($this->fixture['user']);
         $counter = $this->fixture['user']->counter_id;
-        $this->prefix = 'INV-TEMP-POS-PERF-'.now()->format('Ymd')."-F$counter-";
+        $this->prefix = 'INV-TEMP-POS-PERF-'.now(config('app.business_timezone'))->format('Ymd')."-F$counter-";
     }
 
     private function offlineBill(int $seq, array $overrides = [], ?string $billedAt = null): array
@@ -50,7 +50,7 @@ class PosOfflineBillingTest extends TestCase
         $bill = $this->offlineBill(1, [], $billedAt->toIso8601String());
         $saved = $this->postJson('/api/pos-sales', $bill)->assertCreated();
         $saved->assertJsonPath('data.invoice_no', $this->prefix.'0001')
-            ->assertJsonPath('data.bill_no', now()->format('ymd').'-F'.$this->fixture['user']->counter_id.'-0001');
+            ->assertJsonPath('data.bill_no', now(config('app.business_timezone'))->format('ymd').'-F'.$this->fixture['user']->counter_id.'-0001');
         $sale = PosSale::findOrFail($saved->json('data.id'));
         $this->assertTrue($sale->sale_date->equalTo($billedAt));
         $this->assertTrue($sale->created_at->equalTo($billedAt)); // Reports put it on the day it was billed.
@@ -104,7 +104,7 @@ class PosOfflineBillingTest extends TestCase
     {
         $this->postJson('/api/pos-sales', $this->offlineBill(1, ['isCredit' => true, 'saleSaveAs' => 'unsettled', 'cashAmount' => 0]))
             ->assertUnprocessable()->assertJsonValidationErrors('offline');
-        $this->postJson('/api/pos-sales', $this->offlineBill(1, ['offline' => ['invoiceNo' => 'INV-TEMP-POS-PERF-'.now()->format('Ymd').'-F999-0001', 'billedAt' => now()->toIso8601String()]]))
+        $this->postJson('/api/pos-sales', $this->offlineBill(1, ['offline' => ['invoiceNo' => 'INV-TEMP-POS-PERF-'.now(config('app.business_timezone'))->format('Ymd').'-F999-0001', 'billedAt' => now()->toIso8601String()]]))
             ->assertUnprocessable()->assertJsonValidationErrors('offline.invoiceNo');
         $this->postJson('/api/pos-sales', $this->offlineBill(1, [], now()->subDays(40)->toIso8601String()))
             ->assertUnprocessable()->assertJsonValidationErrors('offline.billedAt');

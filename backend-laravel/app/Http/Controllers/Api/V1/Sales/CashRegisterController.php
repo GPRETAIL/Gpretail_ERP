@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1\Sales;
 
+use App\Support\BusinessDay;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Sales\StoreCashClosingRequest;
 use App\Http\Requests\Sales\StoreCashOpeningRequest;
@@ -34,7 +35,7 @@ class CashRegisterController extends Controller
         $query = $this->filtered(CashRegisterSession::with(self::LIST_RELATIONS)->where('store_id', $storeId), $request)
             ->when($request->filled('paidByEmployeeId'), fn ($q) => $q->where('paid_by_employee_id', $request->integer('paidByEmployeeId')))
             ->when($request->filled('locationId'), fn ($q) => $q->where('location_id', $request->integer('locationId')))
-            ->when($request->filled('date'), fn ($q) => $q->whereDate('opened_at', $request->input('date')));
+            ->when($request->filled('date'), fn ($q) => $q->whereBetween('opened_at', BusinessDay::range($request->input('date'))));
 
         if ($request->boolean('all')) {
             $sessions = $query->orderBy('opened_at', 'desc')->limit(1000)->get()->map(fn ($s) => $this->row($s));
@@ -112,7 +113,7 @@ class CashRegisterController extends Controller
         $query = $this->filtered(CashRegisterSession::with(self::LIST_RELATIONS)->where('store_id', $storeId)->where('status', 'CLOSED'), $request)
             ->when($request->filled('receivedByEmployeeId'), fn ($q) => $q->where('received_by_employee_id', $request->integer('receivedByEmployeeId')))
             ->when($request->filled('billNo'), fn ($q) => $q->where('closing_no', (int) preg_replace('/\D/', '', (string) $request->input('billNo'))))
-            ->when($request->filled('date'), fn ($q) => $q->whereDate('closed_at', $request->input('date')));
+            ->when($request->filled('date'), fn ($q) => $q->whereBetween('closed_at', BusinessDay::range($request->input('date'))));
 
         if ($request->boolean('all')) {
             $sessions = $query->orderBy('closed_at', 'desc')->limit(1000)->get()->map(fn ($s) => $this->row($s));
