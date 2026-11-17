@@ -6,7 +6,7 @@ import SearchGridPanel from "@/shared/components/SearchGridPanel";
 import useSearchGrid from "@/shared/hooks/useSearchGrid";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "react-toastify";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useSelector } from "react-redux";
 import api from "@/shared/api/apiClient";
 import ExportBottomSheet from "@/shared/components/ExportBottomSheet";
@@ -2402,10 +2402,13 @@ const SalesReports = () => {
     return reports;
   }, []);
 
+  // ?report=<key> opens that report directly (the dashboard's "View all" links).
+  const [searchParams] = useSearchParams();
+  const linkedReport = reportLookup[searchParams.get("report") || ""]?.implemented ? searchParams.get("report") : "";
   const [expandedGroups, setExpandedGroups] = useState(() =>
-    REPORT_GROUPS.reduce((acc, group) => ({ ...acc, [group.key]: false }), {})
+    REPORT_GROUPS.reduce((acc, group) => ({ ...acc, [group.key]: Boolean(linkedReport) && reportLookup[linkedReport].groupKey === group.key }), {})
   );
-  const [selectedReportKey, setSelectedReportKey] = useState("");
+  const [selectedReportKey, setSelectedReportKey] = useState(linkedReport);
   const [reportRows, setReportRows] = useState([]);
   const [reportLoading, setReportLoading] = useState(false);
   const [reportError, setReportError] = useState("");

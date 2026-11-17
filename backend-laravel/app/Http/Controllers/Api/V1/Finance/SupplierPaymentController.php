@@ -13,6 +13,7 @@ use App\Models\SupplierPayment;
 use App\Services\Accounting\SupplierPaymentWriter;
 use App\Support\PaginationService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -107,12 +108,16 @@ class SupplierPaymentController extends Controller
     {
         $storeId = $this->resolveStoreId($request, null);
         $search = trim((string) $request->input('search', ''));
+        // One supplier's bills (the dashboard's Supplier Payments rows link here).
+        $supplierId = $request->integer('supplier_id') ?: null;
 
         $invoiceQuery = PurchaseInvoice::with('supplier')
+            ->when($supplierId, fn ($query) => $query->where('supplier_id', $supplierId))
             ->when($storeId, fn ($query) => $query->where('store_id', $storeId))
             ->where('payment_status', '!=', 'PAID');
 
         $directQuery = DirectPurchase::with('supplier')
+            ->when($supplierId, fn ($query) => $query->where('supplier_id', $supplierId))
             ->when($storeId, fn ($query) => $query->where('store_id', $storeId))
             ->where('payment_status', '!=', 'PAID');
 
@@ -140,7 +145,7 @@ class SupplierPaymentController extends Controller
                 'invoice_no' => $inv->invoice_no,
                 'supplier_name' => $inv->supplier->name ?? 'Unknown Supplier',
                 'supplier_id' => $inv->supplier_id,
-                'invoice_date' => $inv->invoice_date,
+                'invoice_date' => $inv->invoice_date ? Carbon::parse($inv->invoice_date)->toDateString() : null,
                 'total_amount' => $total,
                 'paid_amount' => $paid,
                 'balance_due' => max(0, $total - $paid),
@@ -162,7 +167,7 @@ class SupplierPaymentController extends Controller
                 'invoice_no' => $dir->purchase_no,
                 'supplier_name' => $dir->supplier->name ?? 'Unknown Supplier',
                 'supplier_id' => $dir->supplier_id,
-                'invoice_date' => $dir->purchase_date,
+                'invoice_date' => $dir->purchase_date ? Carbon::parse($dir->purchase_date)->toDateString() : null,
                 'total_amount' => $total,
                 'paid_amount' => $paid,
                 'balance_due' => max(0, $total - $paid),
@@ -177,6 +182,7 @@ class SupplierPaymentController extends Controller
 
         // Bills the supplier was owed when the books started (Finance > Opening Balance).
         $openings = OpeningBill::where('party_type', 'supplier')->whereColumn('paid_amount', '<', 'amount')
+            ->when($supplierId, fn ($query) => $query->where('party_id', $supplierId))
             ->when($storeId, fn ($query) => $query->where('store_id', $storeId))
             ->when($search !== '', fn ($query) => $query->where(fn ($q) => $q->where('bill_no', 'like', "%{$search}%")
                 ->orWhereIn('party_id', Supplier::where('name', 'like', "%{$search}%")->select('id'))))
@@ -278,7 +284,7 @@ class SupplierPaymentController extends Controller
                     'supplier_id' => $inv->supplier_id,
                     'supplier_name' => $inv->supplier?->name,
                     'company_name' => null,
-                    'invoice_date' => $inv->invoice_date,
+                    'invoice_date' => $inv->invoice_date ? Carbon::parse($inv->invoice_date)->toDateString() : null,
                     'total' => $total,
                     'tax' => (float) $inv->tax_amount,
                     'discount' => (float) $inv->discount_amount,

@@ -3,7 +3,7 @@ import PageHeader from "@/shared/components/PageHeader";
 import useAsyncQuery from "@/shared/hooks/useAsyncQuery";
 import SearchGridPanel from "@/shared/components/SearchGridPanel";
 import useSearchGrid, { createSearchGridAdapter } from "@/shared/hooks/useSearchGrid";
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useSelector } from "react-redux";
 import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import { Search } from "lucide-react";
@@ -17,7 +17,7 @@ import AsyncSearchSelect from "@/shared/components/AsyncSearchSelect";
 import { useTheme as useAppTheme } from "@/shared/theme/themeContext";
 import { createNamedTheme, TONES } from "@/shared/theme/themeRegistry";
 import { StatusChip } from "@/shared/theme/StatusChip";
-import { ThemeProvider, Box, Stack, Card, Typography, Breadcrumbs, Link, Button, TextField, Select, MenuItem, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Divider } from "@mui/material";
+import { ThemeProvider, Box, Stack, Card, Chip, Typography, Breadcrumbs, Link, Button, TextField, Select, MenuItem, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Divider } from "@mui/material";
 import { muiFieldSx, SEARCHABLE_TRIGGER_SX } from "@/shared/theme/formControlSizes";
 import { allocateSupplierPayment, allocationTotals, BILL_TYPE_LABELS, BILL_TYPE_TONES, billKey, oldestFirst, singleSupplier, SUPPLIER_PAYMENT_MODES, supplierPaymentPayload } from "./utils/supplierPayments";
 
@@ -203,6 +203,10 @@ const SupplierPayment = () => {
   }, []);
 
   const [pendingRequested, setPendingRequested] = useState(false);
+  // ?supplier_id=&supplier= (Dashboard > Supplier Payments): only that supplier's bills, loaded straight away.
+  const [supplierFilter, setSupplierFilter] = useState(() => (searchParams.get("supplier_id")
+    ? { id: searchParams.get("supplier_id"), name: searchParams.get("supplier") || "" } : null));
+  const supplierAutoSearched = useRef(false);
   const pendingGrid = useSearchGrid({
     adapter: createSearchGridAdapter("/supplier-payments/pending"), enabled: pendingRequested,
     onError: err => toast.error(err.response?.data?.message || "Failed to load pending bills"),
@@ -224,10 +228,17 @@ const SupplierPayment = () => {
     if (toDate) params.to_date = toDate;
     if (cityId) params.city_id = cityId;
     if (section) params.section = section;
+    if (supplierFilter) params.supplier_id = supplierFilter.id;
     setPendingRequested(true);
     setSelectedIds(new Set());
     loadPendingGrid(params, overrides.page ?? 1, overrides.limit);
-  }, [companyId, location, agentId, fromDate, toDate, cityId, section, loadPendingGrid]);
+  }, [companyId, location, agentId, fromDate, toDate, cityId, section, supplierFilter, loadPendingGrid]);
+  useEffect(() => {
+    if (!supplierFilter || supplierAutoSearched.current) return undefined;
+    // The flag is set when the search really runs (a cleared timer, e.g. React dev double-run, must not count).
+    const timer = setTimeout(() => { supplierAutoSearched.current = true; handleSearch(); }, 0);
+    return () => clearTimeout(timer);
+  }, [supplierFilter, handleSearch]);
   const handlePendingServerSearch = pendingGrid.onServerSearch;
   const handlePendingSortChange = pendingGrid.onSortChange;
   const handlePendingPageChange = pendingGrid.setPage;
@@ -522,7 +533,13 @@ const SupplierPayment = () => {
                   }}
                 >
                   <Box>
-                    <Typography sx={{ fontSize: 13, fontWeight: 700 }}>Pending Supplier Bills</Typography>
+                    <Typography sx={{ fontSize: 13, fontWeight: 700 }}>
+                      Pending Supplier Bills
+                      {supplierFilter ? (
+                        <Chip size="small" sx={{ ml: 1 }} label={`Supplier: ${supplierFilter.name || `#${supplierFilter.id}`}`}
+                          onDelete={() => { setSupplierFilter(null); setSearchParams({}, { replace: true }); }} />
+                      ) : null}
+                    </Typography>
                     <Typography sx={{ fontSize: 12, color: "text.secondary", mt: 0.25 }}>
                       {rows.length} record{rows.length !== 1 ? "s" : ""}
                       {selectedIds.size > 0 && (

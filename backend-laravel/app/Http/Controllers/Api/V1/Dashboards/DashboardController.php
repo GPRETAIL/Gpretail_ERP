@@ -272,6 +272,7 @@ class DashboardController extends Controller
             ->when($storeId && $storeId !== 'all', fn ($q) => $q->where(fn ($sq) => $sq->where('dp.store_id', $storeId)->orWhere('dp.company_id', $storeId)))
             ->whereRaw('dp.total_amount > dp.paid_amount')
             ->selectRaw('
+                dp.supplier_id as supplier_id, "direct" as doc_type, dp.id as doc_id,
                 COALESCE(s.name, dp.supplier_name, "Unknown") as supplier_name,
                 COALESCE(dp.invoice_no, dp.purchase_no) as invoice_no,
                 COALESCE(dp.purchase_type, "Direct Purchase") as invoice_type,
@@ -285,6 +286,7 @@ class DashboardController extends Controller
             ->when($storeId && $storeId !== 'all', fn ($q) => $q->where('pi.store_id', $storeId))
             ->whereRaw('pi.grand_total > pi.paid_amount')
             ->selectRaw('
+                pi.supplier_id as supplier_id, "invoice" as doc_type, pi.id as doc_id,
                 COALESCE(s.name, "Unknown") as supplier_name,
                 COALESCE(pi.supplier_invoice_no, pi.invoice_no) as invoice_no,
                 "Purchase Invoice" as invoice_type,
@@ -303,7 +305,11 @@ class DashboardController extends Controller
                 $days = $invoiceDate ? $invoiceDate->diffInDays($todayForDays) : null;
 
                 return [
+                    'supplierId' => $row->supplier_id ? (int) $row->supplier_id : null,
                     'supplierName' => $row->supplier_name,
+                    // Supplier Payment opens this bill directly (?openInvoiceType=&openInvoiceId=).
+                    'docType' => $row->doc_type,
+                    'docId' => (int) $row->doc_id,
                     'invoiceNo' => $row->invoice_no ?: '-',
                     'invoiceType' => $row->invoice_type,
                     'days' => $days,

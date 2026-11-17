@@ -129,6 +129,20 @@ class OpeningBalanceTest extends TestCase
         $this->deleteJson("/api/opening-balances/bills/{$opening['id']}")->assertUnprocessable(); // Paid against: cannot go.
     }
 
+    public function test_pending_bills_can_be_limited_to_one_supplier(): void
+    {
+        $this->bill(['amount' => 1000]);
+        $other = DB::table('suppliers')->insertGetId(['name' => 'TEMP Other', 'code' => 'TEMP-OTHER', 'store_id' => $this->store, 'created_at' => now(), 'updated_at' => now()]);
+        $this->bill(['party_id' => $other, 'bill_no' => 'O-1', 'amount' => 300]);
+        DirectPurchase::create(['store_id' => $this->store, 'supplier_id' => $other, 'purchase_no' => 'DP-O-1', 'purchase_date' => '2026-11-01',
+            'total_amount' => 700, 'paid_amount' => 0, 'payment_status' => 'UNPAID']);
+
+        $rows = collect($this->getJson("/api/supplier-payments/pending?limit=50&supplier_id=$other")->assertOk()->json('data'));
+
+        $this->assertEqualsCanonicalizing(['O-1', 'DP-O-1'], $rows->pluck('invoice_no')->all());
+        $this->assertSame([$other], $rows->pluck('supplier_id')->unique()->values()->all());
+    }
+
     public function test_a_payment_cannot_pay_more_than_a_bill_owes_or_another_suppliers_bill(): void
     {
         $opening = $this->bill(['amount' => 1000]);

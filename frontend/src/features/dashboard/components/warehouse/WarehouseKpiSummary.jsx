@@ -42,7 +42,7 @@ export function TotalStockUnitsCard({ summary = {}, loading, privacyMode }) {
 export function TotalStockValueCard({ summary = {}, loading, privacyMode }) {
   const navigate = useNavigate();
   return (
-    <Box onClick={() => navigate("/warehouse/reports")} sx={cardSx((theme) => alpha(theme.palette.success.main, 0.5))}>
+    <Box onClick={() => navigate("/warehouse/reports?report=stock_report")} sx={cardSx((theme) => alpha(theme.palette.success.main, 0.5))}>
       <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", color: "text.secondary" }}>
         <Typography sx={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
           Total Stock Value

@@ -45,7 +45,7 @@ export function TodaysSalesCard({ summary = {}, loading, privacyMode }) {
 export function NetSalesCard({ summary = {}, loading, privacyMode }) {
   const navigate = useNavigate();
   return (
-    <ButtonBase onClick={() => navigate("/sales/reports")} sx={cardSx("success.main")}>
+    <ButtonBase onClick={() => navigate("/sales/reports?report=sales_report")} sx={cardSx("success.main")}>
       <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", color: "text.secondary" }}>
         <Typography sx={{ fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
           Net Sales (Period)

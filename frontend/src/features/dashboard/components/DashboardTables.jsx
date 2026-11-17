@@ -1,4 +1,5 @@
 import { TYPE } from "@/shared/theme/typeScale";
+import { supplierBillPath, supplierPaymentPath } from "@/features/dashboard/utils/supplierPaymentLinks";
 import React from "react";
 import LoadingSkeleton from "@/shared/components/LoadingSkeleton";
 import { useNavigate } from "react-router-dom";
@@ -49,7 +50,7 @@ export const DailySalesSummaryTable = ({ table, loading, privacyMode }) => {
         <Typography component="h2" sx={{ fontSize: 14, fontWeight: 600, color: "text.primary" }}>{table?.title || "Daily Sales Summary"}</Typography>
         <Button
           size="small"
-          onClick={() => navigate("/sales/reports")}
+          onClick={() => navigate("/sales/reports?report=day_summary_report")}
           sx={{ fontSize: 12, fontWeight: 600, p: 0, minWidth: "auto", "&:hover": { bgcolor: "transparent", textDecoration: "underline" } }}
         >
           View All
@@ -121,7 +122,7 @@ export const SettlementDetailsTable = ({ table, loading, privacyMode }) => {
         <Typography component="h2" sx={{ fontSize: 14, fontWeight: 600, color: "text.primary" }}>{table?.title || "Settlement Details"}</Typography>
         <Button
           size="small"
-          onClick={() => navigate("/sales/reports")}
+          onClick={() => navigate("/sales/reports?report=day_end_settlement_summary")}
           sx={{ fontSize: 12, fontWeight: 600, p: 0, minWidth: "auto", "&:hover": { bgcolor: "transparent", textDecoration: "underline" } }}
         >
           View All
@@ -208,6 +209,8 @@ export const SettlementDetailsTable = ({ table, loading, privacyMode }) => {
 // Purchase Invoice) -- see DashboardController::overview()'s supplierPaymentRows for the query.
 // Deliberately scoped to invoices eligible for supplier payment (balance > 0) only -- no stock/
 // quantity columns, that's what Fast Moving Products / the Warehouse tab already cover.
+const linkCellSx = { border: 0, p: 0, bgcolor: "transparent", cursor: "pointer", color: "primary.main", font: "inherit", textAlign: "left", "&:hover": { textDecoration: "underline" } };
+
 export const SupplierPaymentsTable = ({ table, loading, privacyMode }) => {
   const navigate = useNavigate();
   const rows = table?.rows || [];
@@ -255,8 +258,18 @@ export const SupplierPaymentsTable = ({ table, loading, privacyMode }) => {
                       ...(row.overdue ? { bgcolor: (theme) => (theme.palette.mode === "dark" ? "rgba(239,68,68,0.08)" : "rgba(239,68,68,0.05)") } : {}),
                     }}
                   >
-                    <TableCell sx={{ color: "text.primary" }}>{row.supplierName}</TableCell>
-                    <TableCell sx={{ color: "text.secondary" }}>{row.invoiceNo}</TableCell>
+                    <TableCell sx={{ color: "text.primary" }}>
+                      {row.supplierId ? (
+                        <Box component="button" type="button" onClick={() => navigate(supplierPaymentPath(row))} aria-label={`Supplier payment for ${row.supplierName}`}
+                          sx={linkCellSx}>{row.supplierName}</Box>
+                      ) : row.supplierName}
+                    </TableCell>
+                    <TableCell sx={{ color: "text.secondary" }}>
+                      {row.docId ? (
+                        <Box component="button" type="button" onClick={() => navigate(supplierBillPath(row))} aria-label={`Pay bill ${row.invoiceNo}`}
+                          sx={{ ...linkCellSx, color: "text.secondary" }}>{row.invoiceNo}</Box>
+                      ) : row.invoiceNo}
+                    </TableCell>
                     <TableCell sx={{ color: "text.secondary" }}>{row.invoiceType}</TableCell>
                     <TableCell align="right">
                       {row.overdue ? (

@@ -22,7 +22,7 @@ const cardSx = (hoverColor) => ({
 export function MonthlySalesCard({ summary = {}, loading, privacyMode }) {
   const navigate = useNavigate();
   return (
-    <ButtonBase onClick={() => navigate("/sales/reports")} sx={cardSx("#a5b4fc")}>
+    <ButtonBase onClick={() => navigate("/sales/reports?report=sales_report")} sx={cardSx("#a5b4fc")}>
       <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", color: "text.secondary" }}>
         <Typography sx={{ fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
           Monthly Sales
@@ -66,7 +66,7 @@ export function TotalInvoicesCard({ summary = {}, loading, privacyMode }) {
 export function ProductsSoldCard({ summary = {}, loading, privacyMode }) {
   const navigate = useNavigate();
   return (
-    <ButtonBase onClick={() => navigate("/sales/reports")} sx={cardSx("#d8b4fe")}>
+    <ButtonBase onClick={() => navigate("/dashboard/fast-moving")} sx={cardSx("#d8b4fe")}>
       <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", color: "text.secondary" }}>
         <Typography sx={{ fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
           Products Sold (Period)

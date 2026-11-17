@@ -40,7 +40,7 @@ export default function MastersRecentProductsTable({ recentProducts = [] }) {
               recentProducts.map((row) => (
                 <TableRow
                   key={row.id}
-                  onClick={() => navigate("/masters/product")}
+                  onClick={() => navigate(row.code ? `/masters/product/${encodeURIComponent(row.code)}` : "/masters/product")}
                   sx={{ cursor: "pointer", borderBottom: "1px solid", borderColor: "divider", "&:hover": { bgcolor: "action.hover" }, "&:last-of-type": { borderBottom: 0 } }}
                 >
                   <TableCell sx={{ py: 1.25, fontWeight: 500, color: "text.primary" }}>{row.name}</TableCell>

@@ -5,7 +5,7 @@ import SearchGridPanel from "@/shared/components/SearchGridPanel";
 import useSearchGrid from "@/shared/hooks/useSearchGrid";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useSelector } from "react-redux";
 import api from "@/shared/api/apiClient";
 import FilterableDataTable from "@/shared/components/FilterableDataTable";
@@ -766,6 +766,10 @@ const purchaseReturnColumns = [
   },
 ];
 
+/** A value that may be a loaded record ({ name }) shown as its name ("[object Object]" before). */
+const nameOf = (value) => (value && typeof value === "object" ? value.name ?? value.title ?? "" : value);
+const named = (key, label) => ({ key, label, valueGetter: (row) => nameOf(row[key]) || nameOf(row[`${key}_name`]) || "" });
+
 const stockReportColumns = [
   {
     key: "barcode",
@@ -773,16 +777,16 @@ const stockReportColumns = [
     render: (value) => <Box component="span" sx={{ fontFamily: "monospace", fontSize: TYPE.small }}>{value || "-"}</Box>,
   },
   { key: "batch", label: "Batch" },
-  { key: "company", label: "Company" },
-  { key: "supplier", label: "Supplier" },
-  { key: "product", label: "Product" },
-  { key: "brand", label: "Brand" },
-  { key: "colour", label: "Colour" },
-  { key: "material", label: "Material" },
-  { key: "pattern", label: "Pattern" },
-  { key: "style", label: "Style" },
-  { key: "size", label: "Size" },
-  { key: "section", label: "Section" },
+  named("company", "Company"),
+  named("supplier", "Supplier"),
+  named("product", "Product"),
+  named("brand", "Brand"),
+  named("colour", "Colour"),
+  named("material", "Material"),
+  named("pattern", "Pattern"),
+  named("style", "Style"),
+  named("size", "Size"),
+  named("section", "Section"),
   {
     key: "qty",
     label: "Qty",
@@ -825,10 +829,10 @@ const warehouseStockAnalysisColumns = [
     label: "Barcode",
     render: (value) => <Box component="span" sx={{ fontFamily: "monospace", fontSize: TYPE.small }}>{value || "-"}</Box>,
   },
-  { key: "product", label: "Product" },
-  { key: "brand", label: "Brand" },
-  { key: "supplier", label: "Supplier" },
-  { key: "section", label: "Section" },
+  named("product", "Product"),
+  named("brand", "Brand"),
+  named("supplier", "Supplier"),
+  named("section", "Section"),
   {
     key: "qty",
     label: "Qty",
@@ -1260,10 +1264,13 @@ const WarehouseReports = () => {
     return reports;
   }, []);
 
+  // ?report=<key> opens that report directly (the dashboard's "View all" links).
+  const [searchParams] = useSearchParams();
+  const linkedReport = reportLookup[searchParams.get("report") || ""]?.implemented ? searchParams.get("report") : "";
   const [expandedGroups, setExpandedGroups] = useState(() =>
-    REPORT_GROUPS.reduce((acc, group) => ({ ...acc, [group.key]: false }), {})
+    REPORT_GROUPS.reduce((acc, group) => ({ ...acc, [group.key]: Boolean(linkedReport) && reportLookup[linkedReport].groupKey === group.key }), {})
   );
-  const [selectedReportKey, setSelectedReportKey] = useState("");
+  const [selectedReportKey, setSelectedReportKey] = useState(linkedReport);
   const [reportRows, setReportRows] = useState([]);
   const [reportLoading, setReportLoading] = useState(false);
   const [reportError, setReportError] = useState("");

@@ -19,7 +19,7 @@ export default function SalesTopProductsTable({ topProducts = [] }) {
         </Typography>
         <Button
           size="small"
-          onClick={() => navigate("/sales/reports")}
+          onClick={() => navigate("/dashboard/fast-moving")}
           sx={{ fontSize: 12, fontWeight: 600, p: 0, minWidth: "auto", "&:hover": { bgcolor: "transparent", textDecoration: "underline" } }}
         >
           View sales reports

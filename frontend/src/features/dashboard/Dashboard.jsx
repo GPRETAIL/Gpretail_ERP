@@ -273,7 +273,7 @@ const Dashboard = () => {
           emptyMessage: "No salesman sales in this range",
           loading,
           privacyMode,
-          viewAllPath: "/sales/reports",
+          viewAllPath: "/sales/reports?report=sales_report_salesman_wise",
           viewAllLabel: "View All",
         },
         defaultLayout: { x: 6, y: 8 + BELOW_KPI_ROW_H, w: 6, h: BELOW_KPI_ROW_H, minW: 4, minH: 3 },
