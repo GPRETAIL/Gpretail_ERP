@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\V1\Sales\DealerInvoiceController;
 use App\Http\Controllers\Api\V1\Sales\DealerReceiptController;
 use App\Http\Controllers\Api\V1\Sales\DeliveryController;
 use App\Http\Controllers\Api\V1\Sales\IncentiveController;
+use App\Http\Controllers\Api\V1\Sales\LoyaltyRedeemController;
 use App\Http\Controllers\Api\V1\Sales\PosOfflineController;
 use App\Http\Controllers\Api\V1\Sales\PosReturnController;
 use App\Http\Controllers\Api\V1\Sales\PosSaleController;
@@ -29,6 +30,11 @@ Route::get('incentives/options', [IncentiveController::class, 'options']);
 Route::get('incentives/explain', [IncentiveController::class, 'explain']);
 Route::get('incentives/report', [IncentiveController::class, 'report']);
 Route::post('incentives/approve', [IncentiveController::class, 'approve']);
+
+// POS: redeeming loyalty points (quote, OTP to the customer, OTP check).
+Route::get('loyalty-redeem/quote', [LoyaltyRedeemController::class, 'quote']);
+Route::post('loyalty-redeem/otp', [LoyaltyRedeemController::class, 'sendOtp']);
+Route::post('loyalty-redeem/otp/{id}/verify', [LoyaltyRedeemController::class, 'verifyOtp'])->whereNumber('id');
 
 // Sales > Bill Reprint: search every sales document, and the reprint log.
 Route::get('bill-reprints', [BillReprintController::class, 'index']);

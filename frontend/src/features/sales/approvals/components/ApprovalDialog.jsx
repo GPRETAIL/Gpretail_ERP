@@ -22,7 +22,7 @@ export default function ApprovalDialog({ requirement, onApproved, onClose }) {
   const action = requirement?.action;
   const details = requirement?.details || {};
   const [mode, setMode] = useState("pin");
-  const [reason, setReason] = useState({ pos_refund: "wrong_item", pos_credit: "loyal_customer", delivery_short: "item_missing", bill_reprint: "bill_lost" }[action] || "damaged_item");
+  const [reason, setReason] = useState({ pos_refund: "wrong_item", pos_credit: "loyal_customer", delivery_short: "item_missing", bill_reprint: "bill_lost", loyalty_redeem: "otp_not_received" }[action] || "damaged_item");
   const [note, setNote] = useState("");
   const [approver, setApprover] = useState("");
   const [pin, setPin] = useState("");
@@ -49,6 +49,8 @@ export default function ApprovalDialog({ requirement, onApproved, onClose }) {
           ? { payload: { bill_no: details.bill_no, short_units: details.short_units, reason: details.reason, lines: details.lines || [] } }
           : action === "bill_reprint"
             ? { amount: details.amount, payload: { doc_type: details.doc_type, doc_label: details.doc_label, bill_no: details.bill_no, bill_date: details.bill_date, reason: details.reason } }
+            : action === "loyalty_redeem"
+              ? { amount: details.amount, payload: { customer_name: details.customer_name, points: details.points } }
           : { amount: details.amount, payload: { without_receipt: Boolean(details.without_receipt) } }),
   });
 
@@ -127,6 +129,8 @@ export default function ApprovalDialog({ requirement, onApproved, onClose }) {
     ? `${details.short_units} item(s) missing on bill ${details.bill_no}. Handing over short needs a supervisor's approval.`
     : action === "bill_reprint"
     ? `Reprint of ${details.doc_label || "bill"} ${details.bill_no} dated ${details.bill_date} (an earlier day) needs a supervisor's approval.`
+    : action === "loyalty_redeem"
+    ? `Redeeming ${details.points} points (₹${money(details.amount)}) for ${details.customer_name || "the customer"} without their OTP needs a supervisor's approval.`
     : action === "pos_discount"
     ? `Discount of ${details.requested_percent}% is above your limit of ${details.your_limit_percent ?? 0}%.`
     : action === "pos_credit"

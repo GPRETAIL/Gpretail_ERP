@@ -9,7 +9,6 @@ use App\Http\Controllers\Controller;
 use App\Models\Barcode;
 use App\Models\CreditLedger;
 use App\Models\Customer;
-use App\Models\LoyaltyTransaction;
 use App\Models\Notification;
 use App\Models\PosPayment;
 use App\Models\PosReturn;
@@ -19,6 +18,8 @@ use App\Models\ProductVariant;
 use App\Models\Stock;
 use App\Models\Store;
 use App\Services\Approvals\ApprovalService;
+use App\Services\Crm\LoyaltyLedger;
+use App\Services\Crm\LoyaltyRedemption;
 use App\Services\Dashboards\DashboardBroadcastService;
 use App\Services\Documents\DocumentNumberService;
 use App\Services\Inventory\StockRules;
@@ -481,6 +482,10 @@ class PosSaleController extends Controller
             'checkoutKey' => 'nullable|uuid',
             'approvalToken' => 'nullable|string|max:100',
             'creditApprovalToken' => 'nullable|string|max:100',
+            'loyaltyRedeem' => 'nullable|array',
+            'loyaltyRedeem.points' => 'nullable|integer|min:0',
+            'loyaltyRedeem.otpToken' => 'nullable|string|max:100',
+            'loyaltyRedeem.approvalToken' => 'nullable|string|max:100',
             'offline' => 'nullable|array',
             'offline.invoiceNo' => 'required_with:offline|string|max:80',
             'offline.billedAt' => 'required_with:offline|date',
@@ -609,7 +614,12 @@ class PosSaleController extends Controller
                 $cardAmount = (float) $request->input('cardAmount', 0);
                 $upiAmount = (float) $request->input('upiAmount', 0);
                 $isCredit = $request->boolean('isCredit');
-                $paid = $cashAmount + $cardAmount + $upiAmount;
+                // Loyalty points the customer redeems pay part of the bill (approved by the customer's OTP or a
+                // supervisor). Offline tills cannot redeem: the balance lives on the server.
+                $loyaltyCustomer = $customerId ? Customer::where('id', $customerId)->lockForUpdate()->first() : null;
+                $redeem = $offline ? null : app(LoyaltyRedemption::class)->authorize($user, (int) $storeId, $loyaltyCustomer, $request->input('loyaltyRedeem'), $netPayable);
+                $loyaltyAmount = (float) ($redeem['amount'] ?? 0);
+                $paid = $cashAmount + $cardAmount + $upiAmount + $loyaltyAmount;
                 $change = max(0, $paid - $netPayable);
                 if ($request->input('saleSaveAs') === 'paid_settled' && ! $isCredit && round($paid, 2) < round($netPayable, 2)) {
                     throw ValidationException::withMessages(['cashAmount' => 'Full payment is required to save a paid invoice.']);
@@ -622,7 +632,7 @@ class PosSaleController extends Controller
 
                 $paymentMode = $isCredit || $paid <= 0
                     ? ($isCredit ? 'CREDIT' : 'UNSETTLED')
-                    : ($cashAmount > 0 ? 'CASH' : ($cardAmount > 0 ? 'CARD' : 'UPI'));
+                    : ($cashAmount > 0 ? 'CASH' : ($cardAmount > 0 ? 'CARD' : ($upiAmount > 0 ? 'UPI' : 'LOYALTY')));
 
                 // After the counter's cash closing (Sales Customisation), the bill belongs to the next business date.
                 $business = $offline ? null : app(BusinessDate::class)->forCounter((int) $storeId, $counter?->id);
@@ -672,14 +682,16 @@ class PosSaleController extends Controller
                             'link' => '/sales/offline-bills', 'reference_type' => 'POS_SALE', 'reference_id' => $sale->id, 'store_id' => $storeId]);
                     }
                 }
-                foreach ([$approval, $creditApproval] as $used) {
+                foreach ([$approval, $creditApproval, $redeem['approval'] ?? null] as $used) {
                     $used?->forceFill(['status' => 'used', 'used_at' => now(), 'pos_sale_id' => $sale->id])->save();
                 }
+                ($redeem['otp'] ?? null)?->forceFill(['used_at' => now(), 'pos_sale_id' => $sale->id])->save();
 
                 foreach ([
                     ['mode' => 'CASH', 'amount' => $cashAmount, 'extra' => []],
                     ['mode' => 'CARD', 'amount' => $cardAmount, 'extra' => ['card_type_id' => $request->input('cardTypeId')]],
                     ['mode' => 'UPI',  'amount' => $upiAmount,  'extra' => ['upi_provider_id' => $request->input('upiProviderId')]],
+                    ['mode' => 'LOYALTY', 'amount' => $loyaltyAmount, 'extra' => []],
                 ] as $tender) {
                     if ($tender['amount'] > 0) {
                         PosPayment::create(array_merge([
@@ -698,28 +710,17 @@ class PosSaleController extends Controller
                     ]);
                 }
 
-                // CRM: earn loyalty points and record a credit-ledger debit
-                // for credit sales - mirrors CI4's AddNewSaleTrait/_setup.php,
-                // which did this inline in the same POS checkout flow.
+                // CRM: loyalty points (redeemed, then earned on what was paid in money) and a credit-ledger
+                // debit for credit sales - mirrors CI4's AddNewSaleTrait/_setup.php, which did this inline in the
+                // same POS checkout flow.
                 if ($customerId) {
-                    $customer = Customer::where('id', $customerId)->lockForUpdate()->first();
-                    if ($customer && ! $customer->disable_loyalty) {
-                        $pointValue = (float) (Store::where('id', $storeId)->value('loyalty_point_value') ?? 100);
-                        $pointsEarned = $pointValue > 0 ? (int) floor($grandTotal / $pointValue) : 0;
-
-                        if ($pointsEarned > 0) {
-                            $newPointBalance = $customer->loyalty_points + $pointsEarned;
-                            LoyaltyTransaction::create([
-                                'customer_id' => $customerId,
-                                'pos_sale_id' => $sale->id,
-                                'type' => 'EARN',
-                                'points' => $pointsEarned,
-                                'amount' => $grandTotal,
-                                'balance_after' => $newPointBalance,
-                                'created_by' => $user->id ?? null,
-                            ]);
-                            $customer->update(['loyalty_points' => $newPointBalance]);
+                    $customer = $loyaltyCustomer ?? Customer::where('id', $customerId)->lockForUpdate()->first();
+                    if ($customer) {
+                        $loyalty = app(LoyaltyLedger::class);
+                        if ($redeem) {
+                            $loyalty->redeem($sale, $customer, $redeem['points'], $loyaltyAmount, $user->id ?? null);
                         }
+                        $loyalty->earn($sale, $customer, $grandTotal - $loyaltyAmount, $user->id ?? null);
                     }
 
                     if ($customer && $isCredit) {
@@ -827,10 +828,9 @@ class PosSaleController extends Controller
             if ($sale->customer_id) {
                 $customer = Customer::where('id', $sale->customer_id)->lockForUpdate()->first();
 
-                $loyaltyTx = LoyaltyTransaction::where('pos_sale_id', $sale->id)->where('type', 'EARN')->first();
-                if ($customer && $loyaltyTx) {
-                    $customer->update(['loyalty_points' => max(0, $customer->loyalty_points - $loyaltyTx->points)]);
-                    $loyaltyTx->delete();
+                if ($customer) {
+                    // Points earned on the bill are taken back and points it used are given back (both kept as rows).
+                    app(LoyaltyLedger::class)->reverseSale($sale, $customer, auth()->id());
                 }
 
                 $creditEntry = CreditLedger::where('reference_type', 'POS_SALE')->where('reference_id', $sale->id)->first();

@@ -8,6 +8,7 @@ export const APPROVAL_REASONS = {
   customer_complaint: "Customer complaint",
   item_missing: "Item missing / not available",
   bill_lost: "Customer lost the bill / needs a copy",
+  otp_not_received: "Customer did not get the OTP / has no phone",
   other: "Other",
 };
 
@@ -22,6 +23,8 @@ export const withApprovalTokens = (payload, tokens = {}) => ({
   ...payload,
   ...(tokens.pos_discount ? { approvalToken: tokens.pos_discount } : {}),
   ...(tokens.pos_credit ? { creditApprovalToken: tokens.pos_credit } : {}),
+  // Loyalty points redeemed without the customer's OTP: the supervisor's token goes with the redemption.
+  ...(tokens.loyalty_redeem && payload?.loyaltyRedeem ? { loyaltyRedeem: { ...payload.loyaltyRedeem, approvalToken: tokens.loyalty_redeem } } : {}),
 });
 
 /** The dialog's input: { action, details } from the APPROVAL_REQUIRED response. */

@@ -22,7 +22,7 @@ use Illuminate\Validation\ValidationException;
  */
 class ApprovalService
 {
-    public const ACTIONS = ['pos_discount', 'pos_refund', 'pos_credit', 'delivery_short', 'bill_reprint'];
+    public const ACTIONS = ['pos_discount', 'pos_refund', 'pos_credit', 'delivery_short', 'bill_reprint', 'loyalty_redeem'];
 
     /** Roles that approve on their own authority (and so hand over a short delivery without asking anyone). */
     public const APPROVER_ROLES = ['supervisor', 'manager', 'admin', 'super_admin'];
@@ -187,6 +187,23 @@ class ApprovalService
         return $approval;
     }
 
+    /**
+     * POS: redeeming a customer's loyalty points when no OTP can be sent to them. A supervisor or above redeems on
+     * their own; anyone else needs a supervisor's approval (PIN or request).
+     */
+    public function authorizeLoyaltyRedeem(User $user, int $storeId, array $details, ?string $token): ?ApprovalRequest
+    {
+        if (in_array($user->role, self::APPROVER_ROLES, true)) {
+            return null;
+        }
+        $approval = $this->consumable($token, $storeId, 'loyalty_redeem', $user);
+        if (! $approval) {
+            throw new ApprovalRequiredException('loyalty_redeem', $details);
+        }
+
+        return $approval;
+    }
+
     /** Whether $approver may approve this request on their own authority. */
     public function canDecide(User $approver, ApprovalRequest $request): bool
     {
@@ -201,7 +218,7 @@ class ApprovalService
         return match ($request->action) {
             'pos_discount' => $limit['max_discount_percent'] === null || (float) $request->requested_percent <= $limit['max_discount_percent'] + 0.001,
             'pos_credit' => $limit['max_credit_amount'] === null || (float) $request->amount <= $limit['max_credit_amount'] + 0.001,
-            'delivery_short', 'bill_reprint' => true,
+            'delivery_short', 'bill_reprint', 'loyalty_redeem' => true,
             default => ($limit['max_refund_amount'] === null || (float) $request->amount <= $limit['max_refund_amount'] + 0.001)
                 && (! ($request->payload['without_receipt'] ?? false) || $limit['allow_no_receipt_refund']),
         };

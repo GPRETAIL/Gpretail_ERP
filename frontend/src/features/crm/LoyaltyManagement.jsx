@@ -11,6 +11,9 @@ import api from "@/shared/api/apiClient";
 import Breadcrumbs from "@/shared/components/Breadcrumbs";
 import { muiFieldSx } from "@/shared/theme/formControlSizes";
 import LoadingSkeleton from "@/shared/components/LoadingSkeleton";
+import LoyaltySettings from "./loyalty/components/LoyaltySettings";
+import AdjustPointsDialog from "./loyalty/components/AdjustPointsDialog";
+import { TYPE_LABELS, signedPoints } from "./loyalty/utils/loyaltyTypes";
 
 const toNum = (value, fallback = 0) => {
   const parsed = Number(value);
@@ -27,19 +30,23 @@ const formatDate = (value) => {
 const TABS = [
   { key: "balances", label: "Balances" },
   { key: "transactions", label: "Transaction History" },
+  { key: "settings", label: "Settings" },
 ];
 
 const LoyaltyManagement = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("balances");
   const [search, setSearch] = useState("");
+  const [adjusting, setAdjusting] = useState(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   const fetchLoyalty = useCallback(async ({ signal }) => {
+    if (activeTab === "settings") return null;
     const response = activeTab === "balances"
       ? await api.get("/loyalty/balances", { params: { search, limit: 50 }, signal })
-      : await api.get("/loyalty/transactions", { params: { limit: 50 }, signal });
+      : await api.get("/loyalty/transactions", { params: { limit: 50, reload: reloadKey || undefined }, signal });
     return response.data;
-  }, [activeTab, search]);
+  }, [activeTab, search, reloadKey]);
   const { data, loading } = useAsyncQuery(fetchLoyalty, { onError: () => toast.error("Failed to load loyalty data") });
   const balances = activeTab === "balances" ? data?.data || EMPTY_ARRAY : EMPTY_ARRAY;
   const transactions = activeTab === "balances" ? EMPTY_ARRAY : data?.data || EMPTY_ARRAY;
@@ -98,7 +105,9 @@ const LoyaltyManagement = () => {
         </Stack>
 
         <Box sx={{ bgcolor: "background.paper", boxShadow: 3, borderRadius: "7px", border: "1px solid", borderColor: "divider", flex: 1, overflow: "auto" }}>
-          {loading ? (
+          {activeTab === "settings" ? (
+            <LoyaltySettings />
+          ) : loading ? (
             <LoadingSkeleton variant="table" rows={6} label="Loading loyalty" />
           ) : activeTab === "balances" ? (
             <Table sx={{ width: "100%", "& th, & td": { fontSize: "inherit" } }}>
@@ -109,12 +118,13 @@ const LoyaltyManagement = () => {
                   <TableCell sx={{ px: 1.5, py: 1 }}>Loyalty Card</TableCell>
                   <TableCell align="right" sx={{ px: 1.5, py: 1 }}>Points</TableCell>
                   <TableCell sx={{ px: 1.5, py: 1 }}>Loyalty</TableCell>
+                  <TableCell sx={{ px: 1.5, py: 1 }} />
                 </TableRow>
               </TableHead>
               <TableBody>
                 {balances.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={5} align="center" sx={{ py: 3, color: "text.secondary" }}>
+                    <TableCell colSpan={6} align="center" sx={{ py: 3, color: "text.secondary" }}>
                       No customers found.
                     </TableCell>
                   </TableRow>
@@ -136,6 +146,9 @@ const LoyaltyManagement = () => {
                         <Box component="span" sx={{ color: "success.main" }}>Active</Box>
                       )}
                     </TableCell>
+                    <TableCell sx={{ px: 1.5, py: 0.5 }} align="right">
+                      <Button size="small" onClick={(e) => { e.stopPropagation(); setAdjusting(row); }} aria-label={`Adjust points of ${row.name}`}>Adjust</Button>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -150,12 +163,14 @@ const LoyaltyManagement = () => {
                   <TableCell align="right" sx={{ px: 1.5, py: 1 }}>Points</TableCell>
                   <TableCell align="right" sx={{ px: 1.5, py: 1 }}>Amount</TableCell>
                   <TableCell sx={{ px: 1.5, py: 1 }}>Sale Invoice</TableCell>
+                  <TableCell sx={{ px: 1.5, py: 1 }}>Reason</TableCell>
+                  <TableCell align="right" sx={{ px: 1.5, py: 1 }}>Balance</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {transactions.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={6} align="center" sx={{ py: 3, color: "text.secondary" }}>
+                    <TableCell colSpan={8} align="center" sx={{ py: 3, color: "text.secondary" }}>
                       No loyalty transactions yet.
                     </TableCell>
                   </TableRow>
@@ -164,10 +179,12 @@ const LoyaltyManagement = () => {
                   <TableRow key={row.id} sx={{ borderTop: "1px solid", borderColor: "divider" }}>
                     <TableCell sx={{ px: 1.5, py: 1 }}>{formatDate(row.created_at)}</TableCell>
                     <TableCell sx={{ px: 1.5, py: 1 }}>{row.customer?.name || "--"}</TableCell>
-                    <TableCell sx={{ px: 1.5, py: 1 }}>{row.type}</TableCell>
-                    <TableCell align="right" sx={{ px: 1.5, py: 1 }}>{row.points}</TableCell>
+                    <TableCell sx={{ px: 1.5, py: 1 }}>{TYPE_LABELS[row.type] || row.type}</TableCell>
+                    <TableCell align="right" sx={{ px: 1.5, py: 1, fontWeight: 600 }}>{signedPoints(row)}</TableCell>
                     <TableCell align="right" sx={{ px: 1.5, py: 1 }}>₹{toNum(row.amount, 0).toFixed(2)}</TableCell>
                     <TableCell sx={{ px: 1.5, py: 1 }}>{row.pos_sale?.invoice_no || "--"}</TableCell>
+                    <TableCell sx={{ px: 1.5, py: 1 }}>{row.reason || "--"}</TableCell>
+                    <TableCell align="right" sx={{ px: 1.5, py: 1 }}>{row.balance_after}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -175,6 +192,10 @@ const LoyaltyManagement = () => {
           )}
         </Box>
       </Stack>
+      {adjusting && (
+        <AdjustPointsDialog customer={adjusting} onClose={() => setAdjusting(null)}
+          onDone={() => { setAdjusting(null); setReloadKey((k) => k + 1); }} />
+      )}
     </Box>
   );
 };

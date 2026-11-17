@@ -16,6 +16,9 @@ Route::get('customers/grouped', [CustomerController::class, 'groupedSummary']);
 // Loyalty (CRM)
 Route::get('loyalty/balances', [LoyaltyController::class, 'balances']);
 Route::get('loyalty/transactions', [LoyaltyController::class, 'transactions']);
+Route::get('loyalty/settings', [LoyaltyController::class, 'settings']);
+Route::put('loyalty/settings', [LoyaltyController::class, 'saveSettings']);
+Route::post('loyalty/adjust', [LoyaltyController::class, 'adjust']);
 // Customer Orders
 Route::post('customer-orders/bulk', [CustomerOrderController::class, 'bulk']);
 Route::get('customer-orders/next-order-no', [CustomerOrderController::class, 'nextOrderNo']);

@@ -17,6 +17,7 @@ class ApprovalRequiredException extends RuntimeException
             'pos_credit' => 'This credit sale is above your credit limit. A supervisor or manager must approve it.',
             'delivery_short' => 'Items are missing from this delivery. A supervisor or manager must approve a short handover.',
             'bill_reprint' => 'Reprinting a bill from an earlier day needs a supervisor or manager approval.',
+            'loyalty_redeem' => 'Redeeming loyalty points without an OTP from the customer needs a supervisor or manager approval.',
             default => 'This refund needs supervisor or manager approval.',
         });
     }

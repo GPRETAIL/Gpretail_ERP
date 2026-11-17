@@ -110,11 +110,13 @@ export const browserPrintHtml = (html, { copies = 1 } = {}) => {
   return true;
 };
 
-export const computePaymentTotalsFromForm = (paymentFormLike, summaryLike) => {
+// loyaltyAmount: ₹ paid by redeemed loyalty points (counted as received, like a tender).
+export const computePaymentTotalsFromForm = (paymentFormLike, summaryLike, loyaltyAmount = 0) => {
   const cashAmount = Math.max(0, toNum(paymentFormLike.cashAmount, 0));
   const cardAmount = Math.max(0, toNum(paymentFormLike.cardAmount, 0));
   const upiAmount = Math.max(0, toNum(paymentFormLike.upiAmount, 0));
-  const receivedAmount = cashAmount + cardAmount + upiAmount;
+  const pointsAmount = Math.max(0, toNum(loyaltyAmount, 0));
+  const receivedAmount = round2(cashAmount + cardAmount + upiAmount + pointsAmount);
   const refundDue = Math.max(0, toNum(summaryLike.refundDue, 0));
   const netAmount = round2(summaryLike.amount);
   const billAmount = round2(summaryLike.billsAmount);
@@ -126,6 +128,7 @@ export const computePaymentTotalsFromForm = (paymentFormLike, summaryLike) => {
     cashAmount,
     cardAmount,
     upiAmount,
+    loyaltyAmount: pointsAmount,
     receivedAmount,
     billAmount,
     netAmount,

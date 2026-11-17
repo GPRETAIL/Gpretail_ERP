@@ -61,6 +61,7 @@ class ChartOfAccounts
         'input_sgst' => ['Input SGST', 'duties_taxes'],
         'input_igst' => ['Input IGST', 'duties_taxes'],
         'round_off' => ['Round Off', 'indirect_expenses'],
+        'loyalty_redemption' => ['Loyalty Points Redeemed', 'indirect_expenses'],
         'salaries' => ['Salaries & Wages', 'indirect_expenses'],
         'employer_pf' => ['Employer PF Contribution', 'indirect_expenses'],
         'employer_esi' => ['Employer ESI Contribution', 'indirect_expenses'],

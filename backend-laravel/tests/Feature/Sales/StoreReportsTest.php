@@ -58,8 +58,8 @@ class StoreReportsTest extends TestCase
         $this->assertSame('Short', $this->report('stock_audit')[0]['result']);
 
         $customer = Customer::create(['store_id' => $storeId, 'code' => 'LR-1', 'name' => 'Loyal One', 'phone' => '9876543210']);
-        DB::table('loyalty_transactions')->insert(['customer_id' => $customer->id, 'type' => 'REDEEM', 'points' => -50, 'amount' => -50, 'balance_after' => 20, 'created_at' => now(), 'updated_at' => now()]);
-        DB::table('loyalty_transactions')->insert(['customer_id' => $customer->id, 'type' => 'EARN', 'points' => 70, 'amount' => 0, 'balance_after' => 70, 'created_at' => now(), 'updated_at' => now()]);
+        DB::table('loyalty_transactions')->insert(['store_id' => $storeId, 'customer_id' => $customer->id, 'type' => 'REDEEM', 'points' => -50, 'amount' => -50, 'balance_after' => 20, 'created_at' => now(), 'updated_at' => now()]);
+        DB::table('loyalty_transactions')->insert(['store_id' => $storeId, 'customer_id' => $customer->id, 'type' => 'EARN', 'points' => 70, 'amount' => 0, 'balance_after' => 70, 'created_at' => now(), 'updated_at' => now()]);
         $redemptions = $this->report('loyalty_redemptions');
         $this->assertCount(1, $redemptions);
         $this->assertEquals(50, $redemptions[0]['points']);

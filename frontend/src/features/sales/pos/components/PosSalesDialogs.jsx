@@ -368,7 +368,7 @@ function PaymentChoiceSelect({ selectRef, value, placeholder, options, onChange,
 export function PaymentDialog({
   totals, totalDiscount, refundAmount, form, cardTypes, upiProviders, cardTypeSelectRef, upiProviderSelectRef, saving,
   onFieldChange, onCardTypeChange, onUpiProviderChange, onToggleRefund,
-  onCashKeyDown, onCardAmountKeyDown, onCardTypeKeyDown, onUpiAmountKeyDown, onUpiProviderKeyDown, onSave, onClose,
+  onCashKeyDown, onCardAmountKeyDown, onCardTypeKeyDown, onUpiAmountKeyDown, onUpiProviderKeyDown, onSave, onClose, loyaltySlot = null,
 }) {
   return (
     <PosDialogShell
@@ -380,6 +380,7 @@ export function PaymentDialog({
       closeLabel="Close payment dialog"
     >
       <Box sx={{ display: "grid", gap: 2, px: 2, py: 2, gridTemplateColumns: { lg: "1.05fr 1.4fr" } }}>
+        {loyaltySlot}
         <Stack sx={{ gap: 1, fontSize: 12.25 }}>
           <Stack direction="row" sx={paymentRowSx}>
             <Box component="span" sx={{ color: "text.secondary" }}>Bill(s) Amount</Box>

@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\V1\Platform\StoreActivationController;
 use App\Http\Controllers\Api\V1\Settings\BackupController;
 use App\Http\Controllers\Api\V1\Settings\LoginSessionController;
+use App\Http\Controllers\Api\V1\Settings\MessagingSettingsController;
 use App\Http\Controllers\Api\V1\Settings\RemoteSupportController;
 use App\Http\Controllers\Api\V1\Settings\SettingsController;
 use App\Http\Controllers\Api\V1\Settings\StoreController;
@@ -99,3 +100,8 @@ Route::prefix('remote-support')->group(function () {
 Route::get('login-sessions', [LoginSessionController::class, 'index']);
 Route::delete('login-sessions/user/{userId}', [LoginSessionController::class, 'destroyUser'])->whereNumber('userId');
 Route::delete('login-sessions/{id}', [LoginSessionController::class, 'destroy'])->whereNumber('id');
+
+// Settings > Messaging: SMS (MSG91), WhatsApp (Meta Cloud API) and email for customer OTPs.
+Route::get('messaging-settings', [MessagingSettingsController::class, 'show']);
+Route::put('messaging-settings/{channel}', [MessagingSettingsController::class, 'update']);
+Route::post('messaging-settings/{channel}/test', [MessagingSettingsController::class, 'test']);

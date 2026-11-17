@@ -11,11 +11,17 @@ class LoyaltyTransaction extends Model
     use HasFactory;
 
     protected $fillable = [
+        'store_id',
         'customer_id',
         'pos_sale_id',
+        'pos_return_id',
         'type',
+        'source',
         'points',
         'amount',
+        'reason',
+        'expires_at',
+        'remaining',
         'balance_after',
         'created_by',
     ];
@@ -26,6 +32,8 @@ class LoyaltyTransaction extends Model
             'points' => 'integer',
             'amount' => 'decimal:2',
             'balance_after' => 'integer',
+            'remaining' => 'integer',
+            'expires_at' => 'date:Y-m-d',
         ];
     }
 

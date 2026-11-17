@@ -668,6 +668,7 @@ export const navItems = [
         path: "/settings/remote-support",
         icon: ComputerDesktopIcon,
       },
+      { name: "Messaging", path: "/settings/messaging", icon: ChatBubbleLeftEllipsisIcon },
       {
         name: "Margin Controller",
         path: "/settings/margin-controller",

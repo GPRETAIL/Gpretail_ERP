@@ -1,5 +1,7 @@
 import { TYPE } from "@/shared/theme/typeScale";
 import BillingDateBanner from "@/features/sales/pos/components/BillingDateBanner";
+import LoyaltyRedeemPanel from "@/features/sales/pos/components/LoyaltyRedeemPanel";
+import { loyaltyRedeemPayload } from "@/features/sales/pos/utils/loyaltyRedeem";
 import LiveDateTime from "@/shared/components/LiveDateTime";
 import ApprovalDialog from "@/features/sales/approvals/components/ApprovalDialog";
 import useStockRules, { noStockRowSx, shortQtyByStock } from "@/shared/hooks/useStockRules";
@@ -767,9 +769,12 @@ const PosSales = () => {
       totalDiscount,
     };
   }, [appliedReturn?.amount, cartWithTotals, posAddnlSummary]);
+  // Loyalty points redeemed in the payment dialog, kept with the customer they belong to (another customer: none).
+  const [loyaltyRedeemState, setLoyaltyRedeemState] = useState(null);
+  const loyaltyRedeem = loyaltyRedeemState && String(loyaltyRedeemState.customerId) === String(existingCustomerId) ? loyaltyRedeemState : null;
   const paymentTotals = useMemo(
-    () => computePaymentTotalsFromForm(paymentForm, summary),
-    [paymentForm, summary]
+    () => computePaymentTotalsFromForm(paymentForm, summary, loyaltyRedeem?.amount),
+    [paymentForm, summary, loyaltyRedeem?.amount]
   );
   const paymentDisplayTotals = useMemo(() => {
     if (!paymentForm.refundApproved || paymentTotals.refundAmount <= 0) {
@@ -1662,6 +1667,7 @@ const PosSales = () => {
     setEditingLineId(null);
     clearAppliedReturn();
     setPaymentForm({ ...blankPaymentForm });
+    setLoyaltyRedeemState(null);
     setPaymentDialogOpen(false);
     setTimeout(() => barcodeInputRef.current?.focus(), 0);
   };
@@ -1834,9 +1840,9 @@ const PosSales = () => {
     if (!validateSaleEntry()) return null;
 
     const pf = formSnapshot === undefined ? paymentForm : formSnapshot;
-    const { cashAmount, cardAmount, upiAmount, receivedAmount, balanceAmount, netAmount, refundAmount } =
-      computePaymentTotalsFromForm(pf, summary);
-    const nonCashLimit = netAmount > 0 ? Math.max(netAmount - cashAmount, 0) : 0;
+    const { cashAmount, cardAmount, upiAmount, loyaltyAmount, receivedAmount, balanceAmount, netAmount, refundAmount } =
+      computePaymentTotalsFromForm(pf, summary, loyaltyRedeem?.amount);
+    const nonCashLimit = netAmount > 0 ? Math.max(netAmount - cashAmount - loyaltyAmount, 0) : 0;
 
     if (netAmount > 0 && cardAmount > nonCashLimit) {
       toast.error(`Card amount cannot be greater than remaining balance (${formatMoney(nonCashLimit)})`);
@@ -1931,6 +1937,7 @@ const PosSales = () => {
       cardTypeId: pf.cardTypeId || null,
       upiAmount,
       upiProviderId: pf.upiProviderId || null,
+      ...loyaltyRedeemPayload(loyaltyRedeem),
       receivedAmount,
       refundAmount: refundAmount > 0 ? refundAmount : 0,
       appliedPosReturnId:
@@ -3193,6 +3200,10 @@ const PosSales = () => {
 
       {paymentDialogOpen && (
         <PaymentDialog
+          loyaltySlot={existingCustomerId ? (
+            <LoyaltyRedeemPanel customerId={existingCustomerId} billAmount={summary.amount} value={loyaltyRedeem}
+              onChange={(value) => setLoyaltyRedeemState(value ? { ...value, customerId: existingCustomerId } : null)} />
+          ) : null}
           totals={paymentDisplayTotals}
           totalDiscount={summary.totalDiscount}
           refundAmount={paymentTotals.refundAmount}

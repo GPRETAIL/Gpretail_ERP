@@ -4,10 +4,13 @@ namespace App\Services\Pos;
 
 use App\Exceptions\PosReturnNotReturnableException;
 use App\Models\Barcode;
+use App\Models\Customer;
 use App\Models\PosReturn;
 use App\Models\PosReturnItem;
+use App\Models\PosSale;
 use App\Models\PosSaleItem;
 use App\Services\Approvals\ApprovalService;
+use App\Services\Crm\LoyaltyLedger;
 use App\Services\Documents\DocumentNumberService;
 use App\Services\Inventory\StockService;
 use App\Services\Sales\BusinessDate;
@@ -150,6 +153,13 @@ class PosReturnWriter
                 if ($barcodeId) {
                     Barcode::where('id', $barcodeId)->update(['is_active' => true]);
                 }
+            }
+
+            // The points the customer earned on the returned goods are taken back (in proportion to the refund).
+            $customerId = $posReturn->customer_id ?: ($posReturn->pos_sale_id ? PosSale::whereKey($posReturn->pos_sale_id)->value('customer_id') : null);
+            $customer = $customerId ? Customer::whereKey($customerId)->lockForUpdate()->first() : null;
+            if ($customer && $posReturn->pos_sale_id) {
+                app(LoyaltyLedger::class)->onReturn($posReturn, $customer, $request->user()?->id);
             }
 
             return $posReturn;

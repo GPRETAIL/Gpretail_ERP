@@ -9,7 +9,6 @@ use App\Models\CustomerOrder;
 use App\Models\LoyaltyTransaction;
 use App\Models\PosReturn;
 use App\Models\PosSale;
-use App\Models\Store;
 use App\Services\Tenancy\StoreQuery;
 use App\Support\GroupAggregationService;
 use App\Support\PaginationService;
@@ -305,12 +304,8 @@ class CustomerController extends Controller
             $averageVisitGapDays = round(array_sum($gaps) / count($gaps), 1);
         }
 
-        $storeId = $this->resolveStoreId($request, 1);
-        $windowMonths = (int) (Store::where('id', $storeId)->value('loyalty_redeem_window_months') ?? 12);
-        $availablePoints = (int) LoyaltyTransaction::where('customer_id', $id)
-            ->where('type', 'EARN')
-            ->where('created_at', '>=', now()->subMonths($windowMonths))
-            ->sum('points');
+        // The balance is kept exact by LoyaltyLedger (earned, redeemed, taken back, expired).
+        $availablePoints = (int) Customer::whereKey($id)->value('loyalty_points');
         $redeemedPoints = (int) LoyaltyTransaction::where('customer_id', $id)
             ->where('type', 'REDEEM')
             ->sum('points');
@@ -352,7 +347,7 @@ class CustomerController extends Controller
                 ],
                 'loyalty' => [
                     'availablePoints' => $availablePoints,
-                    'lifetimePoints' => (int) $customer->loyalty_points,
+                    'lifetimePoints' => (int) LoyaltyTransaction::where('customer_id', $id)->whereIn('type', ['EARN', 'BONUS'])->sum('points'),
                     'redeemedPoints' => $redeemedPoints,
                     'redemptionCount' => $redeemedCount,
                     'lastRedemption' => $lastRedemption,

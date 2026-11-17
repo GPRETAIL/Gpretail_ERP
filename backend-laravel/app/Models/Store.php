@@ -67,6 +67,10 @@ class Store extends Model
         'loyalty_point_value',
         'loyalty_redeem_min_points',
         'loyalty_redeem_window_months',
+        'loyalty_enabled',
+        'loyalty_redeem_value',
+        'loyalty_max_redeem_percent',
+        'loyalty_otp_required',
     ];
 
     protected function casts(): array
@@ -88,6 +92,10 @@ class Store extends Model
             'loyalty_point_value' => 'decimal:2',
             'loyalty_redeem_min_points' => 'integer',
             'loyalty_redeem_window_months' => 'integer',
+            'loyalty_enabled' => 'boolean',
+            'loyalty_redeem_value' => 'decimal:2',
+            'loyalty_max_redeem_percent' => 'decimal:2',
+            'loyalty_otp_required' => 'boolean',
         ];
     }
 

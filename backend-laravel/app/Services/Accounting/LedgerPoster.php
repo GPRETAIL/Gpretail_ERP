@@ -269,6 +269,8 @@ class LedgerPoster
             'CASH' => 'cash',
             'CARD' => 'card_clearing',
             'UPI' => 'upi_clearing',
+            // Points the customer redeemed: a discount the store gives (Loyalty Points Redeemed).
+            'LOYALTY' => 'loyalty_redemption',
             default => 'bank',
         });
     }

@@ -32,6 +32,8 @@ const describe = (row) => (row.action === "pos_discount"
       ? `Short delivery: ${Number(row.payload?.short_units || 0)} item(s) on bill ${row.payload?.bill_no || "-"}${row.payload?.reason ? ` · ${row.payload.reason}` : ""}`
     : row.action === "bill_reprint"
       ? `Reprint ${row.payload?.doc_label || "bill"} ${row.payload?.bill_no || "-"} of ${row.payload?.bill_date || "-"}${row.payload?.reason ? ` · ${row.payload.reason}` : ""}`
+    : row.action === "loyalty_redeem"
+      ? `Redeem ${Number(row.payload?.points || 0)} points (₹${money(row.amount)}) for ${row.payload?.customer_name || "a customer"}`
     : `Refund ₹${money(row.amount)}${row.payload?.without_receipt ? " · no receipt" : ""}`);
 
 function Inbox() {

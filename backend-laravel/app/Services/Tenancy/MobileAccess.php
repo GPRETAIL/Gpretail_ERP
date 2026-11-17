@@ -30,7 +30,7 @@ class MobileAccess
     private const PAGES = [
         'DashboardController' => '/dashboard', 'DashboardLayoutController' => '/dashboard',
         'PosSaleController' => '/sales/pos-sales', 'PosReturnController' => '/sales/pos-sales-return',
-        'DealerInvoiceController' => '/sales/dealer-invoice', 'SalesApprovalController' => '/sales/sales-on-approval', 'DeliveryController' => '/sales/delivery', 'IncentiveController' => '/finance/incentive-report', 'DealerReceiptController' => '/sales/dealer-receipt', 'BillReprintController' => '/sales/bill-reprint',
+        'DealerInvoiceController' => '/sales/dealer-invoice', 'SalesApprovalController' => '/sales/sales-on-approval', 'DeliveryController' => '/sales/delivery', 'IncentiveController' => '/finance/incentive-report', 'DealerReceiptController' => '/sales/dealer-receipt', 'BillReprintController' => '/sales/bill-reprint', 'LoyaltyRedeemController' => '/sales/pos-sales', 'MessagingSettingsController' => '/settings/messaging',
         'SalesDashboardController' => '/sales/pos-sales', 'SalesReportController' => '/sales/reports',
         'SettlementController' => '/sales/settlement', 'CashRegisterController' => '/sales/cash-opening',
         'PurchaseInvoiceController' => '/warehouse/invoice', 'PurchaseReturnController' => '/warehouse/purchase-return',

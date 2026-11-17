@@ -1,6 +1,6 @@
 # API reference
 
-Every endpoint under `/api`, grouped by module (703 endpoints). Generated from
+Every endpoint under `/api`, grouped by module (712 endpoints). Generated from
 `php artisan route:list --sort=definition --json`; regenerate it after changing routes.
 
 - Each signed-in endpoint is also served under `/api/v1/...` with the same behaviour.
@@ -10,13 +10,11 @@ Every endpoint under `/api`, grouped by module (703 endpoints). Generated from
 - Route files: public entry routes in `routes/api.php`, signed-in routes in `routes/api/<module>.php`,
   invoice AI in `routes/invoice_ai.php`.
 
-
-
 ## Modules
 
 - [Analytical](#analytical) (2)
 - [Auth](#auth) (25)
-- [Crm](#crm) (28)
+- [Crm](#crm) (31)
 - [Dashboards](#dashboards) (25)
 - [Finance](#finance) (23)
 - [Hr](#hr) (158)
@@ -24,8 +22,8 @@ Every endpoint under `/api`, grouped by module (703 endpoints). Generated from
 - [Notifications](#notifications) (11)
 - [Other](#other) (1)
 - [Platform](#platform) (29)
-- [Sales](#sales) (123)
-- [Settings](#settings) (73)
+- [Sales](#sales) (126)
+- [Settings](#settings) (76)
 - [Store](#store) (18)
 - [Warehouse](#warehouse) (67)
 
@@ -76,6 +74,9 @@ Every endpoint under `/api`, grouped by module (703 endpoints). Generated from
 | GET | `/api/customers/grouped` | CustomerController@groupedSummary | yes |
 | GET | `/api/loyalty/balances` | LoyaltyController@balances | yes |
 | GET | `/api/loyalty/transactions` | LoyaltyController@transactions | yes |
+| GET | `/api/loyalty/settings` | LoyaltyController@settings | yes |
+| PUT | `/api/loyalty/settings` | LoyaltyController@saveSettings | yes |
+| POST | `/api/loyalty/adjust` | LoyaltyController@adjust | yes |
 | POST | `/api/customer-orders/bulk` | CustomerOrderController@bulk | yes |
 | GET | `/api/customer-orders/next-order-no` | CustomerOrderController@nextOrderNo | yes |
 | POST | `/api/customer-orders/customer-quick-create` | CustomerOrderController@customerQuickCreate | yes |
@@ -515,6 +516,9 @@ Every endpoint under `/api`, grouped by module (703 endpoints). Generated from
 | GET | `/api/incentives/explain` | IncentiveController@explain | yes |
 | GET | `/api/incentives/report` | IncentiveController@report | yes |
 | POST | `/api/incentives/approve` | IncentiveController@approve | yes |
+| GET | `/api/loyalty-redeem/quote` | LoyaltyRedeemController@quote | yes |
+| POST | `/api/loyalty-redeem/otp` | LoyaltyRedeemController@sendOtp | yes |
+| POST | `/api/loyalty-redeem/otp/{id}/verify` | LoyaltyRedeemController@verifyOtp | yes |
 | GET | `/api/bill-reprints` | BillReprintController@index | yes |
 | GET | `/api/bill-reprints/{type}/{id}` | BillReprintController@show | yes |
 | GET | `/api/bill-reprints/{type}/{id}/history` | BillReprintController@history | yes |
@@ -706,6 +710,9 @@ Every endpoint under `/api`, grouped by module (703 endpoints). Generated from
 | GET | `/api/login-sessions` | LoginSessionController@index | yes |
 | DELETE | `/api/login-sessions/user/{userId}` | LoginSessionController@destroyUser | yes |
 | DELETE | `/api/login-sessions/{id}` | LoginSessionController@destroy | yes |
+| GET | `/api/messaging-settings` | MessagingSettingsController@show | yes |
+| PUT | `/api/messaging-settings/{channel}` | MessagingSettingsController@update | yes |
+| POST | `/api/messaging-settings/{channel}/test` | MessagingSettingsController@test | yes |
 
 ## Store
 
