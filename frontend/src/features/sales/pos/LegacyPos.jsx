@@ -4,7 +4,9 @@ import { browserPrintHtml } from "./utils/posSalesUtils";
 import useStockRules, { noStockRowSx, shortQtyByStock } from "@/shared/hooks/useStockRules";
 import NoStockChip from "@/shared/components/NoStockChip";
 import ApprovalDialog from "@/features/sales/approvals/components/ApprovalDialog";
-import { approvalRequirementFrom, isApprovalRequired } from "@/features/sales/approvals/utils/approvals";
+import { approvalRequirementFrom, isApprovalRequired, withApprovalTokens } from "@/features/sales/approvals/utils/approvals";
+import LoyaltyRedeemPanel from "@/features/sales/pos/components/LoyaltyRedeemPanel";
+import { loyaltyRedeemPayload } from "@/features/sales/pos/utils/loyaltyRedeem";
 import {
   POS_OLD_SALE_IMPORT_CONFIG,
   mapCustomerRow,
@@ -353,7 +355,11 @@ const LegacyPos = () => {
     () => round2(exchangeReturnLines.reduce((sum, line) => sum + Math.abs(toNum(line.total, 0)), 0)),
     [exchangeReturnLines]
   );
-  const paidCash = Math.max(totalAmount, 0);
+  // Loyalty points redeemed for the active bill's customer (another customer: none); cash covers the rest.
+  const [loyaltyRedeemState, setLoyaltyRedeemState] = useState(null);
+  const loyaltyCustomerId = activeTab.customerMode === "existing" ? activeTab.existingCustomerId : "";
+  const loyaltyRedeem = loyaltyRedeemState && loyaltyCustomerId && String(loyaltyRedeemState.customerId) === String(loyaltyCustomerId) ? loyaltyRedeemState : null;
+  const paidCash = Math.max(round2(totalAmount - (loyaltyRedeem?.amount || 0)), 0);
   const balanceAmount = round2(-totalAmount);
 
   const discountDialogSelectedSet = useMemo(
@@ -1143,7 +1149,7 @@ const LegacyPos = () => {
     return null;
   }, [activeTab.customerMode, customers, updateActiveTab, handleAsyncCustomerSearch]);
 
-  const handleSave = async ({ approvalToken } = {}) => {
+  const handleSave = async ({ approvalToken, approvalTokens } = {}) => {
     if (!authUser?.counter_id) {
       setCounterAssignmentOpen(true);
       toast.error("Please assign a counter before checkout");
@@ -1194,6 +1200,7 @@ const LegacyPos = () => {
       paymentMode: "cash",
       shipping: 0,
       paidCash: paidCash,
+      ...loyaltyRedeemPayload(loyaltyRedeem),
       returnSaleId: activeTab.returnSaleId || null,
       returnBillNo: activeTab.returnBillNo || null,
       returnSaleType: activeTab.returnSaleType || null,
@@ -1228,7 +1235,8 @@ const LegacyPos = () => {
 
     setSaving(true);
     try {
-      const res = await api.post("/pos-old-sales", typeof approvalToken === "string" ? { ...payload, approvalToken } : payload);
+      const withTokens = approvalTokens ? withApprovalTokens(payload, approvalTokens) : payload;
+      const res = await api.post("/pos-old-sales", typeof approvalToken === "string" ? { ...withTokens, approvalToken } : withTokens);
       const saved = res.data?.data;
       const savedBillNo = saved?.bill_no || saved?.bill?.bill_no || billNo;
       toast.success(`Sale saved (Bill #${getPosBillBarcodeValue(savedBillNo)})`);
@@ -1266,6 +1274,7 @@ const LegacyPos = () => {
       }
       // reset tab
       updateActiveTab({ cart: [], paidCash: "", returnSaleId: null, returnBillNo: null, returnSaleType: null, returnAmount: 0, isExchange: false });
+      setLoyaltyRedeemState(null);
       await Promise.all([loadMasterData(), loadNextBillNo()]);
     } catch (err) {
       if (isApprovalRequired(err)) {
@@ -2461,6 +2470,10 @@ const LegacyPos = () => {
 
           {/* Bottom summary */}
           <Stack sx={{ display: { xs: "none", lg: "block" }, bgcolor: "background.paper", borderTop: 1, borderColor: "divider", px: 1.5, py: 1, flexShrink: 0, gap: 1 }}>
+            {loyaltyCustomerId && totalAmount > 0 && (
+              <LoyaltyRedeemPanel customerId={loyaltyCustomerId} billAmount={totalAmount} value={loyaltyRedeem}
+                onChange={(value) => setLoyaltyRedeemState(value ? { ...value, customerId: loyaltyCustomerId } : null)} />
+            )}
             {/* Row 1: Discount, SubTotal, Total, Balance */}
             <Box sx={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 1.5, alignItems: "flex-end" }}>
               <Box>
@@ -3116,9 +3129,11 @@ const LegacyPos = () => {
           requirement={approvalRequirement}
           onClose={() => setApprovalRequirement(null)}
           onApproved={(token) => {
+            const action = approvalRequirement.action;
             setApprovalRequirement(null);
             toast.success("Approved. Saving the sale…");
-            void handleSave({ approvalToken: token });
+            // A loyalty approval belongs to the redeemed points; the others keep the usual approvalToken.
+            void handleSave(action === "loyalty_redeem" ? { approvalTokens: { loyalty_redeem: token } } : { approvalToken: token });
           }}
         />
       )}

@@ -591,6 +591,7 @@ const TouchSales = () => {
         generalReceivedVisible: Boolean(receiptCustomization.generalFields?.receivedAmount?.visible),
         generalBalanceVisible: Boolean(receiptCustomization.generalFields?.balanceAmt?.visible),
         generalYouSavedVisible: Boolean(receiptCustomization.generalFields?.youSaved?.visible),
+        loyalty: savedSale?.loyalty || null, // points redeemed / earned / balance (sale response)
         message: receiptCustomization.thankYouMessage || DEFAULT_SALES_RECEIPT_MESSAGE,
         billCodeMarkup: await buildReceiptCodeMarkupAsync(displayBillNo, receiptCustomization, "bill"),
         paymentQrMarkup: await buildPaymentQrMarkup(receiptCustomization, {

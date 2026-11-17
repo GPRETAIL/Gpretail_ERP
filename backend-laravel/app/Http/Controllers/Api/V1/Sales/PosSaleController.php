@@ -770,6 +770,14 @@ class PosSaleController extends Controller
         $data = $sale->toArray();
         $data['bill_no'] = $sale->bill_no;
         $data['applied_return_no'] = $sale->applied_pos_return_id ? ('RR/'.$sale->applied_pos_return_id) : null;
+        // Loyalty points on this bill, for the receipt: redeemed, earned (with bonuses) and the balance after the bill.
+        $rows = $sale->customer_id ? \App\Models\LoyaltyTransaction::where('pos_sale_id', $sale->id)->whereIn('type', ['REDEEM', 'EARN', 'BONUS'])
+            ->orderBy('id')->get(['type', 'points', 'balance_after']) : collect();
+        $data['loyalty'] = $rows->isEmpty() ? null : [
+            'redeemed' => (int) $rows->where('type', 'REDEEM')->sum('points'),
+            'earned' => (int) $rows->whereIn('type', ['EARN', 'BONUS'])->sum('points'),
+            'balance' => (int) $rows->last()->balance_after,
+        ];
 
         return $data;
     }

@@ -174,6 +174,7 @@ export const buildPosOldSaleReceiptPayload = ({
     generalReceivedVisible: Boolean(receiptCustomization.generalFields?.receivedAmount?.visible),
     generalBalanceVisible: Boolean(receiptCustomization.generalFields?.balanceAmt?.visible),
     generalYouSavedVisible: Boolean(receiptCustomization.generalFields?.youSaved?.visible),
+    loyalty: sale?.loyalty || null, // points redeemed / earned / balance (sale response)
     message: receiptCustomization.thankYouMessage || DEFAULT_SALES_RECEIPT_MESSAGE,
   };
 };

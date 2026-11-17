@@ -287,7 +287,7 @@ const buildThermalSaleReceiptHtml = (receiptData, customization) => {
     ${productColumns.length > 0 ? `<table class="receipt-table"><thead><tr>${productColumns.map((column) => `<th class="${column.key === "productName" ? "text-left" : "num"}">${escapeHtml(column.label)}</th>`).join("")}</tr></thead><tbody>${rowsHtml || `<tr><td colspan="${productColumns.length}" class="center">No items</td></tr>`}</tbody></table>` : ""}
     <div class="line"></div>
     <div class="totals-row"><span>Bill Amount</span><span>${escapeHtml(Number(receiptData.billAmount || 0).toFixed(2))}</span></div>${customization?.showDiscountOnReceipt && !showDiscountColumn ? `<div class="totals-row"><span>Discount</span><span>${escapeHtml(Number(receiptData.discountAmount || 0).toFixed(2))}</span></div>` : ""}<div class="totals-row grand"><span>Net Amount</span><span>${escapeHtml(Number(receiptData.total || 0).toFixed(2))}</span></div>
-    ${receiptData.generalTaxVisible ? `<div class="totals-row"><span>Tax</span><span>${escapeHtml(Number(receiptData.taxAmount || 0).toFixed(2))}</span></div>` : ""}${receiptData.generalPaidVisible ? `<div class="totals-row"><span>Paid</span><span>${escapeHtml(Number(receiptData.paidAmount || 0).toFixed(2))}</span></div>` : ""}${receiptData.generalReceivedVisible ? `<div class="totals-row"><span>Received Amount</span><span>${escapeHtml(Number(receiptData.receivedAmount || 0).toFixed(2))}</span></div>` : ""}${receiptData.generalBalanceVisible ? `<div class="totals-row"><span>Balance Amount</span><span>${escapeHtml(Number(receiptData.balanceAmount || 0).toFixed(2))}</span></div>` : ""}${receiptData.generalYouSavedVisible ? `<div class="totals-row"><span>You Saved</span><span>${escapeHtml(Number(receiptData.discountAmount || 0).toFixed(2))}</span></div>` : ""}
+    ${receiptData.generalTaxVisible ? `<div class="totals-row"><span>Tax</span><span>${escapeHtml(Number(receiptData.taxAmount || 0).toFixed(2))}</span></div>` : ""}${receiptData.generalPaidVisible ? `<div class="totals-row"><span>Paid</span><span>${escapeHtml(Number(receiptData.paidAmount || 0).toFixed(2))}</span></div>` : ""}${receiptData.generalReceivedVisible ? `<div class="totals-row"><span>Received Amount</span><span>${escapeHtml(Number(receiptData.receivedAmount || 0).toFixed(2))}</span></div>` : ""}${receiptData.generalBalanceVisible ? `<div class="totals-row"><span>Balance Amount</span><span>${escapeHtml(Number(receiptData.balanceAmount || 0).toFixed(2))}</span></div>` : ""}${receiptData.generalYouSavedVisible ? `<div class="totals-row"><span>You Saved</span><span>${escapeHtml(Number(receiptData.discountAmount || 0).toFixed(2))}</span></div>` : ""}${loyaltyRowsHtml(receiptData.loyalty)}
     ${Number(receiptData.refundAmount || 0) > 0 ? `<div class="totals-row"><span>Refund</span><span>${escapeHtml(Number(receiptData.refundAmount || 0).toFixed(2))}</span></div>` : ""}${receiptData.changeAmount ? `<div class="totals-row"><span>Change</span><span>${escapeHtml(Number(receiptData.changeAmount || 0).toFixed(2))}</span></div>` : ""}
     ${returnRowsHtml ? `<div class="section-label">Returned Items${receiptData.appliedReturnNo ? ` - ${escapeHtml(receiptData.appliedReturnNo)}` : ""}</div><table class="receipt-table"><thead><tr>${productColumns.map((column) => `<th class="${column.key === "productName" ? "text-left" : "num"}">${escapeHtml(column.label)}</th>`).join("")}</tr></thead><tbody>${returnRowsHtml}</tbody></table>` : ""}
     ${taxRowsHtml ? `<div class="section-label">Tax Summary</div><table class="receipt-table"><thead><tr>${taxColumns.map((column) => `<th class="${column.key === "taxName" ? "text-left" : "num"}">${escapeHtml(column.label)}</th>`).join("")}</tr></thead><tbody>${taxRowsHtml}</tbody></table>` : ""}
@@ -436,6 +436,7 @@ const buildA4SaleInvoiceHtml = (receiptData, customization) => {
         <div class="totals-row grand"><span>Grand Total</span><span>${escapeHtml(Number(receiptData.total || 0).toFixed(2))}</span></div>
         ${toNum(receiptData.paidAmount, 0) > 0 ? `<div class="totals-row"><span>Paid</span><span>${escapeHtml(Number(receiptData.paidAmount || 0).toFixed(2))}</span></div>` : ""}
         ${toNum(receiptData.balanceAmount, 0) > 0 ? `<div class="totals-row"><span>Balance Due</span><span>${escapeHtml(Number(receiptData.balanceAmount || 0).toFixed(2))}</span></div>` : ""}
+        ${loyaltyRowsHtml(receiptData.loyalty)}
       </div>
     </div>
     ${taxRowsHtml ? `<div class="tax-summary"><table class="tax-summary-table"><thead><tr><th>Tax</th><th class="num">Rate</th><th class="num">Taxable Amt</th><th class="num">Tax Amt</th></tr></thead><tbody>${taxRowsHtml}</tbody></table></div>` : ""}
@@ -454,6 +455,17 @@ const buildA4SaleInvoiceHtml = (receiptData, customization) => {
 // Dispatches to the A4 tax-invoice layout when the store is configured for A4 paper, otherwise the
 // thermal receipt layout - every existing call site (live print, "Last Bill" reprint, PDF download)
 // picks up the right template automatically with no changes needed at the call site.
+/** Loyalty points on a bill (from the sale's `loyalty`): redeemed, earned and the balance after it. */
+export const loyaltyRowsHtml = (loyalty) => {
+  if (!loyalty) return "";
+  const row = (label, value) => `<div class="totals-row"><span>${label}</span><span>${escapeHtml(String(value))}</span></div>`;
+  return [
+    Number(loyalty.redeemed) > 0 ? row("Points Redeemed", loyalty.redeemed) : "",
+    Number(loyalty.earned) > 0 ? row("Points Earned", loyalty.earned) : "",
+    row("Points Balance", Number(loyalty.balance) || 0),
+  ].join("");
+};
+
 export const buildPosSaleReceiptHtml = (receiptData, customization) => {
   const isA4 =
     String(receiptData?.paperSize || "").toUpperCase() === "A4"

@@ -82,6 +82,8 @@ class LoyaltyRedeemTest extends TestCase
         $this->assertSame(10, (int) LoyaltyTransaction::where('customer_id', $this->customer->id)->where('type', 'ADJUST_IN')->value('remaining'), 'the oldest points went first');
         $this->assertSame(10, (int) LoyaltyTransaction::where('customer_id', $this->customer->id)->where('type', 'EARN')->orderBy('id')->value('remaining'));
         $this->assertDatabaseHas('pos_payments', ['pos_sale_id' => $sale['id'], 'payment_mode' => 'LOYALTY', 'amount' => 40]);
+        $this->assertSame(['redeemed' => 40, 'earned' => 1, 'balance' => 21], $sale['loyalty'], 'the receipt gets the points on this bill');
+        $this->getJson('/api/pos-sales/'.$sale['id'])->assertJsonPath('data.loyalty.balance', 21);
 
         $books = $this->voucher($sale['id']);
         $this->assertSame(40.0, $books['Loyalty Points Redeemed']);

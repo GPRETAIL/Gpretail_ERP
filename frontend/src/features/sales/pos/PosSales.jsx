@@ -2108,6 +2108,7 @@ const PosSales = () => {
       generalReceivedVisible: Boolean(receiptCustomization.generalFields?.receivedAmount?.visible),
       generalBalanceVisible: Boolean(receiptCustomization.generalFields?.balanceAmt?.visible),
       generalYouSavedVisible: Boolean(receiptCustomization.generalFields?.youSaved?.visible),
+      loyalty: savedSale?.loyalty || null, // points redeemed / earned / balance (sale response)
       footerNote: commonSalesMan ? `Salesman: ${commonSalesMan}` : "",
       message: receiptCustomization.thankYouMessage || DEFAULT_SALES_RECEIPT_MESSAGE,
       billCodeMarkup: await buildReceiptCodeMarkupAsync(displayBillNo, receiptCustomization, "bill"),
@@ -2227,6 +2228,7 @@ const PosSales = () => {
         generalReceivedVisible: Boolean(receiptCustomization.generalFields?.receivedAmount?.visible),
         generalBalanceVisible: Boolean(receiptCustomization.generalFields?.balanceAmt?.visible),
         generalYouSavedVisible: Boolean(receiptCustomization.generalFields?.youSaved?.visible),
+        loyalty: saved?.loyalty || null, // points redeemed / earned / balance (sale response)
         footerNote: "",
         message: receiptCustomization.thankYouMessage || DEFAULT_SALES_RECEIPT_MESSAGE,
         billCodeMarkup: await buildReceiptCodeMarkupAsync(displayBillNo, receiptCustomization, "bill"),
