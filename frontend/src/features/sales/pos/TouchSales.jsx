@@ -15,6 +15,10 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "react-toastify";
+import ApprovalDialog from "@/features/sales/approvals/components/ApprovalDialog";
+import { approvalRequirementFrom, isApprovalRequired, withApprovalTokens } from "@/features/sales/approvals/utils/approvals";
+import LoyaltyRedeemPanel from "@/features/sales/pos/components/LoyaltyRedeemPanel";
+import { loyaltyRedeemPayload } from "@/features/sales/pos/utils/loyaltyRedeem";
 import useBillingDate from "@/features/sales/pos/hooks/useBillingDate";
 import { billDateText } from "@/features/sales/pos/utils/billingDate";
 import { useNavigate } from "react-router-dom";
@@ -136,7 +140,8 @@ const TouchSales = () => {
   const loadMasterData = useCallback(async () => {
     try {
       const [barcodesRes, productsRes, customersRes] = await Promise.all([
-        api.get("/barcodes").catch(() => ({ data: { data: [] } })),
+        // Labels with their real stock: plain /barcodes has no qty, which left this screen with no products.
+        api.get("/barcodes/physical-stock", { params: { all: true } }).catch(() => ({ data: { data: [] } })),
         api.get("/products", { params: { limit: 500 } }).catch(() => ({ data: { data: [] } })),
         api.get("/customers", { params: { limit: 300 } }).catch(() => ({ data: { data: [] } })),
       ]);
@@ -149,17 +154,28 @@ const TouchSales = () => {
         productTaxMap.set(key, toNum(p?.salesTax?.tax_percentage, 0));
       });
 
+      // Every label of a variant reports the variant's whole stock: one tile per variant.
+      const seenVariants = new Set();
       const stock = (barcodesRes.data?.data || [])
+        .filter((row) => {
+          const key = `${row.product_id}:${row.variant_id ?? ""}`;
+          if (seenVariants.has(key)) return false;
+          seenVariants.add(key);
+          return true;
+        })
         .map((row) => {
           const productName = row.product_name || "Unknown Product";
           const tax = productTaxMap.get(normalize(productName)) || 0;
           return {
             id: String(row.id),
+            productId: row.product_id,
+            variantId: row.variant_id ?? null,
             barcode: row.barcode || "",
             productName,
             qty: Math.max(0, toNum(row.qty, 0)),
             cost: toNum(row.cost, 0),
-            price: toNum(row.final_price || row.selling_price || row.mrp, 0),
+            // Prices are decimal strings: "0.00" is truthy, so take the first one above zero.
+            price: [row.final_price, row.selling_price, row.mrp].map((v) => toNum(v, 0)).find((v) => v > 0) ?? 0,
             tax,
           };
         })
@@ -402,6 +418,8 @@ const TouchSales = () => {
           {
             lineId: `${row.id}-${Date.now()}`,
             stockId: row.id,
+            productId: row.productId,
+            variantId: row.variantId,
             barcode: row.barcode,
             productName: row.productName,
             qty: qtyToAdd,
@@ -620,7 +638,15 @@ const TouchSales = () => {
     [authUser?.company_id, authUser?.counter_name, authUser?.email, authUser?.name, billNo, customerMobile, appliedReturn, queuePrintHtml]
   );
 
-  const saveTouchSale = async ({ shouldPrint = false } = {}) => {
+  // Loyalty points redeemed for the detected customer (another customer: none); cash covers the rest.
+  const [loyaltyRedeemState, setLoyaltyRedeemState] = useState(null);
+  const [approvalRequirement, setApprovalRequirement] = useState(null);
+  const loyaltyCustomerId = detectedCustomer?.id ? String(detectedCustomer.id) : "";
+  const loyaltyRedeem = loyaltyRedeemState && loyaltyCustomerId && String(loyaltyRedeemState.customerId) === loyaltyCustomerId ? loyaltyRedeemState : null;
+  const cashToCollect = round2(Math.max(0, billSummary.netAmount - (loyaltyRedeem?.amount || 0)));
+
+  // Saved through the same checkout as POS Sales (POST /pos-sales): stock, bill number, books and loyalty alike.
+  const saveTouchSale = async ({ shouldPrint = false, approvalTokens = {} } = {}) => {
     if (cart.length === 0) {
       toast.error("Add at least one product");
       return;
@@ -633,15 +659,20 @@ const TouchSales = () => {
       return;
     }
 
-    const payload = {
+    const payload = withApprovalTokens({
+      saleSaveAs: "paid_settled",
       saleAt: now.toISOString(),
-      customerMobile: customerMobile.trim() || null,
+      customerId: detectedCustomer?.id || null,
+      cashAmount: cashToCollect,
+      ...loyaltyRedeemPayload(loyaltyRedeem),
       appliedPosReturnId: appliedReturn?.id || null,
       appliedReturnNo:
         appliedReturn?.displayReturnNo || (appliedReturn?.returnNo ? formatReturnNo(appliedReturn.returnNo) : null),
       ...(refundAmount > 0 ? { refundAmount } : {}),
       items: cart.map((line) => ({
-        barcodeId: line.stockId,
+        productId: line.productId,
+        variantId: line.variantId ?? null,
+        barcodeId: Number(line.stockId) || null,
         barcode: line.barcode,
         productName: line.productName,
         qty: line.qty,
@@ -650,21 +681,27 @@ const TouchSales = () => {
         cost: line.cost,
         discount: 0,
       })),
-    };
+    }, approvalTokens);
 
     setSaving(true);
     try {
-      const res = await api.post("/touch-sales", payload);
+      const res = await api.post("/pos-sales", payload);
       const saved = res.data?.data;
       toast.success(`Sale saved (Bill #${formatSaleBillNo(saved?.bill_no)})`);
       if (shouldPrint) {
         try { await printPosSaleReceipt(saved); }
         catch (error) { toast.error(`Sale saved, but receipt was not printed. ${error.message || "Please retry printing."}`); }
       }
+      setLoyaltyRedeemState(null);
       resetDraftAndCart();
       await Promise.all([loadMasterData(), loadNextBillNo()]);
     } catch (err) {
-      toast.error(err?.response?.data?.message || "Failed to save sale");
+      if (isApprovalRequired(err)) {
+        setApprovalRequirement({ ...approvalRequirementFrom(err), retry: { shouldPrint, approvalTokens } });
+        return;
+      }
+      const data = err?.response?.data;
+      toast.error((data?.errors && Object.values(data.errors).flat()[0]) || data?.message || "Failed to save sale");
     } finally {
       setSaving(false);
     }
@@ -972,6 +1009,16 @@ const TouchSales = () => {
                 </Stack>
               </Stack>
 
+              {loyaltyCustomerId && billSummary.netAmount > 0 && (
+                <LoyaltyRedeemPanel customerId={loyaltyCustomerId} billAmount={billSummary.netAmount} value={loyaltyRedeem}
+                  onChange={(value) => setLoyaltyRedeemState(value ? { ...value, customerId: loyaltyCustomerId } : null)} />
+              )}
+              {loyaltyRedeem && (
+                <Stack direction="row" sx={{ justifyContent: "space-between", fontSize: 12.25, fontWeight: 600 }}>
+                  <Box component="span">Cash to collect</Box><Box component="b">{formatMoney(cashToCollect)}</Box>
+                </Stack>
+              )}
+
               {appliedReturn && billSummary.netAmount < 0 ? (
                 <Stack component="label" direction="row" spacing={1} sx={{ alignItems: "center", cursor: "pointer", fontSize: TYPE.label, color: "text.secondary" }}>
                   <Checkbox
@@ -1007,6 +1054,17 @@ const TouchSales = () => {
         </Box>
 
         {loading && <Typography sx={{ mt: 1, fontSize: TYPE.small, color: "text.secondary" }}>Loading touch sale data...</Typography>}
+        {approvalRequirement && (
+          <ApprovalDialog
+            requirement={approvalRequirement}
+            onClose={() => setApprovalRequirement(null)}
+            onApproved={(token) => {
+              const { action, retry } = approvalRequirement;
+              setApprovalRequirement(null);
+              void saveTouchSale({ ...retry, approvalTokens: { ...retry.approvalTokens, [action]: token } });
+            }}
+          />
+        )}
       </Stack>
       <CounterAssignmentDialog
         open={counterAssignmentOpen}
