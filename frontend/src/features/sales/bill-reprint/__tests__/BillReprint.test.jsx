@@ -118,3 +118,13 @@ it("bulk: prints every ticked document in one run and logs each", async () => {
   expect(mocks.printHtml).toHaveBeenCalledTimes(2);
   expect(mocks.post.mock.calls.map((c) => c[0])).toEqual(["/bill-reprints/dealer_invoice/7/log", "/bill-reprints/dealer_invoice/8/log"]);
 });
+
+it("a type button filters straight away; All types clears it", async () => {
+  renderPage();
+  await screen.findByText("D261116-0001");
+  fireEvent.click(screen.getByRole("button", { name: "Dealer invoice" }));
+  await waitFor(() => expect(mocks.get).toHaveBeenCalledWith("/bill-reprints", expect.objectContaining({ params: expect.objectContaining({ types: ["dealer_invoice"] }) })));
+  expect(screen.getByRole("button", { name: "Dealer invoice" })).toHaveAttribute("aria-pressed", "true");
+  fireEvent.click(screen.getByRole("button", { name: "All types" }));
+  await waitFor(() => expect(mocks.get).toHaveBeenLastCalledWith("/bill-reprints", expect.objectContaining({ params: expect.objectContaining({ types: undefined }) })));
+});

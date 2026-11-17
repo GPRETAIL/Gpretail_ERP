@@ -33,7 +33,7 @@ export default function ReprintHistoryDialog({ row, onClose }) {
                   <TableCell>{when(e.printed_at)}</TableCell>
                   <TableCell>{e.user_name || "-"}</TableCell>
                   <TableCell>{e.channel === "share" ? "WhatsApp PDF" : "Print"}</TableCell>
-                  <TableCell>{e.copy_label || "-"}</TableCell>
+                  <TableCell>{e.copy_label || "Duplicate"}</TableCell>
                   <TableCell>{e.reason || "-"}</TableCell>
                 </TableRow>
               ))}

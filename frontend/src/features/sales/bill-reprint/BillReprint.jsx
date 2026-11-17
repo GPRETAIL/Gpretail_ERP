@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
-import { Box, Button, Chip, Stack, TextField, Typography } from "@mui/material";
+import { Box, Button, Chip, Stack, TextField } from "@mui/material";
 import { History, MessageCircle, Printer, Search } from "lucide-react";
 import api from "@/shared/api/apiClient";
 import PageHeader from "@/shared/components/PageHeader";
@@ -70,7 +70,13 @@ export default function BillReprint() {
 
   const reload = (next) => { setLoading(true); setPage(1); setApplied({ ...next }); };
   const search = () => reload(filters);
-  const toggleType = (value) => setFilters((f) => ({ ...f, types: f.types.includes(value) ? f.types.filter((t) => t !== value) : [...f.types, value] }));
+  // A type button filters straight away (with the search text and dates as they are).
+  const setTypes = (types) => {
+    const next = { ...filters, types };
+    setFilters(next);
+    reload(next);
+  };
+  const toggleType = (value) => setTypes(filters.types.includes(value) ? filters.types.filter((t) => t !== value) : [...filters.types, value]);
   const multiStore = useMemo(() => new Set(rows.map((r) => r.store_id)).size > 1, [rows]);
 
   // The row's count and what its next reprint needs (reason, approval) come back from the server.
@@ -179,12 +185,14 @@ export default function BillReprint() {
           <Button type="submit" variant="contained" startIcon={<Search size={15} />} sx={{ height: 40 }}>Search</Button>
         </Box>
         <Stack direction="row" spacing={0.75} useFlexGap sx={{ flexWrap: "wrap" }} role="group" aria-label="Document types">
+          <Chip label="All types" clickable size="small" aria-pressed={filters.types.length === 0}
+            color={filters.types.length === 0 ? "primary" : "default"} variant={filters.types.length === 0 ? "filled" : "outlined"}
+            onClick={() => setTypes([])} />
           {REPRINT_TYPES.map((t) => (
             <Chip key={t.value} label={t.label} clickable size="small" aria-pressed={filters.types.includes(t.value)}
               color={filters.types.includes(t.value) ? "primary" : "default"} variant={filters.types.includes(t.value) ? "filled" : "outlined"}
               onClick={() => toggleType(t.value)} />
           ))}
-          <Typography sx={{ fontSize: 12, color: "text.secondary", alignSelf: "center", ml: 0.5 }}>{filters.types.length ? "" : "All types"}</Typography>
         </Stack>
       </Box>
 

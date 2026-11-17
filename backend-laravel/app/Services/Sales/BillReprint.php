@@ -169,11 +169,12 @@ class BillReprint
         ], $token);
     }
 
-    private function label(?string $label): ?string
+    /** The copy a reprint is: the label chosen at print time, else simply "Duplicate". */
+    private function label(?string $label): string
     {
         $label = trim((string) $label);
 
-        return $label === '' ? null : mb_substr($label, 0, 60);
+        return $label === '' ? 'Duplicate' : mb_substr($label, 0, 60);
     }
 
     /** @return array<string, int> "type:id" => reprints so far */

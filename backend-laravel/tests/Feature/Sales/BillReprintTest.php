@@ -94,7 +94,7 @@ class BillReprintTest extends TestCase
         $this->postJson("/api/bill-reprints/pos_sale/{$sale}/log", ['reason' => 'Customer lost the bill', 'channel' => 'share'])->assertOk()->assertJsonPath('data.count', 2);
 
         $this->getJson("/api/bill-reprints/pos_sale/{$sale}/history")->assertOk()->assertJsonCount(2, 'data')
-            ->assertJsonPath('data.0.reason', 'Customer lost the bill')->assertJsonPath('data.0.channel', 'share')->assertJsonPath('data.1.copy_label', 'Duplicate');
+            ->assertJsonPath('data.0.reason', 'Customer lost the bill')->assertJsonPath('data.0.channel', 'share')->assertJsonPath('data.0.copy_label', 'Duplicate')->assertJsonPath('data.1.copy_label', 'Duplicate');
         $this->assertSame(2, collect($this->getJson('/api/bill-reprints?types[]=pos_sale')->json('data'))->firstWhere('id', $sale)['print_count']);
 
         DB::table('stores')->where('id', $this->store)->update(['receipt_customization' => json_encode(['reprintReasonAfter' => 0])]);
