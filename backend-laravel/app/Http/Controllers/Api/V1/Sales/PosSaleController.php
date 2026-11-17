@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Barcode;
 use App\Models\CreditLedger;
 use App\Models\Customer;
+use App\Models\LoyaltyTransaction;
 use App\Models\Notification;
 use App\Models\PosPayment;
 use App\Models\PosReturn;
@@ -771,7 +772,7 @@ class PosSaleController extends Controller
         $data['bill_no'] = $sale->bill_no;
         $data['applied_return_no'] = $sale->applied_pos_return_id ? ('RR/'.$sale->applied_pos_return_id) : null;
         // Loyalty points on this bill, for the receipt: redeemed, earned (with bonuses) and the balance after the bill.
-        $rows = $sale->customer_id ? \App\Models\LoyaltyTransaction::where('pos_sale_id', $sale->id)->whereIn('type', ['REDEEM', 'EARN', 'BONUS'])
+        $rows = $sale->customer_id ? LoyaltyTransaction::where('pos_sale_id', $sale->id)->whereIn('type', ['REDEEM', 'EARN', 'BONUS'])
             ->orderBy('id')->get(['type', 'points', 'balance_after']) : collect();
         $data['loyalty'] = $rows->isEmpty() ? null : [
             'redeemed' => (int) $rows->where('type', 'REDEEM')->sum('points'),
@@ -878,20 +879,24 @@ class PosSaleController extends Controller
         $counterId = PosCounter::find($request->user()?->counter_id, $storeId)?->id;
         $state = app(BusinessDate::class)->forCounter($storeId, $counterId);
 
+        $business = app(BusinessDate::class);
+
         return response()->json(['success' => true, 'data' => [...collect($state)->except('since')->all(),
-            'can_change' => $state['mode'] === 'manual' && in_array($request->user()->role, ApprovalService::APPROVER_ROLES, true)]]);
+            'can_change' => $state['mode'] === 'manual' && $business->mayChange($request->user(), $storeId),
+            'max_date' => BusinessDate::today()->addDays(BusinessDate::MAX_DAYS_AHEAD)->toDateString()]]);
     }
 
-    /** Manual mode: a supervisor sets this counter to bill today or tomorrow. */
+    /** Manual mode: the tenant admin (or a user they allow) sets this counter's billing date, today up to a week ahead. */
     public function setBillingDate(Request $request)
     {
-        $request->validate(['date' => 'required|in:today,tomorrow']);
+        $request->validate(['date' => ['required', 'string', 'regex:/^(today|tomorrow|\d{4}-\d{2}-\d{2})$/']]);
         $storeId = (int) $this->resolveStoreId($request, 1);
         $counterId = PosCounter::find($request->user()?->counter_id, $storeId)?->id;
         $state = app(BusinessDate::class)->setForCounter($request->user(), $storeId, $counterId, (string) $request->input('date'));
 
         return response()->json(['success' => true, 'message' => 'Billing date set to '.Carbon::parse($state['date'])->format('j M').'.',
-            'data' => [...collect($state)->except('since')->all(), 'can_change' => true]]);
+            'data' => [...collect($state)->except('since')->all(), 'can_change' => true,
+                'max_date' => BusinessDate::today()->addDays(BusinessDate::MAX_DAYS_AHEAD)->toDateString()]]);
     }
 
     /** The store's active salespeople, loaded once by the POS so a sticker scan resolves at once (and offline). */

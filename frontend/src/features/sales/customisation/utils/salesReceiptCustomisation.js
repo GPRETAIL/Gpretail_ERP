@@ -1,5 +1,11 @@
 import QRCode from "qrcode";
 
+/** Roles the tenant admin can allow to change the POS billing date (Sales Customisation, Manual mode). */
+export const BILLING_DATE_ROLES = [
+  { value: "admin", label: "Store admins" }, { value: "manager", label: "Managers" }, { value: "supervisor", label: "Supervisors" },
+  { value: "accountant", label: "Accountants" }, { value: "cashier", label: "Cashiers" },
+];
+
 const STORAGE_KEY_PREFIX = "sales.receipt.customisation";
 
 export const SALES_RECEIPT_SIZE_OPTIONS = [
@@ -295,8 +301,10 @@ export const DEFAULT_SALES_RECEIPT_CUSTOMIZATION = {
   posSalespersonScan: false,
   /** Sales > Delivery "Verify all" (mark every item checked in one click): everyone, supervisor (and above) or off. */
   deliveryVerifyAll: "everyone",
-  /** Bills made after a counter's cash closing: "off" (today), "auto" (next day) or "manual" (supervisor picks). */
+  /** Bills made after a counter's cash closing: "off" (today), "auto" (next day) or "manual" (date picked on POS). */
   billingDateAfterClosing: "off",
+  /** Manual mode: roles and users (ids) the tenant admin allows to change the billing date (the tenant admin always can). */
+  billingDateChangers: { roles: [], users: [] },
   reprintReasonAfter: 1,
   reprintCopyLabels: false,
   /** Printed POS receipt copies when using the printer queue (1–3). */
@@ -564,6 +572,10 @@ export const normalizeSalesReceiptCustomization = (value = {}) => {
     posSalespersonScan: value.posSalespersonScan === true,
     deliveryVerifyAll: ["off", "supervisor", "everyone"].includes(value.deliveryVerifyAll) ? value.deliveryVerifyAll : "everyone",
     billingDateAfterClosing: ["off", "auto", "manual"].includes(value.billingDateAfterClosing) ? value.billingDateAfterClosing : "off",
+    billingDateChangers: {
+      roles: (value.billingDateChangers?.roles || []).filter((role) => BILLING_DATE_ROLES.some((r) => r.value === role)),
+      users: (value.billingDateChangers?.users || []).map(Number).filter((id) => Number.isInteger(id) && id > 0),
+    },
     reprintReasonAfter: Number.isFinite(Number(value.reprintReasonAfter)) ? Math.min(20, Math.max(0, Math.trunc(Number(value.reprintReasonAfter)))) : 1,
     reprintCopyLabels: Boolean(value.reprintCopyLabels),
     posReceiptPrintCopies: normalizePosReceiptPrintCopies(value.posReceiptPrintCopies),

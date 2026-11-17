@@ -3,7 +3,7 @@
 namespace App\Services\Sales;
 
 use App\Models\User;
-use App\Services\Approvals\ApprovalService;
+use App\Services\Tenancy\StoreContext;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -12,8 +12,9 @@ use Illuminate\Validation\ValidationException;
  * Which date a counter bills on. Sales Customisation > "Billing date after cash closing":
  * - off: always today;
  * - auto: once the counter's cash closing for today is done, tomorrow (until the day turns);
- * - manual: today or tomorrow, as a supervisor set it for the counter.
- * Never earlier than today, never more than a day ahead. Dates are shop (business time zone) dates.
+ * - manual: any date from today to MAX_DAYS_AHEAD ahead, set for the counter by the tenant admin or by the roles and
+ *   users the tenant admin allows (Sales Customisation > billingDateChangers).
+ * Never earlier than today. Dates are shop (business time zone) dates.
  *
  * A bill on a later business date is stamped at the start of that day plus the time since the closing (or since the
  * date was set), so it sorts in order, falls on that day in every report and is counted in the counter's next cash
@@ -22,6 +23,9 @@ use Illuminate\Validation\ValidationException;
 class BusinessDate
 {
     public const MODES = ['off', 'auto', 'manual'];
+
+    /** Manual mode: how far ahead a counter's billing date may be set (e.g. for a holiday closing). */
+    public const MAX_DAYS_AHEAD = 7;
 
     public function mode(int $storeId): string
     {
@@ -90,14 +94,46 @@ class BusinessDate
         return $start->addSeconds(min($elapsed, 86399))->setTimezone(config('app.timezone'));
     }
 
-    /** Manual mode: a supervisor (or above) sets the counter to today or tomorrow. */
+    /**
+     * Who may change a counter's billing date: the tenant admin always; anyone else only when the tenant admin allowed
+     * their role or them by name (Sales Customisation > "Who can change the billing date").
+     */
+    public function mayChange(User $user, int $storeId): bool
+    {
+        if (app(StoreContext::class)->isTenantAdmin($user)) {
+            return true;
+        }
+        $allowed = $this->changers($storeId);
+
+        return in_array($user->role, $allowed['roles'], true) || in_array((int) $user->id, $allowed['users'], true);
+    }
+
+    /** @return array{roles: list<string>, users: list<int>} */
+    public function changers(int $storeId): array
+    {
+        $value = json_decode((string) (DB::table('stores')->where('id', $storeId)->value('receipt_customization') ?? ''), true)['billingDateChangers'] ?? [];
+
+        return ['roles' => array_values(array_filter((array) ($value['roles'] ?? []), 'is_string')),
+            'users' => array_values(array_map('intval', array_filter((array) ($value['users'] ?? []), 'is_numeric')))];
+    }
+
+    /** Manual mode: sets the counter's billing date: 'today', 'tomorrow' or a date up to MAX_DAYS_AHEAD ahead. */
     public function setForCounter(User $user, int $storeId, ?int $counterId, string $which): array
     {
         if ($this->mode($storeId) !== 'manual') {
             throw ValidationException::withMessages(['date' => 'Changing the billing date is switched off in Sales Customisation.']);
         }
-        abort_unless(in_array($user->role, ApprovalService::APPROVER_ROLES, true), 403, 'Only a supervisor or manager can change the billing date.');
-        $date = $which === 'tomorrow' ? self::today()->addDay() : self::today();
+        abort_unless($this->mayChange($user, $storeId), 403, 'Only the tenant admin, or the users they allow in Sales Customisation, can change the billing date.');
+        $today = self::today();
+        $date = match (true) {
+            $which === 'today' => $today->copy(),
+            $which === 'tomorrow' => $today->copy()->addDay(),
+            (bool) preg_match('/^\d{4}-\d{2}-\d{2}$/', $which) => Carbon::parse($which, config('app.business_timezone'))->startOfDay(),
+            default => throw ValidationException::withMessages(['date' => 'Choose a date.']),
+        };
+        if ($date->lt($today) || $date->gt($today->copy()->addDays(self::MAX_DAYS_AHEAD))) {
+            throw ValidationException::withMessages(['date' => 'The billing date can be from today up to '.self::MAX_DAYS_AHEAD.' days ahead ('.$today->copy()->addDays(self::MAX_DAYS_AHEAD)->format('j M').').']);
+        }
         DB::table('counter_billing_dates')->updateOrInsert(
             ['store_id' => $storeId, 'counter_id' => $counterId],
             ['business_date' => $date->toDateString(), 'set_by' => $user->id, 'set_at' => now(), 'updated_at' => now(), 'created_at' => now()],

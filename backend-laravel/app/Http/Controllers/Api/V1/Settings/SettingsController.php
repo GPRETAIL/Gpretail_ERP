@@ -162,10 +162,22 @@ class SettingsController extends Controller
                 $locked = Store::whereKey($store->id)->lockForUpdate()->firstOrFail();
                 $incoming = $request->except(['companyId', 'company_id', 'settingsSection']);
                 if ($request->has('settingsSection')) {
-                    $salesKeys = ['billNumberReset', 'billNumberOverride', 'settlementNumberReset', 'settlementNumberOverride', 'saleSaveAs', 'posPaymentDialogVisible', 'posSalespersonScan', 'deliveryVerifyAll', 'billingDateAfterClosing', 'reprintReasonAfter', 'reprintCopyLabels'];
+                    $salesKeys = ['billNumberReset', 'billNumberOverride', 'settlementNumberReset', 'settlementNumberOverride', 'saleSaveAs', 'posPaymentDialogVisible', 'posSalespersonScan', 'deliveryVerifyAll', 'billingDateAfterClosing', 'billingDateChangers', 'reprintReasonAfter', 'reprintCopyLabels'];
                     $receiptKeys = ['showBarcodeOnBill', 'showBarcodeOnReturnSlip', 'receiptCodeType', 'showDiscountOnReceipt', 'discountDisplayMode', 'showTaxTableOnReceipt', 'receiptWidthInches', 'thankYouMessage', 'receiptFontFamily', 'receiptFormat', 'printMode', 'paymentQrMode', 'paymentUpiId', 'paymentQrImageUrl', 'paymentQrSize', 'posReceiptPrintCopies', 'generalFields', 'taxFields', 'productFields'];
                     $allowed = $request->input('settingsSection') === 'sales' ? $salesKeys : $receiptKeys;
                     $incoming = array_intersect_key($incoming, array_flip($allowed));
+                    // Who may change the POS billing date is the tenant admin's call alone; anyone else keeps what is saved.
+                    if (array_key_exists('billingDateChangers', $incoming)) {
+                        if (! app(StoreContext::class)->isTenantAdmin($request->user())) {
+                            unset($incoming['billingDateChangers']);
+                        } else {
+                            $changers = (array) $incoming['billingDateChangers'];
+                            $incoming['billingDateChangers'] = [
+                                'roles' => array_values(array_intersect((array) ($changers['roles'] ?? []), ['admin', 'manager', 'supervisor', 'accountant', 'cashier'])),
+                                'users' => array_values(array_unique(array_map('intval', array_filter((array) ($changers['users'] ?? []), 'is_numeric')))),
+                            ];
+                        }
+                    }
                     $incoming = array_replace($locked->receipt_customization ?? [], $incoming);
                 }
                 if (array_key_exists('paymentQrImageUrl', $incoming)) {

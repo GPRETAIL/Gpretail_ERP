@@ -9,6 +9,7 @@ use App\Models\Stock;
 use App\Models\Store;
 use App\Models\SystemConfiguration;
 use App\Models\User;
+use App\Services\Tenancy\StoreContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -50,9 +51,9 @@ class BusinessDateTest extends TestCase
         $this->travelTo(Carbon::parse($localTime, 'Asia/Kolkata'));
     }
 
-    private function mode(string $mode): void
+    private function mode(string $mode, array $changers = []): void
     {
-        $this->store->forceFill(['receipt_customization' => ['billingDateAfterClosing' => $mode]])->save();
+        $this->store->forceFill(['receipt_customization' => ['billingDateAfterClosing' => $mode, 'billingDateChangers' => $changers]])->save();
     }
 
     private function sale(): PosSale
@@ -121,9 +122,9 @@ class BusinessDateTest extends TestCase
         $this->postJson('/api/pos-sales/billing-date', ['date' => 'tomorrow'])->assertUnprocessable();
     }
 
-    public function test_manual_a_supervisor_sets_tomorrow_and_a_cashier_cannot(): void
+    public function test_manual_an_allowed_user_sets_tomorrow_and_a_cashier_cannot(): void
     {
-        $this->mode('manual');
+        $this->mode('manual', ['users' => [$this->user->id]]);
         $this->at('2026-11-17 21:15');
         Sanctum::actingAs(User::create(['name' => 'Till', 'username' => 'till', 'email' => 'till@example.test', 'password' => 'secret123',
             'role' => 'cashier', 'store_id' => $this->store->id, 'is_active' => true, 'counter_id' => $this->counter->id]));
@@ -145,5 +146,39 @@ class BusinessDateTest extends TestCase
 
         // Back to today.
         $this->postJson('/api/pos-sales/billing-date', ['date' => 'today'])->assertOk()->assertJsonPath('data.shifted', false);
+    }
+
+    public function test_manual_only_the_tenant_admin_by_default_and_who_else_they_allow(): void
+    {
+        $this->mode('manual');
+        $this->at('2026-11-17 21:15');
+        // A store admin or manager cannot until the tenant admin allows them.
+        $this->getJson('/api/pos-sales/billing-date')->assertJsonPath('data.can_change', false)->assertJsonPath('data.max_date', '2026-11-24');
+        $this->postJson('/api/pos-sales/billing-date', ['date' => 'tomorrow'])->assertForbidden();
+
+        $this->mode('manual', ['roles' => ['admin']]);
+        $this->getJson('/api/pos-sales/billing-date')->assertJsonPath('data.can_change', true);
+        // Any date from today up to a week ahead; not earlier, not further.
+        $this->postJson('/api/pos-sales/billing-date', ['date' => '2026-11-21'])->assertOk()->assertJsonPath('data.date', '2026-11-21');
+        $this->assertSame('2026-11-21', $this->localDate($this->sale()));
+        $this->postJson('/api/pos-sales/billing-date', ['date' => '2026-11-25'])->assertUnprocessable()->assertJsonValidationErrors('date');
+        $this->postJson('/api/pos-sales/billing-date', ['date' => '2026-11-16'])->assertUnprocessable();
+
+        // The tenant admin can always change it, and only they can say who else may.
+        // (Being the tenant admin needs an activated platform licence; only that check is stood in for here.)
+        $this->partialMock(StoreContext::class, fn ($mock) => $mock->shouldReceive('isTenantAdmin')->andReturnUsing(fn (User $u) => $u->email === 'owner@example.test'));
+        $owner = User::create(['name' => 'Owner', 'username' => 'owner', 'email' => 'owner@example.test', 'password' => 'secret123', 'role' => 'admin',
+            'store_id' => $this->store->id, 'is_active' => true, 'counter_id' => $this->counter->id]);
+        $this->mode('manual');
+        Sanctum::actingAs($owner);
+        $this->getJson('/api/pos-sales/billing-date')->assertJsonPath('data.can_change', true);
+        $this->postJson('/api/sales-customization', ['companyId' => $this->store->id, 'settingsSection' => 'sales',
+            'billingDateChangers' => ['roles' => ['manager', 'owner'], 'users' => [7, 'x']]])->assertOk();
+        $this->assertSame(['roles' => ['manager'], 'users' => [7]], $this->store->fresh()->receipt_customization['billingDateChangers']);
+
+        Sanctum::actingAs($this->user); // A store admin's save leaves it as the tenant admin set it.
+        $this->postJson('/api/sales-customization', ['companyId' => $this->store->id, 'settingsSection' => 'sales',
+            'billingDateChangers' => ['roles' => ['cashier']]])->assertOk();
+        $this->assertSame(['manager'], $this->store->fresh()->receipt_customization['billingDateChangers']['roles']);
     }
 }

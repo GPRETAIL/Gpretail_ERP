@@ -8,6 +8,7 @@ import { TabProvider, useTabs } from "./TabContext";
 import { TransferActivityProvider, useTransferActivity } from "@/features/store/context/TransferActivityContext";
 import { handleEnterKeyNavigation } from "@/shared/utils/enterToNextField";
 import FooterClock from "@/shared/components/FooterClock";
+import FooterBillingDate from "@/shared/components/FooterBillingDate";
 import FailoverBanner from "@/shared/components/FailoverBanner";
 import { usePrintContext } from "@/features/printing/context/PrintContext";
 import { useSyncStatus } from "@/features/sync/context/SyncStatusContext";
@@ -314,6 +315,7 @@ const PrintStatusFooter = () => {
             </Typography>
           </ButtonBase>
 
+          <FooterBillingDate />
           <FooterClock />
         </Stack>
       </Stack>

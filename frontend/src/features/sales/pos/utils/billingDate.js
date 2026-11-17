@@ -8,3 +8,6 @@ export const dayLabel = (date) => new Date(`${date}T00:00:00`).toLocaleDateStrin
 export const billDateText = (state, now = new Date()) => (state?.shifted && state.date
   ? new Date(`${state.date}T00:00:00`).toLocaleDateString()
   : now.toLocaleDateString());
+
+/** Announced on window whenever a counter's billing date is changed, with the new state as event.detail. */
+export const BILLING_DATE_EVENT = "gp:billing-date";

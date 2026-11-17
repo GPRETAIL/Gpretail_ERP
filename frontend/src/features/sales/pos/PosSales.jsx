@@ -3,6 +3,7 @@ import BillingDateBanner from "@/features/sales/pos/components/BillingDateBanner
 import LoyaltyRedeemPanel from "@/features/sales/pos/components/LoyaltyRedeemPanel";
 import { loyaltyRedeemPayload } from "@/features/sales/pos/utils/loyaltyRedeem";
 import LiveDateTime from "@/shared/components/LiveDateTime";
+import useBillingDate from "@/features/sales/pos/hooks/useBillingDate";
 import ApprovalDialog from "@/features/sales/approvals/components/ApprovalDialog";
 import useStockRules, { noStockRowSx, shortQtyByStock } from "@/shared/hooks/useStockRules";
 import NoStockChip from "@/shared/components/NoStockChip";
@@ -120,6 +121,8 @@ import {
 
 const PosSales = () => {
   const navigate = useNavigate();
+  // The date bills go on (after cash closing, or set by hand), shown in the date panel.
+  const { state: billingDate } = useBillingDate();
   const authUser = useSelector((state) => state.auth.user);
   const { connected: _printerConnected, printHtml: queuePrintHtml } = usePrintContext();
   const barcodeInputRef = useRef(null);
@@ -2814,7 +2817,7 @@ const PosSales = () => {
         <Box sx={{ width: "100%", bgcolor: "background.paper", border: 1, borderColor: "grey.300", borderRadius: "7px", boxShadow: 1, p: 1.5, display: { xl: "flex" }, height: { xl: "100%" }, flexDirection: { xl: "column" } }}>
           <Box sx={{ borderBottom: 1, borderColor: "divider", pb: 1 }}>
             <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", gap: 1.5, fontSize: TYPE.small }}>
-              <LiveDateTime />
+              <LiveDateTime billingDate={billingDate} />
             </Stack>
           </Box>
 

@@ -1,4 +1,6 @@
 import { TYPE } from "@/shared/theme/typeScale";
+import BillingDateChangers from "./BillingDateChangers";
+import { isTenantAdmin } from "@/features/auth/utils/accessControl";
 import React, { useEffect, useMemo, useState } from "react";
 import { Eye, RotateCcw, Save, Minus, Plus, X } from "lucide-react";
 import { useSelector } from "react-redux";
@@ -1211,8 +1213,12 @@ export default function SalesSettingsEditor({ section = "sales", onDirtyChange }
               onChange={(e) => updateSetting({ billingDateAfterClosing: e.target.value })}>
               <MenuItem value="off">Off: always today</MenuItem>
               <MenuItem value="auto">Automatic: next day once the counter is closed</MenuItem>
-              <MenuItem value="manual">Manual: a supervisor picks today or tomorrow on POS</MenuItem>
+              <MenuItem value="manual">Manual: pick the date on POS (today up to 7 days ahead)</MenuItem>
             </TextField>
+            {settings.billingDateAfterClosing === "manual" ? (
+              <BillingDateChangers value={settings.billingDateChangers} editable={isTenantAdmin(authUser)}
+                onChange={(billingDateChangers) => updateSetting({ billingDateChangers })} />
+            ) : null}
           </Box>
 
           <Box sx={{ ...baseCardSx, p: 2.5 }}>
