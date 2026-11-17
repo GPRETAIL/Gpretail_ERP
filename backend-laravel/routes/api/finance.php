@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Route;
 
 // Double-entry books (Finance): ledgers, hand-entered vouchers and reports for the selected store.
 Route::prefix('accounting')->controller(AccountingController::class)->group(function () {
+    Route::get('home', 'home');
     Route::get('accounts', 'accounts');
     Route::post('accounts', 'storeAccount');
     Route::put('accounts/{id}', 'updateAccount');

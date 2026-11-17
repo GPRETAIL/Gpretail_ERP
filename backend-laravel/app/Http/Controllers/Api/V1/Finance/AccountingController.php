@@ -9,8 +9,8 @@ use App\Models\Voucher;
 use App\Services\Accounting\AccountingReports;
 use App\Services\Accounting\ChartOfAccounts;
 use App\Services\Accounting\LedgerPoster;
-use App\Services\Reports\ReportSummaryService;
 use App\Services\Documents\DocumentNumberService;
+use App\Services\Reports\ReportSummaryService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -26,7 +26,6 @@ use Illuminate\Validation\ValidationException;
  */
 class AccountingController extends Controller
 {
-
     public function accounts(Request $request): JsonResponse
     {
         $storeId = $this->store($request);
@@ -167,6 +166,12 @@ class AccountingController extends Controller
         [, $to] = $this->period($request);
 
         return response()->json(['success' => true, 'data' => AccountingReports::balanceSheet($this->store($request), $to)]);
+    }
+
+    /** Finance home: cash, bank, today's money in and out, this month's GST and profit (business-timezone today). */
+    public function home(Request $request): JsonResponse
+    {
+        return response()->json(['success' => true, 'data' => AccountingReports::home($this->store($request), Carbon::now(config('app.business_timezone'))->toDateString())]);
     }
 
     public function outstanding(Request $request): JsonResponse

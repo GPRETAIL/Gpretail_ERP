@@ -8,8 +8,8 @@ use App\Models\PurchaseInvoice;
 use App\Models\SupplierPayment;
 use App\Models\User;
 use App\Services\Accounting\ChartOfAccounts;
-use App\Services\Accounting\LedgerPoster;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -53,6 +53,23 @@ class AccountingTest extends TestCase
         $account = ChartOfAccounts::system($this->store, $systemKey);
 
         return round((float) DB::table('voucher_lines')->where('ledger_account_id', $account)->sum(DB::raw('debit - credit')), 2);
+    }
+
+    public function test_finance_home_shows_cash_today_gst_and_profit_from_the_books(): void
+    {
+        $this->travelTo(Carbon::parse('2026-11-10 06:00:00'));
+        $this->sale(['cashAmount' => 210]);
+
+        $home = $this->getJson('/api/accounting/home')->assertOk()->json('data');
+
+        $this->assertSame('2026-11-10', $home['date']);
+        $this->assertEquals(210, $home['totals']['cash']);
+        $this->assertEquals(210, $home['totals']['in_today']);
+        $this->assertEquals(0, $home['totals']['out_today']);
+        $this->assertEquals(10, $home['gst']['output']);
+        $this->assertEquals(10, $home['gst']['net_payable']);
+        $this->assertSame('Cash in Hand', $home['cash'][0]['name']);
+        $this->assertEquals(210, $home['cash'][0]['in_today']);
     }
 
     public function test_a_cash_sale_posts_sales_gst_and_cash_net_of_change(): void

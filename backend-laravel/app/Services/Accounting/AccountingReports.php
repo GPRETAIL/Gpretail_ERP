@@ -170,6 +170,45 @@ class AccountingReports
         ]);
     }
 
+    /**
+     * Finance home: where the money is today, from the books. Cash and bank ledgers with their balances, card / UPI
+     * money not yet in the bank, today's money in and out, this month's GST (output less input) and profit, and
+     * what the store is owed and owes.
+     */
+    public static function home(int $storeId, string $today): array
+    {
+        $monthStart = Carbon::parse($today)->startOfMonth()->toDateString();
+        $rows = self::balances($storeId, $monthStart, $today);
+        $todayLines = DB::table('voucher_lines')->where('store_id', $storeId)->where('voucher_date', $today)
+            ->groupBy('ledger_account_id')->selectRaw('ledger_account_id, SUM(debit) as debit, SUM(credit) as credit')->get()->keyBy('ledger_account_id');
+        $money = $rows->filter(fn ($row) => in_array($row['group_code'], ['cash', 'bank'], true) || in_array($row['system_key'], ['card_clearing', 'upi_clearing'], true));
+        $account = fn ($row) => ['id' => $row['id'], 'name' => $row['name'], 'balance' => $row['closing'],
+            'in_today' => round((float) ($todayLines[$row['id']]->debit ?? 0), 2), 'out_today' => round((float) ($todayLines[$row['id']]->credit ?? 0), 2)];
+        $gst = fn (string $prefix) => round($rows->filter(fn ($row) => str_starts_with((string) $row['system_key'], $prefix))->sum(fn ($row) => $row['credit'] - $row['debit']), 2);
+        $output = $gst('output_');
+        $input = -$gst('input_');
+        $receivable = $rows->filter(fn ($row) => $row['group_code'] === 'sundry_debtors' || $row['system_key'] === 'pos_receivable')->sum('closing');
+        $payable = -$rows->where('group_code', 'sundry_creditors')->sum('closing');
+
+        return [
+            'date' => $today, 'month_from' => $monthStart,
+            'cash' => $rows->where('group_code', 'cash')->map($account)->values(),
+            'bank' => $rows->where('group_code', 'bank')->map($account)->values(),
+            'clearing' => $rows->filter(fn ($row) => in_array($row['system_key'], ['card_clearing', 'upi_clearing'], true))->map($account)->values(),
+            'totals' => [
+                'cash' => round($rows->where('group_code', 'cash')->sum('closing'), 2),
+                'bank' => round($rows->where('group_code', 'bank')->sum('closing'), 2),
+                'clearing' => round($rows->filter(fn ($row) => in_array($row['system_key'], ['card_clearing', 'upi_clearing'], true))->sum('closing'), 2),
+                'in_today' => round($money->sum(fn ($row) => (float) ($todayLines[$row['id']]->debit ?? 0)), 2),
+                'out_today' => round($money->sum(fn ($row) => (float) ($todayLines[$row['id']]->credit ?? 0)), 2),
+                'receivable' => round($receivable, 2),
+                'payable' => round($payable, 2),
+            ],
+            'gst' => ['output' => $output, 'input' => round($input, 2), 'net_payable' => round($output - $input, 2)],
+            'net_profit_month' => self::profitAndLoss($storeId, $monthStart, $today)['profit_and_loss']['net_profit'],
+        ];
+    }
+
     /** Who owes the store (receivable) or whom the store owes (payable), on a date. */
     public static function outstanding(int $storeId, string $side, string $asOf): Collection
     {

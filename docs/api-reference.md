@@ -1,6 +1,6 @@
 # API reference
 
-Every endpoint under `/api`, grouped by module (712 endpoints). Generated from
+Every endpoint under `/api`, grouped by module (713 endpoints). Generated from
 `php artisan route:list --sort=definition --json`; regenerate it after changing routes.
 
 - Each signed-in endpoint is also served under `/api/v1/...` with the same behaviour.
@@ -16,7 +16,7 @@ Every endpoint under `/api`, grouped by module (712 endpoints). Generated from
 - [Auth](#auth) (25)
 - [Crm](#crm) (31)
 - [Dashboards](#dashboards) (25)
-- [Finance](#finance) (23)
+- [Finance](#finance) (24)
 - [Hr](#hr) (158)
 - [Masters](#masters) (120)
 - [Notifications](#notifications) (11)
@@ -134,6 +134,7 @@ Every endpoint under `/api`, grouped by module (712 endpoints). Generated from
 
 | Method | Path | Controller action | Auth |
 |---|---|---|---|
+| GET | `/api/accounting/home` | AccountingController@home | yes |
 | GET | `/api/accounting/accounts` | AccountingController@accounts | yes |
 | POST | `/api/accounting/accounts` | AccountingController@storeAccount | yes |
 | PUT | `/api/accounting/accounts/{id}` | AccountingController@updateAccount | yes |
