@@ -81,7 +81,9 @@ const { onFetchGroupSummaries: fetchPosSaleGroupSummaries, onFetchGroupRows: fet
 
 import {
   POS_SALE_IMPORT_CONFIG,
+  isFullMobileNumber,
   mapCustomerRow,
+  shouldAutoLookupCustomer,
   normalize,
   toNum,
   round2,
@@ -920,13 +922,31 @@ const PosSales = () => {
     return null;
   }, [applyCustomerPanelRow, customers, handleAsyncCustomerSearch]);
 
+  // The name fills in as soon as a full mobile number is typed (or the field is left), not only on Enter.
+  const customerLookupTimer = useRef(null);
+  const lastLookedUpNumber = useRef("");
+  useEffect(() => () => clearTimeout(customerLookupTimer.current), []);
+  const lookupCustomerNumberOnce = useCallback((value) => {
+    const digits = String(value || "").replace(/\D/g, "");
+    if (!shouldAutoLookupCustomer(digits) || digits === lastLookedUpNumber.current) return;
+    lastLookedUpNumber.current = digits;
+    void handleCustomerNumberLookup(value);
+  }, [handleCustomerNumberLookup]);
+
   const handleCustomerNumberChange = (value) => {
-    setNewCustomer((prev) => ({ ...prev, mobileNo: value }));
     const currentMatchedDigits = String(selectedCustomer?.mobileNo || "").replace(/\D/g, "");
     const nextDigits = String(value || "").replace(/\D/g, "");
+    // A different number is no longer the customer found before: their name goes with them.
+    const leavesMatch = Boolean(existingCustomerId) && nextDigits !== currentMatchedDigits;
+    setNewCustomer((prev) => ({ ...prev, mobileNo: value, ...(leavesMatch ? { name: "" } : {}) }));
 
-    if (existingCustomerId && nextDigits !== currentMatchedDigits) {
+    if (leavesMatch) {
       setExistingCustomerId("");
+    }
+    clearTimeout(customerLookupTimer.current);
+    if (nextDigits !== lastLookedUpNumber.current) lastLookedUpNumber.current = "";
+    if (isFullMobileNumber(nextDigits) && nextDigits !== currentMatchedDigits) {
+      customerLookupTimer.current = setTimeout(() => lookupCustomerNumberOnce(value), 250);
     }
   };
 
@@ -2805,12 +2825,16 @@ const PosSales = () => {
                     type="text"
                     value={newCustomer.mobileNo}
                     onChange={(e) => handleCustomerNumberChange(e.target.value)}
+                    onBlur={(e) => { if (!existingCustomerId) lookupCustomerNumberOnce(e.target.value); }}
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
                         e.preventDefault();
+                        clearTimeout(customerLookupTimer.current);
+                        lastLookedUpNumber.current = String(e.currentTarget.value || "").replace(/\D/g, "");
                         handleCustomerNumberLookup(e.currentTarget.value);
                       }
                     }}
+                    slotProps={{ htmlInput: { "aria-label": "Customer Number", inputMode: "tel" } }}
                     placeholder="Write customer number and press Enter"
                     size="small"
                     fullWidth

@@ -41,6 +41,11 @@ export const mapCustomerRow = (row, areaMap) => ({
   sectionReligion: row.section_religion || "",
 });
 
+/** A complete Indian mobile number (10 digits, optionally with 91 in front): looked up as soon as it is typed. */
+export const isFullMobileNumber = (digits) => /^(91)?[6-9]\d{9}$/.test(String(digits || ""));
+/** Long enough to be worth asking the server when the cashier leaves the field (landlines and short codes too). */
+export const shouldAutoLookupCustomer = (digits) => String(digits || "").length >= 6;
+
 export const normalize = (value) => String(value || "").trim().toLowerCase();
 export const toNum = (value, fallback = 0) => {
   const parsed = Number(value);
