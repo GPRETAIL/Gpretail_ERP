@@ -64,3 +64,21 @@ export const addRecipient = (list, recipient) => (list.some((r) => r.type === re
 
 /** Reports grouped by module for the picker. */
 export const reportGroups = (reports = []) => reports.reduce((acc, report) => ({ ...acc, [report.module]: [...(acc[report.module] || []), report] }), {});
+
+/**
+ * The report library by menu module (Dashboard, Sales, Warehouse, Store, Finance, CRM, HR), only reports the user may
+ * open, narrowed by a search; with how many schedules each report already has.
+ */
+export const libraryGroups = (reports = [], modules = [], schedules = [], query = "") => {
+  const text = String(query || "").trim().toLowerCase();
+  const counts = schedules.reduce((acc, s) => ({ ...acc, [s.report_key]: (acc[s.report_key] || 0) + 1 }), {});
+  const order = [...modules, ...reports.map((r) => r.module).filter((m) => !modules.includes(m))];
+  return [...new Set(order)].map((module) => ({
+    module,
+    reports: reports.filter((r) => r.allowed && r.module === module && (!text || `${r.label} ${module}`.toLowerCase().includes(text)))
+      .map((r) => ({ ...r, scheduled: counts[r.key] || 0 })),
+  })).filter((group) => group.reports.length > 0);
+};
+
+/** A new schedule for a report picked from the library. */
+export const scheduleForReport = (report) => ({ ...emptySchedule(), report_key: report.key, name: report.label, layout: report.layouts?.[0]?.value || "" });

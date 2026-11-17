@@ -89,6 +89,7 @@ class ScheduledReportsTest extends TestCase
         }
         $this->assertSame([], $failed);
         $this->assertGreaterThan(40, count($catalog->all()));
+        $this->assertSame([], array_diff(array_unique(array_column($catalog->all(), 'module')), ScheduledReportCatalog::MODULES)); // Every report sits in a menu module.
     }
 
     public function test_send_now_emails_excel_and_pdf_to_the_resolved_recipients_only(): void

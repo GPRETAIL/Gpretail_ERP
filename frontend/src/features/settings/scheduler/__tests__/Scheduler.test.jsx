@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { addRecipient, describeFrequency, recipientLabel, schedulePayload, emptySchedule } from "@/features/settings/scheduler/utils/scheduler";
+import { addRecipient, describeFrequency, libraryGroups, recipientLabel, schedulePayload, emptySchedule } from "@/features/settings/scheduler/utils/scheduler";
 
 const mocks = vi.hoisted(() => ({ get: vi.fn(), post: vi.fn(), put: vi.fn(), patch: vi.fn(), delete: vi.fn() }));
 vi.mock("@/shared/api/apiClient", () => ({ default: mocks }));
@@ -15,6 +15,7 @@ const OPTIONS = {
     { key: "finance.profit_loss", label: "Profit & Loss", module: "Finance", dated: true, layouts: [], allowed: false },
   ],
   periods: [{ value: "yesterday", label: "Yesterday" }, { value: "last_week", label: "Last week (Mon to Sun)" }],
+  modules: ["Dashboard", "Sales", "Warehouse", "Store", "Finance", "CRM", "HR"],
   roles: ["manager", "accountant"], users: [{ id: 5, name: "Anu", email: "anu@example.test", role: "manager" }], groups: [{ id: 3, name: "Owners" }],
   email_ready: false, own_smtp: false,
 };
@@ -70,4 +71,22 @@ it("only reports the user may open can be picked", async () => {
   fireEvent.mouseDown(within(dialog).getByLabelText(/Report/));
   expect(await screen.findByRole("option", { name: "Sale payments summary" })).toBeInTheDocument();
   expect(screen.queryByRole("option", { name: "Profit & Loss" })).toBeNull();
+});
+
+it("library: reports grouped by menu module in menu order, only allowed ones, with schedule counts and search", () => {
+  const groups = libraryGroups(OPTIONS.reports, OPTIONS.modules, [SCHEDULE, SCHEDULE]);
+  expect(groups.map((g) => g.module)).toEqual(["Dashboard", "Sales"]); // Profit & Loss (Finance) is not allowed.
+  expect(groups[0].reports[0]).toMatchObject({ key: "daily_summary", scheduled: 2 });
+  expect(libraryGroups(OPTIONS.reports, OPTIONS.modules, [], "payments").map((g) => g.module)).toEqual(["Sales"]);
+});
+
+it("library: open a module and schedule a report from it", async () => {
+  render(<MemoryRouter><Scheduler /></MemoryRouter>);
+  const sales = await screen.findByRole("button", { name: /^Sales \(1\)/ });
+  expect(sales).toHaveAttribute("aria-expanded", "false");
+  fireEvent.click(sales);
+  fireEvent.click(await screen.findByRole("button", { name: "Schedule Sale payments summary" }));
+  const dialog = screen.getByRole("dialog");
+  expect(within(dialog).getByLabelText(/Schedule name/)).toHaveValue("Sale payments summary");
+  expect(within(dialog).getByLabelText(/Group by/)).toHaveTextContent("Payment mode");
 });

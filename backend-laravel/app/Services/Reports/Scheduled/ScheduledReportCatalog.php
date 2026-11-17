@@ -30,6 +30,24 @@ class ScheduledReportCatalog
     private const STORE_LABELS = ['stock_aging' => 'Stock ageing', 'shelf_period' => 'Shelf period', 'stock_audit' => 'Stock audit',
         'loyalty_redemptions' => 'Loyalty redemptions', 'incentives' => 'Salesperson incentives'];
 
+    /** The ERP's menu modules, in menu order: the Scheduler lists its report library this way. */
+    public const MODULES = ['Dashboard', 'Sales', 'Warehouse', 'Store', 'Finance', 'CRM', 'HR'];
+
+    /** Summary layouts by their report name, and the module each belongs to when not its dataset's own. */
+    private const SUMMARY_LABELS = ['direct_purchase_lines' => 'Direct purchases', 'invoice_lines' => 'Purchase invoices', 'purchase_returns' => 'Purchase returns',
+        'stock' => 'Warehouse stock', 'outward_lines' => 'Stock transfers out', 'po_lines' => 'Purchase orders', 'inventory_entries' => 'Inventory entries',
+        'stock_transactions' => 'Stock movements', 'products' => 'Products', 'supplier_payments' => 'Supplier payments', 'suppliers' => 'Suppliers', 'agents' => 'Agents',
+        'taxes' => 'Purchase tax', 'sale_lines' => 'Sales (items)', 'sale_margin' => 'Sales margin', 'sale_tax' => 'Sales tax', 'sale_payments' => 'Sale payments',
+        'unsettled_bills' => 'Unsettled bills', 'credit_bills' => 'Credit bills', 'cancelled_bills' => 'Cancelled bills', 'approvals' => 'Sales on approval',
+        'customer_orders' => 'Customer orders', 'settlements' => 'Settlements', 'cash_sessions' => 'Cash opening & closing', 'pos_returns' => 'Sales returns',
+        'dealer_lines' => 'Dealer sales', 'dealer_returns' => 'Dealer returns', 'store_stock' => 'Store stock', 'stock_audits' => 'Stock audits', 'employees' => 'Employees',
+        'customers' => 'Customers', 'voucher_lines' => 'Day Book entries'];
+
+    private const SUMMARY_MODULES = ['supplier_payments' => 'Finance', 'voucher_lines' => 'Finance', 'customer_orders' => 'CRM', 'customers' => 'CRM',
+        'employees' => 'HR', 'store_stock' => 'Store', 'stock_audits' => 'Store'];
+
+    private const STORE_MODULES = ['loyalty_redemptions' => 'CRM', 'incentives' => 'HR'];
+
     public function __construct(private ReportSummaryService $summaries) {}
 
     /**
@@ -48,18 +66,19 @@ class ScheduledReportCatalog
             'finance.daybook' => ['label' => 'Day Book', 'module' => 'Finance', 'page' => '/finance/daybook', 'dated' => true],
             'finance.receivable' => ['label' => 'Receivable (customers owe)', 'module' => 'Finance', 'page' => '/finance/receivable', 'dated' => true],
             'finance.payable' => ['label' => 'Payable (owed to suppliers)', 'module' => 'Finance', 'page' => '/finance/payable', 'dated' => true],
-            'supplier.dues' => ['label' => 'Supplier dues, bill by bill', 'module' => 'Supplier', 'page' => '/finance/supplier-payment', 'dated' => false],
+            'supplier.dues' => ['label' => 'Supplier dues, bill by bill', 'module' => 'Finance', 'page' => '/finance/supplier-payment', 'dated' => false],
         ];
         foreach (WarehouseReports::REPORTS as $report) {
-            $reports["warehouse.$report"] = ['label' => self::WAREHOUSE_LABELS[$report] ?? ReportTable::label($report), 'module' => 'Purchase & Stock', 'page' => '/warehouse/reports', 'dated' => true];
+            $reports["warehouse.$report"] = ['label' => self::WAREHOUSE_LABELS[$report] ?? ReportTable::label($report), 'module' => 'Warehouse', 'page' => '/warehouse/reports', 'dated' => true];
         }
         foreach (StoreReports::REPORTS as $report) {
-            $reports["store.$report"] = ['label' => self::STORE_LABELS[$report] ?? ReportTable::label($report), 'module' => 'Stock', 'page' => '/sales/reports', 'dated' => false];
+            $reports["store.$report"] = ['label' => self::STORE_LABELS[$report] ?? ReportTable::label($report), 'module' => self::STORE_MODULES[$report] ?? 'Store', 'page' => '/sales/reports', 'dated' => false];
         }
         foreach (SummaryDatasets::all() as $key => $dataset) {
             $module = $dataset['module'];
             $reports["summary.$key"] = [
-                'label' => ReportTable::label($key).' summary', 'module' => ['sales' => 'Sales', 'warehouse' => 'Purchase & Stock', 'finance' => 'Finance'][$module] ?? ucfirst($module),
+                'label' => (self::SUMMARY_LABELS[$key] ?? ReportTable::label($key)).' summary',
+                'module' => self::SUMMARY_MODULES[$key] ?? (['sales' => 'Sales', 'warehouse' => 'Warehouse', 'finance' => 'Finance'][$module] ?? ucfirst($module)),
                 'page' => ['sales' => '/sales/reports', 'warehouse' => '/warehouse/reports', 'finance' => '/finance/daybook'][$module] ?? '/dashboard',
                 'dated' => isset($dataset['date']),
                 'layouts' => collect($dataset['layouts'])->map(fn ($layout, $value) => ['value' => $value, 'label' => $layout['title']])->values()->all(),

@@ -43,7 +43,7 @@ class ReportScheduleController extends Controller
             ->where('email', 'not like', '%@staff.invalid')->orderBy('name')->get(['id', 'name', 'email', 'role']);
 
         return response()->json(['success' => true, 'data' => [
-            'reports' => $reports, 'periods' => collect(ReportPeriod::PERIODS)->map(fn ($label, $value) => compact('value', 'label'))->values(),
+            'reports' => $reports, 'modules' => ScheduledReportCatalog::MODULES, 'periods' => collect(ReportPeriod::PERIODS)->map(fn ($label, $value) => compact('value', 'label'))->values(),
             'roles' => self::ROLES, 'users' => $users, 'groups' => RecipientGroup::where('store_id', $storeId)->orderBy('name')->get(['id', 'name']),
             'email_ready' => $mailers->ready($storeId), 'own_smtp' => $mailers->hasOwnSmtp($storeId),
         ]]);

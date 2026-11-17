@@ -8,7 +8,8 @@ import api from "@/shared/api/apiClient";
 import PageHeader from "@/shared/components/PageHeader";
 import { StatusChip } from "@/shared/theme/StatusChip";
 import ScheduleDialog from "./components/ScheduleDialog";
-import { describeFrequency, emptySchedule, FORMAT_LABELS, isEmail, recipientLabel, scheduleToForm, STATUS_TONES } from "./utils/scheduler";
+import ReportLibrary from "./components/ReportLibrary";
+import { describeFrequency, emptySchedule, FORMAT_LABELS, isEmail, recipientLabel, scheduleForReport, scheduleToForm, STATUS_TONES } from "./utils/scheduler";
 
 const errorText = (err, fallback) => {
   const data = err?.response?.data || {};
@@ -65,9 +66,11 @@ function Schedules({ options, onChanged }) {
   };
 
   return (
-    <Stack spacing={1.5}>
+    <Box sx={{ display: "grid", gap: 2, gridTemplateColumns: { xs: "1fr", lg: "380px minmax(0, 1fr)" }, alignItems: "start" }}>
+    <ReportLibrary options={options} schedules={rows || []} onSchedule={(report) => setEditing(scheduleForReport(report))} />
+    <Stack spacing={1.5} sx={{ minWidth: 0 }}>
       <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-        <Typography variant="body2" color="text.secondary" sx={{ flex: 1 }}>Each schedule emails one report, as Excel and/or PDF, at its time (India time). People only receive reports they may open.</Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ flex: 1 }}>Each schedule emails one report, as Excel and/or PDF, at its time (India time). People only receive reports they may open. Pick a report from the library to schedule it.</Typography>
         <Button variant="contained" size="small" startIcon={<Plus size={14} />} onClick={() => setEditing(emptySchedule())}>New schedule</Button>
       </Stack>
       <Paper variant="outlined" sx={{ overflowX: "auto" }}>
@@ -117,6 +120,7 @@ function Schedules({ options, onChanged }) {
       {editing ? <ScheduleDialog initial={editing} options={options} onClose={() => setEditing(null)}
         onSaved={(message) => { toast.success(message || "Saved."); setEditing(null); void load(); }} /> : null}
     </Stack>
+    </Box>
   );
 }
 
