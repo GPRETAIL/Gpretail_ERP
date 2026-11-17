@@ -8,6 +8,7 @@ use App\Models\DealerInvoicePayment;
 use App\Models\DealerReceipt;
 use App\Models\DealerReceiptItem;
 use App\Services\Documents\DocumentNumberService;
+use App\Services\Sales\BusinessDate;
 use App\Services\Sales\DealerBalances;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -87,7 +88,7 @@ class DealerReceiptController extends Controller
 
             $receipt = DealerReceipt::create([
                 'store_id' => $storeId, 'receipt_no' => DocumentNumberService::resolve($request, $storeId, 'DREC'),
-                'customer_id' => $data['customer_id'], 'receipt_date' => $data['receipt_date'] ?? now()->toDateString(),
+                'customer_id' => $data['customer_id'], 'receipt_date' => $data['receipt_date'] ?? BusinessDate::today()->toDateString(),
                 'mode' => $data['mode'], 'amount' => $amount, 'reference_no' => $data['reference_no'] ?? null,
                 'cheque_date' => $data['cheque_date'] ?? null, 'notes' => $data['notes'] ?? null, 'status' => 'COMPLETED',
                 'created_by' => $request->user()->id,

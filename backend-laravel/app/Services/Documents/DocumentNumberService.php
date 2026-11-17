@@ -6,6 +6,7 @@ use App\Models\DocumentNumberCounter;
 use App\Models\Store;
 use App\Models\StoreLocalNode;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -67,6 +68,15 @@ class DocumentNumberService
         return $number;
     }
 
+    /**
+     * The day part of a number (20261118): the business day in the business timezone (India), not the server's UTC
+     * date, so a bill made between midnight and 5:30 am is numbered for that day, not the day before.
+     */
+    public static function period(?\DateTimeInterface $date = null): string
+    {
+        return ($date ? Carbon::instance($date) : now())->setTimezone(config('app.business_timezone'))->format('Ymd');
+    }
+
     /** $date: the business date the number belongs to (a bill made after cash closing carries the next day). */
     public static function next(int $storeId, string $prefix, bool $isReplay = false, ?string $suppliedNumber = null, ?\DateTimeInterface $date = null): string
     {
@@ -80,7 +90,7 @@ class DocumentNumberService
 
         $store = Store::find($storeId);
         $storeCode = $store?->code ?: (string) $storeId;
-        $period = ($date ?? now())->format('Ymd');
+        $period = self::period($date);
         $origin = self::resolveOrigin($storeId);
 
         $seq = DB::transaction(function () use ($storeId, $prefix, $period, $origin) {
@@ -160,7 +170,7 @@ class DocumentNumberService
     {
         $store = Store::find($storeId);
         $storeCode = $store?->code ?: (string) $storeId;
-        $period = ($date ?? now())->format('Ymd');
+        $period = self::period($date);
         $origin = self::resolveOrigin($storeId);
 
         $padded = str_pad((string) self::peekSeq($storeId, $prefix, $date), 4, '0', STR_PAD_LEFT);
@@ -175,7 +185,7 @@ class DocumentNumberService
      */
     public static function peekSeq(int $storeId, string $prefix, ?\DateTimeInterface $date = null): int
     {
-        $period = ($date ?? now())->format('Ymd');
+        $period = self::period($date);
         $origin = self::resolveOrigin($storeId);
 
         $counter = DocumentNumberCounter::where([

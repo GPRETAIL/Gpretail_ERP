@@ -5,11 +5,11 @@ namespace App\Services\Pos;
 use App\Models\PosSale;
 use App\Models\Store;
 use App\Models\SystemConfiguration;
+use App\Services\Documents\DocumentNumberService;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
-use App\Services\Documents\DocumentNumberService;
 
 /**
  * Bills a till saved while it had no internet. Each counter numbers those from its own offline
@@ -39,15 +39,15 @@ class PosOfflineBilling
             return null;
         }
         $code = self::seriesCode($counter->id);
-        $period = now()->format('Ymd');
+        $period = DocumentNumberService::period();
 
         return [
             'code' => $code,
             'prefix' => 'INV-'.self::storeCode($storeId).'-',
             'period' => $period,
             'next' => (int) (DB::table('document_number_counters')->where(['store_id' => $storeId, 'prefix' => 'INV', 'period' => $period, 'origin' => $code])->value('last_seq') ?? 0) + 1,
-            // Invoice dates follow the server's clock; the till formats offline dates the same way.
-            'utc_offset_minutes' => now()->utcOffset(),
+            // Bill numbers carry the business day (India time); the till formats offline dates with the same offset.
+            'utc_offset_minutes' => now(config('app.business_timezone'))->utcOffset(),
         ];
     }
 
@@ -76,7 +76,7 @@ class PosOfflineBilling
         if ($request->boolean('isCredit') || $request->filled('appliedPosReturnId') || $request->input('saleSaveAs') !== 'paid_settled') {
             throw ValidationException::withMessages(['offline' => 'Only fully paid bills can be saved offline. Credit sales and return credits need the internet.']);
         }
-        $period = $billedAt->format('Ymd');
+        $period = DocumentNumberService::period($billedAt);
         $code = self::seriesCode($counter->id);
         $prefix = 'INV-'.self::storeCode($storeId)."-$period-$code-";
         if (! str_starts_with($number, $prefix) || ! preg_match('/^\d{4,6}$/', substr($number, strlen($prefix)))) {

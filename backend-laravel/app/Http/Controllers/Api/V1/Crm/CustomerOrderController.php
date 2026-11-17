@@ -12,6 +12,7 @@ use App\Models\CustomerOrderItem;
 use App\Models\Product;
 use App\Models\Stock;
 use App\Services\Documents\DocumentNumberService;
+use App\Services\Sales\BusinessDate;
 use App\Support\GroupAggregationService;
 use App\Support\PaginationService;
 use Illuminate\Http\Request;
@@ -142,7 +143,7 @@ class CustomerOrderController extends Controller
                 'location_id' => $request->input('locationId') ?: $request->input('location_id'),
                 'city_id' => $request->input('cityId') ?: $request->input('city_id'),
                 'order_no' => $orderNo,
-                'order_date' => $request->input('orderDate') ?: $request->input('order_date') ?: now()->toDateString(),
+                'order_date' => $request->input('orderDate') ?: $request->input('order_date') ?: BusinessDate::today()->toDateString(),
                 'delivery_date' => $request->input('deliveryDate') ?: $request->input('delivery_date'),
                 'total_amount' => $totalAmount,
                 'discount_amount' => $discountAmount,
@@ -386,7 +387,7 @@ class CustomerOrderController extends Controller
                     'store_id' => $storeId,
                     'customer_id' => $customerId,
                     'order_no' => $row['orderNo'] ?? DocumentNumberService::next((int) $storeId, 'ORD'),
-                    'order_date' => $row['orderDate'] ?? now()->toDateString(),
+                    'order_date' => $row['orderDate'] ?? BusinessDate::today()->toDateString(),
                     'delivery_date' => $row['deliveryDate'] ?? null,
                     'total_amount' => (float) ($row['totalAmount'] ?? 0),
                     'net_amount' => (float) ($row['netAmount'] ?? $row['totalAmount'] ?? 0),

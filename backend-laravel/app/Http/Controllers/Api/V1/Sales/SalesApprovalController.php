@@ -13,6 +13,7 @@ use App\Models\SalesApprovalItem;
 use App\Models\User;
 use App\Services\Approvals\ApprovalService;
 use App\Services\Documents\DocumentNumberService;
+use App\Services\Sales\BusinessDate;
 use App\Support\GroupAggregationService;
 use App\Support\PaginationService;
 use Illuminate\Http\Request;
@@ -143,7 +144,7 @@ class SalesApprovalController extends Controller
                 'customer_name' => $customerId ? null : $request->input('customer.name'),
                 'customer_mobile' => $customerId ? null : $request->input('customer.mobileNo'),
                 'approval_no' => $request->input('approval_no') ?: DocumentNumberService::resolve($request, (int) $storeId, 'APP'),
-                'approval_date' => $request->input('approval_date') ?: now()->toDateString(),
+                'approval_date' => $request->input('approval_date') ?: BusinessDate::today()->toDateString(),
                 'valid_until' => $request->input('valid_until') ?: now()->addDays(7)->toDateString(),
                 'total_amount' => round(max(0, $total), 2),
                 'status' => 'PENDING',

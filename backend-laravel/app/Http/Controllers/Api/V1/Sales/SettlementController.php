@@ -9,6 +9,7 @@ use App\Models\PosPayment;
 use App\Models\PosSale;
 use App\Models\Settlement;
 use App\Services\Documents\DocumentNumberService;
+use App\Services\Sales\BusinessDate;
 use App\Support\PaginationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -74,7 +75,7 @@ class SettlementController extends Controller
         $settlement = Settlement::create([
             'store_id' => $storeId,
             'batch_no' => $batchNo,
-            'settlement_date' => $request->input('settlement_date') ?: now()->toDateString(),
+            'settlement_date' => $request->input('settlement_date') ?: BusinessDate::today()->toDateString(),
             'total_sales' => $request->input('total_sales', 0),
             'cash_total' => $request->input('cash_total', 0),
             'card_total' => $request->input('card_total', 0),
@@ -217,7 +218,7 @@ class SettlementController extends Controller
             $change = round($cash + $card + $upi - $due, 2);
             $settlement = Settlement::create([
                 'store_id' => $storeId, 'batch_no' => DocumentNumberService::resolve($request, $storeId, 'SETTLE'),
-                'settlement_date' => now()->toDateString(), 'total_sales' => $due,
+                'settlement_date' => BusinessDate::today()->toDateString(), 'total_sales' => $due,
                 'cash_total' => $cash - $change, 'card_total' => $card, 'upi_total' => $upi,
                 'credit_total' => 0, 'settled_by' => $request->user()->id,
             ]);
