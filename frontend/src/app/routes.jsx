@@ -140,6 +140,7 @@ const SupplierProductAnalyzer = lazy(() => import("@/features/analytical/Supplie
 const SalesPivotAnalyzer = lazy(() => import("@/features/analytical/SalesPivotAnalyzer"));
 const StockValuationAnalyzer = lazy(() => import("@/features/analytical/StockValuationAnalyzer"));
 const FinanceHome = lazy(() => import("@/features/finance/home/FinanceHome"));
+const FastMovingProducts = lazy(() => import("@/features/dashboard/fast-moving/FastMovingProducts"));
 const OpeningBalance = lazy(() => import("@/features/finance/opening-balance/OpeningBalance"));
 const SupplierPayment = lazy(() => import("@/features/finance/SupplierPayment"));
 const ManageLedger = lazy(() => import("@/features/finance/accounting/ManageLedger"));
@@ -212,6 +213,7 @@ export const protectedLayoutRoutes = [
   { path: "/notifications", render: () => <Notifications /> },
   { path: "/store-activation", render: () => <StoreActivation /> },
   { path: "/dashboard", render: () => <Dashboard /> },
+  { path: "/dashboard/fast-moving", render: () => <FastMovingProducts /> },
   { path: "/settings/company", render: () => <CompanySettings /> },
   { path: "/settings/themes", render: () => <Themes /> },
   // Renamed from Branding -- keeps old bookmarks/links working, same pattern as the HRMS move above.

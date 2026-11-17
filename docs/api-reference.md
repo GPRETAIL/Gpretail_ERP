@@ -1,6 +1,6 @@
 # API reference
 
-Every endpoint under `/api`, grouped by module (720 endpoints). Generated from
+Every endpoint under `/api`, grouped by module (721 endpoints). Generated from
 `php artisan route:list --sort=definition --json`; regenerate it after changing routes.
 
 - Each signed-in endpoint is also served under `/api/v1/...` with the same behaviour.
@@ -15,7 +15,7 @@ Every endpoint under `/api`, grouped by module (720 endpoints). Generated from
 - [Analytical](#analytical) (2)
 - [Auth](#auth) (25)
 - [Crm](#crm) (31)
-- [Dashboards](#dashboards) (25)
+- [Dashboards](#dashboards) (26)
 - [Finance](#finance) (31)
 - [Hr](#hr) (158)
 - [Masters](#masters) (120)
@@ -105,6 +105,7 @@ Every endpoint under `/api`, grouped by module (720 endpoints). Generated from
 | Method | Path | Controller action | Auth |
 |---|---|---|---|
 | GET | `/api/dashboard/overview` | DashboardController@overview | yes |
+| GET | `/api/dashboard/fast-moving` | DashboardController@fastMoving | yes |
 | GET | `/api/dashboard/warehouse` | DashboardController@warehouse | yes |
 | GET | `/api/dashboard/summary` | DashboardController@summary | yes |
 | GET | `/api/dashboard/attention-summary` | DashboardController@attentionSummary | yes |

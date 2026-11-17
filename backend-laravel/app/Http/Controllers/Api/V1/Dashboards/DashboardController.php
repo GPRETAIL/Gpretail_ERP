@@ -15,6 +15,7 @@ use App\Models\Stock;
 use App\Models\StockOutward;
 use App\Models\Store;
 use App\Services\Dashboards\DashboardMetricHistory;
+use App\Services\Dashboards\FastMovingProducts;
 use App\Services\Tenancy\StoreContext;
 use App\Services\Tenancy\StoreQuery;
 use Illuminate\Http\Request;
@@ -26,6 +27,18 @@ class DashboardController extends Controller
     public function index(Request $request)
     {
         return $this->overview($request);
+    }
+
+    /** Dashboard > Fast Moving Products > View all: bought, sold, balance and pace per product for the period. */
+    public function fastMoving(Request $request, FastMovingProducts $report)
+    {
+        $data = $request->validate(['from' => 'nullable|date', 'to' => 'nullable|date|after_or_equal:from', 'search' => 'nullable|string|max:100', 'limit' => 'nullable|integer|min:1|max:500']);
+        $today = now(config('app.business_timezone'));
+
+        return response()->json(['success' => true, 'data' => $report->report(
+            $data['from'] ?? $today->copy()->subDays(29)->toDateString(), $data['to'] ?? $today->toDateString(),
+            $data['search'] ?? null, (int) ($data['limit'] ?? 100),
+        )]);
     }
 
     public function overview(Request $request)

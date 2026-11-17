@@ -24,6 +24,7 @@ import { DashboardLayoutProvider, useDashboardLayout } from "./context/Dashboard
 import { Box, Button, MenuItem, Stack, Tab, Tabs, TextField, Typography } from "@mui/material";
 import PageSkeleton from "@/shared/components/PageSkeleton";
 import LoadingSkeleton from "@/shared/components/LoadingSkeleton";
+import { fastMovingPath } from "./fast-moving/utils/fastMoving";
 
 // The chart library is most of this page's download: load it after the cards and tables render.
 const loadCharts = () => import("./components/DashboardCharts");
@@ -256,7 +257,7 @@ const Dashboard = () => {
           emptyMessage: "No product sales in this range",
           loading,
           privacyMode,
-          viewAllPath: "/sales/reports",
+          viewAllPath: fastMovingPath(fromDate, toDate),
           viewAllLabel: "View All Products",
         },
         defaultLayout: { x: 0, y: 8 + BELOW_KPI_ROW_H, w: 6, h: BELOW_KPI_ROW_H, minW: 4, minH: 3 },
@@ -296,7 +297,7 @@ const Dashboard = () => {
     }),
     [
       totalBills, settlements, employees, stockValue, loading, charts, tables, privacyMode,
-      actionRequiredItems, actionRequiredLoading, handleActionRequiredItem,
+      actionRequiredItems, actionRequiredLoading, handleActionRequiredItem, fromDate, toDate,
     ]
   );
 

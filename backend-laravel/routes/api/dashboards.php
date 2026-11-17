@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Route;
 
 // Dashboard Sub-endpoints
 Route::get('dashboard/overview', [DashboardController::class, 'overview']);
+Route::get('dashboard/fast-moving', [DashboardController::class, 'fastMoving']);
 Route::get('dashboard/warehouse', [DashboardController::class, 'warehouse']);
 Route::get('dashboard/summary', [DashboardController::class, 'summary']);
 Route::get('dashboard/attention-summary', [DashboardController::class, 'attentionSummary']);

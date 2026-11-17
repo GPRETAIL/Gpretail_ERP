@@ -178,6 +178,8 @@ export const canAccessPath = (pathname, user) => {
   if (path === "/notifications") return Boolean(user);
   // Match the API's registered tenant-owner gate; it must work before any store exists.
   if (path === "/store-activation") return isTenantAdmin(user);
+  // Fast Moving Products in full is the Dashboard card's "View all": whoever opens the Dashboard opens it.
+  if (path === "/dashboard/fast-moving") return canAccessPath("/dashboard", user);
   if (["/settings", "/settings/themes", "/settings/branding"].includes(path) && canManageThemes(user)) return true;
   // Company module entitlement gates every module path, regardless of RBAC.
   if (!isPathEntitled(user, path)) return false;
