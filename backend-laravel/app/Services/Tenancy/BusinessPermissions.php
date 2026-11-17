@@ -112,7 +112,7 @@ class BusinessPermissions
         if (! $read && in_array($controller, self::HR_MANAGED, true)) {
             return 'hr.manage';
         }
-        if ($controller === 'AccountingController') {
+        if (in_array($controller, ['AccountingController', 'OpeningBalanceController'], true)) {
             // The books (profit, balances) are for managers and accountants, not every signed-in user.
             return $read ? 'accounts.view' : 'accounts.post';
         }

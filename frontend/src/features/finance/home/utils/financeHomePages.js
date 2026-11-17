@@ -9,7 +9,7 @@ export const FINANCE_PAGE_GROUPS = [
 /** Menu pages still being built; shown with a "Soon" tag. Remove a path here when its page goes live. */
 export const FINANCE_PAGES_COMING = new Set([
   "/finance/credit-sale-collection", "/finance/transport-payment", "/finance/petty-cash", "/finance/cheque-book",
-  "/finance/opening-balance", "/finance/loan-reconciliation", "/finance/gst-inbox", "/finance/tally-configuration", "/finance/tally-integration",
+  "/finance/loan-reconciliation", "/finance/gst-inbox", "/finance/tally-configuration", "/finance/tally-integration",
 ]);
 
 /**

@@ -384,6 +384,12 @@
       "edit": true,
       "delete": false
     },
+    "/finance/opening-balance": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": false
+    },
     "/finance/voucher-entry": {
       "view": true,
       "add": true,

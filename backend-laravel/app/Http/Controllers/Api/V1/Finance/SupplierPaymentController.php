@@ -2,15 +2,15 @@
 
 namespace App\Http\Controllers\Api\V1\Finance;
 
-use App\Services\Documents\DocumentNumberService;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Finance\StoreSupplierPaymentRequest;
 use App\Models\DirectPurchase;
+use App\Models\OpeningBill;
 use App\Models\PurchaseInvoice;
 use App\Models\StockBatch;
 use App\Models\Supplier;
 use App\Models\SupplierPayment;
-use App\Models\SupplierPaymentItem;
+use App\Services\Accounting\SupplierPaymentWriter;
 use App\Support\PaginationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -94,48 +94,11 @@ class SupplierPaymentController extends Controller
     {
         $storeId = $this->resolveStoreId($request, 1);
 
-        $payment = DB::transaction(function () use ($request, $storeId) {
-            $paymentNo = DocumentNumberService::resolve($request, (int) $storeId, 'SPAY');
-            $amount = (float) $request->input('amount');
-
-            $supplierPayment = SupplierPayment::create([
-                'supplier_id' => $request->input('supplier_id'),
-                'store_id' => $storeId,
-                'payment_no' => $paymentNo,
-                'payment_date' => $request->input('payment_date') ?: now()->toDateString(),
-                'amount' => $amount,
-                'payment_mode' => $request->input('payment_mode', 'BANK_TRANSFER'),
-                'reference_no' => $request->input('reference_no'),
-                'notes' => $request->input('notes'),
-                'created_by' => $request->user()->id ?? 1,
-            ]);
-
-            // If purchase invoice id provided, link payment
-            if ($request->filled('purchase_invoice_id')) {
-                SupplierPaymentItem::create([
-                    'supplier_payment_id' => $supplierPayment->id,
-                    'purchase_invoice_id' => $request->input('purchase_invoice_id'),
-                    'amount_paid' => $amount,
-                ]);
-
-                $inv = PurchaseInvoice::find($request->input('purchase_invoice_id'));
-                if ($inv) {
-                    $inv->paid_amount += $amount;
-                    if ($inv->paid_amount >= $inv->grand_total) {
-                        $inv->payment_status = 'PAID';
-                    } else {
-                        $inv->payment_status = 'PARTIAL';
-                    }
-                    $inv->save();
-                }
-            }
-
-            return $supplierPayment;
-        });
+        $payment = app(SupplierPaymentWriter::class)->save($request, (int) $storeId, $request->validated());
 
         return response()->json([
             'success' => true,
-            'message' => 'Supplier payment recorded successfully',
+            'message' => 'Supplier payment '.$payment->payment_no.' saved.',
             'data' => $payment->load('supplier'),
         ], 201);
     }
@@ -209,6 +172,26 @@ class SupplierPaymentController extends Controller
                 'paid' => $paid,
                 'balance' => max(0, $total - $paid),
                 'amount' => $total,
+            ];
+        }
+
+        // Bills the supplier was owed when the books started (Finance > Opening Balance).
+        $openings = OpeningBill::where('party_type', 'supplier')->whereColumn('paid_amount', '<', 'amount')
+            ->when($storeId, fn ($query) => $query->where('store_id', $storeId))
+            ->when($search !== '', fn ($query) => $query->where(fn ($q) => $q->where('bill_no', 'like', "%{$search}%")
+                ->orWhereIn('party_id', Supplier::where('name', 'like', "%{$search}%")->select('id'))))
+            ->orderBy('bill_date', 'desc')->limit(2000)->get();
+        $openingSuppliers = Supplier::whereIn('id', $openings->pluck('party_id')->unique())->pluck('name', 'id');
+        foreach ($openings as $bill) {
+            $total = (float) $bill->amount;
+            $paid = (float) $bill->paid_amount;
+            $rows[] = [
+                'id' => $bill->id, 'invoice_type' => 'opening', 'invoice_no' => $bill->bill_no,
+                'supplier_name' => $openingSuppliers[$bill->party_id] ?? 'Unknown Supplier', 'supplier_id' => (int) $bill->party_id,
+                'invoice_date' => $bill->bill_date?->toDateString(), 'due_date' => $bill->due_date?->toDateString(),
+                'total_amount' => $total, 'paid_amount' => $paid, 'balance_due' => max(0, $total - $paid),
+                'days' => (int) now()->diffInDays($bill->bill_date, true), 'discount_perc' => 0.0,
+                'total' => $total, 'paid' => $paid, 'balance' => max(0, $total - $paid), 'amount' => $total,
             ];
         }
 
@@ -292,6 +275,7 @@ class SupplierPaymentController extends Controller
                     'id' => $inv->id,
                     'invoice_type' => 'invoice',
                     'invoice_no' => $inv->invoice_no,
+                    'supplier_id' => $inv->supplier_id,
                     'supplier_name' => $inv->supplier?->name,
                     'company_name' => null,
                     'invoice_date' => $inv->invoice_date,
@@ -306,6 +290,27 @@ class SupplierPaymentController extends Controller
                 ],
                 'lines' => $lines,
                 'summary' => $this->buildSummary($lines),
+            ]]);
+        }
+
+        if ($type === 'opening') {
+            // An opening bill has no items; it is just what was owed when the books started.
+            $bill = OpeningBill::where('party_type', 'supplier')->find($id);
+            if (! $bill) {
+                return response()->json(['success' => false, 'message' => 'Opening bill not found'], 404);
+            }
+            $total = (float) $bill->amount;
+            $paid = (float) $bill->paid_amount;
+
+            return response()->json(['success' => true, 'data' => [
+                'invoice' => [
+                    'id' => $bill->id, 'invoice_type' => 'opening', 'invoice_no' => $bill->bill_no,
+                    'supplier_id' => (int) $bill->party_id, 'supplier_name' => Supplier::whereKey($bill->party_id)->value('name'), 'company_name' => null,
+                    'invoice_date' => $bill->bill_date?->toDateString(), 'total' => $total, 'tax' => 0.0, 'discount' => 0.0,
+                    'paid' => $paid, 'balance' => max(0, $total - $paid), 'payment_amount' => $total, 'paid_amount' => $paid, 'outstanding_amount' => max(0, $total - $paid),
+                ],
+                'lines' => [],
+                'summary' => $this->buildSummary(collect()),
             ]]);
         }
 
@@ -338,6 +343,7 @@ class SupplierPaymentController extends Controller
                 'id' => $dir->id,
                 'invoice_type' => 'direct',
                 'invoice_no' => $dir->invoice_no ?: $dir->purchase_no,
+                'supplier_id' => $dir->supplier_id,
                 'supplier_name' => $dir->supplier->name ?? $dir->supplier_name,
                 'company_name' => $dir->company_name,
                 'invoice_date' => $dir->invoice_date ?: $dir->purchase_date,

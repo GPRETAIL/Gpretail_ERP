@@ -1,6 +1,6 @@
 # API reference
 
-Every endpoint under `/api`, grouped by module (713 endpoints). Generated from
+Every endpoint under `/api`, grouped by module (720 endpoints). Generated from
 `php artisan route:list --sort=definition --json`; regenerate it after changing routes.
 
 - Each signed-in endpoint is also served under `/api/v1/...` with the same behaviour.
@@ -16,7 +16,7 @@ Every endpoint under `/api`, grouped by module (713 endpoints). Generated from
 - [Auth](#auth) (25)
 - [Crm](#crm) (31)
 - [Dashboards](#dashboards) (25)
-- [Finance](#finance) (24)
+- [Finance](#finance) (31)
 - [Hr](#hr) (158)
 - [Masters](#masters) (120)
 - [Notifications](#notifications) (11)
@@ -152,6 +152,13 @@ Every endpoint under `/api`, grouped by module (713 endpoints). Generated from
 | GET | `/api/accounting/summary-layouts` | AccountingController@summaryLayouts | yes |
 | GET | `/api/accounting/summary/{dataset}` | AccountingController@summary | yes |
 | POST | `/api/accounting/repost` | AccountingController@repost | yes |
+| GET | `/api/opening-balances/ledgers` | OpeningBalanceController@ledgers | yes |
+| PUT | `/api/opening-balances/ledgers` | OpeningBalanceController@saveLedgers | yes |
+| GET | `/api/opening-balances/bills` | OpeningBalanceController@bills | yes |
+| POST | `/api/opening-balances/bills` | OpeningBalanceController@storeBill | yes |
+| POST | `/api/opening-balances/bills/import` | OpeningBalanceController@importBills | yes |
+| PUT | `/api/opening-balances/bills/{id}` | OpeningBalanceController@updateBill | yes |
+| DELETE | `/api/opening-balances/bills/{id}` | OpeningBalanceController@destroyBill | yes |
 | GET | `/api/supplier-payments/dashboard-summary` | SupplierPaymentController@dashboardSummary | yes |
 | GET | `/api/supplier-payments/pending` | SupplierPaymentController@pending | yes |
 | GET | `/api/supplier-payments/pending/{type}/{id}/details` | SupplierPaymentController@pendingDetails | yes |

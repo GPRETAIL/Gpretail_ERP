@@ -13,6 +13,8 @@ class SupplierPaymentItem extends Model
     protected $fillable = [
         'supplier_payment_id',
         'purchase_invoice_id',
+        'direct_purchase_id',
+        'opening_bill_id',
         'amount_paid',
     ];
 

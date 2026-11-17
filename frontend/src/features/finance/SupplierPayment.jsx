@@ -19,6 +19,7 @@ import { createNamedTheme, TONES } from "@/shared/theme/themeRegistry";
 import { StatusChip } from "@/shared/theme/StatusChip";
 import { ThemeProvider, Box, Stack, Card, Typography, Breadcrumbs, Link, Button, TextField, Select, MenuItem, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Divider } from "@mui/material";
 import { muiFieldSx, SEARCHABLE_TRIGGER_SX } from "@/shared/theme/formControlSizes";
+import { allocateSupplierPayment, allocationTotals, BILL_TYPE_LABELS, BILL_TYPE_TONES, billKey, oldestFirst, singleSupplier, SUPPLIER_PAYMENT_MODES, supplierPaymentPayload } from "./utils/supplierPayments";
 
 const fmt = (val) => {
   const n = Number(val);
@@ -26,7 +27,6 @@ const fmt = (val) => {
   return n.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 };
 
-const PAYMENT_MODES = ["Cheque", "Cash", "Multiple Cheque", "PDC"];
 const getPaymentStatusMeta = (row) => {
   const paid = Number(row?.paid || 0);
   const balance = Number(row?.balance || 0);
@@ -60,11 +60,11 @@ const PENDING_TABLE_COLUMNS = [
   {
     key: "invoice_type",
     label: "Invoice Type",
-    valueGetter: (row) => (row.invoice_type === "invoice" ? "Invoice" : "Direct Purchase"),
+    valueGetter: (row) => BILL_TYPE_LABELS[row.invoice_type] || row.invoice_type,
     render: (_, row) => (
       <StatusChip
-        label={row.invoice_type === "invoice" ? "Invoice" : "Direct Purchase"}
-        tone={row.invoice_type === "invoice" ? "info" : "warning"}
+        label={BILL_TYPE_LABELS[row.invoice_type] || row.invoice_type}
+        tone={BILL_TYPE_TONES[row.invoice_type] || "default"}
       />
     ),
   },
@@ -150,7 +150,9 @@ const SupplierPayment = () => {
   // ─── Server-side pagination (FilterableDataTable's paginationMode="server") ──────────────────
 
   // ─── Payment form state ────────────────────────────────────────────────────
-  const [paymentMode, setPaymentMode] = useState("Cash");
+  const [paymentMode, setPaymentMode] = useState("CASH");
+  const [chequeDate, setChequeDate] = useState("");
+  const [allocations, setAllocations] = useState({});
   const [paymentDate, setPaymentDate] = useState(new Date().toISOString().slice(0, 10));
   const [refNo, setRefNo] = useState("");
   const [paidAmountInput, setPaidAmountInput] = useState("");
@@ -266,15 +268,21 @@ const SupplierPayment = () => {
   const [paymentItems, setPaymentItems] = useState([]);
 
   const goToPayment = (items, backScreen = "search") => {
-    const payableItems = (items || []).filter((item) => Number(item?.balance || 0) > 0);
+    const payableItems = oldestFirst((items || []).filter((item) => Number(item?.balance || 0) > 0));
     if (payableItems.length === 0) {
       toast.warn("This invoice is already fully paid");
+      return;
+    }
+    // One payment goes to one supplier (one cheque or transfer, one ledger).
+    if (!singleSupplier(payableItems)) {
+      toast.warn("Select bills of one supplier for a payment");
       return;
     }
 
     setPaymentItems(payableItems);
     const total = payableItems.reduce((s, r) => s + r.balance, 0);
     setPaidAmountInput(total.toFixed(2));
+    setAllocations(allocateSupplierPayment(payableItems, total));
     setPaymentBackScreen(backScreen);
     setScreen("payment");
   };
@@ -320,24 +328,15 @@ const SupplierPayment = () => {
     const amt = Number(paidAmountInput || 0);
     if (amt <= 0) { toast.warn("Enter a valid amount"); return; }
     if (!paymentDate) { toast.warn("Select payment date"); return; }
+    if (paymentMode === "CHEQUE" && !refNo.trim()) { toast.warn("Enter the cheque number"); return; }
+    if (allocationTotals(allocations, amt).over) { toast.warn("The bills add up to more than the amount paid"); return; }
 
     setSaving(true);
     try {
-      await api.post("/supplier-payments", {
-        paymentDate,
-        paymentMode,
-        refNo,
-        paidAmount: amt,
-        remarks,
-        invoices: paymentItems.map((r) => ({
-          id: r.id,
-          invoice_type: r.invoice_type,
-          supplier_id: r.supplier_id,
-          company_id: r.company_id,
-          amount: Math.min(r.balance, amt / paymentItems.length), // distribute evenly or up to balance
-        })),
-      });
-      toast.success("Payment saved successfully");
+      const res = await api.post("/supplier-payments", supplierPaymentPayload({
+        bills: paymentItems, allocations, amount: amt, mode: paymentMode, date: paymentDate, referenceNo: refNo, chequeDate, notes: remarks,
+      }));
+      toast.success(res.data?.message || "Payment saved successfully");
       setScreen("search");
       handleSearch(); // refresh the pending list
     } catch (err) {
@@ -348,6 +347,7 @@ const SupplierPayment = () => {
   };
 
   const totalSelectedPayable = paymentItems.reduce((s, r) => s + r.balance, 0);
+  const split = allocationTotals(allocations, paidAmountInput);
   const isHistoryView = screen === "search" && showSearchPage;
 
   // ─── RENDER ─────────────────────────────────────────────────────────────────
@@ -676,7 +676,7 @@ const SupplierPayment = () => {
                       <SummaryField label="Company">{detailData.invoice.company_name || "-"}</SummaryField>
                       <SummaryField label="Invoice No">{detailData.invoice.invoice_no || "-"}</SummaryField>
                       <SummaryField label="Invoice Type" sx={{ textTransform: "capitalize" }}>
-                        {detailData.invoice.invoice_type === "invoice" ? "Invoice" : "Direct Purchase"}
+                        {BILL_TYPE_LABELS[detailData.invoice.invoice_type] || detailData.invoice.invoice_type}
                       </SummaryField>
                       <SummaryField label="Invoice Date">{detailData.invoice.invoice_date || "-"}</SummaryField>
                       <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1 }}>
@@ -872,12 +872,18 @@ const SupplierPayment = () => {
 
                     <Box>
                       <Typography component="label" sx={fieldLabelSx}>Payment Mode</Typography>
-                      <Select size="small" fullWidth value={paymentMode} onChange={(e) => setPaymentMode(e.target.value)}>
-                        {PAYMENT_MODES.map((m) => (
-                          <MenuItem key={m} value={m}>{m}</MenuItem>
+                      <Select size="small" fullWidth value={paymentMode} onChange={(e) => setPaymentMode(e.target.value)} inputProps={{ "aria-label": "Payment Mode" }}>
+                        {SUPPLIER_PAYMENT_MODES.map((m) => (
+                          <MenuItem key={m.value} value={m.value}>{m.label}</MenuItem>
                         ))}
                       </Select>
                     </Box>
+                    {paymentMode === "CHEQUE" && (
+                      <Box>
+                        <Typography component="label" htmlFor="supplier-cheque-date" sx={fieldLabelSx}>Cheque Date</Typography>
+                        <TextField id="supplier-cheque-date" type="date" size="small" fullWidth value={chequeDate} onChange={(e) => setChequeDate(e.target.value)} sx={muiFieldSx} />
+                      </Box>
+                    )}
                     <Box>
                       <Typography component="label" sx={fieldLabelSx}>Payment Date</Typography>
                       <TextField type="date" size="small" fullWidth value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)} sx={muiFieldSx} />
@@ -889,7 +895,8 @@ const SupplierPayment = () => {
                         fullWidth
                         value={refNo}
                         onChange={(e) => setRefNo(e.target.value)}
-                        placeholder="Cheque / Transaction ref"
+                        placeholder={paymentMode === "CHEQUE" ? "Cheque number" : "UTR / transaction ref"}
+                        slotProps={{ htmlInput: { "aria-label": "Ref. No" } }}
                         sx={muiFieldSx}
                       />
                     </Box>
@@ -901,7 +908,7 @@ const SupplierPayment = () => {
                         fullWidth
                         slotProps={{ htmlInput: { step: "0.01" } }}
                         value={paidAmountInput}
-                        onChange={(e) => setPaidAmountInput(e.target.value)}
+                        onChange={(e) => { setPaidAmountInput(e.target.value); setAllocations(allocateSupplierPayment(paymentItems, e.target.value)); }}
                         sx={[muiFieldSx, { "& input": { fontWeight: 600 } }]}
                       />
                     </Box>
@@ -943,6 +950,7 @@ const SupplierPayment = () => {
                         <TableCell align="right" sx={{ fontSize: 12, fontWeight: 700 }}>Paid</TableCell>
                         <TableCell align="right" sx={{ fontSize: 12, fontWeight: 700 }}>Balance</TableCell>
                         <TableCell align="right" sx={{ fontSize: 12, fontWeight: 700 }}>Total Payable</TableCell>
+                        <TableCell align="right" sx={{ fontSize: 12, fontWeight: 700 }}>Pay Now</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
@@ -957,6 +965,12 @@ const SupplierPayment = () => {
                           <TableCell align="right" sx={{ fontSize: 12, fontVariantNumeric: "tabular-nums", color: "success.main" }}>{fmt(row.paid)}</TableCell>
                           <TableCell align="right" sx={{ fontSize: 12, fontWeight: 600, fontVariantNumeric: "tabular-nums", color: "error.main" }}>{fmt(row.balance)}</TableCell>
                           <TableCell align="right" sx={{ fontSize: 12, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{fmt(row.balance)}</TableCell>
+                          <TableCell align="right" sx={{ width: 130 }}>
+                            <TextField type="number" size="small" value={allocations[billKey(row)] ?? ""}
+                              onChange={(e) => setAllocations((current) => ({ ...current, [billKey(row)]: e.target.value }))}
+                              slotProps={{ htmlInput: { step: "0.01", min: 0, max: row.balance, "aria-label": `Pay now on ${row.invoice_no}`, style: { textAlign: "right" } } }}
+                              sx={[muiFieldSx, { width: 120 }]} />
+                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -974,11 +988,19 @@ const SupplierPayment = () => {
                     </Typography>
                     <Typography sx={{ fontSize: 13, fontWeight: 700 }}>
                       Paying: <Box component="span" sx={{ color: "primary.main" }}>{fmt(Number(paidAmountInput || 0))}</Box>
-                      {Number(paidAmountInput || 0) < totalSelectedPayable && (
+                      {split.over ? (
+                        <Box component="span" sx={{ ml: 1, fontSize: TYPE.small, color: "error.main", fontWeight: 400 }}>
+                          (Bills add up to {fmt(split.allocated)}, more than the amount paid)
+                        </Box>
+                      ) : split.advance > 0 ? (
+                        <Box component="span" sx={{ ml: 1, fontSize: TYPE.small, color: "info.main", fontWeight: 400 }}>
+                          ({fmt(split.advance)} not against a bill: kept as an advance to the supplier)
+                        </Box>
+                      ) : Number(paidAmountInput || 0) < totalSelectedPayable ? (
                         <Box component="span" sx={{ ml: 1, fontSize: TYPE.small, color: "warning.main", fontWeight: 400 }}>
                           (Partial payment — status will remain pending)
                         </Box>
-                      )}
+                      ) : null}
                     </Typography>
                   </Stack>
                   <Button variant="contained" color="primary" size="large" onClick={handleSavePayment} disabled={saving}>

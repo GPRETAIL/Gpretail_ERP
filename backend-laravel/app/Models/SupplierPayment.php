@@ -19,6 +19,7 @@ class SupplierPayment extends Model
         'amount',
         'payment_mode',
         'reference_no',
+        'cheque_date',
         'notes',
         'created_by',
     ];

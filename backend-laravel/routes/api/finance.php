@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\V1\Finance\AccountingController;
+use App\Http\Controllers\Api\V1\Finance\OpeningBalanceController;
 use App\Http\Controllers\Api\V1\Finance\SupplierPaymentController;
 use Illuminate\Support\Facades\Route;
 
@@ -27,6 +28,16 @@ Route::prefix('accounting')->controller(AccountingController::class)->group(func
     Route::get('summary-layouts', 'summaryLayouts');
     Route::get('summary/{dataset}', 'summary');
     Route::post('repost', 'repost');
+});
+// Finance > Opening Balance: ledger openings and the bills customers/suppliers owed when the books started.
+Route::prefix('opening-balances')->controller(OpeningBalanceController::class)->group(function () {
+    Route::get('ledgers', 'ledgers');
+    Route::put('ledgers', 'saveLedgers');
+    Route::get('bills', 'bills');
+    Route::post('bills', 'storeBill');
+    Route::post('bills/import', 'importBills');
+    Route::put('bills/{id}', 'updateBill')->whereNumber('id');
+    Route::delete('bills/{id}', 'destroyBill')->whereNumber('id');
 });
 Route::get('supplier-payments/dashboard-summary', [SupplierPaymentController::class, 'dashboardSummary']);
 Route::get('supplier-payments/pending', [SupplierPaymentController::class, 'pending']);
