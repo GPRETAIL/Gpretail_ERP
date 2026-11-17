@@ -12,6 +12,8 @@ import useSearchGrid, { createSearchGridAdapter } from "@/shared/hooks/useSearch
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Printer, Save, Search, Trash2 } from "lucide-react";
 import { toast } from "react-toastify";
+import useBillingDate from "@/features/sales/pos/hooks/useBillingDate";
+import { billDateText } from "@/features/sales/pos/utils/billingDate";
 import useBillReprint from "@/features/sales/bill-reprint/hooks/useBillReprint";
 import { reprintErrorMessage, reprintLastBill } from "@/features/sales/bill-reprint/utils/reprintRules";
 import { useNavigate } from "react-router-dom";
@@ -121,6 +123,8 @@ const PosReturn = () => {
   const resolvedExportCompanyName = useStoreDisplayName(authUser);
 
   const [now, setNow] = useState(new Date());
+  // After cash closing the return is dated the next business day (BusinessDate on the server); show that date.
+  const { state: billingDate } = useBillingDate();
   const [returnNo, setReturnNo] = useState(1);
   const [existingCustomerId, setExistingCustomerId] = useState("");
   const [newCustomer, setNewCustomer] = useState({ ...blankCustomer });
@@ -975,7 +979,7 @@ const PosReturn = () => {
             </Stack>
             <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", fontSize: 12.25 }}>
               <Box component="span" sx={{ fontWeight: 600, color: "text.secondary" }}>Date</Box>
-              <Box component="span" sx={{ color: "text.primary" }}>{now.toLocaleDateString()}</Box>
+              <Box component="span" sx={{ color: billingDate?.shifted ? "warning.main" : "text.primary", fontWeight: billingDate?.shifted ? 700 : 400 }}>{billDateText(billingDate, now)}</Box>
             </Stack>
             <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", fontSize: 12.25 }}>
               <Box component="span" sx={{ fontWeight: 600, color: "text.secondary" }}>Time</Box>

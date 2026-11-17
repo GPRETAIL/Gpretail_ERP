@@ -15,6 +15,8 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "react-toastify";
+import useBillingDate from "@/features/sales/pos/hooks/useBillingDate";
+import { billDateText } from "@/features/sales/pos/utils/billingDate";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import api from "@/shared/api/apiClient";
@@ -102,6 +104,8 @@ const TouchSales = () => {
 
 
   const [now, setNow] = useState(new Date());
+  // After cash closing bills go on the next business day (BusinessDate on the server); show that date.
+  const { state: billingDate } = useBillingDate();
   const [billNo, setBillNo] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
   const [customerMobile, setCustomerMobile] = useState("");
@@ -818,7 +822,7 @@ const TouchSales = () => {
           <Stack sx={{ minHeight: 0, borderRadius: "7px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", p: 1.5, boxShadow: 1, gridColumn: { lg: "span 4" } }}>
             <Box sx={{ flexShrink: 0 }}>
               <Typography sx={{ fontSize: 12.25, fontWeight: 600 }}>COUNTER : //</Typography>
-              <Typography sx={{ mb: 1, fontSize: 12.25, fontWeight: 600 }}>DATE/TIME : {now.toLocaleString()}</Typography>
+              <Typography sx={{ mb: 1, fontSize: 12.25, fontWeight: 600 }}>DATE/TIME : {billDateText(billingDate, now)}, {now.toLocaleTimeString()}</Typography>
 
               <Stack direction="row" spacing={1} sx={{ mb: 1 }}>
                 <Box
