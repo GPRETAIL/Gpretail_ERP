@@ -3,6 +3,7 @@
 namespace App\Services\Crm;
 
 use App\Models\Customer;
+use App\Models\LoyaltyBonusRule;
 use App\Models\LoyaltyTransaction;
 use App\Models\PosReturn;
 use App\Models\PosSale;
@@ -38,16 +39,61 @@ class LoyaltyLedger
         ];
     }
 
-    /** Points for a bill: one per "spend per point" of what was paid by money (not by points). */
-    public function earn(PosSale $sale, Customer $customer, float $earnable, ?int $userId): ?LoyaltyTransaction
+    /**
+     * Points for a bill: one per "spend per point" of what was paid in money (not by points), times the customer's
+     * tier multiplier (one EARN row), plus a BONUS row for each bonus rule that applies. Returns the points given.
+     */
+    public function earn(PosSale $sale, Customer $customer, float $earnable, ?int $userId): int
     {
         $settings = $this->settings((int) $sale->store_id);
         if (! $settings['enabled'] || $customer->disable_loyalty || $settings['spend_per_point'] <= 0) {
-            return null;
+            return 0;
         }
-        $points = (int) floor(max(0, $earnable) / $settings['spend_per_point']);
+        $base = (int) floor(max(0, $earnable) / $settings['spend_per_point']);
+        $tier = app(LoyaltyTiers::class)->forCustomer((int) $sale->store_id, $customer);
+        $points = (int) floor($base * ($tier['multiplier'] ?? 1));
+        $given = 0;
+        if ($points > 0) {
+            $this->credit($customer, 'EARN', 'pos_sale', $points, $userId, ['pos_sale_id' => $sale->id, 'amount' => $earnable,
+                'reason' => $tier && $tier['name'] !== '' && $tier['multiplier'] != 1.0 ? "{$tier['name']} tier ×".rtrim(rtrim(number_format($tier['multiplier'], 2), '0'), '.') : null]);
+            $given += $points;
+        }
+        foreach ($this->bonuses($sale, $customer, $earnable, $base) as [$rule, $extra]) {
+            $this->credit($customer, 'BONUS', 'bonus', $extra, $userId, ['pos_sale_id' => $sale->id, 'amount' => $earnable, 'reason' => $rule->name]);
+            $given += $extra;
+        }
 
-        return $points > 0 ? $this->credit($customer, 'EARN', 'pos_sale', $points, $userId, ['pos_sale_id' => $sale->id, 'amount' => $earnable]) : null;
+        return $given;
+    }
+
+    /** @return array<int, array{0: LoyaltyBonusRule, 1: int}> the bonus rules that apply to this bill and their extra points */
+    private function bonuses(PosSale $sale, Customer $customer, float $earnable, int $base): array
+    {
+        $today = BusinessDate::today();
+        $rules = LoyaltyBonusRule::query()->withoutGlobalScopes()->where('store_id', $sale->store_id)->where('is_active', true)
+            ->where(fn ($q) => $q->whereNull('starts_on')->orWhereDate('starts_on', '<=', $today->toDateString()))
+            ->where(fn ($q) => $q->whereNull('ends_on')->orWhereDate('ends_on', '>=', $today->toDateString()))->orderBy('id')->get();
+        $out = [];
+        foreach ($rules as $rule) {
+            $applies = match ($rule->type) {
+                'birthday' => $customer->date_of_birth && $customer->date_of_birth->month === $today->month,
+                'anniversary' => $customer->marriage_date && $customer->marriage_date->month === $today->month,
+                'first_purchase' => ! PosSale::query()->withoutGlobalScopes()->where('customer_id', $customer->id)->where('id', '!=', $sale->id)
+                    ->whereNotIn('status', ['CANCELLED', 'CANCELED'])->exists(),
+                'min_bill' => $earnable >= (float) $rule->min_bill,
+                'date_range' => true,
+                default => false,
+            };
+            if (! $applies || ($rule->min_bill !== null && $rule->type !== 'min_bill' && $earnable < (float) $rule->min_bill)) {
+                continue;
+            }
+            $extra = $rule->points !== null ? (int) $rule->points : (int) floor($base * max(0, (float) $rule->multiplier - 1));
+            if ($extra > 0) {
+                $out[] = [$rule, $extra];
+            }
+        }
+
+        return $out;
     }
 
     public function redeem(PosSale $sale, Customer $customer, int $points, float $amount, ?int $userId): LoyaltyTransaction
@@ -105,9 +151,7 @@ class LoyaltyLedger
         if ($points <= 0) {
             return 0;
         }
-        foreach ($due as $row) {
-            $row->update(['remaining' => 0]);
-        }
+        // debit() spends the soonest-expiring points first, which are exactly these past-due ones.
         $this->debit($customer, 'EXPIRE', 'expiry', $points, null, ['reason' => 'Points expired'], false);
 
         return $points;

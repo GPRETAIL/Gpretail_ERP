@@ -1,6 +1,6 @@
 # API reference
 
-Every endpoint under `/api`, grouped by module (734 endpoints). Generated from
+Every endpoint under `/api`, grouped by module (742 endpoints). Generated from
 `php artisan route:list --sort=definition --json`; regenerate it after changing routes.
 
 - Each signed-in endpoint is also served under `/api/v1/...` with the same behaviour.
@@ -14,7 +14,7 @@ Every endpoint under `/api`, grouped by module (734 endpoints). Generated from
 
 - [Analytical](#analytical) (2)
 - [Auth](#auth) (25)
-- [Crm](#crm) (31)
+- [Crm](#crm) (39)
 - [Dashboards](#dashboards) (26)
 - [Finance](#finance) (31)
 - [Hr](#hr) (158)
@@ -77,6 +77,14 @@ Every endpoint under `/api`, grouped by module (734 endpoints). Generated from
 | GET | `/api/loyalty/settings` | LoyaltyController@settings | yes |
 | PUT | `/api/loyalty/settings` | LoyaltyController@saveSettings | yes |
 | POST | `/api/loyalty/adjust` | LoyaltyController@adjust | yes |
+| POST | `/api/loyalty/expire` | LoyaltyController@expire | yes |
+| GET | `/api/loyalty/tiers` | LoyaltyController@tiers | yes |
+| PUT | `/api/loyalty/tiers` | LoyaltyController@saveTiers | yes |
+| GET | `/api/loyalty/bonus-rules` | LoyaltyController@bonusRules | yes |
+| POST | `/api/loyalty/bonus-rules` | LoyaltyController@storeBonusRule | yes |
+| PUT | `/api/loyalty/bonus-rules/{id}` | LoyaltyController@updateBonusRule | yes |
+| DELETE | `/api/loyalty/bonus-rules/{id}` | LoyaltyController@destroyBonusRule | yes |
+| GET | `/api/loyalty/expiring` | LoyaltyController@expiring | yes |
 | POST | `/api/customer-orders/bulk` | CustomerOrderController@bulk | yes |
 | GET | `/api/customer-orders/next-order-no` | CustomerOrderController@nextOrderNo | yes |
 | POST | `/api/customer-orders/customer-quick-create` | CustomerOrderController@customerQuickCreate | yes |

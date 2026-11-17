@@ -63,7 +63,7 @@ export default function LoyaltyRedeemPanel({ customerId, billAmount, value, onCh
     <Box data-enter-ignore="true" sx={{ gridColumn: "1 / -1", border: 1, borderColor: "divider", borderRadius: 1.5, p: 1.25, bgcolor: "action.hover" }}>
       <Stack direction="row" spacing={1} sx={{ alignItems: "center", mb: 1 }}>
         <Gift size={16} />
-        <Typography sx={{ fontSize: 13, fontWeight: 700 }}>Loyalty points</Typography>
+        <Typography sx={{ fontSize: 13, fontWeight: 700 }}>Loyalty points{quote.tier?.name ? ` · ${quote.tier.name}` : ""}</Typography>
         <Typography sx={{ fontSize: 12.5, color: "text.secondary" }}>
           Balance {quote.balance} pts (₹{loyaltyRedeemAmount(quote.balance, quote.point_value).toFixed(2)}) · up to {quote.max_points} pts on this bill
         </Typography>

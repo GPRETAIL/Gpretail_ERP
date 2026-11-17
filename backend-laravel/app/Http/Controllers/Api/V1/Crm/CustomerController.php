@@ -347,6 +347,8 @@ class CustomerController extends Controller
                 ],
                 'loyalty' => [
                     'availablePoints' => $availablePoints,
+                    'tier' => app(\App\Services\Crm\LoyaltyTiers::class)->forCustomer((int) $customer->store_id, $customer),
+                    'expiringPoints' => app(\App\Services\Crm\LoyaltyLedger::class)->expiring($customer, 3),
                     'lifetimePoints' => (int) LoyaltyTransaction::where('customer_id', $id)->whereIn('type', ['EARN', 'BONUS'])->sum('points'),
                     'redeemedPoints' => $redeemedPoints,
                     'redemptionCount' => $redeemedCount,

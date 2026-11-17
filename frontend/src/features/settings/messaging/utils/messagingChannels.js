@@ -6,6 +6,7 @@ export const CHANNELS = [
     fields: [
       { key: "auth_key", label: "MSG91 auth key", secret: true },
       { key: "otp_template_id", label: "OTP template ID (Flow)", help: "From MSG91 > Flows" },
+      { key: "reminder_template_id", label: "Points-expiry reminder template ID (optional)", help: "Variables ##name##, ##points##, ##date##, ##store##" },
       { key: "sender_id", label: "Sender ID", help: "6 letters, as registered on DLT" },
       { key: "country_code", label: "Country code", help: "Added to 10-digit numbers (default 91)" },
     ],
@@ -17,6 +18,7 @@ export const CHANNELS = [
       { key: "access_token", label: "Access token", secret: true, help: "A permanent system-user token" },
       { key: "phone_number_id", label: "Phone number ID" },
       { key: "otp_template", label: "OTP template name" },
+      { key: "reminder_template", label: "Points-expiry reminder template (optional)", help: "Body {{1}} name, {{2}} points, {{3}} date, {{4}} store" },
       { key: "language", label: "Template language", help: "For example en or en_US" },
       { key: "country_code", label: "Country code", help: "Added to 10-digit numbers (default 91)" },
     ],

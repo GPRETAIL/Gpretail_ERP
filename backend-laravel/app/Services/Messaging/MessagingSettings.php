@@ -17,8 +17,8 @@ class MessagingSettings
 
     /** Per channel: the secret fields and the plain fields it has. */
     public const FIELDS = [
-        'sms' => ['secret' => ['auth_key'], 'plain' => ['sender_id', 'otp_template_id', 'country_code']],
-        'whatsapp' => ['secret' => ['access_token'], 'plain' => ['phone_number_id', 'otp_template', 'language', 'country_code']],
+        'sms' => ['secret' => ['auth_key'], 'plain' => ['sender_id', 'otp_template_id', 'reminder_template_id', 'country_code']],
+        'whatsapp' => ['secret' => ['access_token'], 'plain' => ['phone_number_id', 'otp_template', 'reminder_template', 'language', 'country_code']],
         // SMTP is optional: without a host the server's own mailer (.env) sends (MailerFactory).
         'email' => ['secret' => ['smtp_password'], 'plain' => ['from_name', 'reply_to', 'from_address', 'smtp_host', 'smtp_port', 'smtp_encryption', 'smtp_username']],
     ];

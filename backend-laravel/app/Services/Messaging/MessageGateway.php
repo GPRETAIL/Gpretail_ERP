@@ -61,6 +61,57 @@ class MessageGateway
         }
     }
 
+    /**
+     * Points-expiry reminder. SMS and WhatsApp need their own approved reminder template (variables / body
+     * parameters: name, points, date, store); without one that channel is skipped. Email always works.
+     *
+     * @param  array{name: string, points: int, date: string, store: string}  $vars
+     */
+    public function sendReminder(int $storeId, string $channel, string $to, array $vars): array
+    {
+        if (! $this->ready($storeId, $channel)) {
+            return ['ok' => false, 'message' => ucfirst($channel).' is not set up.'];
+        }
+        $data = $this->settings->channel($storeId, $channel);
+        try {
+            if ($channel === 'sms') {
+                if (($data['plain']['reminder_template_id'] ?? '') === '') {
+                    return ['ok' => false, 'message' => 'No SMS reminder template.'];
+                }
+                $response = Http::timeout(15)->withHeaders(['authkey' => $data['secrets']['auth_key'], 'accept' => 'application/json'])
+                    ->post('https://control.msg91.com/api/v5/flow', ['template_id' => $data['plain']['reminder_template_id'], 'short_url' => '0',
+                        'recipients' => [['mobiles' => self::phone($to, $data['plain']['country_code'] ?? '91'), 'name' => $vars['name'],
+                            'points' => (string) $vars['points'], 'date' => $vars['date'], 'store' => $vars['store']]]]);
+
+                return ['ok' => $response->successful() && ($response->json('type') ?? 'success') !== 'error', 'message' => 'SMS'];
+            }
+            if ($channel === 'whatsapp') {
+                if (($data['plain']['reminder_template'] ?? '') === '') {
+                    return ['ok' => false, 'message' => 'No WhatsApp reminder template.'];
+                }
+                $params = array_map(fn ($v) => ['type' => 'text', 'text' => (string) $v], [$vars['name'], $vars['points'], $vars['date'], $vars['store']]);
+                $response = Http::timeout(15)->withToken($data['secrets']['access_token'])
+                    ->post('https://graph.facebook.com/v20.0/'.rawurlencode($data['plain']['phone_number_id']).'/messages', [
+                        'messaging_product' => 'whatsapp', 'to' => self::phone($to, $data['plain']['country_code'] ?? '91'), 'type' => 'template',
+                        'template' => ['name' => $data['plain']['reminder_template'], 'language' => ['code' => $data['plain']['language'] ?: 'en'],
+                            'components' => [['type' => 'body', 'parameters' => $params]]],
+                    ]);
+
+                return ['ok' => $response->successful(), 'message' => 'WhatsApp'];
+            }
+            app(MailerFactory::class)->mailer($storeId)->raw("Dear {$vars['name']}, {$vars['points']} of your loyalty points at {$vars['store']} expire on {$vars['date']}. Use them on your next visit.",
+                function ($message) use ($to, $vars) {
+                    $message->to($to)->subject("{$vars['store']}: your points expire on {$vars['date']}");
+                });
+
+            return ['ok' => true, 'message' => 'Email'];
+        } catch (Throwable $e) {
+            Log::warning('Loyalty reminder failed', ['channel' => $channel, 'store_id' => $storeId, 'error' => $e->getMessage()]);
+
+            return ['ok' => false, 'message' => $e->getMessage()];
+        }
+    }
+
     /** 10-digit Indian numbers get the store's country code (91 by default). */
     public static function phone(string $number, string $countryCode = '91'): string
     {

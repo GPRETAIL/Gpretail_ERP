@@ -22,6 +22,9 @@ Schedule::command('security:purge-plaintext-snapshots --encrypt')->dailyAt('03:1
 // Drafts purchase orders for items at or below their reorder level; buyers review and approve.
 Schedule::command('purchase-orders:generate')->dailyAt('02:30')->withoutOverlapping();
 
+// Loyalty points past their expiry date leave balances; customers whose points expire in a week get a reminder.
+Schedule::command('loyalty:expire')->dailyAt('01:30')->timezone(config('app.business_timezone'))->withoutOverlapping();
+
 // Catches up any bill or payment whose voucher could not be posted when it was saved.
 Schedule::command('accounting:post')->dailyAt('02:45')->withoutOverlapping();
 

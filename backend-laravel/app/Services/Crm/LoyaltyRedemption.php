@@ -42,6 +42,7 @@ class LoyaltyRedemption
             'min_points' => $s['min_points'], 'max_percent' => $s['max_percent'], 'max_points' => $max,
             'otp_required' => $s['otp_required'], 'channels' => $this->channelsFor($storeId, $customer),
             'expiring' => $this->ledger->expiring($customer, 3),
+            'tier' => app(LoyaltyTiers::class)->forCustomer($storeId, $customer),
         ];
     }
 

@@ -19,6 +19,14 @@ Route::get('loyalty/transactions', [LoyaltyController::class, 'transactions']);
 Route::get('loyalty/settings', [LoyaltyController::class, 'settings']);
 Route::put('loyalty/settings', [LoyaltyController::class, 'saveSettings']);
 Route::post('loyalty/adjust', [LoyaltyController::class, 'adjust']);
+Route::post('loyalty/expire', [LoyaltyController::class, 'expire']);
+Route::get('loyalty/tiers', [LoyaltyController::class, 'tiers']);
+Route::put('loyalty/tiers', [LoyaltyController::class, 'saveTiers']);
+Route::get('loyalty/bonus-rules', [LoyaltyController::class, 'bonusRules']);
+Route::post('loyalty/bonus-rules', [LoyaltyController::class, 'storeBonusRule']);
+Route::put('loyalty/bonus-rules/{id}', [LoyaltyController::class, 'updateBonusRule'])->whereNumber('id');
+Route::delete('loyalty/bonus-rules/{id}', [LoyaltyController::class, 'destroyBonusRule'])->whereNumber('id');
+Route::get('loyalty/expiring', [LoyaltyController::class, 'expiring']);
 // Customer Orders
 Route::post('customer-orders/bulk', [CustomerOrderController::class, 'bulk']);
 Route::get('customer-orders/next-order-no', [CustomerOrderController::class, 'nextOrderNo']);

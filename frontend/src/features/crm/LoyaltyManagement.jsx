@@ -13,6 +13,9 @@ import { muiFieldSx } from "@/shared/theme/formControlSizes";
 import LoadingSkeleton from "@/shared/components/LoadingSkeleton";
 import LoyaltySettings from "./loyalty/components/LoyaltySettings";
 import AdjustPointsDialog from "./loyalty/components/AdjustPointsDialog";
+import LoyaltyTiers from "./loyalty/components/LoyaltyTiers";
+import LoyaltyBonusRules from "./loyalty/components/LoyaltyBonusRules";
+import LoyaltyExpiring from "./loyalty/components/LoyaltyExpiring";
 import { TYPE_LABELS, signedPoints } from "./loyalty/utils/loyaltyTypes";
 
 const toNum = (value, fallback = 0) => {
@@ -30,8 +33,12 @@ const formatDate = (value) => {
 const TABS = [
   { key: "balances", label: "Balances" },
   { key: "transactions", label: "Transaction History" },
+  { key: "expiring", label: "Expiring" },
+  { key: "tiers", label: "Tiers" },
+  { key: "bonuses", label: "Bonuses" },
   { key: "settings", label: "Settings" },
 ];
+const OWN_TABS = ["settings", "tiers", "bonuses", "expiring"];
 
 const LoyaltyManagement = () => {
   const navigate = useNavigate();
@@ -41,7 +48,7 @@ const LoyaltyManagement = () => {
   const [reloadKey, setReloadKey] = useState(0);
 
   const fetchLoyalty = useCallback(async ({ signal }) => {
-    if (activeTab === "settings") return null;
+    if (OWN_TABS.includes(activeTab)) return null;
     const response = activeTab === "balances"
       ? await api.get("/loyalty/balances", { params: { search, limit: 50 }, signal })
       : await api.get("/loyalty/transactions", { params: { limit: 50, reload: reloadKey || undefined }, signal });
@@ -107,6 +114,12 @@ const LoyaltyManagement = () => {
         <Box sx={{ bgcolor: "background.paper", boxShadow: 3, borderRadius: "7px", border: "1px solid", borderColor: "divider", flex: 1, overflow: "auto" }}>
           {activeTab === "settings" ? (
             <LoyaltySettings />
+          ) : activeTab === "tiers" ? (
+            <LoyaltyTiers />
+          ) : activeTab === "bonuses" ? (
+            <LoyaltyBonusRules />
+          ) : activeTab === "expiring" ? (
+            <LoyaltyExpiring />
           ) : loading ? (
             <LoadingSkeleton variant="table" rows={6} label="Loading loyalty" />
           ) : activeTab === "balances" ? (
@@ -117,6 +130,7 @@ const LoyaltyManagement = () => {
                   <TableCell sx={{ px: 1.5, py: 1 }}>Phone</TableCell>
                   <TableCell sx={{ px: 1.5, py: 1 }}>Loyalty Card</TableCell>
                   <TableCell align="right" sx={{ px: 1.5, py: 1 }}>Points</TableCell>
+                  <TableCell sx={{ px: 1.5, py: 1 }}>Tier</TableCell>
                   <TableCell sx={{ px: 1.5, py: 1 }}>Loyalty</TableCell>
                   <TableCell sx={{ px: 1.5, py: 1 }} />
                 </TableRow>
@@ -124,7 +138,7 @@ const LoyaltyManagement = () => {
               <TableBody>
                 {balances.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={6} align="center" sx={{ py: 3, color: "text.secondary" }}>
+                    <TableCell colSpan={7} align="center" sx={{ py: 3, color: "text.secondary" }}>
                       No customers found.
                     </TableCell>
                   </TableRow>
@@ -139,6 +153,7 @@ const LoyaltyManagement = () => {
                     <TableCell sx={{ px: 1.5, py: 1 }}>{row.phone || "--"}</TableCell>
                     <TableCell sx={{ px: 1.5, py: 1 }}>{row.loyalty_card_number || "--"}</TableCell>
                     <TableCell align="right" sx={{ px: 1.5, py: 1, fontWeight: 600 }}>{row.loyalty_points}</TableCell>
+                    <TableCell sx={{ px: 1.5, py: 1 }}>{row.tier || "--"}</TableCell>
                     <TableCell sx={{ px: 1.5, py: 1 }}>
                       {row.disable_loyalty ? (
                         <Box component="span" sx={{ color: "text.disabled" }}>Disabled</Box>
