@@ -25,3 +25,13 @@ Key routing rules:
 - Architecture and request flow: `docs/architecture.md`. API endpoints: `docs/api-reference.md`
   (regenerate after route changes). Deploy: `docs/deployment.md`. Tests: `docs/testing.md`.
 - Controller class names are permission keys (`BusinessPermissions`). Don't rename them casually.
+
+## Writing for users
+
+Applies to text people read: toasts, errors, help paragraphs, emails, docs. Not code comments.
+
+- No em dashes in sentences. Use a period, colon or comma. A lone "—" for an empty table cell is fine.
+- Say what happened and what to do, in plain words. No "successfully", "seamless", "robust", "leverage", "please note that".
+- No internal names or jargon in customer text ("control plane", project folder names). Use the product name, Vynerix.
+- A help text must be true. Check it against the code before writing a claim about what the system does or enforces.
+- Registered SMS/WhatsApp templates are approved by the carrier and Meta. Do not reword them without re-approval.
