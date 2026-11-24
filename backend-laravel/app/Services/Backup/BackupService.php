@@ -3,16 +3,16 @@
 namespace App\Services\Backup;
 
 use App\Models\Backup;
+use App\Services\Tenancy\StoreQuery;
+use App\Services\Tenancy\StoreSchema;
 use Illuminate\Contracts\Filesystem\Filesystem;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use RuntimeException;
 use ZipArchive;
-use App\Services\Tenancy\StoreQuery;
-use App\Services\Tenancy\StoreSchema;
 
 class BackupService
 {
@@ -826,9 +826,14 @@ class BackupService
             ->first();
     }
 
+    /**
+     * The next time a store's scheduled backup is due. The time of day (and the weekday / day of month) is the shop's:
+     * business time zone, so "02:00" is 2 am in India, not 2 am UTC (7:30 am). Returned in the app time zone (UTC).
+     */
     public function computeNextScheduledAt(array $settings, ?Carbon $from = null): Carbon
     {
-        $from = $from ?: now();
+        $zone = config('app.business_timezone');
+        $from = ($from ?: now())->copy()->setTimezone($zone);
         $time = $settings['schedule_time'] ?? '02:00';
         [$hour, $minute] = array_map('intval', explode(':', $time.':00'));
 
@@ -852,7 +857,7 @@ class BackupService
             }
         }
 
-        return $next;
+        return $next->setTimezone(config('app.timezone'));
     }
 
     public function formatBytes(int $bytes): string

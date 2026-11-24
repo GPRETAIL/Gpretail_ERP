@@ -22,6 +22,17 @@ class DashboardLayoutController extends Controller
     // other tabs' already-saved layouts with a stale full-object write.
     public function update(Request $request, string $tabKey)
     {
+        // A tab id (overview, finance, ...) and a grid layout of reasonable size: the user's own saved arrangement.
+        abort_unless(preg_match('/^[a-z0-9_-]{1,40}$/i', $tabKey) === 1, 404);
+        $request->validate([
+            'layout' => ['sometimes', 'array', 'max:200'],
+            'layout.*' => ['array', 'max:40'],
+            'layout.*.*' => ['nullable', function (string $attribute, mixed $value, \Closure $fail): void {
+                if (is_array($value) || (is_string($value) && mb_strlen($value) > 120)) {
+                    $fail('A layout entry holds only short values.');
+                }
+            }],
+        ]);
         $user = $request->user();
         $layouts = $user->dashboard_layouts ?? [];
         $layouts[$tabKey] = $request->input('layout', []);
@@ -38,6 +49,7 @@ class DashboardLayoutController extends Controller
     // Drops the saved layout for one tab so it falls back to its hardcoded default arrangement.
     public function reset(Request $request, string $tabKey)
     {
+        abort_unless(preg_match('/^[a-z0-9_-]{1,40}$/i', $tabKey) === 1, 404);
         $user = $request->user();
         $layouts = $user->dashboard_layouts ?? [];
         unset($layouts[$tabKey]);

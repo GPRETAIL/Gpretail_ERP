@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1\Masters;
 
 use App\Http\Controllers\Concerns\ImportsMasterRows;
+use App\Http\Controllers\Concerns\ValidatesMasterInput;
 use App\Http\Controllers\Controller;
 use App\Models\AttributeType;
 use App\Models\AttributeValue;
@@ -12,6 +13,7 @@ use Illuminate\Http\Request;
 class ProductAttributeController extends Controller
 {
     use ImportsMasterRows;
+    use ValidatesMasterInput;
 
     public function __construct(private readonly PaginationService $paginationService) {}
 
@@ -130,6 +132,7 @@ class ProductAttributeController extends Controller
 
     public function storeByType(Request $request, $type)
     {
+        $this->validateMasterInput($request);
         $normalizedCode = strtolower(str_replace([' ', '-'], '_', $type));
         if (isset($this->defaultAliases[$normalizedCode])) {
             $normalizedCode = $this->defaultAliases[$normalizedCode];
@@ -199,6 +202,7 @@ class ProductAttributeController extends Controller
 
     public function updateByType(Request $request, $type, $id)
     {
+        $this->validateMasterInput($request);
         $attributeValue = AttributeValue::where('id', $id)->orWhere('value', $id)->first();
 
         if (! $attributeValue) {

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1\Masters;
 
 use App\Http\Controllers\Concerns\ImportsMasterRows;
+use App\Http\Controllers\Concerns\ValidatesMasterInput;
 use App\Http\Controllers\Controller;
 use App\Models\Size;
 use App\Models\SizeGroup;
@@ -13,6 +14,7 @@ use Illuminate\Http\Request;
 class SizeController extends Controller
 {
     use ImportsMasterRows;
+    use ValidatesMasterInput;
 
     public function __construct(private readonly PaginationService $paginationService) {}
 
@@ -136,6 +138,7 @@ class SizeController extends Controller
 
     public function store(Request $request)
     {
+        $this->validateMasterInput($request);
         $name = $request->input('size_name') ?? $request->input('name') ?? $request->input('sizeName');
 
         if (! $name) {
@@ -178,6 +181,7 @@ class SizeController extends Controller
 
     public function update(Request $request, $id)
     {
+        $this->validateMasterInput($request);
         $size = Size::where(fn ($q) => $q->where('id', $id)->orWhere('code', $id))->first();
 
         if (! $size) {
@@ -283,6 +287,7 @@ class SizeController extends Controller
 
     public function groupsStore(Request $request)
     {
+        $this->validateMasterInput($request);
         $name = $request->input('group_name') ?? $request->input('name') ?? $request->input('groupName');
 
         if (! $name) {
@@ -295,7 +300,7 @@ class SizeController extends Controller
         $user = $request->user();
         $createdBy = $user?->name ?: $user?->username;
         $companyId = $this->resolveStoreId($request, (int) ($user?->store_id ?: 1));
-        $code = $request->input('code') ?: \App\Models\SizeGroup::pendingCode(); // Becomes SG<id> once saved.
+        $code = $request->input('code') ?: SizeGroup::pendingCode(); // Becomes SG<id> once saved.
 
         $group = SizeGroup::create(array_replace($this->options($request, true), [
             'name' => $name,
@@ -315,6 +320,7 @@ class SizeController extends Controller
 
     public function groupsUpdate(Request $request, $id)
     {
+        $this->validateMasterInput($request);
         $group = SizeGroup::where(fn ($q) => $q->where('id', $id)->orWhere('code', $id))->first();
 
         if (! $group) {

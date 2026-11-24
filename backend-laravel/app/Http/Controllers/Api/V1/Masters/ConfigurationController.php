@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1\Masters;
 
 use App\Http\Controllers\Concerns\ImportsMasterRows;
+use App\Http\Controllers\Concerns\ValidatesMasterInput;
 use App\Http\Controllers\Controller;
 use App\Models\SystemConfiguration;
 use App\Support\PaginationService;
@@ -12,6 +13,7 @@ use Illuminate\Http\Request;
 class ConfigurationController extends Controller
 {
     use ImportsMasterRows;
+    use ValidatesMasterInput;
 
     private const INTERNAL_KEYS = ['invoice_ai', 'gemini_api_key', 'space_ocr_api_key', 'openai_api_key', 'ocr_space_api_key'];
 
@@ -214,6 +216,7 @@ class ConfigurationController extends Controller
 
     public function store(Request $request)
     {
+        $this->validateMasterInput($request);
         $key = $request->input('key') ?? $request->input('config_key') ?? $request->input('type') ?? 'general';
         $val = $request->input('value') ?? $request->input('config_value') ?? $request->input('name');
         $group = $request->input('group') ?? $request->input('group_name') ?? $key;
@@ -251,6 +254,7 @@ class ConfigurationController extends Controller
 
     public function updateType(Request $request, $type, int|string $id)
     {
+        $this->validateMasterInput($request);
         $config = $this->userConfigs()->where(function ($query) use ($type): void {
             $normalized = strtolower(str_replace('-', '_', $type));
             $query->where('key', $normalized)->orWhere('config_key', $normalized)->orWhere('group', $normalized)->orWhere('group_name', $normalized);

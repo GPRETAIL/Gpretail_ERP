@@ -1,9 +1,11 @@
 <?php
 
-use App\Http\Controllers\Api\V1\Platform\ActivationController;
 use App\Http\Controllers\Api\V1\Auth\AuthController;
-use App\Http\Controllers\Api\V1\Settings\SettingsController;
+use App\Http\Controllers\Api\V1\Auth\StaffAuthController;
+use App\Http\Controllers\Api\V1\Platform\ActivationController;
 use App\Http\Controllers\Api\V1\Platform\SyncController;
+use App\Http\Controllers\Api\V1\Settings\SettingsController;
+use App\Http\Controllers\Api\V1\Warehouse\PhoneUploadController;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Route;
 
@@ -28,11 +30,12 @@ Route::get('health', function () {
 
 // 1. Activation & System Gate Routes
 Route::prefix('activation')->group(function () {
-    Route::get('status', [ActivationController::class, 'status']);
+    Route::get('status', [ActivationController::class, 'status'])->middleware('throttle:120,1');
     Route::post('register', [ActivationController::class, 'register'])->middleware('throttle:10,1');
     Route::post('bootstrap-register', [ActivationController::class, 'bootstrapRegister'])->middleware('throttle:10,1');
     Route::post('set-password', [ActivationController::class, 'setPassword'])->middleware('throttle:10,1');
-    Route::get('password-setup-check', [ActivationController::class, 'passwordSetupCheck']);
+    // Checks a one-time setup token: limited so it cannot be guessed at.
+    Route::get('password-setup-check', [ActivationController::class, 'passwordSetupCheck'])->middleware('throttle:20,1');
 });
 
 // 2. Authentication Routes
@@ -40,8 +43,8 @@ Route::prefix('auth')->group(function () {
     Route::get('config', [AuthController::class, 'config'])->middleware('throttle:30,1');
     Route::post('google', [AuthController::class, 'google'])->middleware('throttle:10,1');
     Route::post('login', [AuthController::class, 'login'])->middleware('throttle:10,1');
-    Route::post('staff-login', [\App\Http\Controllers\Api\V1\Auth\StaffAuthController::class, 'login'])->middleware('throttle:20,1');
-    Route::post('staff-pin', [\App\Http\Controllers\Api\V1\Auth\StaffAuthController::class, 'changePin'])->middleware(['auth:sanctum', 'throttle:10,1']);
+    Route::post('staff-login', [StaffAuthController::class, 'login'])->middleware('throttle:20,1');
+    Route::post('staff-pin', [StaffAuthController::class, 'changePin'])->middleware(['auth:sanctum', 'throttle:10,1']);
     Route::post('logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
     Route::get('me', [AuthController::class, 'me'])->middleware('auth:sanctum');
     Route::post('counter', [AuthController::class, 'counter'])->middleware('auth:sanctum');
@@ -68,9 +71,9 @@ Route::match(['get', 'post'], 'local-server-config/test-cloud', [SettingsControl
 // 15-second sync of one shop then used up the allowance of the rarer calls (Re-copy from cloud was refused).
 Route::get('connector/web-config', [SyncController::class, 'webConfig'])->middleware('throttle:900,1,web-config');
 // AI invoice Upload from phone: the phone opens the one-time link (no sign-in; the token is the permission).
-Route::get('phone-upload/{token}', [\App\Http\Controllers\Api\V1\Warehouse\PhoneUploadController::class, 'phoneInfo'])
+Route::get('phone-upload/{token}', [PhoneUploadController::class, 'phoneInfo'])
     ->whereAlphaNumeric('token')->middleware('throttle:60,1,phone-upload-info');
-Route::post('phone-upload/{token}', [\App\Http\Controllers\Api\V1\Warehouse\PhoneUploadController::class, 'phoneStore'])
+Route::post('phone-upload/{token}', [PhoneUploadController::class, 'phoneStore'])
     ->whereAlphaNumeric('token')->middleware('throttle:20,1,phone-upload-send');
 // The counter client (counter.js) keeps its copy of the web app current from its main server.
 Route::get('connector/app-version', [SyncController::class, 'counterAppVersion'])->middleware('throttle:120,1,counter-app-version');
@@ -91,7 +94,6 @@ Route::get('sync/nodes', [SyncController::class, 'nodes'])->middleware('auth:san
 Route::get('sync/outbox', [SyncController::class, 'outboxEvents'])->middleware('auth:sanctum');
 Route::post('sync/outbox/{id}/retry', [SyncController::class, 'retryOutboxEvent'])->middleware('auth:sanctum');
 Route::post('sync/outbox/retry-all', [SyncController::class, 'retryAllFailed'])->middleware('auth:sanctum');
-
 
 // Every signed-in app route, grouped by module under routes/api/. The file order matters where
 // two routes could match the same URL: the earlier one wins.
