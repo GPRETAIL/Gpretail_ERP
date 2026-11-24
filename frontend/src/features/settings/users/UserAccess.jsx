@@ -777,7 +777,7 @@ const UserAccess = () => {
                               px: 1, py: 0.75, fontSize: TYPE.small, color: "warning.dark",
                             }}
                           >
-                            These stores don’t offer the same modules — the grid below shows only modules common to all of
+                            These stores don’t offer the same modules, so the grid below shows only modules common to all of
                             them. To give different access per store, create a separate user for each store.
                           </Typography>
                         ) : null}
@@ -792,12 +792,12 @@ const UserAccess = () => {
                     {editingStoreAdmin ? (
                       <Stack spacing={1} sx={{ gridColumn: "span 12", borderRadius: "5.25px", border: "1px solid", borderColor: "info.main", bgcolor: (theme) => alpha(theme.palette.info.main, theme.palette.mode === "dark" ? 0.2 : 0.08), p: 1.5 }}>
                         <Typography sx={{ fontSize: 12.25, fontWeight: 600, color: "info.dark" }}>
-                          Store admin — {userForm.name || userForm.email}
+                          Store admin: {userForm.name || userForm.email}
                         </Typography>
                         <Typography sx={{ fontSize: TYPE.small, color: "info.dark" }}>
                           This account was created with its store, so its name, sign-in details and store
                           cannot be changed here. It is already limited to this store and to the modules the
-                          store subscribes to — below you choose what it may do inside them.
+                          store subscribes to. Below you choose what it may do inside them.
                         </Typography>
                         <FormControlLabel
                           sx={{ ml: 0, pt: 0.5, "& .MuiFormControlLabel-label": { fontSize: 12.25, fontWeight: 600, color: "info.dark" } }}

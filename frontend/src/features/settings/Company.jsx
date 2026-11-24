@@ -695,7 +695,7 @@ const CompanySettings = () => {
                 }}
               >
                 Name, Reg. Name, Contact Person, Contact No, GST No, City, PIN Code and State are set by your
-                platform administrator (Vynerix Admin) for this store — view only here. To change one, reach out to
+                platform administrator (Vynerix Admin) for this store. View only here. To change one, reach out to
                 Vynerix Admin.
               </Typography>
             ) : null}
@@ -732,9 +732,9 @@ const CompanySettings = () => {
 
               <InputField label="Store Access Level" sx={{ gridColumn: { md: "span 2" } }}>
                 <TextField select size="small" fullWidth sx={fieldSx} value={form.accessLevel} onChange={setField("accessLevel")}>
-                  <MenuItem value="full">Full Access — all subscribed modules</MenuItem>
-                  <MenuItem value="core">Core Only — Sales / Purchase / Store / Masters</MenuItem>
-                  <MenuItem value="custom">Custom — choose modules</MenuItem>
+                  <MenuItem value="full">Full Access: all subscribed modules</MenuItem>
+                  <MenuItem value="core">Core Only: Sales / Purchase / Store / Masters</MenuItem>
+                  <MenuItem value="custom">Custom: choose modules</MenuItem>
                 </TextField>
                 {form.accessLevel === "custom" ? (
                   <Box sx={{ mt: 1, display: "grid", gap: 0.75, gridTemplateColumns: "repeat(2, 1fr)", border: "1px solid", borderColor: "divider", borderRadius: "4px", p: 1 }}>

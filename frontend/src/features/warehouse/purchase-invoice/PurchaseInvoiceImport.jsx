@@ -215,8 +215,8 @@ export default function PurchaseInvoiceImport() {
       ? [
           { progress: 10, msg: "📷 Detecting image orientation & auto-rotating via EXIF..." },
           { progress: 22, msg: "🔍 Resizing image to optimal resolution for AI vision..." },
-          { progress: 38, msg: "🤖 Sending to Gemini Vision — reading supplier, GSTIN & address..." },
-          { progress: 55, msg: "📋 Scanning item table — extracting descriptions, HSN, qty, rate..." },
+          { progress: 38, msg: "🤖 Sending to Gemini Vision: reading supplier, GSTIN & address..." },
+          { progress: 55, msg: "📋 Scanning item table: extracting descriptions, HSN, qty, rate..." },
           { progress: 70, msg: "🔖 Reading stamps, handwritten LR no. & transport details..." },
           { progress: 82, msg: "💰 Cross-checking GST breakdown, CGST/SGST & grand total..." },
           { progress: 90, msg: "✅ Verifying extracted data & preparing review workspace..." },
@@ -224,7 +224,7 @@ export default function PurchaseInvoiceImport() {
       : [
           { progress: 15, msg: "📄 Uploading invoice PDF for AI analysis..." },
           { progress: 35, msg: "🤖 Extracting supplier details, GSTIN & invoice header..." },
-          { progress: 60, msg: "📋 Parsing line item table — HSN codes, rates & quantities..." },
+          { progress: 60, msg: "📋 Parsing line item table: HSN codes, rates & quantities..." },
           { progress: 80, msg: "💰 Calculating tax breakdown, CGST/SGST & grand total..." },
           { progress: 90, msg: "✅ Verifying data & preparing review workspace..." },
         ];

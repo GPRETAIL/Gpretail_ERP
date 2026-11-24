@@ -238,7 +238,7 @@ const ActivationWizard = ({ onActivated, setup, onCancel }) => {
         {allDone ? (
           <Stack direction="row" spacing={1} sx={{ mt: 3, alignItems: "center", borderRadius: 2, bgcolor: (theme) => alpha(theme.palette.success.main, theme.palette.mode === "dark" ? 0.16 : 0.08), px: 2, py: 1.5 }}>
             <CheckCircle2 size={16} style={{ flexShrink: 0, color: isDark ? "#34d399" : "#10b981" }} />
-            <Typography variant="body2" sx={{ color: "success.dark" }}>{willSetPassword ? "Almost there — let's secure your admin account…" : "All set! Redirecting you to sign in…"}</Typography>
+            <Typography variant="body2" sx={{ color: "success.dark" }}>{willSetPassword ? "Almost there. Let's secure your admin account…" : "All set! Redirecting you to sign in…"}</Typography>
           </Stack>
         ) : (
           <Typography variant="caption" sx={{ mt: 3, display: "block", textAlign: "center", color: "text.disabled" }}>Please keep this window open…</Typography>

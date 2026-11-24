@@ -1015,7 +1015,7 @@ const SupplierPayment = () => {
                         </Box>
                       ) : Number(paidAmountInput || 0) < totalSelectedPayable ? (
                         <Box component="span" sx={{ ml: 1, fontSize: TYPE.small, color: "warning.main", fontWeight: 400 }}>
-                          (Partial payment — status will remain pending)
+                          (Partial payment: status will remain pending)
                         </Box>
                       ) : null}
                     </Typography>

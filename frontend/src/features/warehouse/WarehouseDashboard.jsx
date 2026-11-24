@@ -700,7 +700,7 @@ const WarehouseDashboard = () => {
 
         {selectedEntry && (
           <Typography sx={{ ml: "auto", fontSize: TYPE.small, color: "text.secondary" }}>
-            Selected: <Box component="strong">#{selectedEntry.lr_entry_no || selectedEntry.invoice_no || selectedEntry.id}</Box> —{" "}
+            Selected: <Box component="strong">#{selectedEntry.lr_entry_no || selectedEntry.invoice_no || selectedEntry.id}</Box>:{" "}
             {STATUS_LABELS[selectedEntry.status] || selectedEntry.status}
           </Typography>
         )}

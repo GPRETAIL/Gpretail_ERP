@@ -452,7 +452,7 @@ export default function CreateInvoiceScreen({ onBack }) {
       setSuccessMsg("Invoice saved & sent to printer!");
     } catch (err) {
       console.warn("Receipt print failed:", err);
-      setSuccessMsg("Invoice saved. Printing failed — check the printer connection.");
+      setSuccessMsg("Invoice saved. Printing failed. Check the printer connection.");
     } finally {
       setPrinting(false);
       setTimeout(() => {

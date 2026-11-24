@@ -85,7 +85,7 @@ const SetPassword = () => {
         setPhase("done");
         return;
       }
-      setError(body?.message || "Could not set the password. The setup window may have expired — start again.");
+      setError(body?.message || "Could not set the password. The setup window may have expired. Start again.");
     } catch {
       setError("Cannot reach the server. Check your connection and try again.");
     } finally {

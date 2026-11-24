@@ -500,7 +500,7 @@ export default function RemoteSupport() {
                     <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
                       {activeSession.status === "connected"
                         ? "Support Engineer Accepted Your Request"
-                        : "Support Request Sent — Waiting in Support Queue"}
+                        : "Support Request Sent: Waiting in Support Queue"}
                     </Typography>
                     <Typography variant="body2">
                       {activeSession.status === "connected"

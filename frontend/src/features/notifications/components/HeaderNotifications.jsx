@@ -28,7 +28,7 @@ export default function HeaderNotifications({ onNavigate, onOpenInbox }) {
   const close = () => setAnchor(null);
   const openInbox = (preferences = false) => { close(); onOpenInbox(preferences); };
   return <>
-    <Tooltip title={countQuery.error ? "Notifications — connection unavailable" : "Notifications"}>
+    <Tooltip title={countQuery.error ? "Notifications: connection unavailable" : "Notifications"}>
       <IconButton size="small" aria-label={`Notifications${count ? `, ${count} unread` : ""}`} aria-haspopup="dialog" aria-expanded={open} aria-controls={open ? "header-notifications" : undefined} onClick={event => { setAnchor(event.currentTarget); feed.reload(); countQuery.reload({ silent: true }); }} sx={{ color: "text.secondary" }}>
         <Badge badgeContent={count} color="error" max={99}><Bell size={20} /></Badge>
       </IconButton>

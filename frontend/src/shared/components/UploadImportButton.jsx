@@ -111,7 +111,7 @@ export default function UploadImportButton({
           progressPercent: 100,
           statusMessage: "File is empty",
         });
-        toast.error("File is empty — nothing to import");
+        toast.error("File is empty. Nothing to import");
         return;
       }
 
@@ -185,7 +185,7 @@ export default function UploadImportButton({
           progressPercent: 100,
           statusMessage: "No valid rows found",
         });
-        toast.error("No valid rows found — required fields are blank in every row");
+        toast.error("No valid rows found. Required fields are blank in every row");
         return;
       }
 
@@ -214,7 +214,7 @@ export default function UploadImportButton({
       });
 
       toast.success(
-        `Imported ${count} record${count !== 1 ? "s" : ""}${skipped > 0 ? ` (${skipped} skipped — missing required fields)` : ""}`
+        `Imported ${count} record${count !== 1 ? "s" : ""}${skipped > 0 ? ` (${skipped} skipped: missing required fields)` : ""}`
       );
       onDone?.();
     } catch (err) {

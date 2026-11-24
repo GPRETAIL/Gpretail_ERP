@@ -131,7 +131,7 @@ export default function SubscriptionDuePopup() {
     if (status.onTrial) {
       return days === null || days === undefined
         ? "Your free trial is active. Activate a plan to keep your store running."
-        : `Free trial — ${days} day${days === 1 ? "" : "s"} remaining. Activate a plan to keep your store running.`;
+        : `Free trial: ${days} day${days === 1 ? "" : "s"} remaining. Activate a plan to keep your store running.`;
     }
     if (days === 0) return "Your subscription expires today. Renew now to avoid interruption.";
     if (days === null || days === undefined) return "Your subscription is due soon. Renew to avoid interruption.";

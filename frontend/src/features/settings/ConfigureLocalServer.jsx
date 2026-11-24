@@ -434,7 +434,7 @@ export default function ConfigureLocalServer() {
 
       {nodes.length > 0 && (
         <Box component="section" sx={{ ...cardSx, p: { xs: 2, md: 2.5 } }}>
-          <Typography component="h2" sx={{ fontSize: 14, fontWeight: 600, color: "text.primary" }}>All Stores — Sync Health</Typography>
+          <Typography component="h2" sx={{ fontSize: 14, fontWeight: 600, color: "text.primary" }}>All Stores: Sync Health</Typography>
           <Typography sx={{ mt: 0.5, fontSize: 12.25, color: "text.secondary" }}>
             Heartbeat status is separate from server reachability. Not connected means no heartbeat has arrived; Stale means an earlier heartbeat is overdue.
           </Typography>

@@ -16,7 +16,7 @@ export default function ComingSoon() {
         Coming soon
       </Typography>
       <Typography variant="body2" sx={{ mb: 0.5, maxWidth: "28rem", color: "text.secondary" }}>
-        This feature isn’t available yet — we’re still building it.
+        This feature isn’t available yet. We’re still building it.
       </Typography>
       <Typography variant="caption" sx={{ mb: 3, fontFamily: "monospace", color: "text.disabled" }}>
         {location.pathname}

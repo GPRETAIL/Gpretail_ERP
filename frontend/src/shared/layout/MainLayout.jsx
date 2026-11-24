@@ -165,8 +165,8 @@ const PrintStatusFooter = () => {
               onClick={() => window.open(companyPortalUrl, "_blank", "noopener,noreferrer")}
               title={
                 subscription.soonestDaysLeft === null || subscription.soonestDaysLeft === undefined
-                  ? "Free trial — activate a plan to continue"
-                  : `Free trial — ${subscription.soonestDaysLeft} day(s) remaining. Click to view plans.`
+                  ? "Free trial: activate a plan to continue"
+                  : `Free trial: ${subscription.soonestDaysLeft} day(s) remaining. Click to view plans.`
               }
               label={`TRIAL${
                 subscription.soonestDaysLeft !== null && subscription.soonestDaysLeft !== undefined
@@ -233,7 +233,7 @@ const PrintStatusFooter = () => {
                   ? "Using this store's on-prem server"
                   : syncStatus.catchingUp
                     ? "The on-prem server is back and syncing; counters return to it once both sides are up to date"
-                    : "On-prem server unreachable — billing on the cloud"
+                    : "On-prem server unreachable, billing on the cloud"
               }
               sx={{
                 display: "flex", alignItems: "center", gap: 0.75, fontSize: "inherit", color: "inherit",

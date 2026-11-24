@@ -44,7 +44,7 @@ export default function SubscriptionExpiryBanner() {
     const since = formatDate(expired.map((store) => store.expiry_date).filter(Boolean).sort()[0]);
     return (
       <Alert severity="error" variant="filled" role="alert" action={renew} sx={{ borderRadius: 0, py: 0.25, alignItems: "center" }}>
-        <strong>Subscription expired{since ? ` on ${since}` : ""}</strong> — {names(expired)}.{" "}
+        <strong>Subscription expired{since ? ` on ${since}` : ""}</strong>: {names(expired)}.{" "}
         Billing, purchases and stock changes are blocked for {expired.length === 1 ? "this store" : "these stores"} until renewed.{" "}
         {canRenew ? "Renew in the company portal to restore access immediately." : "Contact your company administrator to renew."}
       </Alert>
@@ -77,7 +77,7 @@ export default function SubscriptionExpiryBanner() {
         sx={{ borderRadius: 0, py: 0.25, alignItems: "center" }}
       >
         <strong>{soonest === 0 ? "Subscription expires today" : `Subscription expires in ${soonest} day${soonest === 1 ? "" : "s"}`}</strong>
-        {" "}— {names(dueSoon)}. Renew before it lapses to avoid interrupting billing and stock entry.
+        {": "}{names(dueSoon)}. Renew before it lapses to avoid interrupting billing and stock entry.
       </Alert>
     );
   }

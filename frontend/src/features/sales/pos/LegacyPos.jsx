@@ -1560,7 +1560,7 @@ const LegacyPos = () => {
             const ok = mergeStandaloneIntoReturnDraft(barcodeData);
             if (ok) {
               setReturnBillLookup("");
-              toast.success("Product added — adjust quantity on the lines step (catalogue pricing)");
+              toast.success("Product added. Adjust quantity on the lines step (catalogue pricing)");
               setTimeout(() => {
                 const wrap = returnReasonSelectWrapRef.current;
                 const trigger = wrap?.querySelector("[data-searchable-select-trigger]");

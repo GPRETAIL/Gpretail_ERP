@@ -876,9 +876,9 @@ const PosReturn = () => {
             </Box>
             <Typography sx={{ mt: 1, fontSize: 12.25, color: "text.secondary" }}>
               {sourceSale?.billNo
-                ? `Source bill #${formatSaleBillNo(sourceSale.billNo)}. Change line qty (up to sold minus prior returns), scan another barcode from the same bill to add lines, then save — return slip prints and the return stays unsettled until settled.`
+                ? `Source bill #${formatSaleBillNo(sourceSale.billNo)}. Change line qty (up to sold minus prior returns), scan another barcode from the same bill to add lines, then save. The return slip prints and the return stays unsettled until settled.`
                 : sourceSale?.standalone
-                  ? "Barcode-only return: no source bill — qty is not limited by a sale. Pricing matches your stock/product setup (fallback: last POS line for that barcode). Reset before switching to loading a bill by number."
+                  ? "Barcode-only return: no source bill, so qty is not limited by a sale. Pricing matches your stock/product setup (fallback: last POS line for that barcode). Reset before switching to loading a bill by number."
                   : ""}
             </Typography>
           </Box>
@@ -915,7 +915,7 @@ const PosReturn = () => {
                       <Box sx={{ px: 0.75, py: 0.5, width: 208, flexShrink: 0, borderRight: 1, borderColor: "divider", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         <Box>{line.productName || "-"}</Box>
                         {line.standaloneLine ? (
-                          <Box sx={{ fontSize: { xs: 10, md: 12.25 }, color: "text.disabled" }}>No bill link — qty open</Box>
+                          <Box sx={{ fontSize: { xs: 10, md: 12.25 }, color: "text.disabled" }}>No bill link, qty open</Box>
                         ) : (
                           <Box sx={{ fontSize: { xs: 10, md: 12.25 }, color: "text.disabled" }}>
                             Original: {line.originalQty} | Returned: {line.returnedQty} | Max: {line.maxQty}

@@ -93,7 +93,7 @@ function ThemeEditor({ snapshot, prefix, companyScope, mode, reload, token, onBu
     </>} />
     <Box sx={{ flex: 1, minHeight: 0, overflowY: "auto", p: 1.5 }}>
       <Alert severity="info" sx={{ mb: 1.5 }}>
-        {companyScope ? "Editing the company default. Stores without permitted overrides inherit this theme." : meta.source === "store" ? "Store Override — this store uses its own appearance." : "Inherited from Company — applying a theme creates a store override."}
+        {companyScope ? "Editing the company default. Stores without permitted overrides inherit this theme." : meta.source === "store" ? "Store Override: this store uses its own appearance." : "Inherited from Company. Applying a theme creates a store override."}
         {" "}Light/Dark is controlled by the existing top-header toggle. Typography applies to screen controls and grids; print formats retain their own settings.
       </Alert>
       {!editable && <Alert severity="warning" sx={{ mb: 1 }}>This store is locked to company branding. Tenant Admin must enable its override in Company Default before it can be customized.</Alert>}
