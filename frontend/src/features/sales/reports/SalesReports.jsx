@@ -643,6 +643,79 @@ const buildDealerDocumentRows = async (url, noField, dateField) => (await getAll
   status_label: row?.cancelled_at ? "Cancelled" : row?.status || "-",
 }));
 
+/** B2B reports read the dealer invoices. Cancelled invoices are left out. */
+const getB2bInvoices = async () => (await getAllRows("/dealer-invoices"))
+  .filter((row) => !row?.cancelled_at && String(row?.status || "").toUpperCase() !== "CANCELLED");
+
+const buildB2bInvoiceRows = async () => (await getB2bInvoices()).map((row) => ({
+  id: row.id,
+  bill_no: row?.bill_no || row?.invoice_no || "-",
+  sale_at: row?.sale_at || row?.invoice_date || "",
+  customer_name: row?.customer_name || "-",
+  gstin: row?.customer_gstin || "-",
+  qty: toNumber(row?.total_qty),
+  taxable_amount: round2(row?.subtotal),
+  discount: round2(row?.discount_amount),
+  tax_amount: round2(row?.tax_amount),
+  other_charges: round2(row?.other_charges),
+  total: round2(row?.grand_total),
+  payment_status: row?.payment_status || "-",
+}));
+
+/** One row per invoice line. Tax is charged on qty x price, so the tax % is worked out from the line's own amounts. */
+const buildB2bItemRows = async () => (await getB2bInvoices()).flatMap((invoice, invoiceIndex) =>
+  (Array.isArray(invoice?.items) ? invoice.items : []).map((item, itemIndex) => {
+    const qty = Math.max(0, toNumber(item?.quantity));
+    const taxable = round2(qty * toNumber(item?.price));
+    const taxAmount = round2(item?.tax_amount);
+    return {
+      id: `${invoice.id ?? invoiceIndex}-${itemIndex}`,
+      bill_no: invoice?.bill_no || invoice?.invoice_no || "-",
+      sale_at: invoice?.sale_at || invoice?.invoice_date || "",
+      customer_name: invoice?.customer_name || "-",
+      gstin: invoice?.customer_gstin || "-",
+      product_name: item?.product_name || "-",
+      hsn: item?.hsn_code || "-",
+      qty,
+      price: round2(item?.price),
+      subtotal: taxable,
+      discount: round2(item?.discount),
+      tax_perc: taxable > 0 ? round2((taxAmount / taxable) * 100) : 0,
+      tax_amount: taxAmount,
+      total: round2(item?.total),
+    };
+  })
+);
+
+const groupB2bItemRows = (itemRows, keyOf, identity) => {
+  const grouped = new Map();
+  itemRows.forEach((row) => {
+    const key = keyOf(row);
+    if (!grouped.has(key)) grouped.set(key, { id: key, ...identity(row), bills: new Set(), qty: 0, taxable_amount: 0, discount: 0, tax_amount: 0, total: 0 });
+    const entry = grouped.get(key);
+    entry.bills.add(row.bill_no);
+    entry.qty += row.qty;
+    entry.taxable_amount += row.subtotal;
+    entry.discount += row.discount;
+    entry.tax_amount += row.tax_amount;
+    entry.total += row.total;
+  });
+  return Array.from(grouped.values()).map(({ bills, ...row }) => ({
+    ...row,
+    bill_count: bills.size,
+    taxable_amount: round2(row.taxable_amount),
+    discount: round2(row.discount),
+    tax_amount: round2(row.tax_amount),
+    total: round2(row.total),
+  }));
+};
+
+const buildB2bTaxSummaryRows = async () => groupB2bItemRows(await buildB2bItemRows(), (row) => String(row.tax_perc), (row) => ({ tax_perc: row.tax_perc }))
+  .sort((a, b) => b.tax_perc - a.tax_perc);
+
+const buildB2bHsnRows = async () => groupB2bItemRows(await buildB2bItemRows(), (row) => row.hsn, (row) => ({ hsn: row.hsn }))
+  .sort((a, b) => String(a.hsn).localeCompare(String(b.hsn)));
+
 /** Rows of a Sales Reports tab the backend builds (stock batches, audits, loyalty, incentives) for the store. */
 const getStoreReportRows = (report) => getAllRows(`/sales-reports/store/${report}`);
 
@@ -1187,6 +1260,36 @@ const dealerDocumentColumns = (noLabel, dateLabel) => [
   { key: "qty", label: "Qty", render: rightNumber() },
   { key: "amount", label: "Amount", render: rightNumber(2) },
   { key: "status_label", label: "Status" },
+];
+
+const b2bInvoiceColumns = [
+  { key: "bill_no", label: "Invoice no" },
+  { key: "sale_at", label: "Date", render: (value) => formatDate(value), searchValue: (row) => formatDate(row.sale_at) },
+  { key: "customer_name", label: "Dealer" },
+  { key: "gstin", label: "GSTIN" },
+  { key: "qty", label: "Qty", render: rightNumber() },
+  { key: "taxable_amount", label: "Taxable", render: rightNumber(2) },
+  { key: "discount", label: "Discount", render: rightNumber(2) },
+  { key: "tax_amount", label: "Tax", render: rightNumber(2) },
+  { key: "other_charges", label: "Other charges", render: rightNumber(2) },
+  { key: "total", label: "Total", render: rightNumber(2) },
+  { key: "payment_status", label: "Payment" },
+];
+
+const b2bItemColumns = [
+  { key: "bill_no", label: "Invoice no" },
+  { key: "sale_at", label: "Date", render: (value) => formatDate(value), searchValue: (row) => formatDate(row.sale_at) },
+  { key: "customer_name", label: "Dealer" },
+  { key: "gstin", label: "GSTIN" },
+  { key: "product_name", label: "Product" },
+  { key: "hsn", label: "HSN" },
+  { key: "qty", label: "Qty", render: rightNumber() },
+  { key: "price", label: "Price", render: rightNumber(2) },
+  { key: "subtotal", label: "Taxable", render: rightNumber(2) },
+  { key: "discount", label: "Discount", render: rightNumber(2) },
+  { key: "tax_perc", label: "Tax %", render: rightNumber(2) },
+  { key: "tax_amount", label: "Tax", render: rightNumber(2) },
+  { key: "total", label: "Total", render: rightNumber(2) },
 ];
 
 const occasionColumns = (dateLabel, yearsLabel) => [
@@ -2206,10 +2309,26 @@ const REPORT_DATA_SOURCES = {
     emptyText: "No sales with a salesman yet.",
   },
   employee_advance_pending_report: { unavailableReason: "A dedicated data source for this report is not connected." },
-  b2b_sales_report: { unavailableReason: "A dedicated data source for this report is not connected." },
-  b2b_sales_tax_report_column_wise: { unavailableReason: "A dedicated data source for this report is not connected." },
-  b2b_sales_tax_report_row_wise: { unavailableReason: "A dedicated data source for this report is not connected." },
-  b2b_sales_hsn_report: { unavailableReason: "A dedicated data source for this report is not connected." },
+  b2b_sales_report: {
+    columns: b2bInvoiceColumns,
+    fetchRows: buildB2bInvoiceRows,
+    emptyText: "No dealer invoices found.",
+  },
+  b2b_sales_tax_report_column_wise: {
+    columns: b2bItemColumns,
+    fetchRows: buildB2bItemRows,
+    emptyText: "No dealer invoice lines found.",
+  },
+  b2b_sales_tax_report_row_wise: {
+    columns: taxSummaryColumns,
+    fetchRows: buildB2bTaxSummaryRows,
+    emptyText: "No dealer invoice tax rows found.",
+  },
+  b2b_sales_hsn_report: {
+    columns: salesHsnColumns,
+    fetchRows: buildB2bHsnRows,
+    emptyText: "No dealer invoice HSN rows found.",
+  },
 };
 
 const REPORT_GROUPS = [

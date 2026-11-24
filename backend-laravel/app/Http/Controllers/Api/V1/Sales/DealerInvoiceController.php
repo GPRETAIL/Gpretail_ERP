@@ -138,9 +138,11 @@ class DealerInvoiceController extends Controller
             $isReturn ? 'return_no' : 'bill_no' => $isReturn ? DocumentNumberService::short($doc->return_no, 'DR') : DocumentNumberService::short($doc->invoice_no, 'D'),
             $isReturn ? 'return_at' : 'sale_at' => $stamp,
             'customer_name' => $doc->customer?->name,
+            'customer_gstin' => $doc->customer?->gstin,
             'total_qty' => (float) $doc->items->sum('quantity'),
             'amount' => (float) $doc->grand_total,
-            'items' => $doc->items->map(fn ($item) => array_merge($item->toArray(), ['product_name' => $item->product?->name]))->all(),
+            // hsn_code feeds the B2B tax and HSN reports; the line's tax rate is not stored, the reports derive it from the amounts.
+            'items' => $doc->items->map(fn ($item) => array_merge($item->toArray(), ['product_name' => $item->product?->name, 'hsn_code' => $item->product?->hsn_code]))->all(),
         ], $isReturn ? [] : [
             'paid_now' => $balance['paid_now'] ?? 0, 'received' => $balance['received'] ?? 0, 'returned' => $balance['returned'] ?? 0,
             'paid_amount' => round(($balance['paid_now'] ?? 0) + ($balance['received'] ?? 0), 2),
