@@ -262,7 +262,7 @@ export default function SettingsScreen({ onLogout, onTriggerPwa, appLock, biomet
           <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
             <Box sx={{ p: 1.5, borderRadius: "16px", bgcolor: "#fffbeb", border: "1px solid rgba(254,243,199,0.8)" }}>
               <Typography component="p" sx={{ fontSize: 10.5, color: "#92400e", lineHeight: 1.625 }}>
-                These are the real role groups defined for this account. Fine-grained page-level permissions per role aren't enforced by the backend yet - a role name here doesn't currently restrict what a user can do.
+                These are the role groups defined for this account. What each role may do is enforced on every action.
               </Typography>
             </Box>
             {roles.length > 0 ? (

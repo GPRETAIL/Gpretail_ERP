@@ -178,7 +178,7 @@ export const RECEIPT_FORMAT_OPTIONS = [
   },
   {
     value: "enterprise", label: "Enterprise",
-    description: "The most decorated tier -- boxed letterhead, accent bar, highlighted total.",
+    description: "The most decorated tier: boxed letterhead, accent bar, highlighted total.",
     style: { dividerStyle: "double", dividerWeight: 3, headerBoxed: true, headerAccent: "bar", accentColor: "#1d4ed8", totalStyle: "highlighted", spacing: "relaxed", rounded: true },
   },
 ];

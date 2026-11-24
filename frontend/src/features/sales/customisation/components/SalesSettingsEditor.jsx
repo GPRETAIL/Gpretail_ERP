@@ -902,11 +902,11 @@ export default function SalesSettingsEditor({ section = "sales", onDirtyChange }
     const current = Number(settings.paymentQrSize) || PAYMENT_QR_SIZE_MIN;
     const next = current + delta;
     if (next > PAYMENT_QR_SIZE_MAX) {
-      toast.info(`Maximum recommended QR size is ${PAYMENT_QR_SIZE_MAX}px -- larger may not fit on narrower receipt paper.`);
+      toast.info(`Maximum recommended QR size is ${PAYMENT_QR_SIZE_MAX}px. Larger may not fit on narrower receipt paper.`);
       return;
     }
     if (next < PAYMENT_QR_SIZE_MIN) {
-      toast.info(`Minimum recommended QR size is ${PAYMENT_QR_SIZE_MIN}px -- smaller QR codes may not scan reliably on thermal printers.`);
+      toast.info(`Minimum recommended QR size is ${PAYMENT_QR_SIZE_MIN}px. Smaller QR codes may not scan reliably on thermal printers.`);
       return;
     }
     updateSetting({ paymentQrSize: next });
@@ -1298,7 +1298,7 @@ export default function SalesSettingsEditor({ section = "sales", onDirtyChange }
           <Box sx={{ ...baseCardSx, p: 2.5 }}>
             <Typography component="label" sx={fieldLabelSx}>Receipt / Invoice Format</Typography>
             <Typography sx={{ mb: 1.5, maxWidth: 768, fontSize: 12.25, lineHeight: 1.7, color: "text.secondary" }}>
-              Choose the overall look of the printed receipt -- border and divider style, spacing, and how the header and total are emphasised. Applies to the preview on the right and every POS print.
+              Choose the overall look of the printed receipt: border and divider style, spacing, and how the header and total are emphasised. Applies to the preview on the right and every POS print.
             </Typography>
             <Box sx={{ display: "grid", gap: 1.5, gridTemplateColumns: { sm: "1fr 1fr", xl: "repeat(5, 1fr)" } }}>
               {RECEIPT_FORMAT_OPTIONS.map((option) => (

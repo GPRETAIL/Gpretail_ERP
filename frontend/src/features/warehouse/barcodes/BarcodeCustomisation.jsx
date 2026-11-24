@@ -796,7 +796,7 @@ export default function BarcodeCustomisation() {
           <Box sx={settingsCardSx}>
             <Typography component="label" sx={settingsFieldLabelSx}>Barcode and QR Code Format</Typography>
             <Typography sx={{ mb: 1.5, maxWidth: 640, fontSize: 12.25, lineHeight: 1.6, color: "text.secondary" }}>
-              Choose the overall look of the printed receipt -- border and divider style, spacing, and how the header and total are emphasised. Applies to the preview on the right and every Barcode print.
+              Choose the overall look of the printed receipt: border and divider style, spacing, and how the header and total are emphasised. Applies to the preview on the right and every Barcode print.
             </Typography>
             <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", xl: "repeat(5, 1fr)" }, gap: 1.5 }}>
               {WAREHOUSE_LABEL_FORMAT_OPTIONS.map((option) => (
@@ -933,7 +933,7 @@ export default function BarcodeCustomisation() {
           <Box sx={settingsCardSx}>
             <Typography component="label" sx={settingsFieldLabelSx}>Print Position (mm)</Typography>
             <Typography sx={{ fontSize: 10.5, color: "text.secondary", mb: 1.5 }}>
-              Shifts where content lands on the physical label without changing its layout - use this to
+              Shifts where content lands on the physical label without changing its layout. Use this to
               compensate for your printer's own print-head/gap-sensor offset. Negative values shift up/left.
             </Typography>
             <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(4, 1fr)" }, gap: 1.5 }}>
