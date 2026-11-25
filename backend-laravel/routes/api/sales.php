@@ -56,6 +56,7 @@ Route::delete('dealer-receipts/{id}', [DealerReceiptController::class, 'destroy'
 
 // Sales > Delivery: check a bill's items at handover.
 Route::get('deliveries/bill', [DeliveryController::class, 'bill']);
+Route::get('deliveries/pending', [DeliveryController::class, 'pending']);
 Route::get('deliveries/scan', [DeliveryController::class, 'scan']);
 Route::get('deliveries', [DeliveryController::class, 'index']);
 Route::post('deliveries', [DeliveryController::class, 'store']);

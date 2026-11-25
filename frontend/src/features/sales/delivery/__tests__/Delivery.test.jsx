@@ -15,6 +15,10 @@ import { TransferActivityProvider } from "@/features/store/context/TransferActiv
 const SHIRT = { key: "10:100", product_id: 10, variant_id: 100, name: "Shirt", code: "SH1", size: "M", selling_mode: "PIECE", billed_qty: 2, returned_qty: 0, expected_qty: 2 };
 const CAP = { key: "20:0", product_id: 20, variant_id: null, name: "Cap", code: "CP1", size: null, selling_mode: "PACK", billed_qty: 1, returned_qty: 0, expected_qty: 1 };
 const BILL = { source_type: "pos_sale", source_id: 7, bill_no: "261116-0007", bill_type: "POS bill", customer: "Walk-in Customer", cancelled: false, lines: [SHIRT, CAP], delivery: null };
+const WAITING = [
+  { source_type: "pos_sale", source_id: 7, bill_no: "261116-0007", bill_type: "POS bill", customer: "Walk-in Customer", customer_phone: null, qty: 3, amount: 1250.5, at: "2026-11-16T10:30:00Z" },
+  { source_type: "dealer_invoice", source_id: 3, bill_no: "D261115-0003", bill_type: "Dealer invoice", customer: "Dealer One", customer_phone: "9876543210", qty: 12, amount: 8400, at: "2026-11-15T09:00:00Z" },
+];
 const SCANS = {
   "SC001": { product_id: 10, variant_id: 100, unique: true, name: "Shirt" },
   "SC002": { product_id: 10, variant_id: 100, unique: true, name: "Shirt" },
@@ -50,11 +54,14 @@ const scanItem = async (code) => {
   await waitFor(() => expect(field).toHaveValue(""));
 };
 
+let waiting = [];
 beforeEach(() => {
+  waiting = [];
   mocks.get.mockReset();
   mocks.post.mockReset();
   mocks.get.mockImplementation(async (url, { params } = {}) => {
     if (url === "/deliveries") return { data: { data: [] } };
+    if (url === "/deliveries/pending") return { data: { data: waiting } };
     if (url === "/deliveries/bill") return { data: { data: BILL } };
     if (url === "/deliveries/scan") {
       if (SCANS[params.barcode]) return { data: { data: { ...SCANS[params.barcode], barcode: params.barcode } } };
@@ -168,4 +175,61 @@ it("Verify all marks every item in one click and the handover says so", async ()
 it("Verify all is hidden when the store does not allow it for this user", async () => {
   await openBill();
   expect(screen.queryByRole("button", { name: "Verify all" })).toBeNull();
+});
+
+describe("bills waiting to be delivered", () => {
+  it("lists them under the bill number box and opens the one that is clicked, with no typing or scanning", async () => {
+    waiting = WAITING;
+    renderPage();
+    const list = await screen.findByRole("list", { name: "Bills waiting to be delivered" });
+    expect(await within(list).findAllByRole("listitem")).toHaveLength(2);
+    expect(screen.getByText("Bills waiting to be delivered (2)")).toBeInTheDocument();
+    expect(within(list).getByText("₹8,400.00")).toBeInTheDocument();
+    expect(within(list).getByText("Dealer One")).toBeInTheDocument();
+    expect(mocks.get).toHaveBeenCalledWith("/deliveries/pending", { params: { days: 7 } });
+
+    fireEvent.click(within(list).getByRole("button", { name: "Open bill 261116-0007" }));
+
+    expect(await screen.findByText("POS bill 261116-0007")).toBeInTheDocument();
+    expect(mocks.get).toHaveBeenCalledWith("/deliveries/bill", { params: { no: "261116-0007" } });
+    expect(screen.queryByRole("list", { name: "Bills waiting to be delivered" })).not.toBeInTheDocument();
+  });
+
+  it("filters by bill, customer or phone, and changes the period", async () => {
+    waiting = WAITING;
+    renderPage();
+    await within(await screen.findByRole("list", { name: "Bills waiting to be delivered" })).findAllByRole("listitem");
+    fireEvent.change(screen.getByLabelText("Filter waiting bills"), { target: { value: "98765" } });
+    expect(screen.getAllByRole("listitem")).toHaveLength(1);
+    expect(screen.getByRole("button", { name: "Open bill D261115-0003" })).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("Filter waiting bills"), { target: { value: "nobody" } });
+    expect(screen.getByText("No waiting bill matches the filter.")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Today" }));
+    await waitFor(() => expect(mocks.get).toHaveBeenCalledWith("/deliveries/pending", { params: { days: 1 } }));
+  });
+
+  it("says so when nothing is waiting, and the typed number still works", async () => {
+    renderPage();
+    expect(await screen.findByText("No bills are waiting to be delivered in this period.")).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("Bill / invoice number"), { target: { value: "261116-0007" } });
+    fireEvent.click(screen.getByRole("button", { name: "Open bill" }));
+    expect(await screen.findByText("POS bill 261116-0007")).toBeInTheDocument();
+  });
+
+  it("takes a handed over bill off the list", async () => {
+    waiting = WAITING;
+    mocks.post.mockResolvedValue({ data: { message: "Handed over.", data: { status: "delivered", bill_no: "261116-0007", delivered_qty: 3, expected_qty: 3 } } });
+    renderPage();
+    fireEvent.click(await screen.findByRole("button", { name: "Open bill 261116-0007" }));
+    await screen.findByText("POS bill 261116-0007");
+    await scanItem("SC001");
+    await scanItem("SC002");
+    await scanItem("CAP");
+    waiting = [WAITING[1]]; // What the server answers once this bill is delivered.
+    fireEvent.click(screen.getByRole("button", { name: "Hand over" }));
+
+    await waitFor(() => expect(screen.getByText("Bills waiting to be delivered (1)")).toBeInTheDocument());
+    expect(screen.queryByRole("button", { name: "Open bill 261116-0007" })).not.toBeInTheDocument();
+  });
 });

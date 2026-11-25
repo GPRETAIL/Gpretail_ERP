@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { Alert, Box, Button, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Stack, TextField, ToggleButton, ToggleButtonGroup, Typography } from "@mui/material";
+import { Alert, Box, Button, ButtonBase, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Skeleton, Stack, TextField, ToggleButton, ToggleButtonGroup, Typography } from "@mui/material";
 import { CheckCheck, Minus, PackageCheck, Plus, RefreshCw, ScanLine, Search, Trash2 } from "lucide-react";
 import api from "@/shared/api/apiClient";
 import PageHeader from "@/shared/components/PageHeader";
@@ -19,6 +19,10 @@ const qtyText = (value) => Number(value || 0).toLocaleString("en-IN", { maximumF
 const items = (value) => `${qtyText(value)} ${Number(value) === 1 ? "item" : "items"}`;
 const when = (value) => (value ? new Date(value).toLocaleString(undefined, { day: "2-digit", month: "short", hour: "numeric", minute: "2-digit" }) : "-");
 const today = () => new Date().toLocaleDateString("en-CA");
+const money = (value) => Number(value || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const PENDING_DAYS = [{ value: 1, label: "Today" }, { value: 3, label: "3 days" }, { value: 7, label: "7 days" }, { value: 30, label: "30 days" }];
+// One row of "Bills waiting to be delivered": bill and type, customer, items, amount, time.
+const PENDING_COLUMNS = { xs: "minmax(0,1fr) auto", md: "170px minmax(0,1.4fr) 100px 120px 150px 70px" };
 
 /** A short tone per scan, so the person can keep their eyes on the goods. */
 const beep = (ok) => {
@@ -107,14 +111,47 @@ export default function Delivery() {
     setTimeout(() => (bill ? scanRef.current : billRef.current)?.focus(), 0);
   };
 
+  // Bills waiting to be handed over: the counter picks one here instead of typing or scanning its number.
+  const [pending, setPending] = useState([]);
+  const [pendingLoading, setPendingLoading] = useState(true);
+  const [pendingDays, setPendingDays] = useState(7);
+  const [pendingFilter, setPendingFilter] = useState("");
+  const loadPending = useCallback(async () => {
+    try {
+      const res = await api.get("/deliveries/pending", { params: { days: pendingDays } });
+      setPending(Array.isArray(res.data?.data) ? res.data.data : []);
+    } catch {
+      setPending([]); // The bill number box still works; only the shortcut list is empty.
+    } finally {
+      setPendingLoading(false);
+    }
+  }, [pendingDays]);
+
+  useEffect(() => {
+    if (showSearch) return undefined;
+    const timer = setTimeout(loadPending, 0);
+    return () => clearTimeout(timer);
+  }, [loadPending, showSearch]);
+
+  const shownPending = useMemo(() => {
+    const word = pendingFilter.trim().toLowerCase();
+    return word ? pending.filter((row) => [row.bill_no, row.customer, row.customer_phone].some((field) => String(field || "").toLowerCase().includes(word))) : pending;
+  }, [pending, pendingFilter]);
+
   const lines = useMemo(() => bill?.lines || [], [bill]);
   const summary = useMemo(() => deliverySummary(lines, counts), [lines, counts]);
   const checking = Boolean(bill && !bill.delivery && !bill.cancelled && summary.expected > 0);
 
-  const openBill = async (event) => {
+  const openBill = (event) => {
     event?.preventDefault();
-    const number = billNo.trim();
+    void openByNumber(billNo);
+  };
+
+  // From the typed or scanned number, or from a row of the waiting list.
+  const openByNumber = async (value) => {
+    const number = String(value ?? "").trim();
     if (!number || loadingBill) return;
+    setBillNo(number);
     setLoadingBill(true);
     setFeedback(null);
     setDone(null);
@@ -196,6 +233,7 @@ export default function Delivery() {
       setBillNo("");
       setCounts(emptyCounts());
       setFeedback(null);
+      void loadPending(); // The bill just handed over leaves the waiting list.
       setTimeout(() => billRef.current?.focus(), 0);
     } catch (err) {
       if (isApprovalRequired(err)) {
@@ -262,6 +300,58 @@ export default function Delivery() {
           </Alert>
         )}
         {feedback && !checking && <Alert severity={feedback.severity} sx={{ mt: 1.5 }}>{feedback.text}</Alert>}
+
+        {!bill && (
+          <Box sx={{ mt: 2 }}>
+            <Stack direction={{ xs: "column", md: "row" }} spacing={1} sx={{ mb: 1, alignItems: { md: "center" } }}>
+              <Typography component="h2" sx={{ fontWeight: 700, fontSize: 14, flex: 1 }}>
+                Bills waiting to be delivered{!pendingLoading && pending.length > 0 ? ` (${pending.length})` : ""}
+              </Typography>
+              <TextField size="small" placeholder="Filter by bill, customer or phone" value={pendingFilter} onChange={(e) => setPendingFilter(e.target.value)}
+                autoComplete="off" slotProps={{ htmlInput: { "aria-label": "Filter waiting bills" } }} sx={{ minWidth: { md: 260 } }} />
+              <ToggleButtonGroup size="small" exclusive value={pendingDays} aria-label="Period"
+                onChange={(_e, value) => { if (value) { setPendingLoading(true); setPendingDays(value); } }}>
+                {PENDING_DAYS.map((choice) => <ToggleButton key={choice.value} value={choice.value}>{choice.label}</ToggleButton>)}
+              </ToggleButtonGroup>
+              <Button size="small" startIcon={<RefreshCw size={14} />} disabled={pendingLoading} onClick={() => { setPendingLoading(true); void loadPending(); }}>Refresh</Button>
+            </Stack>
+            <Box role="list" aria-label="Bills waiting to be delivered" sx={{ border: 1, borderColor: "divider", borderRadius: 1.5, overflow: "hidden" }}>
+              <Box sx={{ display: { xs: "none", md: "grid" }, gridTemplateColumns: PENDING_COLUMNS.md, gap: 1, px: 1.5, py: 1, bgcolor: "action.hover", fontSize: 12, fontWeight: 600, color: "text.secondary" }} aria-hidden="true">
+                <span>Bill</span><span>Customer</span><span>Items</span><span>Amount</span><span>Billed</span><span />
+              </Box>
+              <Box sx={{ maxHeight: 420, overflowY: "auto" }}>
+                {pendingLoading ? [0, 1, 2].map((id) => <Skeleton key={id} variant="rectangular" height={44} sx={{ m: 0.5 }} />)
+                  : shownPending.length === 0 ? (
+                    <Typography role="status" sx={{ p: 2, fontSize: 13, color: "text.secondary" }}>
+                      {pending.length ? "No waiting bill matches the filter." : "No bills are waiting to be delivered in this period."}
+                    </Typography>
+                  ) : shownPending.map((row) => (
+                    <Box role="listitem" key={`${row.source_type}-${row.source_id}`} sx={{ borderTop: 1, borderColor: "divider", "&:first-of-type": { borderTop: 0 } }}>
+                      <ButtonBase onClick={() => void openByNumber(row.bill_no)} disabled={loadingBill} aria-label={`Open bill ${row.bill_no}`}
+                        sx={{ width: "100%", display: "grid", gridTemplateColumns: PENDING_COLUMNS, gap: 1, px: 1.5, py: 1, textAlign: "left", alignItems: "center", "&:hover": { bgcolor: "action.hover" }, "&.Mui-focusVisible": { bgcolor: "action.hover" } }}>
+                        <Box sx={{ minWidth: 0 }}>
+                          <Typography sx={{ fontSize: 13.5, fontWeight: 700 }} noWrap>{row.bill_no}</Typography>
+                          <Typography sx={{ fontSize: 11.5, color: "text.secondary" }}>{row.bill_type}</Typography>
+                        </Box>
+                        <Box sx={{ minWidth: 0, display: { xs: "none", md: "block" } }}>
+                          <Typography sx={{ fontSize: 13 }} noWrap title={row.customer}>{row.customer}</Typography>
+                          {row.customer_phone && <Typography sx={{ fontSize: 11.5, color: "text.secondary" }}>{row.customer_phone}</Typography>}
+                        </Box>
+                        <Typography sx={{ fontSize: 13, display: { xs: "none", md: "block" } }}>{items(row.qty)}</Typography>
+                        <Typography sx={{ fontSize: 13, display: { xs: "none", md: "block" } }}>₹{money(row.amount)}</Typography>
+                        <Typography sx={{ fontSize: 12.5, color: "text.secondary", display: { xs: "none", md: "block" } }}>{when(row.at)}</Typography>
+                        {/* Phone: customer, items and amount on one short line instead of columns. */}
+                        <Typography sx={{ fontSize: 12, color: "text.secondary", gridColumn: 1, gridRow: 2, display: { md: "none" } }}>
+                          {row.customer} · {items(row.qty)} · ₹{money(row.amount)}
+                        </Typography>
+                        <Typography sx={{ fontSize: 13, fontWeight: 600, color: "primary.main", gridColumn: { xs: 2, md: "auto" }, gridRow: { xs: "1 / span 2", md: "auto" } }}>Open</Typography>
+                      </ButtonBase>
+                    </Box>
+                  ))}
+              </Box>
+            </Box>
+          </Box>
+        )}
 
         {bill && (
           <Box sx={{ mt: 2 }}>

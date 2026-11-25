@@ -30,6 +30,15 @@ class DeliveryController extends Controller
         return response()->json(['success' => true, 'data' => [...$bill, 'can_verify_all' => $this->deliveries->mayVerifyAll($request->user(), (int) $this->resolveStoreId($request, null))]]);
     }
 
+    /** Bills still waiting to be handed over (last 7 days by default), for the picker next to the bill number box. */
+    public function pending(Request $request): JsonResponse
+    {
+        $request->validate(['days' => 'nullable|integer|min:1|max:31']);
+        $rows = $this->deliveries->pending((int) $request->input('days', 7));
+
+        return response()->json(['success' => true, 'data' => $rows, 'total' => $rows->count()]);
+    }
+
     public function scan(Request $request): JsonResponse
     {
         $request->validate(['barcode' => 'required|string|max:100']);

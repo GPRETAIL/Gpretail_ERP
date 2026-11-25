@@ -1,6 +1,6 @@
 # API reference
 
-Every endpoint under `/api`, grouped by module (744 endpoints). Generated from
+Every endpoint under `/api`, grouped by module (745 endpoints). Generated from
 `php artisan route:list --sort=definition --json`; regenerate it after changing routes.
 
 - Each signed-in endpoint is also served under `/api/v1/...` with the same behaviour.
@@ -548,6 +548,7 @@ Every endpoint under `/api`, grouped by module (744 endpoints). Generated from
 | GET | `/api/dealer-receipts/{id}` | DealerReceiptController@show | yes |
 | DELETE | `/api/dealer-receipts/{id}` | DealerReceiptController@destroy | yes |
 | GET | `/api/deliveries/bill` | DeliveryController@bill | yes |
+| GET | `/api/deliveries/pending` | DeliveryController@pending | yes |
 | GET | `/api/deliveries/scan` | DeliveryController@scan | yes |
 | GET | `/api/deliveries` | DeliveryController@index | yes |
 | POST | `/api/deliveries` | DeliveryController@store | yes |

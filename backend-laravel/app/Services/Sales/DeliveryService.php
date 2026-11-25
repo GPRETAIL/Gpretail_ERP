@@ -54,6 +54,52 @@ class DeliveryService
     }
 
     /** The bill by its type and id (the handover posts these). */
+    /**
+     * Bills still waiting to be handed over, newest first: POS bills and dealer invoices of the last $days days (today
+     * counts as day one) that are not cancelled and have no delivery yet. This is the list the counter picks from
+     * instead of typing or scanning a bill number. A bill whose items were all returned still shows; opening it
+     * says there is nothing to hand over.
+     *
+     * @return Collection<int, array<string, mixed>>
+     */
+    public function pending(int $days = 7, int $limit = 200): Collection
+    {
+        $days = max(1, min(31, $days));
+        $from = now()->subDays($days - 1)->startOfDay();
+        $undelivered = fn (string $type, string $table) => fn ($query) => $query->whereNotExists(
+            fn ($sub) => $sub->select(DB::raw(1))->from('deliveries')->whereColumn('deliveries.source_id', $table.'.id')->where('deliveries.source_type', $type)
+        );
+
+        $pos = PosSale::with('customer:id,name,phone')->withSum('items as billed_qty', 'quantity')
+            ->where('created_at', '>=', $from)->whereRaw("UPPER(COALESCE(status, '')) <> 'CANCELLED'")
+            ->tap($undelivered('pos_sale', 'pos_sales'))->latest('created_at')->latest('id')->limit($limit)->get()
+            ->map(fn (PosSale $sale) => $this->pendingRow($sale, 'pos_sale', (string) $sale->bill_no, $sale->created_at, $sale->grand_total));
+
+        $dealer = DealerInvoice::with('customer:id,name,phone')->withSum('items as billed_qty', 'quantity')
+            ->where('created_at', '>=', $from)->whereNull('cancelled_at')->whereRaw("UPPER(COALESCE(status, '')) <> 'CANCELLED'")
+            ->tap($undelivered('dealer_invoice', 'dealer_invoices'))->latest('created_at')->latest('id')->limit($limit)->get()
+            ->map(fn (DealerInvoice $invoice) => $this->pendingRow($invoice, 'dealer_invoice', DocumentNumberService::short($invoice->invoice_no, 'D'), $invoice->created_at, $invoice->grand_total));
+
+        // Same second: the later bill (higher id) first, so the order never depends on the database.
+        return $pos->concat($dealer)->sortByDesc(fn ($row) => $row['at'].'|'.str_pad((string) $row['source_id'], 12, '0', STR_PAD_LEFT))->take($limit)->values();
+    }
+
+    /** @return array<string, mixed> */
+    private function pendingRow(Model $source, string $type, string $billNo, $createdAt, $amount): array
+    {
+        return [
+            'source_type' => $type,
+            'source_id' => $source->getKey(),
+            'bill_no' => $billNo,
+            'bill_type' => $type === 'dealer_invoice' ? 'Dealer invoice' : 'POS bill',
+            'customer' => $source->customer?->name ?: 'Walk-in Customer',
+            'customer_phone' => $source->customer?->phone,
+            'qty' => round((float) $source->billed_qty, 3),
+            'amount' => round((float) $amount, 2),
+            'at' => $createdAt?->toIso8601String(),
+        ];
+    }
+
     public function source(string $type, int $id): Model
     {
         $query = $type === 'dealer_invoice' ? DealerInvoice::query() : PosSale::query();
