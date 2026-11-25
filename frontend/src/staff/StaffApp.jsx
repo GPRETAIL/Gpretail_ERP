@@ -203,7 +203,6 @@ function Shell({ session, onSignOut, theme }) {
   const pulling = usePullToRefresh(refreshAll, { enabled: !bell });
   const tabs = TABS.filter((t) => !t.approver || home?.can_approve);
   const approvalCount = Object.values(home?.approvals || {}).reduce((sum, n) => sum + n, 0);
-  const firstName = (home?.employee?.name || session.employee?.name || "").split(" ")[0];
 
   return (
     <Box sx={{ minHeight: "100dvh", bgcolor: STAFF_COLOR.page, color: STAFF_COLOR.text, fontSize: STAFF_TEXT.body }}>
@@ -216,10 +215,10 @@ function Shell({ session, onSignOut, theme }) {
         )}
         <Box sx={{ flex: 1, minWidth: 0 }}>
           <Typography component="h1" sx={{ fontSize: STAFF_TEXT.heading, fontWeight: 800, color: STAFF_COLOR.text, lineHeight: 1.2 }}>
-            {tab === "home" ? `Hello, ${firstName}` : TITLES[tab]}
+            {tab === "home" ? (session.store?.name || "Home") : TITLES[tab]}
           </Typography>
           <Typography sx={{ fontSize: STAFF_TEXT.small, color: STAFF_COLOR.muted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-            {session.store?.name}{home?.employee?.designation ? ` · ${home.employee.designation}` : ""}
+            {tab === "home" ? (home?.employee?.designation || "") : `${session.store?.name || ""}${home?.employee?.designation ? ` · ${home.employee.designation}` : ""}`}
           </Typography>
         </Box>
         <Box component="button" type="button" onClick={openBell} aria-label={unread ? `Notifications, ${unread} unread` : "Notifications"}
@@ -249,14 +248,16 @@ function Shell({ session, onSignOut, theme }) {
         </ErrorBoundary>
       </Box>
 
-      <Box component="nav" aria-label="HRMS app" sx={{ position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 10, bgcolor: STAFF_COLOR.surface, borderTop: `1px solid ${STAFF_COLOR.line}`, display: "grid", gridTemplateColumns: `repeat(${tabs.length}, 1fr)`, pb: "env(safe-area-inset-bottom)" }}>
+      <Box component="nav" aria-label="HRMS app" sx={{ position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 10, bgcolor: STAFF_COLOR.surface, borderTop: `1px solid ${STAFF_COLOR.line}`, borderRadius: "22px 22px 0 0", boxShadow: STAFF_COLOR.navShadow, display: "grid", gridTemplateColumns: `repeat(${tabs.length}, 1fr)`, pb: "env(safe-area-inset-bottom)" }}>
         {tabs.map(({ key, label, icon: Icon }) => (
           <Box key={key} component="button" type="button" onClick={() => go(key)} aria-current={tab === key ? "page" : undefined}
-            sx={{ position: "relative", minHeight: TOUCH + 18, border: 0, bgcolor: "transparent", color: tab === key ? STAFF_COLOR.primary : STAFF_COLOR.faint, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 0.25,
+            sx={{ position: "relative", minHeight: TOUCH + 22, border: 0, bgcolor: "transparent", color: tab === key ? STAFF_COLOR.primaryDark : STAFF_COLOR.faint, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 0.25,
               fontSize: 11.5, fontWeight: tab === key ? 800 : 600, fontFamily: "inherit", cursor: "pointer", px: 0 }}>
-            <Icon size={22} strokeWidth={tab === key ? 2.4 : 2} />
+            <Box sx={{ width: 56, height: 30, borderRadius: "15px", display: "flex", alignItems: "center", justifyContent: "center", bgcolor: tab === key ? STAFF_COLOR.primarySoft : "transparent", transition: "background-color 0.15s" }}>
+              <Icon size={22} strokeWidth={tab === key ? 2.4 : 2} />
+            </Box>
             {label}
-            {key === "approvals" && approvalCount > 0 && <Box sx={{ position: "absolute", top: 6, left: "calc(50% + 6px)", minWidth: 18, height: 18, px: 0.5, borderRadius: "999px", bgcolor: "#d97706", color: "#fff", fontSize: 11, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{approvalCount > 99 ? "99+" : approvalCount}</Box>}
+            {key === "approvals" && approvalCount > 0 && <Box sx={{ position: "absolute", top: 2, left: "calc(50% + 8px)", minWidth: 18, height: 18, px: 0.5, borderRadius: "999px", bgcolor: "#d97706", color: "#fff", fontSize: 11, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{approvalCount > 99 ? "99+" : approvalCount}</Box>}
           </Box>
         ))}
       </Box>

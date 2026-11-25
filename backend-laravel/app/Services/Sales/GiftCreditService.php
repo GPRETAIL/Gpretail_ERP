@@ -6,6 +6,7 @@ use App\Models\GiftCredit;
 use App\Models\GiftCreditRedemption;
 use App\Models\PosPayment;
 use App\Models\PosSale;
+use App\Services\Accounting\LedgerPoster;
 use App\Services\Documents\DocumentNumberService;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
@@ -122,7 +123,7 @@ class GiftCreditService
         if ($amount < 0.01) {
             return null;
         }
-        $day = \App\Services\Accounting\LedgerPoster::businessDate($sale->sale_date ?? now()); // The bill's own day on the business calendar.
+        $day = LedgerPoster::businessDate($sale->sale_date ?? now()); // The bill's own day on the business calendar.
 
         return $this->issue($request, (int) $sale->store_id, GiftCredit::COUPON, $amount, [
             'customer_id' => $sale->customer_id, 'source_pos_sale_id' => $sale->id, 'date' => CarbonImmutable::parse($day),
@@ -277,7 +278,7 @@ class GiftCreditService
      */
     public function redeem(PosSale $sale, array $uses, ?int $userId): void
     {
-        $day = CarbonImmutable::parse($sale->sale_date ?? now())->toDateString();
+        $day = LedgerPoster::businessDate($sale->sale_date ?? now()); // The bill's own day, not the UTC date.
         foreach ($uses as ['credit' => $credit, 'amount' => $amount]) {
             GiftCreditRedemption::create([
                 'store_id' => $sale->store_id, 'gift_credit_id' => $credit->id, 'pos_sale_id' => $sale->id,

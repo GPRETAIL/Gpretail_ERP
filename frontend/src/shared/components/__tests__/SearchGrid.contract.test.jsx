@@ -22,7 +22,7 @@ describe("ERP listing integration contract", () => {
 
   it("routes every ERP listing through common navigation and panel components", () => {
     const files = listingFiles(resolve("src/features")).filter(path => readFileSync(path, "utf8").includes("<FilterableDataTable"));
-    expect(files.length).toBe(72); // + Dashboard > Fast Moving Products, CRM > Gift Voucher, CRM > Gift Coupon
+    expect(files.length).toBe(75); // + Dashboard > Fast Moving Products, CRM > Gift Voucher, CRM > Gift Coupon, HR > Announcements, Helpdesk, Employee Documents
     expect(files.some(path => path.endsWith("WarehouseDashboard.jsx"))).toBe(true);
     for (const path of files) {
       const source = readFileSync(path, "utf8");

@@ -112,13 +112,13 @@ describe("signed in", () => {
     signIn();
     window.history.replaceState({}, "", "/hr?tab=approvals");
     render(<StaffApp />);
-    expect(await screen.findByRole("heading", { name: /Hello, Senthil/ })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: /Good (morning|afternoon|evening), Senthil/ })).toBeInTheDocument();
   });
 
   it("says when there is no connection, and clears the bar when it returns", async () => {
     signIn();
     render(<StaffApp />);
-    await screen.findByRole("heading", { name: /Hello, Senthil/ });
+    await screen.findByRole("heading", { name: /Good (morning|afternoon|evening), Senthil/ });
     expect(screen.queryByText(/You are offline/)).not.toBeInTheDocument();
     act(() => { window.dispatchEvent(new Event("offline")); });
     expect(screen.getByText(/You are offline/)).toBeInTheDocument();

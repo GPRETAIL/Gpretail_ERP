@@ -6,6 +6,7 @@ use App\Models\GiftCredit;
 use App\Models\User;
 use App\Services\Sales\GiftCreditService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Laravel\Sanctum\Sanctum;
@@ -128,6 +129,22 @@ class GiftCouponTest extends TestCase
 
         $this->assertSame('CANCELLED', GiftCredit::where('source_pos_sale_id', $unused['id'])->value('status'));
         $this->assertSame('USED', $usedCoupon->fresh()->status, 'it was spent on another bill, so it stays');
+    }
+
+    public function test_a_bill_made_late_in_the_evening_utc_is_dated_on_the_business_day_for_the_coupon_and_its_use(): void
+    {
+        $this->rule(['enabled' => true, 'minBill' => 1000, 'value' => 100]);
+        Carbon::setTestNow('2026-11-26 20:00:00'); // 01:30 on 27 Nov in India
+        try {
+            $first = $this->bill(1500);
+            $coupon = GiftCredit::where('source_pos_sale_id', $first['id'])->firstOrFail();
+            $this->postJson('/api/pos-sales', $this->sale(300, ['cashAmount' => 200, 'vouchers' => [['number' => $coupon->number, 'amount' => 100]]]))->assertCreated();
+
+            $this->assertSame('2026-11-27', $coupon->issued_on->toDateString());
+            $this->assertSame('2026-11-27', substr((string) DB::table('gift_credit_redemptions')->where('gift_credit_id', $coupon->id)->value('redeemed_on'), 0, 10), 'the use is on the same business day as the bill');
+        } finally {
+            Carbon::setTestNow();
+        }
     }
 
     public function test_a_supervisor_gives_a_coupon_by_hand_and_the_list_shows_it_with_the_reason(): void

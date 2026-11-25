@@ -22,6 +22,7 @@ export const STAFF_THEMES = {
     danger: "#be123c", "danger-bg": "#fff1f2", "danger-border": "#fecdd3", "info-text": "#3730a3", "info-bg": "#eef2ff",
     "warn-text": "#92400e", "warn-bg": "#fffbeb", "warn-border": "#fde68a", "amber-text": "#b45309", "green-text": "#047857",
     "accent-text": "#4338ca", "sky-text": "#0369a1", knob: "#ffffff", scrim: "rgba(17,24,39,0.45)",
+    shadow: "0 1px 2px rgba(15,23,42,0.05), 0 12px 28px -16px rgba(15,23,42,0.22)", "nav-shadow": "0 -8px 24px -16px rgba(15,23,42,0.28)",
   },
   dark: {
     page: "#0b1120", surface: "#151d2e", surfaceAlt: "#24304a", text: "#f3f4f6", muted: "#cbd5e1", "muted-strong": "#cbd5e1", faint: "#94a3b8",
@@ -29,6 +30,7 @@ export const STAFF_THEMES = {
     danger: "#fda4af", "danger-bg": "#3a1620", "danger-border": "#7f1d1d", "info-text": "#c7d2fe", "info-bg": "#1e1b4b",
     "warn-text": "#fcd34d", "warn-bg": "#2b2210", "warn-border": "#6b4e16", "amber-text": "#fbbf24", "green-text": "#6ee7b7",
     "accent-text": "#a5b4fc", "sky-text": "#7dd3fc", knob: "#e5e7eb", scrim: "rgba(0,0,0,0.6)",
+    shadow: "none", "nav-shadow": "0 -8px 24px -16px rgba(0,0,0,0.7)",
   },
 };
 
@@ -59,11 +61,18 @@ export const STAFF_COLOR = {
   success: v("green-text"),
   knob: v("knob"),
   scrim: v("scrim"),
+  shadow: v("shadow"),
+  navShadow: v("nav-shadow"),
+};
+
+/** One colour for each part of the app (Leave, Expenses and so on), used on icons and badges so a section is known by its colour. */
+export const STAFF_ACCENT = {
+  attendance: "#0d9488", leave: "#6366f1", expense: "#f59e0b", advance: "#f43f5e", request: "#0ea5e9", shift: "#8b5cf6", tax: "#10b981", company: "#a855f7",
 };
 
 export const TOUCH = POS_TOUCH_TARGET;
 
-export const card = { p: 1.75, borderRadius: "16px", bgcolor: STAFF_COLOR.surface, border: `1px solid ${STAFF_COLOR.line}` };
+export const card = { p: 2, borderRadius: "20px", bgcolor: STAFF_COLOR.surface, border: `1px solid ${STAFF_COLOR.line}`, boxShadow: STAFF_COLOR.shadow };
 
 export const sectionTitle = { fontSize: STAFF_TEXT.label, fontWeight: 800, color: STAFF_COLOR.muted, textTransform: "uppercase", letterSpacing: "0.05em", mb: 1, px: 0.5 };
 

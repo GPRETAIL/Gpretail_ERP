@@ -5,7 +5,8 @@ import StaffScreen from "../StaffScreen";
 import StaffInstallPrompt from "../StaffInstallPrompt";
 import { CalendarCheck, Building2 } from "lucide-react";
 import { monthLabel } from "@/features/hr/payroll/payslipPrint";
-import { STAFF_COLOR, STAFF_TEXT, TOUCH, card, rupee, sectionTitle } from "../staffUi";
+import { STAFF_ACCENT, STAFF_COLOR, STAFF_TEXT, TOUCH, card, rupee, sectionTitle } from "../staffUi";
+import HomeHero from "../HomeHero";
 import RevealToggle from "../RevealToggle";
 import useReveal, { MASKED_AMOUNT } from "../useReveal";
 
@@ -13,12 +14,14 @@ const APPROVAL_LABEL = { leave: "Leave", attendance: "Attendance", shift: "Shift
 
 const niceDate = (iso) => new Date(`${iso}T00:00:00`).toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" });
 
-function Tile({ icon: Icon, label, onClick }) {
+/** A quick action: a round icon in the colour of its section, and the name under it. */
+function Tile({ icon: Icon, label, accent, onClick }) {
   return (
     <Box component="button" type="button" onClick={onClick}
-      sx={{ minHeight: TOUCH + 32, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 0.75, borderRadius: "16px", border: `1px solid ${STAFF_COLOR.line}`,
-        bgcolor: STAFF_COLOR.surface, color: STAFF_COLOR.text, fontSize: STAFF_TEXT.small, fontWeight: 700, fontFamily: "inherit", cursor: "pointer", px: 0.5, textAlign: "center", "&:active": { bgcolor: STAFF_COLOR.primarySoft } }}>
-      <Box sx={{ color: STAFF_COLOR.primary }}><Icon size={22} /></Box>
+      sx={{ minHeight: TOUCH + 44, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 1, borderRadius: "20px", border: `1px solid ${STAFF_COLOR.line}`, boxShadow: STAFF_COLOR.shadow,
+        bgcolor: STAFF_COLOR.surface, color: STAFF_COLOR.text, fontSize: STAFF_TEXT.small, fontWeight: 700, fontFamily: "inherit", cursor: "pointer", px: 0.75, py: 1.25, textAlign: "center", lineHeight: 1.2,
+        transition: "transform 0.12s", "&:active": { transform: "scale(0.96)" } }}>
+      <Box sx={{ width: 46, height: 46, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", color: accent, bgcolor: `${accent}22` }}><Icon size={24} /></Box>
       {label}
     </Box>
   );
@@ -35,6 +38,7 @@ export default function HomeTab({ home, go, company }) {
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+      <HomeHero home={home} />
       <StaffInstallPrompt />
       <StaffScreen><MyAttendanceCard /></StaffScreen>
       <Box component="button" type="button" onClick={() => go("attendance")} sx={{ ...card, display: "flex", alignItems: "center", gap: 1.25, minHeight: TOUCH, textAlign: "left", fontFamily: "inherit", cursor: "pointer" }}>
@@ -52,13 +56,13 @@ export default function HomeTab({ home, go, company }) {
         <ChevronRight size={18} color="var(--hr-faint)" />
       </Box>
 
-      <Box sx={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1 }}>
-        <Tile icon={CalendarPlus} label="Apply leave" onClick={() => go("leave")} />
-        <Tile icon={Receipt} label="Claim expense" onClick={() => go("expenses")} />
-        <Tile icon={HandCoins} label="Ask for advance" onClick={() => go("expenses")} />
-        <Tile icon={Clock} label="Regularize attendance" onClick={() => go("me")} />
-        <Tile icon={CalendarDays} label="Change shift" onClick={() => go("me")} />
-        <Tile icon={Landmark} label="My tax" onClick={() => go("salary", "tax")} />
+      <Box sx={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1.25 }}>
+        <Tile icon={CalendarPlus} label="Apply leave" accent={STAFF_ACCENT.leave} onClick={() => go("leave")} />
+        <Tile icon={Receipt} label="Claim expense" accent={STAFF_ACCENT.expense} onClick={() => go("expenses")} />
+        <Tile icon={HandCoins} label="Ask for advance" accent={STAFF_ACCENT.advance} onClick={() => go("expenses")} />
+        <Tile icon={Clock} label="Regularize attendance" accent={STAFF_ACCENT.request} onClick={() => go("me")} />
+        <Tile icon={CalendarDays} label="Change shift" accent={STAFF_ACCENT.shift} onClick={() => go("me")} />
+        <Tile icon={Landmark} label="My tax" accent={STAFF_ACCENT.tax} onClick={() => go("salary", "tax")} />
       </Box>
 
       {home?.can_approve && (
