@@ -3,6 +3,7 @@ import { CalendarDays, CalendarPlus, ChevronRight, ClipboardCheck, Clock, HandCo
 import MyAttendanceCard from "@/mobile/components/MyAttendanceCard";
 import StaffScreen from "../StaffScreen";
 import StaffInstallPrompt from "../StaffInstallPrompt";
+import { CalendarCheck } from "lucide-react";
 import { monthLabel } from "@/features/hr/payroll/payslipPrint";
 import { STAFF_COLOR, STAFF_TEXT, TOUCH, card, rupee, sectionTitle } from "../staffUi";
 import RevealToggle from "../RevealToggle";
@@ -36,6 +37,11 @@ export default function HomeTab({ home, go }) {
     <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
       <StaffInstallPrompt />
       <StaffScreen><MyAttendanceCard /></StaffScreen>
+      <Box component="button" type="button" onClick={() => go("attendance")} sx={{ ...card, display: "flex", alignItems: "center", gap: 1.25, minHeight: TOUCH, textAlign: "left", fontFamily: "inherit", cursor: "pointer" }}>
+        <CalendarCheck size={20} color="var(--hr-teal-text)" />
+        <Typography sx={{ flex: 1, fontSize: STAFF_TEXT.body, fontWeight: 700, color: STAFF_COLOR.text }}>My attendance calendar</Typography>
+        <ChevronRight size={18} color="var(--hr-faint)" />
+      </Box>
 
       <Box sx={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1 }}>
         <Tile icon={CalendarPlus} label="Apply leave" onClick={() => go("leave")} />
@@ -62,6 +68,7 @@ export default function HomeTab({ home, go }) {
           {home.team?.size > 0 && (
             <Typography sx={{ display: "flex", alignItems: "center", gap: 0.75, fontSize: STAFF_TEXT.label, color: STAFF_COLOR.muted, mt: 1 }}>
               <Users size={16} /> {home.team.checked_in} of {home.team.size} in your team checked in today
+              <Box component="span" role="button" tabIndex={0} onClick={(e) => { e.stopPropagation(); go("team"); }} onKeyDown={(e) => { if (e.key === "Enter") go("team"); }} sx={{ ml: "auto", color: STAFF_COLOR.primaryDark, fontWeight: 700, cursor: "pointer" }}>See team</Box>
             </Typography>
           )}
         </Box>
@@ -120,7 +127,10 @@ export default function HomeTab({ home, go }) {
 
       {(home?.holidays || []).length > 0 && (
         <Box>
-          <Typography sx={sectionTitle}>Coming holidays</Typography>
+          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <Typography sx={sectionTitle}>Coming holidays</Typography>
+            <Box component="button" type="button" onClick={() => go("holidays")} sx={{ border: 0, bgcolor: "transparent", color: STAFF_COLOR.primaryDark, fontSize: STAFF_TEXT.small, fontWeight: 700, fontFamily: "inherit", cursor: "pointer", minHeight: 36 }}>See all</Box>
+          </Box>
           <Box sx={{ ...card, p: 0 }}>
             {home.holidays.map((h, i) => (
               <Box key={h.date} sx={{ display: "flex", justifyContent: "space-between", gap: 1, px: 1.75, py: 1.25, borderTop: i ? `1px solid ${STAFF_COLOR.line}` : 0 }}>

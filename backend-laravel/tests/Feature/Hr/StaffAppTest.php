@@ -2,15 +2,26 @@
 
 namespace Tests\Feature\Hr;
 
+use App\Models\Attendance;
 use App\Models\Employee;
+use App\Models\HrCheckin;
+use App\Models\HrHoliday;
+use App\Models\HrLeaveApplication;
+use App\Models\HrLeaveType;
 use App\Models\HrRequest;
 use App\Models\Notification;
 use App\Models\PlatformActivation;
 use App\Models\Store;
 use App\Models\User;
+use App\Services\Hr\AttendanceService;
 use App\Services\Hr\StaffAppAccess;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
 
 /** The staff app (/hr): mobile number + PIN sign-in, what its token may reach, the home/inbox data and HR setup. */
@@ -87,7 +98,7 @@ class StaffAppTest extends TestCase
         $this->postJson("/api/staff-app-setup/{$employee->id}/pin", ['pin' => $pin])->assertOk();
     }
 
-    private function staffLogin(string $phone, string $pin, ?int $store = null): \Illuminate\Testing\TestResponse
+    private function staffLogin(string $phone, string $pin, ?int $store = null): TestResponse
     {
         $this->app['auth']->forgetGuards();
         $this->withoutToken();
@@ -135,7 +146,7 @@ class StaffAppTest extends TestCase
         $this->as($this->staffLogin('9876543210', '482619')->json('data.token'));
         $this->postJson('/api/auth/staff-pin', ['current_pin' => '482619', 'new_pin' => '5927'])->assertUnprocessable()->assertJsonFragment(['Choose a 6-digit PIN.']);
 
-        Employee::withoutGlobalScopes()->whereKey($this->staff->id)->update(['app_pin' => \Illuminate\Support\Facades\Hash::make('4826'), 'app_pin_must_change' => false]);
+        Employee::withoutGlobalScopes()->whereKey($this->staff->id)->update(['app_pin' => Hash::make('4826'), 'app_pin_must_change' => false]);
         $this->staffLogin('9876543210', '4826')->assertOk();
     }
 
@@ -275,5 +286,123 @@ class StaffAppTest extends TestCase
         $this->postJson("/api/staff-app-setup/{$this->staff->id}/disable")->assertOk();
         $this->as($token);
         $this->getJson('/api/staff-app/home')->assertUnauthorized();
+    }
+
+    private function staffToken(Employee $employee, string $phone): string
+    {
+        $this->hrSetsPin($employee);
+
+        return $this->staffLogin($phone, '482619')->assertOk()->json('data.token');
+    }
+
+    public function test_my_month_shows_each_day_with_its_status_and_only_my_own_days(): void
+    {
+        $other = $this->employee('Other Omar', '98400 22222', $this->store, null, $this->lead);
+        $day = fn (Employee $e, string $date, string $status, array $more = []) => Attendance::create(['employee_id' => $e->id, 'store_id' => $this->store->id,
+            'date' => $date, 'status' => $status, 'source' => 'SELF'] + $more);
+        $day($this->staff, '2026-10-01', 'PRESENT', ['check_in' => '09:31:00', 'check_out' => '18:30:00', 'worked_minutes' => 539, 'late_minutes' => 1]);
+        $day($this->staff, '2026-10-05', 'HALF_DAY', ['check_in' => '09:30:00', 'check_out' => '13:30:00', 'worked_minutes' => 240]);
+        $day($other, '2026-10-01', 'ABSENT');
+        HrHoliday::create(['store_id' => $this->store->id, 'date' => '2026-10-02', 'name' => 'Gandhi Jayanti']);
+
+        $this->as($this->staffToken($this->staff, '+91 98765 43210'));
+        $month = $this->getJson('/api/staff-app/attendance-month?month=2026-10')->assertOk()->json('data');
+        $days = collect($month['days'])->keyBy('date');
+
+        $this->assertCount(31, $month['days']);
+        $this->assertSame(['PRESENT', '09:31:00', 539, 1], [$days['2026-10-01']['status'], $days['2026-10-01']['check_in'], $days['2026-10-01']['worked_minutes'], $days['2026-10-01']['late_minutes']]);
+        $this->assertSame(['HOLIDAY', 'Gandhi Jayanti'], [$days['2026-10-02']['status'], $days['2026-10-02']['holiday']]);
+        $this->assertSame('ABSENT', $days['2026-10-03']['status'], 'a past day with no punch');
+        $this->assertSame('HALF_DAY', $days['2026-10-05']['status']);
+        $this->assertSame(1.5, $month['totals']['present']);
+        $this->assertSame(1, $month['totals']['late']);
+        $this->assertSame(779, $month['totals']['worked_minutes']);
+
+        $future = $this->getJson('/api/staff-app/attendance-month?month=2027-03')->assertOk()->json('data.days.0');
+        $this->assertNull($future['status'], 'a day that has not come yet has no status');
+        $this->getJson('/api/staff-app/attendance-month?month=October')->assertUnprocessable();
+    }
+
+    public function test_my_day_lists_the_punches_in_local_time_with_distance(): void
+    {
+        $at = Carbon::parse('2026-10-01 09:31:00', AttendanceService::timezone())->utc();
+        HrCheckin::create(['store_id' => $this->store->id, 'employee_id' => $this->staff->id, 'punched_at' => $at, 'type' => 'IN', 'source' => 'SELF', 'distance_m' => 42]);
+        HrCheckin::create(['store_id' => $this->store->id, 'employee_id' => $this->lead->id, 'punched_at' => $at, 'type' => 'IN', 'source' => 'SELF']);
+
+        $this->as($this->staffToken($this->staff, '+91 98765 43210'));
+        $day = $this->getJson('/api/staff-app/attendance-day?date=2026-10-01')->assertOk()->json('data');
+
+        $this->assertCount(1, $day['punches'], 'only my punch, not the lead punch');
+        $this->assertSame(['IN', '09:31:00', 'SELF', 42], [$day['punches'][0]['type'], $day['punches'][0]['at'], $day['punches'][0]['source'], $day['punches'][0]['distance_m']]);
+        $this->getJson('/api/staff-app/attendance-day')->assertUnprocessable();
+    }
+
+    public function test_team_on_leave_lists_my_manager_s_team_by_name_and_dates_only(): void
+    {
+        $peer = $this->employee('Peer Priya', '98400 33333', $this->store, null, $this->lead);
+        $stranger = $this->employee('Stranger Sam', '98400 44444', $this->store);
+        $type = HrLeaveType::create(['store_id' => $this->store->id, 'code' => 'CL', 'name' => 'Casual leave', 'is_paid' => true]);
+        $leave = fn (Employee $e, string $from, string $to, string $status = 'APPROVED') => HrLeaveApplication::create(['store_id' => $this->store->id,
+            'employee_id' => $e->id, 'leave_type_id' => $type->id, 'from_date' => $from, 'to_date' => $to, 'days' => 2, 'reason' => 'Fever, doctor visit', 'status' => $status]);
+        $leave($peer, '2026-12-01', '2026-12-02');
+        $leave($stranger, '2026-12-01', '2026-12-02');
+        $leave($peer, '2026-12-08', '2026-12-09', 'PENDING');
+        $leave($peer, '2027-02-01', '2027-02-02');
+
+        $this->as($this->staffToken($this->staff, '+91 98765 43210'));
+        $response = $this->getJson('/api/staff-app/team-on-leave?from=2026-12-01&to=2026-12-31')->assertOk();
+        $people = $response->json('data.people');
+
+        $this->assertCount(1, $people, 'a peer, approved, in the range');
+        $this->assertSame(['Peer Priya', '2026-12-01', '2026-12-02'], [$people[0]['name'], $people[0]['from'], $people[0]['to']]);
+        $this->assertStringNotContainsString('Fever', $response->getContent());
+        $this->assertStringNotContainsString('Casual', $response->getContent());
+        $this->getJson('/api/staff-app/team-on-leave?from=2026-12-10&to=2026-12-01')->assertUnprocessable();
+    }
+
+    public function test_a_store_that_asks_for_a_selfie_refuses_a_punch_without_one_and_keeps_the_photo_private(): void
+    {
+        Storage::fake('local');
+        $this->as($this->staffToken($this->staff, '+91 98765 43210'));
+
+        // Off: a photo is optional and nothing is asked for.
+        $this->postJson('/api/attendance/self-punch', ['type' => 'IN'])->assertOk();
+        HrCheckin::query()->delete();
+        Attendance::query()->delete();
+
+        $this->store->update(['attendance_settings' => ['selfie_required' => true]]);
+        $this->postJson('/api/attendance/self-punch', ['type' => 'IN'])->assertUnprocessable()
+            ->assertJsonValidationErrors(['photo' => 'Take a photo of yourself to check in or out. Your store asks for one every time.']);
+        $this->assertSame(0, HrCheckin::count());
+
+        $big = UploadedFile::fake()->create('me.jpg', 400, 'image/jpeg');
+        $this->post('/api/attendance/self-punch', ['type' => 'IN', 'photo' => $big], ['Accept' => 'application/json'])->assertUnprocessable()->assertJsonValidationErrors(['photo']);
+        $pdf = UploadedFile::fake()->create('me.pdf', 20, 'application/pdf');
+        $this->post('/api/attendance/self-punch', ['type' => 'IN', 'photo' => $pdf], ['Accept' => 'application/json'])->assertUnprocessable()->assertJsonValidationErrors(['photo']);
+
+        $photo = UploadedFile::fake()->image('me.jpg', 300, 300)->size(120);
+        $this->post('/api/attendance/self-punch', ['type' => 'IN', 'photo' => $photo], ['Accept' => 'application/json'])->assertOk();
+        $punch = HrCheckin::firstOrFail();
+        $this->assertStringStartsWith('hr-checkins/'.$this->store->id.'/', $punch->photo_path);
+        Storage::disk('local')->assertExists($punch->photo_path);
+
+        // HR may see the photo; the employee's own staff token may not fetch it, and there is no public link.
+        $this->getJson("/api/attendance/punches/{$punch->id}/photo")->assertForbidden();
+        $this->as($this->hr->createToken('web-token', ['client:web'])->plainTextToken);
+        $this->get("/api/attendance/punches/{$punch->id}/photo")->assertOk()->assertHeader('Content-Type', 'image/jpeg');
+        $row = collect($this->getJson('/api/attendance/punches?from='.now()->toDateString().'&to='.now()->addDay()->toDateString())->assertOk()->json('data'))->firstWhere('id', $punch->id);
+        $this->assertTrue($row['has_photo']);
+    }
+
+    public function test_a_refused_punch_leaves_no_photo_behind(): void
+    {
+        Storage::fake('local');
+        $this->as($this->staffToken($this->staff, '+91 98765 43210'));
+        $photo = UploadedFile::fake()->image('me.jpg', 300, 300)->size(100);
+
+        // Checking out with no check in is refused.
+        $this->post('/api/attendance/self-punch', ['type' => 'OUT', 'photo' => $photo], ['Accept' => 'application/json'])->assertUnprocessable();
+
+        $this->assertSame([], Storage::disk('local')->allFiles());
     }
 }

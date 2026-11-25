@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
-import { Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle, MenuItem, Stack, TextField, Typography } from "@mui/material";
+import { Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, MenuItem, Stack, Switch, TextField, Typography } from "@mui/material";
 import { LocateFixed } from "lucide-react";
 import api from "@/shared/api/apiClient";
 import { errorMessage } from "../utils/hrStatus";
@@ -27,7 +27,7 @@ export default function AttendanceSettingsDialog({ onClose }) {
         setForm({
           default_working_hour_id: s.default_working_hour_id ? String(s.default_working_hour_id) : "",
           shift_start: s.shift_start || "09:30", late_cutoff: s.late_cutoff || "10:00",
-          lat: s.lat ?? "", lng: s.lng ?? "", radius_m: s.radius_m ?? 100,
+          lat: s.lat ?? "", lng: s.lng ?? "", radius_m: s.radius_m ?? 100, selfie_required: Boolean(s.selfie_required),
         });
         setWorkingHours(listOf(hours.data?.data ?? hours.data));
       })
@@ -56,6 +56,7 @@ export default function AttendanceSettingsDialog({ onClose }) {
         default_working_hour_id: form.default_working_hour_id ? Number(form.default_working_hour_id) : null,
         shift_start: form.shift_start, late_cutoff: form.late_cutoff,
         lat: fenced ? Number(form.lat) : null, lng: fenced ? Number(form.lng) : null, radius_m: fenced ? Number(form.radius_m) || 100 : null,
+        selfie_required: Boolean(form.selfie_required),
       });
       toast.success("Attendance settings saved");
       onClose(true);
@@ -95,6 +96,12 @@ export default function AttendanceSettingsDialog({ onClose }) {
               <Button size="small" startIcon={<LocateFixed size={14} />} disabled={locating} onClick={useHere}>{locating ? "Finding location…" : "Use my current location"}</Button>
               {form.lat !== "" && <Button size="small" color="inherit" onClick={() => setForm((prev) => ({ ...prev, lat: "", lng: "" }))}>Clear location</Button>}
             </Stack>
+            <Typography variant="subtitle2">Selfie with check-in</Typography>
+            <FormControlLabel control={<Switch checked={Boolean(form.selfie_required)} onChange={(e) => setForm((prev) => ({ ...prev, selfie_required: e.target.checked }))} />}
+              label="Ask for a photo with every check in and check out" />
+            <Typography variant="caption" sx={{ color: "text.secondary", mt: "-8px !important" }}>
+              Staff take the photo with the phone camera in the HRMS app. The photo is kept privately with the punch and shown in the Punch log to people who can see that employee's attendance. Check-ins made by a manager or imported need no photo.
+            </Typography>
           </Stack>
         )}
       </DialogContent>

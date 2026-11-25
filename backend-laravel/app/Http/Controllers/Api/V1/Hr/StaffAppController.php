@@ -19,6 +19,7 @@ use App\Services\Hr\HrScope;
 use App\Services\Hr\LeaveService;
 use App\Services\Hr\PayrollSetup;
 use App\Services\Tenancy\BusinessPermissions;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -128,6 +129,92 @@ class StaffAppController extends Controller
             'id' => $member->id, 'name' => $member->name, 'code' => $member->code, 'designation' => $member->designation?->name,
             'status' => isset($onLeave[$member->id]) ? 'ON_LEAVE' : ($rows[$member->id]->status ?? 'NOT_IN'),
             'check_in' => $rows[$member->id]->check_in ?? null, 'check_out' => $rows[$member->id]->check_out ?? null,
+        ])->values()]]);
+    }
+
+    /**
+     * My attendance for one month: a status for each day, the first in and last out, and the month's counts (the same
+     * numbers payroll uses). Only my own days.
+     */
+    public function attendanceMonth(Request $request): JsonResponse
+    {
+        $request->validate(['month' => 'nullable|date_format:Y-m']);
+        $employee = $this->employee($request);
+        $today = $this->attendance->today();
+        $month = $request->query('month') ?: substr($today, 0, 7);
+        $first = Carbon::parse("{$month}-01");
+        $last = $first->copy()->endOfMonth();
+        $rows = Attendance::where('employee_id', $employee->id)->whereBetween('date', [$first->toDateString(), $last->toDateString()])->get()
+            ->keyBy(fn ($row) => $row->date->toDateString());
+        $holidays = HrHoliday::where('store_id', $employee->store_id)->whereBetween('date', [$first->toDateString(), $last->toDateString()])->get()
+            ->mapWithKeys(fn ($holiday) => [$holiday->date->toDateString() => $holiday->name]);
+        $joined = $employee->joining_date?->toDateString();
+
+        $days = [];
+        for ($day = $first->copy(); $day->lte($last); $day->addDay()) {
+            $key = $day->toDateString();
+            $row = $rows->get($key);
+            $status = $joined && $key < $joined ? null
+                : ($row?->status ?? (isset($holidays[$key]) ? 'HOLIDAY' : ($this->attendance->isWeekOff($employee, $key) ? 'WEEK_OFF' : ($key < $today ? 'ABSENT' : null))));
+            $days[] = [
+                'date' => $key, 'status' => $status, 'holiday' => $holidays[$key] ?? null,
+                'check_in' => $row?->check_in, 'check_out' => $row?->check_out,
+                'worked_minutes' => (int) ($row?->worked_minutes ?? 0), 'late_minutes' => (int) ($row?->late_minutes ?? 0),
+            ];
+        }
+        $summary = $this->attendance->monthSummary($employee, $month, $rows->values(), $holidays->map(fn () => true)->all());
+
+        return response()->json(['success' => true, 'data' => [
+            'month' => $month, 'today' => $today, 'days' => $days,
+            'totals' => [
+                'present' => $summary['present_days'], 'absent' => $summary['absent_days'], 'late' => $summary['late_days'], 'off' => $summary['off_days'],
+                'paid_leave' => $summary['paid_leave_days'], 'unpaid_leave' => $summary['unpaid_leave_days'],
+                'payable_days' => $summary['payable_days'], 'lop_days' => $summary['lop_days'],
+                'worked_minutes' => (int) $rows->sum('worked_minutes'),
+            ],
+        ]]);
+    }
+
+    /** One of my days: its punches (time, in or out, how and how far from the store) and the shift. */
+    public function attendanceDay(Request $request): JsonResponse
+    {
+        $data = $request->validate(['date' => 'required|date_format:Y-m-d']);
+        $employee = $this->employee($request);
+        $row = Attendance::where('employee_id', $employee->id)->whereDate('date', $data['date'])->first();
+        $zone = AttendanceService::timezone();
+
+        return response()->json(['success' => true, 'data' => [
+            'date' => $data['date'],
+            'status' => $this->attendance->dayStatus($employee, $row, $data['date']),
+            'holiday' => $this->attendance->holiday($employee->store_id, $data['date']),
+            'shift' => $this->attendance->shiftFor($employee, $data['date']),
+            'check_in' => $row?->check_in, 'check_out' => $row?->check_out,
+            'worked_minutes' => (int) ($row?->worked_minutes ?? 0), 'late_minutes' => (int) ($row?->late_minutes ?? 0),
+            'punches' => $this->attendance->punches($employee, $data['date'])->map(fn ($punch) => [
+                'type' => $punch->type, 'at' => $punch->punched_at->copy()->setTimezone($zone)->format('H:i:s'), 'source' => $punch->source, 'distance_m' => $punch->distance_m,
+            ])->values(),
+        ]]);
+    }
+
+    /**
+     * Who in my team is on approved leave in a date range (default: this week): the people who report to my manager,
+     * and the people who report to me. Names and dates only; the reason and the type of leave stay private.
+     */
+    public function teamOnLeave(Request $request): JsonResponse
+    {
+        $data = $request->validate(['from' => 'nullable|date_format:Y-m-d', 'to' => 'nullable|date_format:Y-m-d|after_or_equal:from']);
+        $employee = $this->employee($request);
+        $from = $data['from'] ?? $this->attendance->today();
+        $to = $data['to'] ?? Carbon::parse($from)->addDays(13)->toDateString();
+        $mates = Employee::where('is_active', true)->where('id', '!=', $employee->id)
+            ->where(fn ($q) => $q->where('reports_to_id', $employee->id)->when($employee->reports_to_id, fn ($w) => $w->orWhere('reports_to_id', $employee->reports_to_id)))
+            ->get(['id', 'name'])->keyBy('id');
+        $leaves = HrLeaveApplication::whereIn('employee_id', $mates->keys())->where('status', 'APPROVED')
+            ->whereDate('from_date', '<=', $to)->whereDate('to_date', '>=', $from)->orderBy('from_date')->get();
+
+        return response()->json(['success' => true, 'data' => ['from' => $from, 'to' => $to, 'people' => $leaves->map(fn ($leave) => [
+            'employee_id' => $leave->employee_id, 'name' => $mates[$leave->employee_id]->name,
+            'from' => $leave->from_date->toDateString(), 'to' => $leave->to_date->toDateString(), 'half_day' => (bool) $leave->half_day,
         ])->values()]]);
     }
 

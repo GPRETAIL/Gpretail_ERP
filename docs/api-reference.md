@@ -1,6 +1,6 @@
 # API reference
 
-Every endpoint under `/api`, grouped by module (753 endpoints). Generated from
+Every endpoint under `/api`, grouped by module (757 endpoints). Generated from
 `php artisan route:list --sort=definition --json`; regenerate it after changing routes.
 
 - Each signed-in endpoint is also served under `/api/v1/...` with the same behaviour.
@@ -17,7 +17,7 @@ Every endpoint under `/api`, grouped by module (753 endpoints). Generated from
 - [Crm](#crm) (39)
 - [Dashboards](#dashboards) (26)
 - [Finance](#finance) (31)
-- [Hr](#hr) (158)
+- [Hr](#hr) (162)
 - [Masters](#masters) (120)
 - [Notifications](#notifications) (11)
 - [Other](#other) (1)
@@ -217,6 +217,7 @@ Every endpoint under `/api`, grouped by module (753 endpoints). Generated from
 | POST | `/api/attendance/mark` | AttendanceController@mark | yes |
 | POST | `/api/attendance/import` | AttendanceController@import | yes |
 | GET | `/api/attendance/punches` | AttendanceController@punches | yes |
+| GET | `/api/attendance/punches/{id}/photo` | AttendanceController@punchPhoto | yes |
 | GET | `/api/attendance/monthly` | AttendanceController@monthly | yes |
 | POST | `/api/holidays/copy-year` | HolidayController@copyYear | yes |
 | GET | `/api/holidays` | HolidayController@index | yes |
@@ -333,6 +334,9 @@ Every endpoint under `/api`, grouped by module (753 endpoints). Generated from
 | GET | `/api/staff-app/inbox` | StaffAppController@inbox | yes |
 | GET | `/api/staff-app/profile` | StaffAppController@profile | yes |
 | GET | `/api/staff-app/team` | StaffAppController@team | yes |
+| GET | `/api/staff-app/attendance-month` | StaffAppController@attendanceMonth | yes |
+| GET | `/api/staff-app/attendance-day` | StaffAppController@attendanceDay | yes |
+| GET | `/api/staff-app/team-on-leave` | StaffAppController@teamOnLeave | yes |
 | GET | `/api/staff-app-setup` | StaffAppSetupController@index | yes |
 | POST | `/api/staff-app-setup/{id}/pin` | StaffAppSetupController@setPin | yes |
 | POST | `/api/staff-app-setup/{id}/disable` | StaffAppSetupController@disable | yes |

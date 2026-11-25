@@ -4,6 +4,7 @@ import MyAttendanceCard from "@/mobile/components/MyAttendanceCard";
 import api from "@/shared/api/apiClient";
 
 vi.mock("@/shared/api/apiClient", () => ({ default: { get: vi.fn(), post: vi.fn() } }));
+vi.mock("@/mobile/utils/shrinkPhoto", () => ({ default: vi.fn().mockResolvedValue(new Blob(["jpeg"], { type: "image/jpeg" })) }));
 
 const me = (overrides = {}) => ({ data: { data: {
   employee: { id: 1, name: "Asha" }, date: "2026-11-04", shift: { name: "Day shift", start: "09:30", end: "18:30" },
@@ -49,4 +50,61 @@ it("shows nothing for a login that is not an employee", async () => {
   const { container } = render(<MyAttendanceCard />);
   await waitFor(() => expect(api.get).toHaveBeenCalled());
   expect(container).toBeEmptyDOMElement();
+});
+
+it("when the store asks for a selfie: take a photo, check it, then check in with it", async () => {
+  URL.createObjectURL = vi.fn(() => "blob:selfie");
+  URL.revokeObjectURL = vi.fn();
+  locate({ latitude: 13.0801, longitude: 80.2702 });
+  api.get.mockResolvedValue(me({ selfie_required: true }));
+  api.post.mockResolvedValue({ data: { message: "Checked in" } });
+  render(<MyAttendanceCard />);
+
+  const takePhoto = await screen.findByRole("button", { name: "Take a photo to check in" });
+  expect(api.post).not.toHaveBeenCalled();
+  const input = screen.getByLabelText("Take a selfie");
+  expect(input).toHaveAttribute("capture", "user");
+  fireEvent.change(input, { target: { files: [new File(["raw"], "camera.jpg", { type: "image/jpeg" })] } });
+
+  expect(await screen.findByAltText("Your photo")).toBeInTheDocument();
+  expect(takePhoto).toHaveTextContent("Use photo and check in");
+  fireEvent.click(screen.getByRole("button", { name: "Use photo and check in" }));
+
+  await waitFor(() => expect(api.post).toHaveBeenCalledOnce());
+  const [url, body, options] = api.post.mock.calls[0];
+  expect(url).toBe("/attendance/self-punch");
+  expect(body).toBeInstanceOf(FormData);
+  expect(body.get("type")).toBe("IN");
+  expect(body.get("lat")).toBe("13.0801");
+  expect(body.get("photo")).toBeInstanceOf(Blob);
+  expect(options.headers["Content-Type"]).toBe("multipart/form-data");
+  await waitFor(() => expect(screen.queryByAltText("Your photo")).not.toBeInTheDocument());
+});
+
+it("Retake throws the photo away and asks for another before anything is sent", async () => {
+  URL.createObjectURL = vi.fn(() => "blob:selfie");
+  URL.revokeObjectURL = vi.fn();
+  locate({ latitude: 13.0801, longitude: 80.2702 });
+  api.get.mockResolvedValue(me({ selfie_required: true }));
+  render(<MyAttendanceCard />);
+  await screen.findByRole("button", { name: "Take a photo to check in" });
+  fireEvent.change(screen.getByLabelText("Take a selfie"), { target: { files: [new File(["raw"], "camera.jpg", { type: "image/jpeg" })] } });
+  await screen.findByAltText("Your photo");
+  fireEvent.click(screen.getByRole("button", { name: "Retake" }));
+  expect(screen.queryByAltText("Your photo")).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Take a photo to check in" })).toBeInTheDocument();
+  expect(api.post).not.toHaveBeenCalled();
+});
+
+it("shows the server's reason when the photo is refused", async () => {
+  URL.createObjectURL = vi.fn(() => "blob:selfie");
+  URL.revokeObjectURL = vi.fn();
+  locate({ latitude: 13.0801, longitude: 80.2702 });
+  api.get.mockResolvedValue(me({ selfie_required: true }));
+  api.post.mockRejectedValue({ response: { status: 422, data: { errors: { photo: ["The photo is too big. Take it again."] } } } });
+  render(<MyAttendanceCard />);
+  await screen.findByRole("button", { name: "Take a photo to check in" });
+  fireEvent.change(screen.getByLabelText("Take a selfie"), { target: { files: [new File(["raw"], "camera.jpg", { type: "image/jpeg" })] } });
+  fireEvent.click(await screen.findByRole("button", { name: "Use photo and check in" }));
+  expect(await screen.findByText("The photo is too big. Take it again.")).toBeInTheDocument();
 });

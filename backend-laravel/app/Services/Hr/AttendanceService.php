@@ -73,6 +73,7 @@ class AttendanceService
             'lat' => isset($settings['lat']) ? (float) $settings['lat'] : null,
             'lng' => isset($settings['lng']) ? (float) $settings['lng'] : null,
             'radius_m' => isset($settings['radius_m']) ? (int) $settings['radius_m'] : null,
+            'selfie_required' => (bool) ($settings['selfie_required'] ?? false),
         ];
     }
 
@@ -111,7 +112,7 @@ class AttendanceService
      * Records a punch and rebuilds that day. A self punch must come from within the store's radius when the
      * store has a location set; the distance is kept with the punch either way.
      */
-    public function punch(Employee $employee, string $type, string $source, ?float $lat = null, ?float $lng = null, ?Carbon $at = null, ?int $userId = null): Attendance
+    public function punch(Employee $employee, string $type, string $source, ?float $lat = null, ?float $lng = null, ?Carbon $at = null, ?int $userId = null, ?string $photoPath = null): Attendance
     {
         $distance = $this->checkGeofence($employee, $source, $lat, $lng);
         $at = ($at ?? Carbon::now())->copy()->utc();
@@ -129,6 +130,7 @@ class AttendanceService
             'lat' => $lat,
             'lng' => $lng,
             'distance_m' => $distance,
+            'photo_path' => $photoPath,
             'created_by' => $userId,
         ]);
 
@@ -271,6 +273,7 @@ class AttendanceService
             $sum['counted_days']++;
             if (($joined && $key < $joined) || ($left && $key > $left)) {
                 $sum['lop_days']++; // Not yet employed, or already left: not paid.
+
                 continue;
             }
             $row = $byDate->get($key);

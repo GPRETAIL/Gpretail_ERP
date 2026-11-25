@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Box, Typography } from "@mui/material";
-import { LogIn, LogOut, MapPin } from "lucide-react";
+import { Camera, LogIn, LogOut, MapPin } from "lucide-react";
 import api from "@/shared/api/apiClient";
 import { clockTime, duration, errorMessage, statusLabel } from "@/features/hr/utils/hrStatus";
+import shrinkPhoto from "../utils/shrinkPhoto";
 
 const position = () => new Promise((resolve, reject) => {
   if (!navigator.geolocation) {
@@ -18,12 +19,15 @@ const position = () => new Promise((resolve, reject) => {
 
 /**
  * The signed-in employee's own check-in and check-out for today. When the store has a location set, the
- * phone's location goes with the punch and the server allows it only within the store's radius.
+ * phone's location goes with the punch and the server allows it only within the store's radius. When the store asks
+ * for a selfie, the front camera opens first, the photo is shown to confirm (Use photo or Retake), then it is sent.
  */
 export default function MyAttendanceCard() {
   const [data, setData] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [photo, setPhoto] = useState(null); // { blob, url }: the selfie waiting to be sent
+  const cameraRef = useRef(null);
 
   const load = useCallback(async () => {
     try {
@@ -38,6 +42,7 @@ export default function MyAttendanceCard() {
     return () => clearTimeout(timer);
   }, [load]);
 
+  const needsPhoto = Boolean(data?.selfie_required);
   const punch = async () => {
     setBusy(true);
     setError("");
@@ -48,13 +53,45 @@ export default function MyAttendanceCard() {
       } catch (geoError) {
         if (data?.geofence) throw geoError; // Only required when the store has a location set.
       }
-      await api.post("/attendance/self-punch", { type: data.next, ...coords });
+      if (needsPhoto && photo) {
+        const body = new FormData();
+        body.append("type", data.next);
+        if (coords.lat !== undefined) {
+          body.append("lat", coords.lat);
+          body.append("lng", coords.lng);
+        }
+        body.append("photo", photo.blob, "selfie.jpg");
+        await api.post("/attendance/self-punch", body, { headers: { "Content-Type": "multipart/form-data" } });
+        URL.revokeObjectURL(photo.url);
+        setPhoto(null);
+      } else {
+        await api.post("/attendance/self-punch", { type: data.next, ...coords });
+      }
       await load();
     } catch (err) {
       setError(err?.response ? errorMessage(err, "Could not record your attendance.") : err.message);
     } finally {
       setBusy(false);
     }
+  };
+
+  const takePhoto = () => cameraRef.current?.click();
+  const onPhoto = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    setError("");
+    try {
+      const blob = await shrinkPhoto(file);
+      if (photo) URL.revokeObjectURL(photo.url);
+      setPhoto({ blob, url: URL.createObjectURL(blob) });
+    } catch {
+      setError("Could not read the photo. Take it again.");
+    }
+  };
+  const discardPhoto = () => {
+    if (photo) URL.revokeObjectURL(photo.url);
+    setPhoto(null);
   };
 
   if (!data?.employee) return null; // Not linked to an employee record: nothing personal to show.
@@ -76,11 +113,19 @@ export default function MyAttendanceCard() {
         {row?.late_minutes > 0 && <span style={{ color: "#fde68a" }}>Late {duration(row.late_minutes)}</span>}
         {row?.worked_minutes > 0 && <span>Worked {duration(row.worked_minutes)}</span>}
       </Box>
-      <Box component="button" type="button" disabled={busy} onClick={punch}
+      {needsPhoto && <input ref={cameraRef} type="file" accept="image/*" capture="user" hidden onChange={onPhoto} aria-label="Take a selfie" />}
+      {needsPhoto && photo && (
+        <Box sx={{ mt: 1.5, display: "flex", alignItems: "center", gap: 1.5 }}>
+          <Box component="img" src={photo.url} alt="Your photo" sx={{ width: 72, height: 72, borderRadius: "14px", objectFit: "cover", border: "2px solid rgba(255,255,255,0.7)" }} />
+          <Box sx={{ fontSize: 12, fontWeight: 700, flex: 1 }}>Is this photo clear? It is kept with your {checkingIn ? "check in" : "check out"}.</Box>
+          <Box component="button" type="button" onClick={discardPhoto} disabled={busy} sx={{ border: 0, bgcolor: "rgba(255,255,255,0.2)", color: "#fff", fontWeight: 800, fontSize: 12, px: 1.25, py: 0.75, borderRadius: "10px", cursor: "pointer" }}>Retake</Box>
+        </Box>
+      )}
+      <Box component="button" type="button" disabled={busy} onClick={needsPhoto && !photo ? takePhoto : punch}
         sx={{ mt: 1.5, width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 1, py: 1.4, borderRadius: "14px", border: 0,
           fontSize: 14, fontWeight: 900, bgcolor: "#fff", color: checkingIn ? "#0f766e" : "#1e293b", "&:active": { transform: "scale(0.98)" }, "&:disabled": { opacity: 0.6 } }}>
-        {checkingIn ? <LogIn size={18} /> : <LogOut size={18} />}
-        {busy ? "Getting location…" : checkingIn ? "Check in" : "Check out"}
+        {needsPhoto && !photo ? <Camera size={18} /> : checkingIn ? <LogIn size={18} /> : <LogOut size={18} />}
+        {busy ? "Getting location…" : needsPhoto && !photo ? `Take a photo to check ${checkingIn ? "in" : "out"}` : needsPhoto ? `Use photo and check ${checkingIn ? "in" : "out"}` : checkingIn ? "Check in" : "Check out"}
       </Box>
       {data.geofence && (
         <Typography sx={{ fontSize: 10.5, opacity: 0.85, mt: 1, display: "flex", alignItems: "center", gap: 0.5 }}>

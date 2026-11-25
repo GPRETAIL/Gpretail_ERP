@@ -15,6 +15,7 @@ use App\Services\Hr\AttendanceService;
 use App\Services\Hr\HrScope;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -86,18 +87,35 @@ class AttendanceController extends Controller
             'punches' => $punches->map(fn (HrCheckin $p) => ['type' => $p->type, 'at' => $p->punched_at->copy()->setTimezone(AttendanceService::timezone())->format('H:i:s'), 'source' => $p->source]),
             'next' => $punches->last()?->type === 'IN' ? 'OUT' : 'IN',
             'geofence' => $settings['lat'] !== null && $settings['radius_m'] ? ['lat' => $settings['lat'], 'lng' => $settings['lng'], 'radius_m' => $settings['radius_m']] : null,
+            'selfie_required' => $settings['selfie_required'],
         ]]);
     }
 
     public function selfPunch(Request $request)
     {
-        $data = $request->validate(['type' => 'required|in:IN,OUT', 'lat' => 'nullable|numeric|between:-90,90', 'lng' => 'nullable|numeric|between:-180,180']);
+        $data = $request->validate([
+            'type' => 'required|in:IN,OUT', 'lat' => 'nullable|numeric|between:-90,90', 'lng' => 'nullable|numeric|between:-180,180',
+            // A small photo of the employee, taken at the punch. The phone shrinks it before sending.
+            'photo' => 'nullable|file|mimes:jpg,jpeg,png|max:300',
+        ], ['photo.max' => 'The photo is too big. Take it again.', 'photo.mimes' => 'The photo must be a JPG or PNG picture.']);
         $employee = $this->scope->employeeFor($request->user());
         if (! $employee) {
             throw ValidationException::withMessages(['employee' => 'Your login is not linked to an employee. Ask HR to link it in the employee form (Allow System / UserName).']);
         }
-        $row = $this->attendance->punch($employee, $data['type'], 'SELF', isset($data['lat']) ? (float) $data['lat'] : null,
-            isset($data['lng']) ? (float) $data['lng'] : null, userId: $request->user()->id);
+        if (! $request->hasFile('photo') && $this->attendance->settings($employee->store_id)['selfie_required']) {
+            throw ValidationException::withMessages(['photo' => 'Take a photo of yourself to check in or out. Your store asks for one every time.']);
+        }
+        // The photo goes on the private disk, never a public link. If the punch is refused, the photo is removed again.
+        $photoPath = $request->hasFile('photo') ? Storage::disk('local')->putFile("hr-checkins/{$employee->store_id}", $request->file('photo')) : null;
+        try {
+            $row = $this->attendance->punch($employee, $data['type'], 'SELF', isset($data['lat']) ? (float) $data['lat'] : null,
+                isset($data['lng']) ? (float) $data['lng'] : null, userId: $request->user()->id, photoPath: $photoPath);
+        } catch (\Throwable $e) {
+            if ($photoPath) {
+                Storage::disk('local')->delete($photoPath);
+            }
+            throw $e;
+        }
 
         return response()->json(['success' => true, 'message' => $data['type'] === 'IN' ? 'Checked in' : 'Checked out', 'data' => $row]);
     }
@@ -191,10 +209,19 @@ class AttendanceController extends Controller
                 'id' => $p->id, 'employee_id' => $p->employee_id, 'employee' => $p->employee?->name, 'code' => $p->employee?->code,
                 'date' => $p->punched_at->copy()->setTimezone(AttendanceService::timezone())->toDateString(),
                 'time' => $p->punched_at->copy()->setTimezone(AttendanceService::timezone())->format('H:i:s'),
-                'type' => $p->type, 'source' => $p->source, 'distance_m' => $p->distance_m,
+                'type' => $p->type, 'source' => $p->source, 'distance_m' => $p->distance_m, 'has_photo' => (bool) $p->photo_path,
             ]);
 
         return response()->json(['success' => true, 'data' => $rows]);
+    }
+
+    /** The photo taken with a punch, for the people who may see that employee's punches (HR, or their manager). */
+    public function punchPhoto(Request $request, int $id)
+    {
+        $punch = $this->scope->apply(HrCheckin::query(), $request->user())->findOrFail($id);
+        abort_unless($punch->photo_path && Storage::disk('local')->exists($punch->photo_path), 404, 'There is no photo with this punch.');
+
+        return Storage::disk('local')->response($punch->photo_path, null, ['Cache-Control' => 'private, max-age=300']);
     }
 
     /** One row per employee with a status code per day of the month, and totals. */
@@ -255,7 +282,7 @@ class AttendanceController extends Controller
             $data = $request->validate([
                 'shift_start' => 'nullable|date_format:H:i', 'late_cutoff' => 'nullable|date_format:H:i',
                 'default_working_hour_id' => 'nullable|integer', 'lat' => 'nullable|numeric|between:-90,90',
-                'lng' => 'nullable|numeric|between:-180,180', 'radius_m' => 'nullable|integer|min:20|max:5000',
+                'lng' => 'nullable|numeric|between:-180,180', 'radius_m' => 'nullable|integer|min:20|max:5000', 'selfie_required' => 'nullable|boolean',
             ]);
             // Only the fields sent are changed (a geofence save keeps the shift times and the other way round).
             $store->update(['attendance_settings' => array_replace($store->attendance_settings ?? [], $data)]);

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Box, Typography } from "@mui/material";
-import { Bell, CalendarDays, ClipboardCheck, Home, Receipt, UserRound, Wallet, X } from "lucide-react";
+import { Bell, CalendarDays, ChevronLeft, ClipboardCheck, Home, Receipt, UserRound, Wallet, X } from "lucide-react";
 import api from "@/shared/api/apiClient";
 import { clearStaffSession, readStaffSession, updateStaffSession } from "@/shared/api/staffSession";
 import LeaveScreen from "@/mobile/screens/LeaveScreen";
@@ -11,6 +11,10 @@ import HomeTab from "./tabs/HomeTab";
 import ApprovalsTab from "./tabs/ApprovalsTab";
 import SalaryTab from "./tabs/SalaryTab";
 import MeTab from "./tabs/MeTab";
+import AttendanceTab from "./tabs/AttendanceTab";
+import HolidaysTab from "./tabs/HolidaysTab";
+import TeamTab from "./tabs/TeamTab";
+import TeamOnLeaveCard from "./TeamOnLeaveCard";
 import StaffScreen from "./StaffScreen";
 import { OfflineBar, PullIndicator, UpdateBar } from "./StaffBars";
 import usePullToRefresh from "./usePullToRefresh";
@@ -34,7 +38,9 @@ const startTab = () => {
   const wanted = new URLSearchParams(window.location.search).get("tab");
   return TABS.some((t) => t.key === wanted && !t.approver) ? wanted : "home";
 };
-const TITLES = { home: "Home", leave: "Leave", expenses: "Expenses and advances", salary: "Salary", approvals: "Approvals", me: "Me" };
+// Screens opened from Home that are not in the bottom bar. Back returns to the screen before.
+const EXTRA_TITLES = { attendance: "My attendance", holidays: "Holidays", team: "My team" };
+const TITLES = { home: "Home", leave: "Leave", expenses: "Expenses and advances", salary: "Salary", approvals: "Approvals", me: "Me", ...EXTRA_TITLES };
 
 /** While on /hr the browser offers to install "Vynerix HRMS", not the business app. */
 function useStaffManifest() {
@@ -199,6 +205,12 @@ function Shell({ session, onSignOut, theme }) {
   return (
     <Box sx={{ minHeight: "100dvh", bgcolor: STAFF_COLOR.page, color: STAFF_COLOR.text, fontSize: STAFF_TEXT.body }}>
       <Box component="header" sx={{ position: "sticky", top: 0, zIndex: 10, bgcolor: STAFF_COLOR.surface, borderBottom: `1px solid ${STAFF_COLOR.line}`, px: 2, pt: "max(10px, env(safe-area-inset-top))", pb: 1.25, display: "flex", alignItems: "center", gap: 1 }}>
+        {EXTRA_TITLES[tab] && (
+          <Box component="button" type="button" onClick={() => window.history.back()} aria-label="Back"
+            sx={{ width: TOUCH, height: TOUCH, ml: -1, border: 0, borderRadius: "12px", bgcolor: "transparent", color: STAFF_COLOR.text, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+            <ChevronLeft size={24} />
+          </Box>
+        )}
         <Box sx={{ flex: 1, minWidth: 0 }}>
           <Typography component="h1" sx={{ fontSize: STAFF_TEXT.heading, fontWeight: 800, color: STAFF_COLOR.text, lineHeight: 1.2 }}>
             {tab === "home" ? `Hello, ${firstName}` : TITLES[tab]}
@@ -222,11 +234,14 @@ function Shell({ session, onSignOut, theme }) {
         {error && <Box role="alert" sx={{ ...card, mb: 2, bgcolor: STAFF_COLOR.dangerSoft, borderColor: STAFF_COLOR.dangerBorder, color: STAFF_COLOR.danger, fontSize: STAFF_TEXT.body, fontWeight: 600 }}>{error}</Box>}
         <ErrorBoundary key={refreshKey} variant="page" where={`hr:${tab}`} resetKeys={[tab, salaryView]}>
         {tab === "home" && <HomeTab home={home} go={go} />}
-        {tab === "leave" && <StaffScreen><LeaveScreen showApprovals={false} /></StaffScreen>}
+        {tab === "leave" && <><StaffScreen><LeaveScreen showApprovals={false} /></StaffScreen><TeamOnLeaveCard /></>}
         {tab === "expenses" && <StaffScreen><ClaimsScreen /></StaffScreen>}
         {tab === "salary" && <SalaryTab home={home} view={salaryView} setView={(view) => go("salary", view)} />}
         {tab === "approvals" && <ApprovalsTab onChanged={loadHome} />}
         {tab === "me" && <MeTab onSignOut={onSignOut} theme={theme} />}
+        {tab === "attendance" && <AttendanceTab />}
+        {tab === "holidays" && <HolidaysTab />}
+        {tab === "team" && <TeamTab />}
         </ErrorBoundary>
       </Box>
 

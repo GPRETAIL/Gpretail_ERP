@@ -68,6 +68,7 @@ Route::post('attendance/punch', [AttendanceController::class, 'punch']);
 Route::post('attendance/mark', [AttendanceController::class, 'mark']);
 Route::post('attendance/import', [AttendanceController::class, 'import']);
 Route::get('attendance/punches', [AttendanceController::class, 'punches']);
+Route::get('attendance/punches/{id}/photo', [AttendanceController::class, 'punchPhoto'])->whereNumber('id');
 Route::get('attendance/monthly', [AttendanceController::class, 'monthly']);
 
 // Holidays and leave
@@ -189,6 +190,9 @@ Route::get('staff-app/home', [StaffAppController::class, 'home']);
 Route::get('staff-app/inbox', [StaffAppController::class, 'inbox']);
 Route::get('staff-app/profile', [StaffAppController::class, 'profile']);
 Route::get('staff-app/team', [StaffAppController::class, 'team']);
+Route::get('staff-app/attendance-month', [StaffAppController::class, 'attendanceMonth']);
+Route::get('staff-app/attendance-day', [StaffAppController::class, 'attendanceDay']);
+Route::get('staff-app/team-on-leave', [StaffAppController::class, 'teamOnLeave']);
 Route::get('staff-app-setup', [StaffAppSetupController::class, 'index']);
 Route::post('staff-app-setup/{id}/pin', [StaffAppSetupController::class, 'setPin'])->whereNumber('id');
 Route::post('staff-app-setup/{id}/disable', [StaffAppSetupController::class, 'disable'])->whereNumber('id');
