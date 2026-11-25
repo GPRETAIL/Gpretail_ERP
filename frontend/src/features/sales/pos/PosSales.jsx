@@ -6,6 +6,7 @@ import CashNotOpenedBanner from "@/features/sales/pos/components/CashNotOpenedBa
 import LoyaltyRedeemPanel from "@/features/sales/pos/components/LoyaltyRedeemPanel";
 import GiftCreditPanel from "@/features/sales/pos/components/GiftCreditPanel";
 import { loyaltyRedeemPayload } from "@/features/sales/pos/utils/loyaltyRedeem";
+import { lastScannedLineId, parseQuantityShortcut } from "@/features/sales/pos/utils/quantityShortcut";
 import { giftCreditPayload, giftCreditTotal } from "@/features/sales/pos/utils/giftCredit";
 import LiveDateTime from "@/shared/components/LiveDateTime";
 import useBillingDate from "@/features/sales/pos/hooks/useBillingDate";
@@ -217,6 +218,7 @@ const PosSales = () => {
   const [awaitingSalespersonId, setAwaitingSalespersonId] = useState(null);
   const awaitingSalespersonRef = useRef(null);
   const pendingSalespersonRef = useRef(null);
+  const lastLineIdRef = useRef(null); // the line scanned last: what the "*10" shortcut changes
   const salespersonInputRef = useRef(null);
   const [latestPosDocument, setLatestPosDocument] = useState(null);
   const [deletingLatestDocument, setDeletingLatestDocument] = useState(false);
@@ -1484,6 +1486,7 @@ const PosSales = () => {
       const newLineId = `${source.id}-${Date.now()}`;
       setCart((prev) => {
         const index = perItemSalesperson ? -1 : prev.findIndex((line) => line.stockId === source.id);
+        lastLineIdRef.current = index === -1 ? newLineId : prev[index].lineId;
         if (index === -1) {
           return [
             ...prev,
@@ -2579,6 +2582,9 @@ const PosSales = () => {
               </Box>
             </Stack>
             {selectedStockHint ? <Typography sx={{ mt: 1, fontSize: TYPE.small, color: "text.secondary" }}>{selectedStockHint}</Typography> : null}
+            <Typography sx={{ mt: 0.75, fontSize: TYPE.small, color: "text.secondary" }} data-testid="pos-quantity-hint">
+              Many pieces: type <b>10*</b> then scan, or scan once and type <b>*10</b> + Enter to change the last item. Also C customer, D discount, 0 save and print.
+            </Typography>
           </Box>
 
           <Box sx={{ flex: 1, minHeight: 0, overflowX: "auto" }}>
@@ -3089,9 +3095,45 @@ const PosSales = () => {
     </SearchGridPanel>
   );
 
+  /** "10*" before a barcode, "10*" alone for the next scan, "*10" for the last scanned item. See quantityShortcut.js. */
+  function applyQuantityShortcut(shortcut) {
+    setAddBarcode("");
+    if (!(shortcut.quantity >= 1)) {
+      toast.error("Quantity must be at least 1.");
+      focusBarcodeInput();
+      return;
+    }
+    if (shortcut.kind === "scan") {
+      void handleAddLine({ barcode: shortcut.barcode, quantityInput: String(shortcut.quantity) });
+      return;
+    }
+    if (shortcut.kind === "next") {
+      setAddQty(String(shortcut.quantity)); // The Qty box shows it; it goes back to 1 after the next item.
+      focusBarcodeInput();
+      return;
+    }
+    if (pendingScans > 0) {
+      toast.info("The last scan is still loading. Try again in a moment.");
+      focusBarcodeInput();
+      return;
+    }
+    const lineId = lastScannedLineId(cart, lastLineIdRef.current);
+    if (!lineId) {
+      toast.info("Scan an item first, then set its quantity.");
+    } else {
+      handleLineQtyChange(lineId, shortcut.quantity); // The same stock check as editing the quantity in the table.
+    }
+    focusBarcodeInput();
+  }
+
   function handleBarcodeKeyDown(e) {
                     if (e.key === "Enter") {
                       e.preventDefault();
+                      const quantityShortcut = parseQuantityShortcut(addBarcode);
+                      if (quantityShortcut) {
+                        applyQuantityShortcut(quantityShortcut);
+                        return;
+                      }
                       const shortcut = String(addBarcode || "").trim().toUpperCase();
                       if (shortcut === "C") {
                         setAddBarcode("");
