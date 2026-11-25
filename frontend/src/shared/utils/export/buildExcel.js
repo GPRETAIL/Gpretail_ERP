@@ -1,4 +1,4 @@
-import { coerceCell, inferColumnKind, numberFormatFor } from "./cellTypes";
+import { alignmentFor, coerceCell, inferColumnKind, numberFormatFor } from "./cellTypes";
 
 const HEADER_FILL = "FFE8EEF7";
 const BORDER = { style: "thin", color: { argb: "FFCBD5E1" } };
@@ -8,7 +8,7 @@ const safeSheetName = (name) => String(name || "Export").replace(/[\\/?*[\]:]/g,
 
 const displayLength = (value, kind) => {
   if (value === null || value === undefined) return 0;
-  if (value instanceof Date) return 11;
+  if (value instanceof Date) return kind.kind === "datetime" ? 20 : 12;
   if (typeof value === "number") return kind.kind === "text" ? String(value).length : value.toLocaleString("en-IN", { minimumFractionDigits: kind.decimals || 0, maximumFractionDigits: kind.decimals || 0 }).length + (kind.kind === "money" ? 2 : 0);
   return String(value).length;
 };
@@ -37,7 +37,7 @@ export default async function buildExcel({ headerLines = [], headers, rawBody, s
     const row = sheet.addRow([line.text]);
     if (columnCount > 1) sheet.mergeCells(row.number, 1, row.number, columnCount);
     row.getCell(1).font = FONTS[line.style] || FONTS.text;
-    row.getCell(1).alignment = { vertical: "middle", horizontal: "left" };
+    row.getCell(1).alignment = { vertical: "middle", horizontal: "center" };
   });
   if (headerLines.length) sheet.addRow([]);
 
@@ -45,31 +45,32 @@ export default async function buildExcel({ headerLines = [], headers, rawBody, s
 
   const headerRow = sheet.addRow(headers.map((header) => String(header ?? "")));
   headerRow.height = 22;
-  headerRow.eachCell((cell, col) => {
+  headerRow.eachCell((cell) => {
     cell.font = { bold: true };
     cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: HEADER_FILL } };
     cell.border = { top: BORDER, bottom: BORDER, left: BORDER, right: BORDER };
-    const numeric = kinds[col - 1].kind === "number" || kinds[col - 1].kind === "money";
-    cell.alignment = { vertical: "middle", horizontal: numeric ? "right" : "left", wrapText: true };
+    cell.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
   });
 
+  const aligns = headers.map((_, col) => alignmentFor(kinds[col], rawBody.map((row) => row?.[col])));
   const widths = headers.map((header) => Math.min(60, Math.max(10, String(header ?? "").length + 4)));
   rawBody.forEach((source) => {
     const values = headers.map((_, col) => coerceCell(source?.[col], kinds[col]));
     const row = sheet.addRow(values);
+    row.height = 20;
     const isTotal = TOTAL_ROW.test(String(source?.[0] ?? "")) || TOTAL_ROW.test(String(source?.[1] ?? ""));
     values.forEach((value, index) => {
       const cell = row.getCell(index + 1);
       const kind = kinds[index];
       const format = value !== null && typeof value !== "string" ? numberFormatFor(kind) : undefined;
       if (format) cell.numFmt = format;
-      cell.alignment = { vertical: "top", horizontal: typeof value === "number" ? "right" : value instanceof Date ? "center" : "left", wrapText: typeof value === "string" };
+      cell.alignment = { vertical: "middle", horizontal: aligns[index], wrapText: typeof value === "string" && aligns[index] === "left" };
       cell.border = { top: BORDER, bottom: BORDER, left: BORDER, right: BORDER };
       if (isTotal) {
         cell.font = { bold: true };
         cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF1F5F9" } };
       }
-      widths[index] = Math.min(60, Math.max(widths[index], displayLength(value, kind) + 3));
+      widths[index] = Math.min(aligns[index] === "left" ? 48 : 60, Math.max(widths[index], displayLength(value, kind) + 3));
     });
   });
 

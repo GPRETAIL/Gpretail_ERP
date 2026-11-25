@@ -1,15 +1,25 @@
-import { parseDate } from "./cellTypes";
+import { parseDateTime } from "./cellTypes";
 import { splitPageAndPeriod } from "./exportFileName";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const GENERIC_TITLE = /^(export|table[\s_-]*data)?$/i;
 const clean = (value) => String(value ?? "").replace(/\s+/g, " ").trim();
 
+const pad = (n) => String(n).padStart(2, "0");
+
+/** A parsed date as 25-Nov-2026, or 25-Nov-2026 10:09 pm when it carries a time. */
+export const formatParsed = ({ date, time }) => {
+  const day = `${pad(date.getUTCDate())}-${MONTHS[date.getUTCMonth()]}-${date.getUTCFullYear()}`;
+  if (!time) return day;
+  const hour = date.getUTCHours();
+  return `${day} ${hour % 12 || 12}:${pad(date.getUTCMinutes())} ${hour < 12 ? "am" : "pm"}`;
+};
+
 export const displayDate = (value) => {
   const raw = clean(value);
   if (!raw) return "";
-  const date = parseDate(raw);
-  if (date) return `${String(date.getUTCDate()).padStart(2, "0")}-${MONTHS[date.getUTCMonth()]}-${date.getUTCFullYear()}`;
+  const parsed = parseDateTime(raw);
+  if (parsed) return formatParsed(parsed);
   const month = /^(\d{4})-(\d{2})$/.exec(raw);
   if (month && Number(month[2]) >= 1 && Number(month[2]) <= 12) return `${MONTHS[Number(month[2]) - 1]} ${month[1]}`;
   return raw;
