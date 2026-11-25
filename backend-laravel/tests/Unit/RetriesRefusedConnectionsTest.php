@@ -45,6 +45,13 @@ class RetriesRefusedConnectionsTest extends TestCase
         $this->assertSame(3, $connector->calls);
     }
 
+    public function test_the_socket_flavoured_refusal_is_retried_too(): void
+    {
+        $connector = new RetryingFlakyConnector(1, 'SQLSTATE[HY000] [2002] No such file or directory');
+        $this->assertSame('connected', $connector->createConnection('dsn', [], []));
+        $this->assertSame(2, $connector->calls);
+    }
+
     public function test_it_gives_up_after_two_retries(): void
     {
         $connector = new RetryingFlakyConnector(5, self::REFUSED);

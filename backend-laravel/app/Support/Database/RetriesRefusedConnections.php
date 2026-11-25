@@ -38,6 +38,17 @@ trait RetriesRefusedConnections
     {
         $message = $e->getMessage();
 
-        return str_contains($message, '[2002]') && (str_contains($message, 'Operation not permitted') || str_contains($message, 'Resource temporarily unavailable'));
+        if (! str_contains($message, '[2002]')) {
+            return false;
+        }
+
+        // "No such file or directory" is the same momentary refusal seen through the socket path (it failed a deploy's migrate once).
+        foreach (['Operation not permitted', 'Resource temporarily unavailable', 'No such file or directory'] as $known) {
+            if (str_contains($message, $known)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

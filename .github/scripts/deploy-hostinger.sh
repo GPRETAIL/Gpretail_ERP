@@ -46,10 +46,43 @@ CODE_BACKUP="$RECOVERY_DIR/code-$(date -u +%Y%m%dT%H%M%SZ)-$$.tar.gz"
 tar -czf "$CODE_BACKUP" --exclude='./.env' --exclude='./.env.*' --exclude='./storage' --exclude='./bootstrap/cache/*.php' --exclude='./vendor' --exclude='./.git' --exclude='./node_modules' --exclude='./deploy.zip' --exclude='./deploy.tar.gz' -C "$APP_DIR" .
 test -s "$CODE_BACKUP"
 "$PHP" artisan down --retry=60
+# A failed step after "down" must not leave the shop on the maintenance page. The new code is already unpacked, so
+# bring the site back up and still fail the job, so the failure is seen. (A migrate that broke halfway is the one case
+# where this is not wanted: the next block marks that case and keeps the site down.)
+KEEP_DOWN=1 # until the licence trust check below has passed: a failed trust check must never reopen the site
+on_fail() {
+  status=$?
+  trap - ERR
+  if [ "$KEEP_DOWN" = "1" ]; then
+    echo '::error::The site stays in maintenance mode until the failed step (trust check or migration) is checked'
+  else
+    "$PHP" artisan up || true
+    echo '::error::Deploy step failed; the site was brought back up on the new code'
+  fi
+  exit "$status"
+}
+trap on_fail ERR
 (umask 022; tar -xzf "$ARCHIVE")
 "$PHP" artisan config:clear
 "$PHP" artisan platform:verify-trust
+KEEP_DOWN=0
+# The database is sometimes unreachable for a moment on shared hosting ([2002]). Retry the connection, never a migration
+# that has started: only a run that could not connect at all is repeated.
+REACHED=0
+for attempt in 1 2 3 4; do
+  if "$PHP" artisan migrate:status >/dev/null 2>&1; then
+    REACHED=1
+    break
+  fi
+  sleep $((attempt * 5))
+done
+if [ "$REACHED" != "1" ]; then
+  echo '::error::The database could not be reached after 4 tries (nothing was migrated)'
+  false
+fi
+KEEP_DOWN=1
 "$PHP" artisan migrate --force --no-interaction
+KEEP_DOWN=0
 "$PHP" artisan config:cache
 "$PHP" artisan route:cache
 "$PHP" artisan view:cache
