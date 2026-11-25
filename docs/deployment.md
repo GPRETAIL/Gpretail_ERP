@@ -19,9 +19,18 @@ Runs on every push and pull request to `main`. Only a push to `main` deploys.
 
 1. Backs up the database (`backup-erp.php`) and the current code.
 2. Puts the site in maintenance mode, then unpacks the release over the app folder.
-3. Runs `platform:verify-trust`, then `migrate --force`.
-4. Rebuilds the config, route and view caches, then brings the site back up.
-5. Calls `/up`. If that check fails, the site goes back into maintenance mode.
+3. Runs `platform:verify-trust`. If it fails, the site stays in maintenance mode on purpose.
+4. Asks the database for its migration status up to 4 times (5, 10, 15 and 20 seconds apart). If it never
+   answers, nothing is migrated and the site is brought back up on the new code.
+5. Runs `migrate --force`. If it fails, the site stays in maintenance mode, because a migration that stopped
+   part way needs a person to look at it.
+6. Rebuilds the config, route and view caches and restarts the queue. A failure here brings the site back up.
+7. Brings the site up, then asks `/api/health` up to 4 times, 15 seconds apart. `/api/health` answers 503 in
+   maintenance mode and 200 when the app is live (`/up` serves the web page either way). If it never answers
+   200, the site goes back into maintenance mode.
+
+Any failure after step 2 fails the job, so a red run means the release needs a look even when the site came
+back up. See "Rollback" below.
 
 The release is unpacked over the existing folder, so files that a release moved or deleted stay on the
 server as harmless leftovers. The optimised autoloader only points at the new locations.
@@ -87,13 +96,63 @@ server as harmless leftovers. The optimised autoloader only points at the new lo
 
 - **Error alerts:** errors reach admins' notification bell by themselves (`ops:error-alerts` runs from
   the cron). To get them by email too, set `OPS_ALERT_EMAIL` and the `MAIL_*` settings in the server's `.env`.
-- **Downtime:** set up an external uptime monitor (any free one) on `https://dev.gpsoftware.in/api/health`,
-  because a site that is down can't send its own alert. Have it alert on a non-200 response, or on a body
-  without `"scheduler":"running"`.
+- **Downtime:** set up an external uptime monitor (any free one that checks every 5 minutes or faster), because a
+  site that is down can't send its own alert. Watch these three addresses, and alert when a check fails twice in
+  a row (one slow answer is common on shared hosting):
+
+  | Address | Healthy answer | A failure means |
+  |---|---|---|
+  | `https://dev.gpsoftware.in/api/health` | 200 and the text `"scheduler":"running"` | Down, in maintenance mode (503), or the cron stopped |
+  | `https://admin.gpsoftware.in/api/health` | 200 and the texts `"scheduler":"running"` and `"queue":"running"` | Vynerix Admin is down or its cron or queue stopped |
+  | `https://remote.gpsoftware.in/` | 200 and the text `Vynerix Remote Tool` | The remote support tool is down, or its DNS points somewhere else |
+
+  Send the alert to an email address that is not on the same Hostinger account.
 
 ## Rollback
 
-Each deploy keeps a code archive and a database backup in `~/.gp-erp-recovery/` on the server. To roll
-back the code, unpack the previous `code-*.tar.gz` into the app folder and rebuild the caches
-(`config:cache`, `route:cache`, `view:cache`). Restore the database only if a migration has to be
-undone.
+Work from the least to the most drastic step, and stop as soon as the site is healthy. The app folder is
+`~/domains/dev.gpsoftware.in/public_html`; run the commands over SSH (hPanel > Advanced > SSH Access) with
+`PHP=/opt/alt/php84/usr/bin/php`.
+
+**1. The site shows the maintenance page after a failed deploy.** Read the red step in the GitHub Actions run.
+- A database that could not be reached, or a cache step: the script has already brought the site back up.
+  Re-run the failed jobs once the database answers.
+- `platform:verify-trust` or `migrate` failed: the site is held in maintenance on purpose. Fix the cause, then
+  re-run the jobs, or bring the site up by hand with `$PHP artisan up` only when you are sure the database
+  matches the code that is on the server.
+
+**2. A release is live but wrong.** Redeploy the last good commit. This is the safest way, because it rebuilds
+the full package (code, `vendor/` and the frontend) in one go:
+- GitHub > Actions > the last green run > **Re-run all jobs**, or
+- `git revert <bad commit>` and push.
+
+**3. GitHub is not available, or a deploy is needed in minutes.** Roll the code back from the archive the last
+deploy kept in `~/.gp-erp-recovery/`:
+
+```
+cd ~/domains/dev.gpsoftware.in/public_html
+ls -lt ~/.gp-erp-recovery/code-*.tar.gz | head -3        # newest first; pick the one from before the bad release
+$PHP artisan down --retry=60
+tar -xzf ~/.gp-erp-recovery/code-<timestamp>-<id>.tar.gz -C .
+$PHP artisan config:clear
+$PHP artisan config:cache && $PHP artisan route:cache && $PHP artisan view:cache
+$PHP artisan queue:restart
+$PHP artisan up
+curl -s https://dev.gpsoftware.in/api/health               # expect "status":"UP" and "scheduler":"running"
+```
+
+What the code archive holds: the app folder without `.env`, `storage/`, `vendor/` and the compiled caches.
+So it brings back the code and the built frontend (`public/`), not the Composer packages. If the bad release
+changed `composer.lock`, use step 2 instead. Files that the bad release added stay on the server as harmless
+leftovers.
+
+**4. A migration damaged data.** Restoring a database backup undoes everything saved after it was taken,
+including bills made since the deploy, so prefer a corrective migration. If a restore is the only way:
+- Backups are `~/.gp-erp-recovery/database-<timestamp>-<id>.sql.gz`, taken just before each deploy.
+- Put the site in maintenance mode first (`$PHP artisan down --retry=60`), then restore into the database named
+  in the server's `.env`: `gunzip -c <backup file> | mysql -u <DB_USERNAME> -p <DB_DATABASE>`.
+- Roll the code back to the same point (step 2 or 3) before bringing the site up, so the code and the schema
+  match.
+
+The deploy never deletes the archives, so remove old ones now and then (Hostinger's disk is limited). After any
+rollback, check `/api/health` and sign in once.
