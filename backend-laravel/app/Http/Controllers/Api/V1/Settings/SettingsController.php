@@ -162,7 +162,7 @@ class SettingsController extends Controller
                 $locked = Store::whereKey($store->id)->lockForUpdate()->firstOrFail();
                 $incoming = $request->except(['companyId', 'company_id', 'settingsSection']);
                 if ($request->has('settingsSection')) {
-                    $salesKeys = ['billNumberReset', 'billNumberOverride', 'settlementNumberReset', 'settlementNumberOverride', 'saleSaveAs', 'posPaymentDialogVisible', 'posSalespersonScan', 'deliveryVerifyAll', 'billingDateAfterClosing', 'billingDateChangers', 'reprintReasonAfter', 'reprintCopyLabels', 'requireCashOpening', 'cashOpeningCheck', 'creditNoteExpiryDays', 'voucherExpiryDays', 'paymentDialogPages', 'employeeSticker'];
+                    $salesKeys = ['billNumberReset', 'billNumberOverride', 'settlementNumberReset', 'settlementNumberOverride', 'saleSaveAs', 'posPaymentDialogVisible', 'posSalespersonScan', 'deliveryVerifyAll', 'billingDateAfterClosing', 'billingDateChangers', 'reprintReasonAfter', 'reprintCopyLabels', 'requireCashOpening', 'cashOpeningCheck', 'creditNoteExpiryDays', 'voucherExpiryDays', 'couponRule', 'paymentDialogPages', 'employeeSticker'];
                     $receiptKeys = ['showBarcodeOnBill', 'showBarcodeOnReturnSlip', 'receiptCodeType', 'showDiscountOnReceipt', 'discountDisplayMode', 'showTaxTableOnReceipt', 'receiptWidthInches', 'thankYouMessage', 'receiptFontFamily', 'receiptFormat', 'printMode', 'paymentQrMode', 'paymentUpiId', 'paymentQrImageUrl', 'paymentQrSize', 'posReceiptPrintCopies', 'generalFields', 'taxFields', 'productFields'];
                     $allowed = $request->input('settingsSection') === 'sales' ? $salesKeys : $receiptKeys;
                     $incoming = array_intersect_key($incoming, array_flip($allowed));
@@ -172,6 +172,10 @@ class SettingsController extends Controller
                     // Employee sticker size: numbers inside the allowed ranges, or null for "same as product stickers".
                     if (array_key_exists('employeeSticker', $incoming)) {
                         $incoming['employeeSticker'] = \App\Support\EmployeeStickerSize::sanitize($incoming['employeeSticker']);
+                    }
+                    // The coupon rule: each number kept inside its range, anything missing back to its default.
+                    if (array_key_exists('couponRule', $incoming)) {
+                        $incoming['couponRule'] = \App\Services\Sales\GiftCreditService::normalizeCouponRule($incoming['couponRule']);
                     }
                     // Days a credit note or gift voucher lasts (0 = never expires). Anything else keeps what is saved.
                     foreach (['creditNoteExpiryDays', 'voucherExpiryDays'] as $expiryKey) {

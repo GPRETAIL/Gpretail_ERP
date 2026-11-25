@@ -173,6 +173,7 @@ export const buildSimplePosSaleReceiptData = async (
     generalBalanceVisible: Boolean(receiptCustomization?.generalFields?.balanceAmt?.visible),
     generalYouSavedVisible: Boolean(receiptCustomization?.generalFields?.youSaved?.visible),
     loyalty: savedSale?.loyalty || null, // points redeemed / earned / balance (sale response)
+    couponsIssued: savedSale?.coupons_issued || [], // coupons the bill earned (sale response), printed at the foot of the receipt
     vouchers: savedSale?.vouchers || [], // gift vouchers, credit notes and coupons the bill used (sale response)
     footerNote: "",
     message: receiptCustomization?.thankYouMessage || DEFAULT_SALES_RECEIPT_MESSAGE,

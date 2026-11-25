@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\V1\Sales\DealerInvoiceController;
 use App\Http\Controllers\Api\V1\Sales\DealerReceiptController;
 use App\Http\Controllers\Api\V1\Sales\DeliveryController;
 use App\Http\Controllers\Api\V1\Sales\IncentiveController;
+use App\Http\Controllers\Api\V1\Sales\GiftCouponController;
 use App\Http\Controllers\Api\V1\Sales\GiftCreditController;
 use App\Http\Controllers\Api\V1\Sales\GiftVoucherController;
 use App\Http\Controllers\Api\V1\Sales\LoyaltyRedeemController;
@@ -44,6 +45,10 @@ Route::get('gift-vouchers', [GiftVoucherController::class, 'index']);
 Route::post('gift-vouchers', [GiftVoucherController::class, 'store']);
 Route::get('gift-vouchers/{id}', [GiftVoucherController::class, 'show'])->whereNumber('id');
 Route::post('gift-vouchers/{id}/cancel', [GiftVoucherController::class, 'cancel'])->whereNumber('id');
+Route::get('gift-coupons', [GiftCouponController::class, 'index']);
+Route::post('gift-coupons', [GiftCouponController::class, 'store']);
+Route::get('gift-coupons/{id}', [GiftCouponController::class, 'show'])->whereNumber('id');
+Route::post('gift-coupons/{id}/cancel', [GiftCouponController::class, 'cancel'])->whereNumber('id');
 
 // Sales > Bill Reprint: search every sales document, and the reprint log.
 Route::get('bill-reprints', [BillReprintController::class, 'index']);

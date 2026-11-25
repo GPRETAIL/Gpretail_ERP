@@ -730,6 +730,11 @@ class PosSaleController extends Controller
                 }
 
                 $giftCredits->redeem($sale, $voucherUses, $user->id ?? null);
+                // A bill paid in full can earn a coupon (the store's rule). Offline bills cannot print one, so they earn none.
+                if (! $offline && ! $isCredit && round($paid, 2) >= round($netPayable, 2)) {
+                    $couponsUsed = round(collect($voucherUses)->filter(fn ($use) => $use['credit']->kind === GiftCredit::COUPON)->sum('amount'), 2);
+                    $giftCredits->issueForSale($request, $sale, (float) $grandTotal, $couponsUsed);
+                }
 
                 if ($appliedReturn) {
                     $appliedReturn->update([
@@ -808,6 +813,8 @@ class PosSaleController extends Controller
         ];
         // Gift vouchers, credit notes and coupons the bill used, for the receipt.
         $data['vouchers'] = app(GiftCreditService::class)->usedOnSale($sale->id);
+        // Coupons the bill earned, printed at the foot of the receipt.
+        $data['coupons_issued'] = app(GiftCreditService::class)->issuedOnSale($sale->id);
 
         return $data;
     }
@@ -880,6 +887,8 @@ class PosSaleController extends Controller
 
             // Vouchers, credit notes and coupons the bill used are given back (the use rows stay, marked reversed).
             app(GiftCreditService::class)->reverseSale($sale);
+            // Coupons the bill earned are cancelled unless they were already used.
+            app(GiftCreditService::class)->cancelIssuedOnSale($sale);
 
             $sale->payments()->delete();
             $sale->items()->delete();

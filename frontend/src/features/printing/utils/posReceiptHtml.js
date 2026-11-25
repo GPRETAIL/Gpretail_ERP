@@ -291,6 +291,7 @@ const buildThermalSaleReceiptHtml = (receiptData, customization) => {
     ${Number(receiptData.refundAmount || 0) > 0 ? `<div class="totals-row"><span>Refund</span><span>${escapeHtml(Number(receiptData.refundAmount || 0).toFixed(2))}</span></div>` : ""}${receiptData.changeAmount ? `<div class="totals-row"><span>Change</span><span>${escapeHtml(Number(receiptData.changeAmount || 0).toFixed(2))}</span></div>` : ""}
     ${returnRowsHtml ? `<div class="section-label">Returned Items${receiptData.appliedReturnNo ? ` - ${escapeHtml(receiptData.appliedReturnNo)}` : ""}</div><table class="receipt-table"><thead><tr>${productColumns.map((column) => `<th class="${column.key === "productName" ? "text-left" : "num"}">${escapeHtml(column.label)}</th>`).join("")}</tr></thead><tbody>${returnRowsHtml}</tbody></table>` : ""}
     ${taxRowsHtml ? `<div class="section-label">Tax Summary</div><table class="receipt-table"><thead><tr>${taxColumns.map((column) => `<th class="${column.key === "taxName" ? "text-left" : "num"}">${escapeHtml(column.label)}</th>`).join("")}</tr></thead><tbody>${taxRowsHtml}</tbody></table>` : ""}
+    ${couponIssuedHtml(receiptData.couponsIssued, { divider: true })}
     ${barcodeMarkup ? `<div class="line"></div><div class="barcode-wrap">${barcodeMarkup}</div>` : ""}
     ${paymentQrMarkup ? `<div class="line"></div><div class="barcode-wrap">${paymentQrMarkup}</div>` : ""}
     <div class="line"></div>
@@ -440,6 +441,7 @@ const buildA4SaleInvoiceHtml = (receiptData, customization) => {
         ${voucherRowsHtml(receiptData.vouchers)}
       </div>
     </div>
+    ${couponIssuedHtml(receiptData.couponsIssued)}
     ${taxRowsHtml ? `<div class="tax-summary"><table class="tax-summary-table"><thead><tr><th>Tax</th><th class="num">Rate</th><th class="num">Taxable Amt</th><th class="num">Tax Amt</th></tr></thead><tbody>${taxRowsHtml}</tbody></table></div>` : ""}
     <div class="footer">
       <div class="terms">${escapeHtml(receiptData.message || DEFAULT_SALES_RECEIPT_MESSAGE)}</div>
@@ -475,6 +477,20 @@ export const voucherRowsHtml = (vouchers) => {
   return (Array.isArray(vouchers) ? vouchers : []).map((used) => [
     row(`${VOUCHER_LABELS[used.kind] || "Voucher"} ${used.display_number || used.number || ""}`, Number(used.amount || 0).toFixed(2)),
     used.kind === "COUPON" ? "" : row("Balance Left On It", Number(used.balance_after || 0).toFixed(2)),
+  ].join("")).join("");
+};
+
+/** Coupons this bill earned: the number to show on a later bill, its value, last day and the smallest bill it can be used on. */
+export const couponIssuedHtml = (coupons, { divider = false } = {}) => {
+  const row = (label, value) => `<div class="totals-row"><span>${label}</span><span>${escapeHtml(String(value))}</span></div>`;
+  return (Array.isArray(coupons) ? coupons : []).map((coupon) => [
+    divider ? '<div class="line"></div>' : "",
+    '<div class="section-label">Your Coupon</div>',
+    row("Number", coupon.display_number || coupon.number || ""),
+    row("Value", Number(coupon.amount || 0).toFixed(2)),
+    coupon.expires_on ? row("Valid Until", coupon.expires_on) : "",
+    Number(coupon.min_bill_amount) > 0 ? row("Use On A Bill Of", `${Number(coupon.min_bill_amount).toFixed(2)} Or More`) : "",
+    '<div style="text-align:center;font-size:10px;margin-top:2px">Show this number on your next bill.</div>',
   ].join("")).join("");
 };
 

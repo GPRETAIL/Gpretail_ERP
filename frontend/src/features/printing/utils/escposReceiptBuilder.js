@@ -375,6 +375,17 @@ export const buildEscposReceiptBytes = (receiptData = {}, customization = {}, { 
       writer.line(twoColLine(`${label} ${used.display_number || used.number || ""}`.slice(0, cpl - 10), Number(used.amount || 0).toFixed(2), cpl));
       if (used.kind !== "COUPON") writer.line(twoColLine("Balance Left On It", Number(used.balance_after || 0).toFixed(2), cpl));
     }
+    for (const coupon of Array.isArray(receiptData.couponsIssued) ? receiptData.couponsIssued : []) {
+      writer.line("-".repeat(cpl));
+      writer.raw(CMD.BOLD_ON);
+      writer.line("Your Coupon");
+      writer.raw(CMD.BOLD_OFF);
+      writer.line(twoColLine("Number", String(coupon.display_number || coupon.number || ""), cpl));
+      writer.line(twoColLine("Value", Number(coupon.amount || 0).toFixed(2), cpl));
+      if (coupon.expires_on) writer.line(twoColLine("Valid Until", String(coupon.expires_on), cpl));
+      if (Number(coupon.min_bill_amount) > 0) writer.line(twoColLine("Use On A Bill Of", `${Number(coupon.min_bill_amount).toFixed(2)}+`, cpl));
+      writer.line("Show this number on your next bill.");
+    }
     if (toNum(receiptData.refundAmount, 0) > 0) writer.line(twoColLine("Refund", Number(receiptData.refundAmount).toFixed(2), cpl));
     if (receiptData.changeAmount) writer.line(twoColLine("Change", Number(receiptData.changeAmount || 0).toFixed(2), cpl));
 

@@ -1,4 +1,5 @@
 import QRCode from "qrcode";
+import { COUPON_RULE_DEFAULT, normalizeCouponRule } from "./couponRule";
 
 /** Roles the tenant admin can allow to change the POS billing date (Sales Customisation, Manual mode). */
 export const BILLING_DATE_ROLES = [
@@ -311,6 +312,7 @@ export const DEFAULT_SALES_RECEIPT_CUSTOMIZATION = {
   /** Days a credit note (a return refunded as a numbered note) can be used on bills. 0 means it never expires. */
   creditNoteExpiryDays: 90,
   voucherExpiryDays: 365,
+  couponRule: { ...COUPON_RULE_DEFAULT },
   paymentDialogPages: [],
   reprintCopyLabels: false,
   /** Printed POS receipt copies when using the printer queue (1–3). */
@@ -612,6 +614,7 @@ export const normalizeSalesReceiptCustomization = (value = {}) => {
     cashOpeningCheck: normalizeCashOpeningCheck(value),
     creditNoteExpiryDays: Number.isFinite(Number(value.creditNoteExpiryDays)) && Number(value.creditNoteExpiryDays) >= 0 ? Math.min(3650, Math.trunc(Number(value.creditNoteExpiryDays))) : 90,
     voucherExpiryDays: Number.isFinite(Number(value.voucherExpiryDays)) && Number(value.voucherExpiryDays) >= 0 ? Math.min(3650, Math.trunc(Number(value.voucherExpiryDays))) : 365,
+    couponRule: normalizeCouponRule(value.couponRule),
     paymentDialogPages: (Array.isArray(value.paymentDialogPages) ? value.paymentDialogPages : []).filter((page) => PAYMENT_DIALOG_PAGES.includes(page)),
     posReceiptPrintCopies: normalizePosReceiptPrintCopies(value.posReceiptPrintCopies),
     generalFields,

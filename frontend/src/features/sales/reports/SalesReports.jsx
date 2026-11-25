@@ -1412,6 +1412,10 @@ const giftCreditUseColumns = [
   { key: "status", label: "Status" },
 ];
 
+// Coupons use the same lists, without the Type column (every row is a coupon).
+const couponIssueColumns = giftCreditIssueColumns.filter((column) => column.key !== "type").map((column) => (column.key === "source" ? { ...column, label: "Earned on" } : column));
+const couponUseColumns = giftCreditUseColumns.filter((column) => column.key !== "type");
+
 const incentiveSectionColumns = [
   { key: "month", label: "Month" },
   { key: "section", label: "Section" },
@@ -2303,8 +2307,16 @@ const REPORT_DATA_SOURCES = {
     fetchRows: () => getStoreReportRows("gift_credit_issues"),
     emptyText: "No gift vouchers or credit notes have been issued yet.",
   },
-  settlement_coupon_issue_report: { unavailableReason: "A dedicated data source for this report is not connected." },
-  coupon_consumption_report: { unavailableReason: "A dedicated data source for this report is not connected." },
+  settlement_coupon_issue_report: {
+    columns: couponIssueColumns,
+    fetchRows: () => getStoreReportRows("coupon_issues"),
+    emptyText: "No coupons have been issued yet.",
+  },
+  coupon_consumption_report: {
+    columns: couponUseColumns,
+    fetchRows: () => getStoreReportRows("coupon_uses"),
+    emptyText: "No coupon has been used on a bill yet.",
+  },
   gift_voucher_credit_note_consumption_report: {
     columns: giftCreditUseColumns,
     fetchRows: () => getStoreReportRows("gift_credit_uses"),

@@ -1,5 +1,6 @@
 import { TYPE } from "@/shared/theme/typeScale";
 import BillingDateChangers from "./BillingDateChangers";
+import CouponRuleEditor from "./CouponRuleEditor";
 import { isTenantAdmin } from "@/features/auth/utils/accessControl";
 import React, { useEffect, useMemo, useState } from "react";
 import { Eye, RotateCcw, Save, Minus, Plus, X } from "lucide-react";
@@ -1254,6 +1255,11 @@ export default function SalesSettingsEditor({ section = "sales", onDirtyChange }
               {[...VOUCHER_EXPIRY_CHOICES, ...(VOUCHER_EXPIRY_CHOICES.some((c) => c.value === Number(settings.voucherExpiryDays ?? 365)) ? [] : [{ value: Number(settings.voucherExpiryDays), label: `${settings.voucherExpiryDays} days` }])]
                 .map((option) => <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>)}
             </TextField>
+          </Box>
+
+          <Box sx={{ ...baseCardSx, p: 2.5 }}>
+            <CouponRuleEditor value={settings.couponRule} onChange={(couponRule) => updateSetting({ couponRule })} fieldLabelSx={fieldLabelSx}
+              helpSx={{ fontSize: TYPE.small, color: "text.secondary", mb: 1.5 }} />
           </Box>
 
           <Box sx={{ ...baseCardSx, p: 2.5 }}>

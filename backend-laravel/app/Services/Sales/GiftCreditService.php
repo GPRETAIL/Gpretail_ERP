@@ -76,6 +76,78 @@ class GiftCreditService
         return $days > 0 ? CarbonImmutable::parse($issuedOn)->addDays($days)->toDateString() : null;
     }
 
+    /** The store's coupon rule as saved, with anything missing or out of range replaced by its default. */
+    public const COUPON_RULE_DEFAULT = ['enabled' => false, 'minBill' => 1000.0, 'valueType' => 'amount', 'value' => 100.0, 'maxValue' => 0.0, 'validDays' => 30, 'redeemMinBill' => 0.0];
+
+    public static function normalizeCouponRule(mixed $raw): array
+    {
+        $raw = is_array($raw) ? $raw : [];
+        $d = self::COUPON_RULE_DEFAULT;
+        $number = fn (string $key, float $max, float $min = 0.0) => is_numeric($raw[$key] ?? null) ? round(min($max, max($min, (float) $raw[$key])), 2) : $d[$key];
+        $type = in_array($raw['valueType'] ?? null, ['amount', 'percent'], true) ? $raw['valueType'] : $d['valueType'];
+
+        return [
+            'enabled' => filter_var($raw['enabled'] ?? false, FILTER_VALIDATE_BOOLEAN),
+            'minBill' => $number('minBill', 10000000, 1),
+            'valueType' => $type,
+            'value' => $number('value', $type === 'percent' ? 100 : 1000000, 0.01),
+            'maxValue' => $number('maxValue', 1000000),
+            'validDays' => is_numeric($raw['validDays'] ?? null) ? (int) min(3650, max(0, (int) $raw['validDays'])) : $d['validDays'],
+            'redeemMinBill' => $number('redeemMinBill', 10000000),
+        ];
+    }
+
+    public function couponRule(int $storeId): array
+    {
+        $settings = json_decode((string) (DB::table('stores')->where('id', $storeId)->value('receipt_customization') ?? ''), true) ?: [];
+
+        return self::normalizeCouponRule($settings['couponRule'] ?? null);
+    }
+
+    /**
+     * Settling a bill can earn the customer a coupon (the store's rule: a bill of at least X gives a coupon worth Y, valid Z days).
+     * What the bill paid with coupons is left out of the bill amount, so a coupon never earns another coupon.
+     */
+    public function issueForSale(Request $request, PosSale $sale, float $billTotal, float $couponsUsed): ?GiftCredit
+    {
+        $rule = $this->couponRule((int) $sale->store_id);
+        $base = round($billTotal - $couponsUsed, 2);
+        if (! $rule['enabled'] || $base + 0.004 < $rule['minBill']) {
+            return null;
+        }
+        $amount = $rule['valueType'] === 'percent' ? round($base * $rule['value'] / 100, 2) : $rule['value'];
+        if ($rule['valueType'] === 'percent' && $rule['maxValue'] > 0) {
+            $amount = min($amount, $rule['maxValue']);
+        }
+        if ($amount < 0.01) {
+            return null;
+        }
+        $day = \App\Services\Accounting\LedgerPoster::businessDate($sale->sale_date ?? now()); // The bill's own day on the business calendar.
+
+        return $this->issue($request, (int) $sale->store_id, GiftCredit::COUPON, $amount, [
+            'customer_id' => $sale->customer_id, 'source_pos_sale_id' => $sale->id, 'date' => CarbonImmutable::parse($day),
+            'expires_on' => $rule['validDays'] > 0 ? CarbonImmutable::parse($day)->addDays($rule['validDays'])->toDateString() : null,
+            'min_bill_amount' => $rule['redeemMinBill'] > 0 ? $rule['redeemMinBill'] : null,
+        ]);
+    }
+
+    /** Coupons a bill earned, for its receipt. */
+    public function issuedOnSale(int $saleId): array
+    {
+        return GiftCredit::where('kind', GiftCredit::COUPON)->where('source_pos_sale_id', $saleId)->where('status', '!=', 'CANCELLED')->orderBy('id')->get()
+            ->map(fn (GiftCredit $coupon) => [
+                'number' => $coupon->number, 'display_number' => $this->displayNumber($coupon), 'amount' => (float) $coupon->original_amount,
+                'expires_on' => $coupon->expires_on?->toDateString(), 'min_bill_amount' => $coupon->min_bill_amount !== null ? (float) $coupon->min_bill_amount : null,
+            ])->all();
+    }
+
+    /** Cancelling a bill cancels the coupons it earned that nobody has used yet. A coupon already used on another bill stays. */
+    public function cancelIssuedOnSale(PosSale $sale): void
+    {
+        GiftCredit::where('kind', GiftCredit::COUPON)->where('source_pos_sale_id', $sale->id)->where('status', 'ACTIVE')->lockForUpdate()->get()
+            ->each(fn (GiftCredit $coupon) => $coupon->forceFill(['status' => 'CANCELLED', 'cancelled_at' => now(), 'cancel_reason' => 'The bill it came from was cancelled.'])->save());
+    }
+
     public function displayNumber(GiftCredit $credit): string
     {
         return DocumentNumberService::short($credit->number, self::LETTER[$credit->kind] ?? 'GC');

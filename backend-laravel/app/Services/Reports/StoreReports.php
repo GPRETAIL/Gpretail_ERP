@@ -21,7 +21,7 @@ use Illuminate\Support\Facades\DB;
  */
 class StoreReports
 {
-    public const REPORTS = ['stock_aging', 'shelf_period', 'stock_audit', 'loyalty_redemptions', 'incentives', 'gift_credit_issues', 'gift_credit_uses'];
+    public const REPORTS = ['stock_aging', 'shelf_period', 'stock_audit', 'loyalty_redemptions', 'incentives', 'gift_credit_issues', 'gift_credit_uses', 'coupon_issues', 'coupon_uses'];
 
     /**
      * Reports for people who may export reports, and not offered in the Scheduler: the Scheduler's own delivery history
@@ -37,6 +37,8 @@ class StoreReports
             'scheduled_messages' => $this->scheduledMessages(),
             'gift_credit_issues' => $this->giftCreditIssues([GiftCredit::GIFT_VOUCHER, GiftCredit::CREDIT_NOTE]),
             'gift_credit_uses' => $this->giftCreditUses([GiftCredit::GIFT_VOUCHER, GiftCredit::CREDIT_NOTE]),
+            'coupon_issues' => $this->giftCreditIssues([GiftCredit::COUPON]),
+            'coupon_uses' => $this->giftCreditUses([GiftCredit::COUPON]),
             'stock_aging' => $this->stockAging(),
             'shelf_period' => $this->shelfPeriod(),
             'stock_audit' => $this->stockAudit(),
@@ -164,7 +166,7 @@ class StoreReports
 
     /**
      * Customer Gift Voucher/Credit Note: every one issued, what it was for, how much has been used and what is left.
-     * (Coupons have their own pages.)
+     * (Coupons have their own pages, which use the same list.)
      *
      * @param  list<string>  $kinds
      */
@@ -179,8 +181,8 @@ class StoreReports
             'issued_on' => $credit->issued_on?->toDateString() ?? '-',
             'number' => $service->displayNumber($credit),
             'type' => self::GIFT_CREDIT_KIND_LABEL[$credit->kind] ?? $credit->kind,
-            'customer_name' => $credit->customer?->name ?? '-',
-            'mobile_no' => $credit->customer?->phone ?? '-',
+            'customer_name' => $credit->customer?->name ?? ($credit->buyer_name ?: '-'),
+            'mobile_no' => $credit->customer?->phone ?? ($credit->buyer_phone ?: '-'),
             'source' => $credit->source_pos_return_id ? 'Return '.($returns[$credit->source_pos_return_id] ?? '') : ($credit->source_pos_sale_id ? 'Bill '.($sales[$credit->source_pos_sale_id]->bill_no ?? '') : '-'),
             'amount' => round((float) $credit->original_amount, 2),
             'used' => $credit->status === 'CANCELLED' ? 0.0 : round((float) $credit->original_amount - (float) $credit->balance, 2),
