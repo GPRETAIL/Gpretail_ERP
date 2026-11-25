@@ -29,9 +29,10 @@ export default function BottomNav({ activePage, onNavigate, authUser }) {
 
   // Map sub-screens to their parent tab
   const activeTab = (() => {
-    if (activePage === "create_invoice") return "sales";
+    if (activePage === "create_invoice" || activePage === "sale_detail" || activePage === "return_detail") return "sales";
     if (activePage === "product_details") return "inventory";
-    if (["reports", "settings", "customers", "suppliers", "expenses"].includes(activePage)) return "modules";
+    if (activePage === "purchase_detail") return "purchase";
+    if (["reports", "settings", "customers", "customer_detail", "suppliers", "supplier_detail", "expenses"].includes(activePage)) return "modules";
     return activePage;
   })();
 

@@ -416,8 +416,7 @@ export default function DashboardScreen({ onNavigate, onOpenSearch, onOpenSyncCe
 
           {/* Item 4: Employees on Leave */}
           <Box
-            onClick={() => onNavigate("attendance")}
-            sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", p: 1.25, borderRadius: "12px", bgcolor: "rgba(245,243,255,0.5)", border: "1px solid rgba(237,233,254,0.8)", cursor: "pointer", transition: "all 0.15s", "&:active": { transform: "scale(0.98)" } }}
+            sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", p: 1.25, borderRadius: "12px", bgcolor: "rgba(245,243,255,0.5)", border: "1px solid rgba(237,233,254,0.8)" }}
           >
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
               <Box component="span" sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: "#8b5cf6" }} />
@@ -425,7 +424,6 @@ export default function DashboardScreen({ onNavigate, onOpenSearch, onOpenSyncCe
                 {attentionData?.employees_on_leave ?? 0} Employees on Leave
               </Typography>
             </Box>
-            <ChevronRight size={14} style={{ color: "#94a3b8" }} />
           </Box>
 
           {/* Item 5: Unsynced Offline Changes - only shown when there's something

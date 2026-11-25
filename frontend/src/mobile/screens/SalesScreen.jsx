@@ -1,4 +1,3 @@
-import SaleInvoiceDetails from "../components/SaleInvoiceDetails";
 import useAsyncQuery from "@/shared/hooks/useAsyncQuery";
 import { EMPTY_ARRAY } from "@/shared/utils/emptyValues";
 import React, { useState, useEffect, useCallback, useMemo } from "react";
@@ -50,8 +49,7 @@ const isCreditSale = sale => mapStatus(sale) === "credit";
 /**
  * Sales Invoices list screen — fetches real data from GET /pos-sales.
  */
-export default function SalesScreen({ onNavigate }) {
-  const [selectedSaleId, setSelectedSaleId] = useState(null);
+export default function SalesScreen({ onNavigate, onOpenRecord }) {
   const [filter, setFilter] = useState("All");
   const [search, setSearch] = useState("");
   const [dateRange, setDateRange] = useState("all");
@@ -199,7 +197,7 @@ export default function SalesScreen({ onNavigate }) {
             const status = mapStatus(inv);
 
             return (
-              <Box component="button" type="button" key={inv.id || id} className="vx-trans-card" aria-label={`View invoice ${id}`} onClick={() => setSelectedSaleId(inv.id)} sx={{ width: "100%", textAlign: "left", cursor: "pointer" }}>
+              <Box component="button" type="button" key={inv.id || id} className="vx-trans-card" aria-label={`View invoice ${id}`} onClick={() => onOpenRecord?.("sale", inv.id)} sx={{ width: "100%", textAlign: "left", cursor: "pointer" }}>
                 <Box className="vx-trans-left">
                   <Box component="span" className="vx-trans-id">{id}</Box>
                   <Box component="span" className="vx-trans-meta">{customer}</Box>
@@ -214,8 +212,6 @@ export default function SalesScreen({ onNavigate }) {
           })}
         </Box>
       )}
-
-      {selectedSaleId && <SaleInvoiceDetails saleId={selectedSaleId} onClose={() => setSelectedSaleId(null)} />}
 
       {/* FAB */}
       <Box

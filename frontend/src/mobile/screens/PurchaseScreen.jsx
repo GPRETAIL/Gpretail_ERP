@@ -46,7 +46,7 @@ const mapStatus = (bill) => (bill.payment_status || bill.status || "unpaid").toL
  * Entry -> Invoice -> Inventory Entry flow), since a bill can land in
  * either one depending on which workflow a store uses.
  */
-export default function PurchaseScreen({ onNavigate }) {
+export default function PurchaseScreen({ onNavigate, onOpenRecord }) {
   const [filter, setFilter] = useState("All");
   const [search, setSearch] = useState("");
   const [dateRange, setDateRange] = useState("all");
@@ -207,7 +207,8 @@ export default function PurchaseScreen({ onNavigate }) {
             const status = mapStatus(bill);
 
             return (
-              <Box key={`${bill._source}-${bill.id || id}`} className="vx-trans-card">
+              <Box component="button" type="button" key={`${bill._source}-${bill.id || id}`} className="vx-trans-card" aria-label={`Open bill ${id}`}
+                onClick={() => onOpenRecord?.("purchase", bill.id, bill._source)} sx={{ width: "100%", textAlign: "left", cursor: "pointer" }}>
                 <Box className="vx-trans-left">
                   <Box component="span" className="vx-trans-id">{id}</Box>
                   <Box component="span" className="vx-trans-meta">{supplier}</Box>

@@ -2,20 +2,20 @@
  * Dealer statement / invoice / receipt as A4 HTML (turned into a PDF to share on WhatsApp) and the messages that go
  * with them. Plain HTML with inline styles: the PDF renderer (features/printing/utils/htmlToPdf.js) draws it as is.
  */
-const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+export const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 export const rupees = (n) => `₹${Number(n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 export const shortDate = (d) => (d ? new Date(`${String(d).slice(0, 10)}T00:00:00`).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "");
 export const daysSince = (d, today = new Date()) => (d ? Math.max(0, Math.floor((today - new Date(`${String(d).slice(0, 10)}T00:00:00`)) / 86400000)) : 0);
 
-const page = (title, body) => `<!doctype html><html><head><meta charset="utf-8"><title>${esc(title)}</title></head>
+export const page = (title, body) => `<!doctype html><html><head><meta charset="utf-8"><title>${esc(title)}</title></head>
 <body style="font-family:Arial,Helvetica,sans-serif;color:#111;width:760px;padding:24px;font-size:13px">${body}</body></html>`;
-const header = (store, title, sub) => `<div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #1e3a8a;padding-bottom:10px;margin-bottom:14px">
+export const header = (store, title, sub) => `<div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #1e3a8a;padding-bottom:10px;margin-bottom:14px">
 <div><div style="font-size:20px;font-weight:700">${esc(store.name)}</div>${store.contact ? `<div style="color:#555">${esc(store.contact)}</div>` : ""}</div>
 <div style="text-align:right"><div style="font-size:16px;font-weight:700;color:#1e3a8a">${esc(title)}</div><div style="color:#555">${esc(sub)}</div></div></div>`;
-const table = (head, rows) => `<table style="width:100%;border-collapse:collapse;margin-top:8px"><thead><tr>${head.map(([h, align]) =>
+export const table = (head, rows) => `<table style="width:100%;border-collapse:collapse;margin-top:8px"><thead><tr>${head.map(([h, align]) =>
   `<th style="text-align:${align || "left"};background:#eef2ff;padding:6px;border-bottom:1px solid #c7d2fe">${esc(h)}</th>`).join("")}</tr></thead><tbody>${rows.join("")}</tbody></table>`;
-const td = (v, align = "left", bold = false) => `<td style="padding:6px;border-bottom:1px solid #eee;text-align:${align};${bold ? "font-weight:700" : ""}">${v}</td>`;
-const payBlock = (store) => (store.upiId ? `<div style="margin-top:16px;padding:10px;border:1px dashed #94a3b8;border-radius:6px">Pay by UPI: <b>${esc(store.upiId)}</b></div>` : "");
+export const td = (v, align = "left", bold = false) => `<td style="padding:6px;border-bottom:1px solid #eee;text-align:${align};${bold ? "font-weight:700" : ""}">${v}</td>`;
+export const payBlock = (store) => (store.upiId ? `<div style="margin-top:16px;padding:10px;border:1px dashed #94a3b8;border-radius:6px">Pay by UPI: <b>${esc(store.upiId)}</b></div>` : "");
 
 /** A dealer's open invoices and what is due on each. */
 export const statementHtml = ({ store, dealer, invoices }) => {

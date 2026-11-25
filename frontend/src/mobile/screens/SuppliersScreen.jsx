@@ -19,7 +19,7 @@ const money = (n) =>
  * module tile navigated to a page value with no matching screen here, so
  * tapping it just showed a blank content area.
  */
-export default function SuppliersScreen({ onNavigate }) {
+export default function SuppliersScreen({ onNavigate, onOpenRecord }) {
   const [search, setSearch] = useState("");
   const fetchSuppliers = useCallback(async ({ signal }) => {
     const res = await api.get("/suppliers", { params: { limit: 100, search: search || undefined }, signal });
@@ -77,7 +77,9 @@ export default function SuppliersScreen({ onNavigate }) {
           {suppliers.map((s) => {
             const dues = Number(s.current_balance || 0);
             return (
-              <Box key={s.id} className="vx-trans-card">
+              <Box component="div" role="button" tabIndex={0} key={s.id} className="vx-trans-card" aria-label={`Open supplier ${s.name}`}
+                onClick={() => onOpenRecord?.("supplier", s.id)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpenRecord?.("supplier", s.id); } }}
+                sx={{ width: "100%", textAlign: "left", cursor: "pointer" }}>
                 <Box className="vx-trans-left">
                   <Box component="span" className="vx-trans-id">{s.name}</Box>
                   {s.company_name && s.company_name !== s.name && (

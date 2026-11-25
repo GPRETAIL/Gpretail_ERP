@@ -10,10 +10,8 @@ import {
   BarChart3,
   Settings,
   UserCheck,
-  CalendarDays,
   ReceiptText,
   HandCoins,
-  Calculator,
 } from "lucide-react";
 import { Box, Typography } from "@mui/material";
 import api from "@/shared/api/apiClient";
@@ -36,11 +34,7 @@ const MODULE_TILES = [
   { key: "suppliers", name: "Suppliers", icon: Store, bg: "#0891b2" },
   { key: "dealer_dues", name: "Dealer Dues", icon: HandCoins, bg: "#b45309" },
   { key: "dealer_invoices", name: "Dealer Invoices", icon: ReceiptText, bg: "#7c2d12" },
-  { key: "attendance", name: "Attendance", icon: UserCheck, bg: "#0d9488" },
-  { key: "leave", name: "Leave", icon: CalendarDays, bg: "#7c3aed" },
-  { key: "payslips", name: "Payslips", icon: ReceiptText, bg: "#4338ca" },
-  { key: "claims", name: "Claims", icon: HandCoins, bg: "#be185d" },
-  { key: "tax", name: "Tax", icon: Calculator, bg: "#0f766e" },
+  { key: "attendance", name: "My HR", icon: UserCheck, bg: "#0d9488" },
   { key: "dashboard", name: "Expenses", icon: Wallet, bg: "#f97316" },
   { key: "reports", name: "Reports", icon: BarChart3, bg: "#475569" },
   { key: "settings", name: "Settings", icon: Settings, bg: "#64748b" },

@@ -19,6 +19,12 @@ import SyncCenterModal from "./components/SyncCenterModal";
 import DashboardScreen from "./screens/DashboardScreen";
 import ModulesScreen from "./screens/ModulesScreen";
 import SalesScreen from "./screens/SalesScreen";
+import SaleDetailScreen from "./screens/SaleDetailScreen";
+import PurchaseDetailScreen from "./screens/PurchaseDetailScreen";
+import SupplierDetailScreen from "./screens/SupplierDetailScreen";
+import CustomersScreen from "./screens/CustomersScreen";
+import CustomerDetailScreen from "./screens/CustomerDetailScreen";
+import ReturnDetailScreen from "./screens/ReturnDetailScreen";
 import CreateInvoiceScreen from "./screens/CreateInvoiceScreen";
 import PurchaseScreen from "./screens/PurchaseScreen";
 import ReturnsScreen from "./screens/ReturnsScreen";
@@ -32,11 +38,6 @@ import ApprovalsScreen from "./screens/ApprovalsScreen";
 import FastMovingScreen from "./screens/FastMovingScreen";
 import SalesSummaryScreen from "./screens/SalesSummaryScreen";
 import PurchaseSummaryScreen from "./screens/PurchaseSummaryScreen";
-import AttendanceScreen from "./screens/AttendanceScreen";
-import LeaveScreen from "./screens/LeaveScreen";
-import PayslipsScreen from "./screens/PayslipsScreen";
-import ClaimsScreen from "./screens/ClaimsScreen";
-import TaxScreen from "./screens/TaxScreen";
 import ReportsScreen from "./screens/ReportsScreen";
 import ReportDetailScreen from "./screens/ReportDetailScreen";
 import SettingsScreen from "./screens/SettingsScreen";
@@ -71,17 +72,17 @@ const TITLES = {
   fast_moving: "Fast Moving Products",
   sales_summary: "Sales Summary",
   purchase_summary: "Purchase Summary",
-  attendance: "Attendance",
-  leave: "Leave",
-  payslips: "Payslips",
-  claims: "Claims & Advances",
-  tax: "My Tax",
   reports: "Reports",
   report_profit_loss: "Profit & Loss",
   report_gst: "GST Report",
   report_receivables: "Receivables Report",
   settings: "Settings",
   customers: "Customers",
+  sale_detail: "Invoice",
+  purchase_detail: "Purchase Bill",
+  supplier_detail: "Supplier",
+  customer_detail: "Customer",
+  return_detail: "Return",
   suppliers: "Suppliers",
   expenses: "Expenses",
   approvals: "Pending Approvals",
@@ -94,6 +95,14 @@ const TITLES = {
 // drill-down destinations from Dashboard cards - suppressing their back
 // button meant there was no way back except re-tapping the bottom nav.
 const ROOT_SCREENS = new Set(["dashboard", "modules"]);
+
+// A record page (one invoice, bill, supplier...) is allowed to whoever may open its list.
+const ACCESS_KEY = { sale_detail: "sales", purchase_detail: "purchase", supplier_detail: "suppliers", customer_detail: "customers", return_detail: "returns" };
+const accessKey = (page) => ACCESS_KEY[page] || page;
+
+// Attendance, leave, payslips, claims and tax are personal employee screens. They live in the HR (staff) app, which
+// has its own sign-in; the business app sends anyone who asks for them there.
+const HR_APP_PAGES = new Set(["attendance", "leave", "payslips", "claims", "tax", "hr_app"]);
 
 /**
  * Vynerix ERP — Dedicated Mobile Application Root
@@ -110,6 +119,7 @@ function MobileWorkspace() {
   // Navigation state
   const [page, setPage] = useState("dashboard");
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [record, setRecord] = useState(null); // the record shown on a detail page: { type, id, kind }
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(() => new URLSearchParams(window.location.search).get("notifications") === "1");
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -180,6 +190,7 @@ function MobileWorkspace() {
       if (state && typeof state.vxDepth === "number" && state.vxDepth > 0) {
         depthRef.current = state.vxDepth;
         setPage(state.vxPage);
+        setRecord(state.vxRecord || null);
         return;
       }
 
@@ -212,18 +223,27 @@ function MobileWorkspace() {
     };
   }, [ready, isAuthenticated]);
 
-  const navigateTo = useCallback((target) => {
+  const navigateTo = useCallback((target, recordToOpen) => {
+    if (HR_APP_PAGES.has(target)) {
+      window.location.assign("/hr");
+      return;
+    }
     // BottomNav/ModulesScreen/SettingsScreen already hide the entry points
     // a restricted role shouldn't see, but Dashboard quick-action buttons
     // and a couple of other shortcuts still link straight to these pages -
     // this is the single choke-point that catches those too.
-    const safeTarget = (!mobileAccess && isPageGatedForRole(target, authUser?.role)) || !canOpenMobileScreen(mobileAccess?.screens, target) ? "modules" : target;
+    const safeTarget = (!mobileAccess && isPageGatedForRole(accessKey(target), authUser?.role)) || !canOpenMobileScreen(mobileAccess?.screens, accessKey(target)) ? "modules" : target;
     const nextDepth = depthRef.current + 1;
     depthRef.current = nextDepth;
-    window.history.pushState({ vxPage: safeTarget, vxDepth: nextDepth }, "");
+    // The record goes into the history entry too, so Back returns to the record that was open before (supplier > bill > back).
+    window.history.pushState({ vxPage: safeTarget, vxDepth: nextDepth, vxRecord: recordToOpen || null }, "");
+    setRecord(recordToOpen || null);
     setPage(safeTarget);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [authUser, mobileAccess]);
+
+  // Opens one invoice, bill, supplier, customer or return as a full page. kind: which kind of purchase bill.
+  const openRecord = useCallback((type, id, kind) => navigateTo(`${type}_detail`, { type, id, kind }), [navigateTo]);
 
   const goBack = useCallback(() => {
     if (depthRef.current > 0) window.history.back();
@@ -308,7 +328,7 @@ function MobileWorkspace() {
   // being on a non-root screen implies there's always something to go back
   // to -- no separate depth check needed here.
   const canGoBack = !ROOT_SCREENS.has(page);
-  const visiblePage = canOpenMobileScreen(mobileAccess?.screens, page) ? page : "modules";
+  const visiblePage = canOpenMobileScreen(mobileAccess?.screens, accessKey(page)) ? page : "modules";
 
   return (
     <Box className={workspaceClass} style={workspaceStyle}>
@@ -352,7 +372,7 @@ function MobileWorkspace() {
 
       {/* Global Search across Products, Customers, Invoices, Suppliers */}
       {isSearchOpen && (
-        <GlobalSearchModal onClose={() => setIsSearchOpen(false)} onNavigate={navigateTo} />
+        <GlobalSearchModal onClose={() => setIsSearchOpen(false)} onNavigate={navigateTo} onOpenRecord={openRecord} />
       )}
 
       {/* Sync Center - pending offline changes, manual retry */}
@@ -394,7 +414,7 @@ function MobileWorkspace() {
         )}
 
         {visiblePage === "sales" && (
-          <SalesScreen onNavigate={navigateTo} />
+          <SalesScreen onNavigate={navigateTo} onOpenRecord={openRecord} />
         )}
 
         {visiblePage === "create_invoice" && (
@@ -402,10 +422,22 @@ function MobileWorkspace() {
         )}
 
         {visiblePage === "purchase" && (
-          <PurchaseScreen onNavigate={navigateTo} />
+          <PurchaseScreen onNavigate={navigateTo} onOpenRecord={openRecord} />
         )}
 
-        {visiblePage === "returns" && <ReturnsScreen />}
+        {visiblePage === "returns" && <ReturnsScreen onOpenRecord={openRecord} />}
+
+        {visiblePage === "sale_detail" && record?.type === "sale" && <SaleDetailScreen key={record.id} saleId={record.id} />}
+
+        {visiblePage === "purchase_detail" && record?.type === "purchase" && (
+          <PurchaseDetailScreen key={`${record.kind}-${record.id}`} id={record.id} kind={record.kind === "invoice" ? "invoice" : "direct"} onOpenSupplier={(supplierId) => openRecord("supplier", supplierId)} />
+        )}
+
+        {visiblePage === "customers" && <CustomersScreen onOpenCustomer={(customerId) => openRecord("customer", customerId)} />}
+
+        {visiblePage === "customer_detail" && record?.type === "customer" && <CustomerDetailScreen key={record.id} customerId={record.id} onOpenSale={(saleId) => openRecord("sale", saleId)} />}
+
+        {visiblePage === "return_detail" && record?.type === "return" && <ReturnDetailScreen key={record.id} returnId={record.id} />}
 
         {visiblePage === "inventory" && (
           <InventoryScreen
@@ -421,7 +453,11 @@ function MobileWorkspace() {
           <ProductDetailScreen product={selectedProduct} onBack={goBack} />
         )}
 
-        {visiblePage === "suppliers" && <SuppliersScreen onNavigate={navigateTo} />}
+        {visiblePage === "suppliers" && <SuppliersScreen onNavigate={navigateTo} onOpenRecord={openRecord} />}
+
+        {visiblePage === "supplier_detail" && record?.type === "supplier" && (
+          <SupplierDetailScreen key={record.id} supplierId={record.id} onOpenBill={(kind, billId) => openRecord("purchase", billId, kind)} />
+        )}
 
         {visiblePage === "supplier_dues" && <SupplierDuesScreen />}
 
@@ -434,16 +470,6 @@ function MobileWorkspace() {
         {visiblePage === "sales_summary" && <SalesSummaryScreen />}
 
         {visiblePage === "purchase_summary" && <PurchaseSummaryScreen />}
-
-        {visiblePage === "attendance" && <AttendanceScreen />}
-
-        {visiblePage === "leave" && <LeaveScreen />}
-
-        {visiblePage === "payslips" && <PayslipsScreen />}
-
-        {visiblePage === "claims" && <ClaimsScreen />}
-
-        {visiblePage === "tax" && <TaxScreen />}
 
         {visiblePage === "reports" && <ReportsScreen onNavigate={navigateTo} />}
 

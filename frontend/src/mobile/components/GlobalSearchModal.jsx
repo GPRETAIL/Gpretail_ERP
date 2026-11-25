@@ -20,13 +20,10 @@ const EMPTY_RESULTS = { products: [], customers: [], sales: [], suppliers: [] };
  * has a stub `/expenses` call that 404s) - left out rather than shipping
  * a search category that can never return results.
  *
- * Row taps are informational only for now; "See All" jumps to that
- * category's list screen. None of Customers/Invoices/Suppliers has a
- * per-item detail screen to jump to yet (only Products does, via
- * InventoryScreen's product-tap flow), so keeping every category
- * consistent (list-level navigation only) beats wiring just one.
+ * A tap on a customer, invoice or supplier opens that record as a full page; "See All" jumps to the category's list.
+ * Products are still informational here (their detail page needs the stock row the Inventory list loads).
  */
-export default function GlobalSearchModal({ onClose, onNavigate }) {
+export default function GlobalSearchModal({ onClose, onNavigate, onOpenRecord }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState(EMPTY_RESULTS);
   const [loading, setLoading] = useState(false);
@@ -82,6 +79,12 @@ export default function GlobalSearchModal({ onClose, onNavigate }) {
     onClose();
     onNavigate(page);
   };
+  // A tap on a result opens that record itself, not just its list.
+  const openRecord = (type, id) => {
+    onClose();
+    onOpenRecord?.(type, id);
+  };
+  const rowSx = { display: "flex", alignItems: "center", justifyContent: "space-between", p: 1.25, borderRadius: "12px", bgcolor: "#f8fafc", border: "1px solid #f1f5f9", width: "100%", textAlign: "left", cursor: "pointer" };
 
   return (
     <Box sx={{ position: "fixed", inset: 0, zIndex: 85, bgcolor: "#fff", display: "flex", flexDirection: "column" }}>
@@ -134,10 +137,7 @@ export default function GlobalSearchModal({ onClose, onNavigate }) {
             {results.customers.length > 0 && (
               <ResultSection title="Customers" icon={Users} onSeeAll={() => goTo("customers")}>
                 {results.customers.map((c) => (
-                  <Box
-                    key={c.id}
-                    sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", p: 1.25, borderRadius: "12px", bgcolor: "#f8fafc", border: "1px solid #f1f5f9" }}
-                  >
+                  <Box component="button" type="button" key={c.id} aria-label={`Open customer ${c.name}`} onClick={() => openRecord("customer", c.id)} sx={rowSx}>
                     <Box sx={{ minWidth: 0 }}>
                       <Typography component="p" sx={{ fontSize: 12, fontWeight: 700, color: "#1e293b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.name}</Typography>
                       <Typography component="p" sx={{ fontSize: 10, color: "#94a3b8" }}>{c.phone || c.email || "—"}</Typography>
@@ -150,10 +150,7 @@ export default function GlobalSearchModal({ onClose, onNavigate }) {
             {results.sales.length > 0 && (
               <ResultSection title="Invoices" icon={FileText} onSeeAll={() => goTo("sales")}>
                 {results.sales.map((s) => (
-                  <Box
-                    key={s.id}
-                    sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", p: 1.25, borderRadius: "12px", bgcolor: "#f8fafc", border: "1px solid #f1f5f9" }}
-                  >
+                  <Box component="button" type="button" key={s.id} aria-label={`Open invoice ${s.invoice_no}`} onClick={() => openRecord("sale", s.id)} sx={rowSx}>
                     <Box sx={{ minWidth: 0 }}>
                       <Typography component="p" sx={{ fontSize: 12, fontWeight: 700, color: "#1e293b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.invoice_no}</Typography>
                       <Typography component="p" sx={{ fontSize: 10, color: "#94a3b8", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.customer?.name || "Walking customer"}</Typography>
@@ -167,10 +164,7 @@ export default function GlobalSearchModal({ onClose, onNavigate }) {
             {results.suppliers.length > 0 && (
               <ResultSection title="Suppliers" icon={Store} onSeeAll={() => goTo("suppliers")}>
                 {results.suppliers.map((s) => (
-                  <Box
-                    key={s.id}
-                    sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", p: 1.25, borderRadius: "12px", bgcolor: "#f8fafc", border: "1px solid #f1f5f9" }}
-                  >
+                  <Box component="button" type="button" key={s.id} aria-label={`Open supplier ${s.name}`} onClick={() => openRecord("supplier", s.id)} sx={rowSx}>
                     <Box sx={{ minWidth: 0 }}>
                       <Typography component="p" sx={{ fontSize: 12, fontWeight: 700, color: "#1e293b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.name}</Typography>
                       <Typography component="p" sx={{ fontSize: 10, color: "#94a3b8" }}>{s.phone || s.gstin || "—"}</Typography>

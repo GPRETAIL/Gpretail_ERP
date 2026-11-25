@@ -41,7 +41,7 @@ const DATE_RANGE_OPTIONS = [
 /**
  * Return Invoices list screen - fetches real data from GET /pos-returns.
  */
-export default function ReturnsScreen() {
+export default function ReturnsScreen({ onOpenRecord }) {
   const [search, setSearch] = useState("");
   const [dateRange, setDateRange] = useState("all");
   const [showDateFilter, setShowDateFilter] = useState(false);
@@ -136,7 +136,8 @@ export default function ReturnsScreen() {
             const status = String(ret.status || "completed").toLowerCase();
 
             return (
-              <Box key={ret.id} className="vx-trans-card">
+              <Box component="button" type="button" key={ret.id} className="vx-trans-card" aria-label={`Open return ${id}`}
+                onClick={() => onOpenRecord?.("return", ret.id)} sx={{ width: "100%", textAlign: "left", cursor: "pointer" }}>
                 <Box className="vx-trans-left">
                   <Box component="span" className="vx-trans-id">{id}</Box>
                   <Box component="span" className="vx-trans-meta">{customer}</Box>
