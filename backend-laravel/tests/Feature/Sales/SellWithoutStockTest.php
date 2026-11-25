@@ -3,6 +3,8 @@
 namespace Tests\Feature\Sales;
 
 use App\Models\Customer;
+use App\Models\Product;
+use App\Models\Store;
 use App\Models\User;
 use App\Services\Inventory\StockService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -50,9 +52,9 @@ class SellWithoutStockTest extends TestCase
 
     public function test_unstocked_catalog_remains_store_scoped_and_excludes_inactive_items(): void
     {
-        $other = \App\Models\Store::create(['name' => 'Other Catalog Store', 'code' => 'OTHER-CATALOG']);
+        $other = Store::create(['name' => 'Other Catalog Store', 'code' => 'OTHER-CATALOG']);
         foreach ([[$other->id, true], [$this->fixture['store']->id, false]] as [$companyId, $active]) {
-            \App\Models\Product::create(['company_id' => $companyId, 'name' => 'Hidden Catalog Item', 'code' => 'HIDDEN-'.$companyId, 'mrp' => 100, 'selling_price' => 100, 'is_active' => $active]);
+            Product::create(['company_id' => $companyId, 'name' => 'Hidden Catalog Item', 'code' => 'HIDDEN-'.$companyId, 'mrp' => 100, 'selling_price' => 100, 'is_active' => $active]);
         }
         $this->switchTo(true);
         $this->getJson('/api/pos-sales/stock-products?search=Hidden')->assertOk()->assertJsonCount(0, 'data');
@@ -110,6 +112,23 @@ class SellWithoutStockTest extends TestCase
         // Cancelling the bill puts back everything it took.
         $this->deleteJson("/api/pos-sales/$saleId")->assertOk();
         $this->assertSame(1005.0, $this->stock());
+    }
+
+    public function test_selling_again_while_the_stock_is_already_negative_takes_it_further_down_and_cancelling_gives_it_back(): void
+    {
+        $this->switchTo(true);
+        DB::table('stocks')->where('variant_id', $this->item['variantId'])->update(['quantity' => -4, 'available_quantity' => -4]);
+        DB::table('stock_batches')->where('variant_id', $this->item['variantId'])->update(['remaining_qty' => 0]);
+
+        $first = $this->sell(1)->assertCreated()->json('data.id');
+        $this->assertSame(-5.0, $this->stock(), 'minus 4, one more sold: minus 5');
+        $this->assertSame(1.0, (float) DB::table('pos_sale_items')->where('pos_sale_id', $first)->value('short_qty'), 'the whole piece was not in stock');
+        $second = $this->sell(3)->assertCreated()->json('data.id');
+        $this->assertSame(-8.0, $this->stock());
+        $this->assertSame(0.0, $this->onShelf(), 'nothing on the shelf to take');
+
+        $this->deleteJson("/api/pos-sales/$second")->assertOk();
+        $this->assertSame(-5.0, $this->stock(), 'cancelling the second bill brings back its 3');
     }
 
     public function test_dealer_invoices_follow_the_switch_and_mark_the_short_quantity(): void

@@ -6,6 +6,7 @@ import CashNotOpenedBanner from "@/features/sales/pos/components/CashNotOpenedBa
 import LoyaltyRedeemPanel from "@/features/sales/pos/components/LoyaltyRedeemPanel";
 import GiftCreditPanel from "@/features/sales/pos/components/GiftCreditPanel";
 import HeldBillsDialog from "@/features/sales/pos/components/HeldBillsDialog";
+import BillingShortcutsHelp from "@/features/sales/pos/components/BillingShortcutsHelp";
 import { addHeldBill, heldBillLabel, heldBillsKey, loadHeldBills, makeHeldBill, removeHeldBill, saveHeldBills } from "@/features/sales/pos/utils/heldBills";
 import { loyaltyRedeemPayload } from "@/features/sales/pos/utils/loyaltyRedeem";
 import { lastScannedLineId, parseQuantityShortcut } from "@/features/sales/pos/utils/quantityShortcut";
@@ -2582,7 +2583,10 @@ const PosSales = () => {
           <Box sx={{ borderBottom: 1, borderColor: "divider", bgcolor: "background.paper", px: 1.5, py: 1.5 }}>
             <Stack direction="row" sx={{ flexWrap: "wrap", alignItems: "flex-end", gap: 1 }}>
               <Box sx={{ width: "100%", minWidth: { md: 220 }, flex: 1 }}>
-                <Typography component="label" sx={{ mb: 0.5, display: "block", fontSize: TYPE.label, fontWeight: 700, color: "error.main" }}>Barcode</Typography>
+                <Box sx={{ mb: 0.5, display: "flex", alignItems: "center" }}>
+                  <Typography component="label" sx={{ display: "block", fontSize: TYPE.label, fontWeight: 700, color: "error.main" }}>Barcode</Typography>
+                  <BillingShortcutsHelp />
+                </Box>
                 <TextField
                   inputRef={barcodeInputRef}
                   type="text"
@@ -2666,9 +2670,6 @@ const PosSales = () => {
               </Box>
             </Stack>
             {selectedStockHint ? <Typography sx={{ mt: 1, fontSize: TYPE.small, color: "text.secondary" }}>{selectedStockHint}</Typography> : null}
-            <Typography sx={{ mt: 0.75, fontSize: TYPE.small, color: "text.secondary" }} data-testid="pos-quantity-hint">
-              Many pieces: type <b>10*</b> then scan, or type <b>*10</b> + Enter to change the last item, or <b>*10+2</b> (also <b>*10,2</b> or <b>*10=2</b>) to make S.No 2 ten pieces. Also C customer, D discount, H hold the bill, R held bills, 0 save and print.
-            </Typography>
           </Box>
 
           <Box sx={{ flex: 1, minHeight: 0, overflowX: "auto" }}>
