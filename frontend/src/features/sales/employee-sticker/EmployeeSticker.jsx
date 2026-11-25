@@ -3,7 +3,7 @@ import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Stack, TextField, ToggleButton, ToggleButtonGroup } from "@mui/material";
-import { Eye, Printer } from "lucide-react";
+import { Eye, Printer, Ruler } from "lucide-react";
 import api from "@/shared/api/apiClient";
 import PageHeader from "@/shared/components/PageHeader";
 import Breadcrumbs from "@/shared/components/Breadcrumbs";
@@ -15,11 +15,14 @@ import { usePrintContext } from "@/features/printing/context/PrintContext";
 import { DEFAULT_WAREHOUSE_BARCODE_CUSTOMIZATION, fetchWarehouseBarcodeCustomization } from "@/features/warehouse/barcodes/utils/barcodeCustomisation";
 import { buildBarcodeSheetPreviewHtml, buildLabelQrSources, printWarehouseBarcodeLabels } from "@/features/warehouse/barcodes/BarcodeGeneration";
 import { employeeStickerLabels } from "@/features/sales/employee-sticker/utils/employeeStickerLabels";
+import { applyEmployeeStickerSize, effectiveEmployeeStickerSize, formatEmployeeStickerSize } from "@/features/sales/employee-sticker/utils/employeeStickerSize";
+import EmployeeStickerSizeDialog from "@/features/sales/employee-sticker/components/EmployeeStickerSizeDialog";
 
 /**
  * Sales > Employee Sticker: a QR or barcode sticker per salesperson. At the POS the Salesperson field reads it, so each
  * sold item is credited to the employee (Incentive report, payroll's Sales Incentive). Printed like product stickers:
- * same label size, printer and print mode (Warehouse > Barcode Customisation).
+ * same printer, margins, font and print mode (Warehouse > Barcode Customisation). The sticker size is its own setting
+ * (Sticker size, saved in Sales Customisation); until it is set, the product sticker size is used.
  */
 export default function EmployeeSticker() {
   const navigate = useNavigate();
@@ -30,9 +33,13 @@ export default function EmployeeSticker() {
   const [selected, setSelected] = useState([]);
   const [copies, setCopies] = useState({});
   const [codeType, setCodeType] = useState(null); // null until the store's sticker setting is known
-  const [customization, setCustomization] = useState(DEFAULT_WAREHOUSE_BARCODE_CUSTOMIZATION);
+  const [productCustomization, setCustomization] = useState(DEFAULT_WAREHOUSE_BARCODE_CUSTOMIZATION);
+  const [savedSize, setSavedSize] = useState(null); // this store's employee sticker size, or null = product sticker size
+  const [sizeOpen, setSizeOpen] = useState(false);
   const [printing, setPrinting] = useState(false);
   const [preview, setPreview] = useState("");
+  const customization = useMemo(() => applyEmployeeStickerSize(productCustomization, savedSize), [productCustomization, savedSize]);
+  const sizeLabel = formatEmployeeStickerSize(effectiveEmployeeStickerSize(savedSize, productCustomization));
   const grid = useSearchGrid({ sourceRows: people, paginationMode: "client", scopeKey: String(authUser?.store_id || "") });
   const { page, limit, setPage, setLimit } = grid;
   const storeName = String(authUser?.company_name || "").trim() || "Store";
@@ -59,6 +66,16 @@ export default function EmployeeSticker() {
     fetchWarehouseBarcodeCustomization(api, authUser?.company_id || undefined).then((config) => alive && setCustomization(config));
     return () => { alive = false; };
   }, [authUser?.company_id]);
+
+  useEffect(() => {
+    let alive = true;
+    // The same store the size is saved for (the save sends companyId = the store).
+    api.get("/sales-customization", { params: { company_id: authUser?.store_id } }).then((res) => {
+      const size = res.data?.data?.employeeSticker;
+      if (alive) setSavedSize(size && typeof size === "object" ? size : null);
+    }).catch(() => {});
+    return () => { alive = false; };
+  }, [authUser?.store_id]);
 
   const chosen = useMemo(() => people.filter((person) => selected.includes(person.id)), [people, selected]);
   const labels = useMemo(() => employeeStickerLabels(chosen, copies, printAs), [chosen, copies, printAs]);
@@ -110,6 +127,9 @@ export default function EmployeeSticker() {
               <ToggleButton value="code">QR code</ToggleButton>
               <ToggleButton value="barcode">Barcode</ToggleButton>
             </ToggleButtonGroup>
+            <Button size="small" variant="outlined" startIcon={<Ruler size={15} />} onClick={() => setSizeOpen(true)} aria-label={`Sticker size, now ${sizeLabel}`}>
+              Sticker size: {sizeLabel}
+            </Button>
             <Button size="small" startIcon={<Eye size={15} />} disabled={!labels.length} onClick={() => void showPreview()}>Preview</Button>
             <Button variant="contained" size="small" startIcon={<Printer size={15} />} disabled={!labels.length || printing} onClick={() => void print()}>
               {printing ? "Printing..." : `Print${labels.length ? ` (${labels.length})` : ""}`}
@@ -145,6 +165,11 @@ export default function EmployeeSticker() {
           />
         </SearchGridPanel>
       </Box>
+
+      {sizeOpen && (
+        <EmployeeStickerSizeDialog open onClose={() => setSizeOpen(false)} saved={savedSize} product={productCustomization}
+          storeId={authUser?.store_id} onSaved={setSavedSize} />
+      )}
 
       <Dialog open={Boolean(preview)} onClose={() => setPreview("")} maxWidth="md" fullWidth aria-labelledby="sticker-preview-title">
         <DialogTitle id="sticker-preview-title">Sticker preview</DialogTitle>

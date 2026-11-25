@@ -162,12 +162,16 @@ class SettingsController extends Controller
                 $locked = Store::whereKey($store->id)->lockForUpdate()->firstOrFail();
                 $incoming = $request->except(['companyId', 'company_id', 'settingsSection']);
                 if ($request->has('settingsSection')) {
-                    $salesKeys = ['billNumberReset', 'billNumberOverride', 'settlementNumberReset', 'settlementNumberOverride', 'saleSaveAs', 'posPaymentDialogVisible', 'posSalespersonScan', 'deliveryVerifyAll', 'billingDateAfterClosing', 'billingDateChangers', 'reprintReasonAfter', 'reprintCopyLabels', 'requireCashOpening', 'cashOpeningCheck', 'creditNoteExpiryDays', 'paymentDialogPages'];
+                    $salesKeys = ['billNumberReset', 'billNumberOverride', 'settlementNumberReset', 'settlementNumberOverride', 'saleSaveAs', 'posPaymentDialogVisible', 'posSalespersonScan', 'deliveryVerifyAll', 'billingDateAfterClosing', 'billingDateChangers', 'reprintReasonAfter', 'reprintCopyLabels', 'requireCashOpening', 'cashOpeningCheck', 'creditNoteExpiryDays', 'paymentDialogPages', 'employeeSticker'];
                     $receiptKeys = ['showBarcodeOnBill', 'showBarcodeOnReturnSlip', 'receiptCodeType', 'showDiscountOnReceipt', 'discountDisplayMode', 'showTaxTableOnReceipt', 'receiptWidthInches', 'thankYouMessage', 'receiptFontFamily', 'receiptFormat', 'printMode', 'paymentQrMode', 'paymentUpiId', 'paymentQrImageUrl', 'paymentQrSize', 'posReceiptPrintCopies', 'generalFields', 'taxFields', 'productFields'];
                     $allowed = $request->input('settingsSection') === 'sales' ? $salesKeys : $receiptKeys;
                     $incoming = array_intersect_key($incoming, array_flip($allowed));
                     if (array_key_exists('cashOpeningCheck', $incoming) && ! in_array($incoming['cashOpeningCheck'], \App\Services\Sales\CashRegisterService::CASH_OPENING_MODES, true)) {
                         unset($incoming['cashOpeningCheck']);
+                    }
+                    // Employee sticker size: numbers inside the allowed ranges, or null for "same as product stickers".
+                    if (array_key_exists('employeeSticker', $incoming)) {
+                        $incoming['employeeSticker'] = \App\Support\EmployeeStickerSize::sanitize($incoming['employeeSticker']);
                     }
                     // Days a credit note lasts (0 = never expires). Anything else keeps what is saved.
                     if (array_key_exists('creditNoteExpiryDays', $incoming)) {
