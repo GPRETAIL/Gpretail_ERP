@@ -88,8 +88,21 @@ KEEP_DOWN=0
 "$PHP" artisan view:cache
 "$PHP" artisan queue:restart
 "$PHP" artisan up
-if ! curl --fail --silent --show-error --max-time 20 https://dev.gpsoftware.in/up >/dev/null; then
+# /api/health answers 503 in maintenance mode and 200 when the app is live (/up serves the web page either way). One slow
+# answer must not take a healthy site down again (run #459: the host stalled for a few minutes right after the deploy),
+# so it is asked up to 4 times before the site is put back into maintenance.
+LIVE=0
+for attempt in 1 2 3 4; do
+  if curl --fail --silent --show-error --max-time 20 https://dev.gpsoftware.in/api/health >/dev/null; then
+    LIVE=1
+    break
+  fi
+  sleep 15
+done
+if [ "$LIVE" != "1" ]; then
+  trap - ERR
   "$PHP" artisan down --retry=60
+  echo '::error::The site did not answer /api/health after 4 tries; it was put back into maintenance mode'
   exit 1
 fi
 rm -- "$ARCHIVE" "$RECOVERY_DIR/backup-erp.php"
