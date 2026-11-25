@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
-import { Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, MenuItem, Stack, Switch, TextField, Typography } from "@mui/material";
+import { Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, MenuItem, Stack, Switch, TextField, Typography } from "@mui/material";
 import { LocateFixed } from "lucide-react";
 import api from "@/shared/api/apiClient";
 import { errorMessage } from "../utils/hrStatus";
 import LoadingSkeleton from "@/shared/components/LoadingSkeleton";
+import InfoHint from "@/shared/components/InfoHint";
 
 const listOf = (payload) => (Array.isArray(payload) ? payload : Array.isArray(payload?.data) ? payload.data : []);
 
@@ -97,11 +98,11 @@ export default function AttendanceSettingsDialog({ onClose }) {
               {form.lat !== "" && <Button size="small" color="inherit" onClick={() => setForm((prev) => ({ ...prev, lat: "", lng: "" }))}>Clear location</Button>}
             </Stack>
             <Typography variant="subtitle2">Selfie with check-in</Typography>
-            <FormControlLabel control={<Switch checked={Boolean(form.selfie_required)} onChange={(e) => setForm((prev) => ({ ...prev, selfie_required: e.target.checked }))} />}
+            <Box sx={{ display: "flex", alignItems: "center" }}>
+              <FormControlLabel control={<Switch checked={Boolean(form.selfie_required)} onChange={(e) => setForm((prev) => ({ ...prev, selfie_required: e.target.checked }))} />}
               label="Ask for a photo with every check in and check out" />
-            <Typography variant="caption" sx={{ color: "text.secondary", mt: "-8px !important" }}>
-              Staff take the photo with the phone camera in the HRMS app. The photo is kept privately with the punch and shown in the Punch log to people who can see that employee's attendance. Check-ins made by a manager or imported need no photo.
-            </Typography>
+              <InfoHint label="About the check-in photo">Staff take the photo with the phone camera in the HRMS app. The photo is kept privately with the punch and shown in the Punch log to people who can see that employee's attendance. Check-ins made by a manager or imported need no photo.</InfoHint>
+            </Box>
           </Stack>
         )}
       </DialogContent>

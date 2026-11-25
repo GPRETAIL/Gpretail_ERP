@@ -13,6 +13,7 @@ import FilterableDataTable from "@/shared/components/FilterableDataTable";
 import Breadcrumbs from "@/shared/components/Breadcrumbs";
 import { createGroupFetchers } from "@/shared/utils/serverGrouping";
 import { Box, Stack, Typography, TextField, MenuItem, IconButton, Button, Checkbox, Radio, Table, TableHead, TableBody, TableRow, TableCell, alpha } from "@mui/material";
+import InfoHint from "@/shared/components/InfoHint";
 
 // Matches config('pagination.resources.sales_approvals.groupable_columns') on the backend.
 const { onFetchGroupSummaries: fetchApprovalGroupSummaries, onFetchGroupRows: fetchApprovalGroupRows } =
@@ -1835,10 +1836,10 @@ const SalesOnApproval = () => {
           >
             <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", borderBottom: 1, borderColor: "divider", px: 2.5, py: 2 }}>
               <Box>
-                <Typography sx={{ fontSize: 12.25, fontWeight: 600, color: "text.primary" }}>Quick Customer</Typography>
-                <Typography sx={{ fontSize: TYPE.small, color: "text.secondary" }}>
-                  Press Enter to move to next field. On mobile number Enter, existing customers appear below.
-                </Typography>
+                <Box sx={{ display: "flex", alignItems: "center" }}>
+                  <Typography sx={{ fontSize: 12.25, fontWeight: 600, color: "text.primary" }}>Quick Customer</Typography>
+                  <InfoHint label="About Quick Customer">Press Enter to move to next field. On mobile number Enter, existing customers appear below.</InfoHint>
+                </Box>
               </Box>
               <IconButton
                 type="button"
@@ -2108,10 +2109,10 @@ const SalesOnApproval = () => {
           >
             <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", borderBottom: 1, borderColor: "divider", px: 2.5, py: 2 }}>
               <Box>
-                <Typography sx={{ fontSize: 12.25, fontWeight: 600, color: "text.primary" }}>Sale Discount</Typography>
-                <Typography sx={{ fontSize: TYPE.small, color: "text.secondary" }}>
-                  Select sale rows and apply a discount percentage to the current approval bill.
-                </Typography>
+                <Box sx={{ display: "flex", alignItems: "center" }}>
+                  <Typography sx={{ fontSize: 12.25, fontWeight: 600, color: "text.primary" }}>Sale Discount</Typography>
+                  <InfoHint label="About Sale Discount">Select sale rows and apply a discount percentage to the current approval bill.</InfoHint>
+                </Box>
               </Box>
               <IconButton
                 type="button"

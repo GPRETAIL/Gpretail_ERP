@@ -36,6 +36,7 @@ import {
 } from "./utils/barcodeCustomisation";
 import { Box, Stack, Typography, TextField, MenuItem, Button, Radio, Switch, Table, TableHead, TableBody, TableRow, TableCell, CircularProgress, alpha } from "@mui/material";
 import { muiFieldSx } from "@/shared/theme/formControlSizes";
+import InfoHint from "@/shared/components/InfoHint";
 
 const settingsCardSx = { borderRadius: "10.5px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", boxShadow: 1, p: 2.5 };
 const settingsFieldLabelSx = { display: "block", mb: 0.5, fontSize: 11.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "text.secondary" };
@@ -741,10 +742,10 @@ export default function BarcodeCustomisation() {
           </Box>
 
           <Box sx={settingsCardSx}>
-            <Typography component="label" sx={settingsFieldLabelSx}>Printing Mode (Direct / Silent vs Browser Default)</Typography>
-            <Typography sx={{ mb: 1.5, maxWidth: 640, fontSize: 12.25, lineHeight: 1.6, color: "text.secondary" }}>
-              Choose whether barcode stickers print directly to your thermal printer in the background (no popup) or open the browser print preview dialog.
-            </Typography>
+            <Box sx={{ display: "flex", alignItems: "center", mb: 1.5 }}>
+              <Typography component="label" sx={settingsFieldLabelSx}>Printing Mode (Direct / Silent vs Browser Default)</Typography>
+              <InfoHint label="About Printing Mode (Direct / Silent vs Browser Default)">Choose whether barcode stickers print directly to your thermal printer in the background (no popup) or open the browser print preview dialog.</InfoHint>
+            </Box>
             <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)" }, gap: 1.5 }}>
               {WAREHOUSE_PRINT_MODE_OPTIONS.map((option) => (
                 <Stack
@@ -794,10 +795,10 @@ export default function BarcodeCustomisation() {
           </Box>
 
           <Box sx={settingsCardSx}>
-            <Typography component="label" sx={settingsFieldLabelSx}>Barcode and QR Code Format</Typography>
-            <Typography sx={{ mb: 1.5, maxWidth: 640, fontSize: 12.25, lineHeight: 1.6, color: "text.secondary" }}>
-              Choose the overall look of the printed receipt: border and divider style, spacing, and how the header and total are emphasised. Applies to the preview on the right and every Barcode print.
-            </Typography>
+            <Box sx={{ display: "flex", alignItems: "center", mb: 1.5 }}>
+              <Typography component="label" sx={settingsFieldLabelSx}>Barcode and QR Code Format</Typography>
+              <InfoHint label="About Barcode and QR Code Format">Choose the overall look of the printed receipt: border and divider style, spacing, and how the header and total are emphasised. Applies to the preview on the right and every Barcode print.</InfoHint>
+            </Box>
             <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", xl: "repeat(5, 1fr)" }, gap: 1.5 }}>
               {WAREHOUSE_LABEL_FORMAT_OPTIONS.map((option) => (
                 <Stack

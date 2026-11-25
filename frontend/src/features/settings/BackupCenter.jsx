@@ -41,6 +41,7 @@ import ConfirmDialog from "@/shared/components/ConfirmDialog";
 import FilterableDataTable from "@/shared/components/FilterableDataTable";
 import PageSkeleton from "@/shared/components/PageSkeleton";
 import { FIELD_HEIGHT, muiFieldSx } from "@/shared/theme/formControlSizes";
+import InfoHint from "@/shared/components/InfoHint";
 
 const MODULE_LABELS = { crm: "CRM", hrms: "HRMS" };
 
@@ -827,10 +828,10 @@ export default function BackupCenter() {
       <Box sx={{ borderBottom: 1, borderColor: "divider", bgcolor: "background.paper", px: 2, py: 1.5, boxShadow: 1 }}>
         <Stack direction={{ xs: "column", lg: "row" }} spacing={1.5} sx={{ alignItems: { lg: "center" }, justifyContent: { lg: "space-between" } }}>
           <Box>
-            <Typography component="h1" sx={{ fontSize: 13, fontWeight: 600, color: "text.primary" }}>Settings / Backup Center</Typography>
-            <Typography sx={{ mt: 0.5, fontSize: 12.25, color: "text.secondary" }}>
-              Full, incremental and module-wise backups with restore, import, scheduling, retention and audit history.
-            </Typography>
+            <Box sx={{ display: "flex", alignItems: "center" }}>
+              <Typography component="h1" sx={{ fontSize: 13, fontWeight: 600, color: "text.primary" }}>Settings / Backup Center</Typography>
+              <InfoHint label="About Settings / Backup Center">Full, incremental and module-wise backups with restore, import, scheduling, retention and audit history.</InfoHint>
+            </Box>
           </Box>
           <Stack direction="row" spacing={1.5} sx={{ width: { xs: "100%", lg: "auto" }, flexShrink: 0, alignItems: "flex-end" }}>
             <Box sx={{ flex: 1, minWidth: { xs: 0, lg: 220 } }}>

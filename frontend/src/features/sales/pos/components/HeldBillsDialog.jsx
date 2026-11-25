@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Stack, Typography } from "@mui/material";
 import { heldAtText, waitedText } from "../utils/heldBills";
+import InfoHint from "@/shared/components/InfoHint";
 
 const money = (value) => Number(value || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -64,12 +65,9 @@ function HeldBillsBody({ bills, listRef, onResume, onDelete, onClearAll, onClose
             Delete all {bills.length} held bill{bills.length === 1 ? "" : "s"}? This cannot be undone.
           </Alert>
         )}
-        <Typography sx={{ fontSize: 12, color: "text.secondary", mt: 1.5 }}>
-          Keys: Up and Down choose, Enter resumes, 1 to 9 resumes that bill, Delete removes, Shift+Delete clears all.
-        </Typography>
-        <Typography sx={{ fontSize: 12, color: "text.secondary", mt: 0.5 }}>
-          A held bill is only kept on this computer for one day. It has no bill number and takes nothing out of stock until it is saved.
-        </Typography>
+        <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 1 }}>
+          <InfoHint label="About held bills" title="Held bills"><p>Keys: Up and Down choose, Enter resumes, 1 to 9 resumes that bill, Delete removes, Shift+Delete clears all.</p><p>A held bill is only kept on this computer for one day. It has no bill number and takes nothing out of stock until it is saved.</p></InfoHint>
+        </Box>
       </DialogContent>
       <DialogActions sx={{ justifyContent: "space-between" }}>
         <Button color="error" disabled={!bills.length || confirmingClear} onClick={() => setConfirmingClear(true)}>Clear all</Button>

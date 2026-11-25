@@ -10,6 +10,7 @@ import FilterableDataTable from "@/shared/components/FilterableDataTable";
 import PageHeader from "@/shared/components/PageHeader";
 import SearchGridPanel from "@/shared/components/SearchGridPanel";
 import useSearchGrid from "@/shared/hooks/useSearchGrid";
+import InfoHint from "@/shared/components/InfoHint";
 
 const CLIENTS = { web: "Web", mobile: "Mobile app", staff: "Staff app (HR)", failover: "Counter (cloud failover)" };
 const when = (value) => (value ? new Date(value).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" }) : "-");
@@ -99,9 +100,7 @@ export default function LoginSessions() {
       <Stack direction={{ xs: "column", sm: "row" }} spacing={1} sx={{ alignItems: { sm: "center" } }}>
         <Chip label={`${rows.length} signed in`} />
         <Chip color="success" variant="outlined" label={`${activeNow} active now`} />
-        <Typography variant="caption" sx={{ color: "text.secondary" }}>
-          Ending a session signs that device out on its next action. Sessions are per server: on-prem and cloud each list their own.
-        </Typography>
+        <InfoHint label="About ending a session">Ending a session signs that device out on its next action. Sessions are per server: on-prem and cloud each list their own.</InfoHint>
       </Stack>
       <SearchGridPanel>
         <FilterableDataTable

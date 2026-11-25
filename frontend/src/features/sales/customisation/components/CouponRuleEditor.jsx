@@ -1,5 +1,6 @@
 import { Box, FormControlLabel, MenuItem, Switch, TextField, Typography } from "@mui/material";
 import { normalizeCouponRule, couponRuleSummary } from "../utils/couponRule";
+import InfoHint from "@/shared/components/InfoHint";
 
 /**
  * Sales Customisation: the coupon given when a bill is settled. The coupon is printed on the receipt, used whole on a
@@ -16,11 +17,10 @@ export default function CouponRuleEditor({ value, onChange, fieldLabelSx, helpSx
 
   return (
     <Box>
-      <Typography sx={fieldLabelSx}>Coupon on a paid bill</Typography>
-      <Typography sx={helpSx}>
-        When a bill is paid in full, the customer can get a coupon for a later bill. It is printed on the receipt and used once, whole.
-        A bill that is left on credit or saved offline does not earn one, and what a bill paid with coupons is not counted towards the next coupon.
-      </Typography>
+      <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
+        <Typography sx={fieldLabelSx}>Coupon on a paid bill</Typography>
+        <InfoHint label="About coupons on a paid bill">When a bill is paid in full, the customer can get a coupon for a later bill. It is printed on the receipt and used once, whole. A bill that is left on credit or saved offline does not earn one, and what a bill paid with coupons is not counted towards the next coupon.</InfoHint>
+      </Box>
       <FormControlLabel control={<Switch checked={rule.enabled} onChange={(event) => set({ enabled: event.target.checked })} />} label="Give a coupon" />
       <Box sx={{ display: "grid", gap: 1.5, gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, mt: 1, maxWidth: 560 }}>
         {field("minBill", "Bill amount needed")}

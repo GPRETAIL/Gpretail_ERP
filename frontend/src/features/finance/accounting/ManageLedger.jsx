@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { toast } from "react-toastify";
 import {
-  Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, IconButton, MenuItem, Paper, Stack, Switch,
+  Box, Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, IconButton, MenuItem, Paper, Stack, Switch,
   Table, TableBody, TableCell, TableHead, TableRow, TextField, Tooltip, Typography,
 } from "@mui/material";
 import { Pencil, Plus, RotateCw } from "lucide-react";
@@ -9,6 +9,7 @@ import api from "@/shared/api/apiClient";
 import { DateFilters, FinanceReportLayout } from "./components/FinanceReportLayout";
 import LedgerStatementDialog from "./components/LedgerStatementDialog";
 import { drCr, errorText, money, today, useFinanceReport } from "./utils/financeUtils";
+import InfoHint from "@/shared/components/InfoHint";
 
 const PARTY_LABEL = { supplier: "Supplier", customer: "Customer", store: "Store" };
 
@@ -128,9 +129,7 @@ export default function ManageLedger() {
         </Tooltip>
         <Button size="small" variant="contained" startIcon={<Plus size={14} />} onClick={() => setEditing("new")}>New ledger</Button>
       </>}>
-      <Typography variant="body2" color="text.secondary">
-        Bills, returns, purchases, supplier payments and transfers post here automatically. Supplier, customer and store ledgers are created on first use.
-      </Typography>
+      <Box sx={{ display: "flex", justifyContent: "flex-end" }}><InfoHint label="About ledgers">Bills, returns, purchases, supplier payments and transfers post here automatically. Supplier, customer and store ledgers are created on first use.</InfoHint></Box>
       <Paper variant="outlined" sx={{ overflow: "auto", flex: 1, minHeight: 0 }}>
         <Table size="small" stickyHeader>
           <TableHead>

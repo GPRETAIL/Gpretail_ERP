@@ -22,6 +22,7 @@ import api from "@/shared/api/apiClient";
 import { fetchAndApplyRuntimeRoutingConfig } from "@/shared/api/runtimeRouting";
 import { muiFieldSx } from "@/shared/theme/formControlSizes";
 import OnPremConnectionCard from "./OnPremConnectionCard";
+import InfoHint from "@/shared/components/InfoHint";
 
 const cardSx = { borderRadius: "7px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", boxShadow: 1 };
 
@@ -244,12 +245,12 @@ export default function ConfigureLocalServer() {
     <Stack spacing={3} sx={{ p: { xs: 2, md: 3 } }}>
       <Stack direction={{ xs: "column", md: "row" }} spacing={1.5} sx={{ alignItems: { md: "flex-start" }, justifyContent: { md: "space-between" } }}>
         <Box>
-          <Typography component="h1" sx={{ fontSize: { xs: 17.5, md: 21 }, fontWeight: 600, color: "text.primary" }}>
+          <Box sx={{ display: "flex", alignItems: "center" }}>
+            <Typography component="h1" sx={{ fontSize: { xs: 17.5, md: 21 }, fontWeight: 600, color: "text.primary" }}>
             Configure Local Server
           </Typography>
-          <Typography sx={{ mt: 0.5, fontSize: 12.25, color: "text.secondary" }}>
-            Save this store's local server address so devices can use it when available and automatically fail over to the cloud if it goes down.
-          </Typography>
+            <InfoHint label="About Configure Local Server">Save this store's local server address so devices can use it when available and automatically fail over to the cloud if it goes down.</InfoHint>
+          </Box>
         </Box>
 
         <Button
@@ -309,10 +310,10 @@ export default function ConfigureLocalServer() {
           />
         ) : (
         <Box component="section" sx={{ ...cardSx, p: { xs: 2, md: 2.5 } }}>
-          <Typography component="h2" sx={{ fontSize: 14, fontWeight: 600, color: "text.primary" }}>Local Server Address</Typography>
-          <Typography sx={{ mt: 0.5, fontSize: 12.25, color: "text.secondary" }}>
-            This store's on-prem install runs the same application as the cloud. Enter the address other devices on this network use to reach it, then save.
-          </Typography>
+          <Box sx={{ display: "flex", alignItems: "center" }}>
+            <Typography component="h2" sx={{ fontSize: 14, fontWeight: 600, color: "text.primary" }}>Local Server Address</Typography>
+            <InfoHint label="About Local Server Address">This store's on-prem install runs the same application as the cloud. Enter the address other devices on this network use to reach it, then save.</InfoHint>
+          </Box>
 
           <Stack spacing={2} sx={{ mt: 2 }}>
             <Box>

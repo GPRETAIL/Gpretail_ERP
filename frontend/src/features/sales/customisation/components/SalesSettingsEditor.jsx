@@ -57,6 +57,7 @@ import {
 } from "@/features/sales/customisation/utils/salesReceiptCustomisation";
 import { Box, Stack, Typography, TextField, Button, IconButton, Switch, FormControlLabel, Table, TableHead, TableBody, TableRow, TableCell, Dialog, DialogTitle, DialogContent, Tabs, Tab, MenuItem, alpha } from "@mui/material";
 import { FIELD_HEIGHT, muiFieldSx } from "@/shared/theme/formControlSizes";
+import InfoHint from "@/shared/components/InfoHint";
 
 const fieldLabelSx = { mb: 0.5, display: "block", fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "text.secondary" };
 const baseCardSx = { borderRadius: "14px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", boxShadow: 1 };
@@ -531,10 +532,10 @@ const ReceiptPreview = ({ companyInfo, settings }) => {
   if (String(settings.receiptWidthInches || "").toUpperCase() === "A4") {
     return (
       <Box sx={{ ...baseCardSx, p: 2.5 }}>
-        <Typography sx={{ fontSize: 12.25, fontWeight: 600 }}>Sheet receipt layouts</Typography>
-        <Typography sx={{ fontSize: 12, color: "text.secondary", mt: 1 }}>
-          Manage sheet sizes and previews in Document Invoices. Your saved print size is preserved.
-        </Typography>
+        <Box sx={{ display: "flex", alignItems: "center" }}>
+          <Typography sx={{ fontSize: 12.25, fontWeight: 600 }}>Sheet receipt layouts</Typography>
+          <InfoHint label="About Sheet receipt layouts">Manage sheet sizes and previews in Document Invoices. Your saved print size is preserved.</InfoHint>
+        </Box>
         <Typography component="a" href="/sales/receipt-formats" sx={{ display: "inline-block", mt: 1, color: "primary.main", fontSize: 12 }}>Open Document Invoices</Typography>
       </Box>
     );
@@ -1062,10 +1063,10 @@ export default function SalesSettingsEditor({ section = "sales", onDirtyChange }
 
           {!receiptOnly ? <>
           <Box sx={{ ...baseCardSx, p: 2.5 }}>
-            <Typography component="label" sx={fieldLabelSx}>Sales number reset</Typography>
-            <Typography sx={{ mb: 1.5, maxWidth: 768, fontSize: 12.25, lineHeight: 1.7, color: "text.secondary" }}>
-              Applies only to new sales. Numbers already saved stay unchanged if you switch between daily, weekly, monthly, or yearly.
-            </Typography>
+            <Box sx={{ display: "flex", alignItems: "center", mb: 1.5 }}>
+              <Typography component="label" sx={fieldLabelSx}>Sales number reset</Typography>
+              <InfoHint label="About Sales number reset">Applies only to new sales. Numbers already saved stay unchanged if you switch between daily, weekly, monthly, or yearly.</InfoHint>
+            </Box>
             <Stack direction="row" sx={{ flexWrap: "wrap", gap: 1.5 }}>
               {BILL_NUMBER_RESET_OPTIONS.map((option) => (
                 <Stack
@@ -1089,9 +1090,10 @@ export default function SalesSettingsEditor({ section = "sales", onDirtyChange }
               ))}
             </Stack>
             <Box sx={{ mt: 2 }}>
-              <Typography component="label" htmlFor="sales-number-override" sx={{ mb: 0.5, display: "block", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary" }}>
-                Custom next sales number (optional)
-              </Typography>
+              <Box sx={{ display: "flex", alignItems: "center" }}>
+                <Typography component="label" htmlFor="sales-number-override" sx={{ mb: 0.5, display: "block", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary" }}>Custom next sales number (optional)</Typography>
+                <InfoHint label="About Custom next sales number">Set the next new sale to start from this number (e.g. continuing from another system). Leave blank for normal numbering.</InfoHint>
+              </Box>
               <TextField
                 id="sales-number-override"
                 type="number"
@@ -1102,17 +1104,14 @@ export default function SalesSettingsEditor({ section = "sales", onDirtyChange }
                 size="small"
                 sx={[muiFieldSx, { width: "100%", maxWidth: 320 }]}
               />
-              <Typography sx={{ mt: 0.5, fontSize: TYPE.small, lineHeight: 1.4, color: "text.secondary" }}>
-                Set the next new sale to start from this number (e.g. continuing from another system). Leave blank for normal numbering.
-              </Typography>
             </Box>
           </Box>
 
           <Box sx={{ ...baseCardSx, p: 2.5 }}>
-            <Typography component="label" sx={fieldLabelSx}>Settlement number reset</Typography>
-            <Typography sx={{ mb: 1.5, maxWidth: 768, fontSize: 12.25, lineHeight: 1.7, color: "text.secondary" }}>
-              Applies only to new settlements. Numbers already saved stay unchanged if you switch between daily, weekly, monthly, or yearly.
-            </Typography>
+            <Box sx={{ display: "flex", alignItems: "center", mb: 1.5 }}>
+              <Typography component="label" sx={fieldLabelSx}>Settlement number reset</Typography>
+              <InfoHint label="About Settlement number reset">Applies only to new settlements. Numbers already saved stay unchanged if you switch between daily, weekly, monthly, or yearly.</InfoHint>
+            </Box>
             <Stack direction="row" sx={{ flexWrap: "wrap", gap: 1.5 }}>
               {SETTLEMENT_NUMBER_RESET_OPTIONS.map((option) => (
                 <Stack
@@ -1136,9 +1135,10 @@ export default function SalesSettingsEditor({ section = "sales", onDirtyChange }
               ))}
             </Stack>
             <Box sx={{ mt: 2 }}>
-              <Typography component="label" htmlFor="settlement-number-override" sx={{ mb: 0.5, display: "block", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary" }}>
-                Custom next settlement number (optional)
-              </Typography>
+              <Box sx={{ display: "flex", alignItems: "center" }}>
+                <Typography component="label" htmlFor="settlement-number-override" sx={{ mb: 0.5, display: "block", fontSize: TYPE.label, fontWeight: 500, color: "text.secondary" }}>Custom next settlement number (optional)</Typography>
+                <InfoHint label="About Custom next settlement number">Set the next new settlement to start from this sequence number within the current period. Leave blank for normal numbering.</InfoHint>
+              </Box>
               <TextField
                 id="settlement-number-override"
                 type="number"
@@ -1149,17 +1149,14 @@ export default function SalesSettingsEditor({ section = "sales", onDirtyChange }
                 size="small"
                 sx={[muiFieldSx, { width: "100%", maxWidth: 320 }]}
               />
-              <Typography sx={{ mt: 0.5, fontSize: TYPE.small, lineHeight: 1.4, color: "text.secondary" }}>
-                Set the next new settlement to start from this sequence number within the current period. Leave blank for normal numbering.
-              </Typography>
             </Box>
           </Box>
 
           <Box sx={{ ...baseCardSx, p: 2.5 }}>
-            <Typography component="label" sx={fieldLabelSx}>Sale save as</Typography>
-            <Typography sx={{ mb: 1.5, maxWidth: 768, fontSize: 12.25, lineHeight: 1.7, color: "text.secondary" }}>
-              Default bill status for new sales from POS Sale, POS Old, and Touch Sale. Unsettled bills stay open until you settle them on the Settlement screen.
-            </Typography>
+            <Box sx={{ display: "flex", alignItems: "center", mb: 1.5 }}>
+              <Typography component="label" sx={fieldLabelSx}>Sale save as</Typography>
+              <InfoHint label="About Sale save as">Default bill status for new sales from POS Sale, POS Old, and Touch Sale. Unsettled bills stay open until you settle them on the Settlement screen.</InfoHint>
+            </Box>
             <Stack direction="row" sx={{ flexWrap: "wrap", gap: 1.5 }}>
               {SALE_SAVE_AS_OPTIONS.map((option) => (
                 <Stack
@@ -1220,11 +1217,10 @@ export default function SalesSettingsEditor({ section = "sales", onDirtyChange }
           />
 
           <Box sx={{ ...baseCardSx, p: 2.5 }}>
-            <Typography component="label" htmlFor="cash-opening-check" sx={fieldLabelSx}>Cash Opening before billing</Typography>
-            <Typography sx={{ fontSize: TYPE.small, color: "text.secondary", mb: 1.5 }}>
-              What POS does when a bill is made on a counter whose cash has not been opened for the day (Sales &gt; Cash Opening). A counter is always
-              needed to bill.
-            </Typography>
+            <Box sx={{ display: "flex", alignItems: "center", mb: 1.5 }}>
+              <Typography component="label" htmlFor="cash-opening-check" sx={fieldLabelSx}>Cash Opening before billing</Typography>
+              <InfoHint label="About Cash Opening before billing">What POS does when a bill is made on a counter whose cash has not been opened for the day (Sales &gt; Cash Opening). A counter is always needed to bill.</InfoHint>
+            </Box>
             <TextField id="cash-opening-check" select size="small" value={settings.cashOpeningCheck || "warn"} sx={{ minWidth: 320 }}
               onChange={(e) => updateSetting({ cashOpeningCheck: e.target.value })}>
               {CASH_OPENING_CHECKS.map((option) => <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>)}
@@ -1232,11 +1228,10 @@ export default function SalesSettingsEditor({ section = "sales", onDirtyChange }
           </Box>
 
           <Box sx={{ ...baseCardSx, p: 2.5 }}>
-            <Typography component="label" htmlFor="credit-note-expiry-days" sx={fieldLabelSx}>Credit note validity</Typography>
-            <Typography sx={{ fontSize: TYPE.small, color: "text.secondary", mb: 1.5 }}>
-              A return can be refunded as a credit note: a numbered note with a balance that bills use as a payment, in parts. This is how long a new
-              credit note can be used.
-            </Typography>
+            <Box sx={{ display: "flex", alignItems: "center", mb: 1.5 }}>
+              <Typography component="label" htmlFor="credit-note-expiry-days" sx={fieldLabelSx}>Credit note validity</Typography>
+              <InfoHint label="About Credit note validity">A return can be refunded as a credit note: a numbered note with a balance that bills use as a payment, in parts. This is how long a new credit note can be used.</InfoHint>
+            </Box>
             <TextField id="credit-note-expiry-days" select size="small" value={settings.creditNoteExpiryDays ?? 90} sx={{ minWidth: 320 }}
               onChange={(e) => updateSetting({ creditNoteExpiryDays: Number(e.target.value) })}>
               {[...CREDIT_NOTE_EXPIRY_CHOICES, ...(CREDIT_NOTE_EXPIRY_CHOICES.some((c) => c.value === Number(settings.creditNoteExpiryDays ?? 90)) ? [] : [{ value: Number(settings.creditNoteExpiryDays), label: `${settings.creditNoteExpiryDays} days` }])]
@@ -1245,11 +1240,10 @@ export default function SalesSettingsEditor({ section = "sales", onDirtyChange }
           </Box>
 
           <Box sx={{ ...baseCardSx, p: 2.5 }}>
-            <Typography component="label" htmlFor="voucher-expiry-days" sx={fieldLabelSx}>Gift voucher validity</Typography>
-            <Typography sx={{ fontSize: TYPE.small, color: "text.secondary", mb: 1.5 }}>
-              A gift voucher is sold at the counter and used later as a payment on a bill, in parts. This is how long a new gift voucher can be used.
-              The person selling it can choose a different number of days for one voucher.
-            </Typography>
+            <Box sx={{ display: "flex", alignItems: "center", mb: 1.5 }}>
+              <Typography component="label" htmlFor="voucher-expiry-days" sx={fieldLabelSx}>Gift voucher validity</Typography>
+              <InfoHint label="About Gift voucher validity">A gift voucher is sold at the counter and used later as a payment on a bill, in parts. This is how long a new gift voucher can be used. The person selling it can choose a different number of days for one voucher.</InfoHint>
+            </Box>
             <TextField id="voucher-expiry-days" select size="small" value={settings.voucherExpiryDays ?? 365} sx={{ minWidth: 320 }}
               onChange={(e) => updateSetting({ voucherExpiryDays: Number(e.target.value) })}>
               {[...VOUCHER_EXPIRY_CHOICES, ...(VOUCHER_EXPIRY_CHOICES.some((c) => c.value === Number(settings.voucherExpiryDays ?? 365)) ? [] : [{ value: Number(settings.voucherExpiryDays), label: `${settings.voucherExpiryDays} days` }])]
@@ -1263,11 +1257,10 @@ export default function SalesSettingsEditor({ section = "sales", onDirtyChange }
           </Box>
 
           <Box sx={{ ...baseCardSx, p: 2.5 }}>
-            <Typography component="label" htmlFor="billing-date-after-closing" sx={fieldLabelSx}>Billing date after cash closing</Typography>
-            <Typography sx={{ fontSize: TYPE.small, color: "text.secondary", mb: 1.5 }}>
-              Bills made after a counter's Cash Closing can go on the next day, so the closed day's sales and cash stay as counted. They are counted
-              in the counter's next cash session; the bill keeps its real time too.
-            </Typography>
+            <Box sx={{ display: "flex", alignItems: "center", mb: 1.5 }}>
+              <Typography component="label" htmlFor="billing-date-after-closing" sx={fieldLabelSx}>Billing date after cash closing</Typography>
+              <InfoHint label="About Billing date after cash closing">Bills made after a counter's Cash Closing can go on the next day, so the closed day's sales and cash stay as counted. They are counted in the counter's next cash session; the bill keeps its real time too.</InfoHint>
+            </Box>
             <TextField id="billing-date-after-closing" select size="small" value={settings.billingDateAfterClosing || "off"} sx={{ minWidth: 320 }}
               onChange={(e) => updateSetting({ billingDateAfterClosing: e.target.value })}>
               <MenuItem value="off">Off: always today</MenuItem>
@@ -1281,10 +1274,10 @@ export default function SalesSettingsEditor({ section = "sales", onDirtyChange }
           </Box>
 
           <Box sx={{ ...baseCardSx, p: 2.5 }}>
-            <Typography component="label" htmlFor="delivery-verify-all" sx={fieldLabelSx}>Delivery: "Verify all" in one click</Typography>
-            <Typography sx={{ fontSize: TYPE.small, color: "text.secondary", mb: 1.5 }}>
-              On Sales &gt; Delivery, marks every item of the bill as checked without scanning each one. The delivery register shows which bills were verified by click.
-            </Typography>
+            <Box sx={{ display: "flex", alignItems: "center", mb: 1.5 }}>
+              <Typography component="label" htmlFor="delivery-verify-all" sx={fieldLabelSx}>Delivery: "Verify all" in one click</Typography>
+              <InfoHint label={'About Delivery: "Verify all" in one click'}>On Sales &gt; Delivery, marks every item of the bill as checked without scanning each one. The delivery register shows which bills were verified by click.</InfoHint>
+            </Box>
             <TextField id="delivery-verify-all" select size="small" value={settings.deliveryVerifyAll || "everyone"} sx={{ minWidth: 260 }}
               onChange={(e) => updateSetting({ deliveryVerifyAll: e.target.value })}>
               <MenuItem value="everyone">Everyone</MenuItem>
@@ -1294,11 +1287,10 @@ export default function SalesSettingsEditor({ section = "sales", onDirtyChange }
           </Box>
 
           <Box sx={{ ...baseCardSx, p: 2.5 }}>
-            <Typography component="label" htmlFor="reprint-reason-after" sx={fieldLabelSx}>Bill reprint</Typography>
-            <Typography sx={{ fontSize: TYPE.small, color: "text.secondary", mb: 1.5 }}>
-              Sales &gt; Bill Reprint prints any bill again with a small &quot;DUPLICATE&quot; mark and logs who reprinted it. Cashiers reprint
-              today&apos;s bills; an earlier day&apos;s bill needs a supervisor&apos;s approval.
-            </Typography>
+            <Box sx={{ display: "flex", alignItems: "center", mb: 1.5 }}>
+              <Typography component="label" htmlFor="reprint-reason-after" sx={fieldLabelSx}>Bill reprint</Typography>
+              <InfoHint label="About Bill reprint">Sales &gt; Bill Reprint prints any bill again with a small &quot;DUPLICATE&quot; mark and logs who reprinted it. Cashiers reprint today&apos;s bills; an earlier day&apos;s bill needs a supervisor&apos;s approval.</InfoHint>
+            </Box>
             <Stack direction={{ xs: "column", sm: "row" }} spacing={2} sx={{ alignItems: { sm: "center" } }}>
               <TextField id="reprint-reason-after" select size="small" value={settings.reprintReasonAfter ?? 1} sx={{ minWidth: 260 }}
                 onChange={(e) => updateSetting({ reprintReasonAfter: Number(e.target.value) })}>
@@ -1335,10 +1327,10 @@ export default function SalesSettingsEditor({ section = "sales", onDirtyChange }
           </Box>
 
           <Box sx={{ ...baseCardSx, p: 2.5 }}>
-            <Typography component="label" sx={fieldLabelSx}>Receipt / Invoice Format</Typography>
-            <Typography sx={{ mb: 1.5, maxWidth: 768, fontSize: 12.25, lineHeight: 1.7, color: "text.secondary" }}>
-              Choose the overall look of the printed receipt: border and divider style, spacing, and how the header and total are emphasised. Applies to the preview on the right and every POS print.
-            </Typography>
+            <Box sx={{ display: "flex", alignItems: "center", mb: 1.5 }}>
+              <Typography component="label" sx={fieldLabelSx}>Receipt / Invoice Format</Typography>
+              <InfoHint label="About Receipt / Invoice Format">Choose the overall look of the printed receipt: border and divider style, spacing, and how the header and total are emphasised. Applies to the preview on the right and every POS print.</InfoHint>
+            </Box>
             <Box sx={{ display: "grid", gap: 1.5, gridTemplateColumns: { sm: "1fr 1fr", xl: "repeat(5, 1fr)" } }}>
               {RECEIPT_FORMAT_OPTIONS.map((option) => (
                 <Stack
@@ -1369,10 +1361,10 @@ export default function SalesSettingsEditor({ section = "sales", onDirtyChange }
           </Stack>
           <Stack role="tabpanel" id="thermal-panel-customise" aria-labelledby="thermal-tab-customise" hidden={receiptTab !== "customise"} spacing={2} sx={{ display: receiptTab === "customise" ? "flex" : "none", "& > *": { flexShrink: 0 } }}>
           <Box sx={{ ...baseCardSx, p: 2.5 }}>
-            <Typography component="label" sx={fieldLabelSx}>Printing Mode (Direct / Silent vs Browser Default)</Typography>
-            <Typography sx={{ mb: 1.5, maxWidth: 768, fontSize: 12.25, lineHeight: 1.7, color: "text.secondary" }}>
-              Choose whether sales receipts, return slips, and settlement summaries print directly to your thermal printer in the background (no popup) or open the browser print preview dialog.
-            </Typography>
+            <Box sx={{ display: "flex", alignItems: "center", mb: 1.5 }}>
+              <Typography component="label" sx={fieldLabelSx}>Printing Mode (Direct / Silent vs Browser Default)</Typography>
+              <InfoHint label="About Printing Mode (Direct / Silent vs Browser Default)">Choose whether sales receipts, return slips, and settlement summaries print directly to your thermal printer in the background (no popup) or open the browser print preview dialog.</InfoHint>
+            </Box>
             <Box sx={{ display: "grid", gap: 1.5, gridTemplateColumns: { sm: "1fr 1fr" } }}>
               {PRINT_MODE_OPTIONS.map((option) => (
                 <Stack
@@ -1419,10 +1411,10 @@ export default function SalesSettingsEditor({ section = "sales", onDirtyChange }
           />
 
           <Box sx={{ ...baseCardSx, p: 2.5 }}>
-            <Typography component="label" sx={fieldLabelSx}>Receipt Font</Typography>
-            <Typography sx={{ mb: 1.5, maxWidth: 768, fontSize: 12.25, lineHeight: 1.7, color: "text.secondary" }}>
-              Applies to the printed receipt (and thermal printers) as well as the preview on the right. The monospace options keep amount columns aligned on narrow thermal paper.
-            </Typography>
+            <Box sx={{ display: "flex", alignItems: "center", mb: 1.5 }}>
+              <Typography component="label" sx={fieldLabelSx}>Receipt Font</Typography>
+              <InfoHint label="About Receipt Font">Applies to the printed receipt (and thermal printers) as well as the preview on the right. The monospace options keep amount columns aligned on narrow thermal paper.</InfoHint>
+            </Box>
             <Stack direction="row" sx={{ flexWrap: "wrap", gap: 2 }}>
               {RECEIPT_FONT_OPTIONS.map((option) => (
                 <Stack
@@ -1477,10 +1469,10 @@ export default function SalesSettingsEditor({ section = "sales", onDirtyChange }
                 onChange={(checked) => updateSetting({ showBarcodeOnReturnSlip: checked })}
               />
               <Box sx={{ pt: 0.5 }}>
-                <Typography sx={fieldLabelSx}>Show barcode or QR code</Typography>
-                <Typography sx={{ mb: 1.5, fontSize: 12.25, lineHeight: 1.7, color: "text.secondary" }}>
-                  Applies to sale and return slips when the barcode options above are enabled.
-                </Typography>
+                <Box sx={{ display: "flex", alignItems: "center", mb: 1.5 }}>
+                  <Typography sx={fieldLabelSx}>Show barcode or QR code</Typography>
+                  <InfoHint label="About Show barcode or QR code">Applies to sale and return slips when the barcode options above are enabled.</InfoHint>
+                </Box>
                 <Stack direction="row" sx={{ flexWrap: "wrap", gap: 1.5 }}>
                   {RECEIPT_CODE_TYPE_OPTIONS.map((option) => (
                     <Stack
@@ -1552,10 +1544,10 @@ export default function SalesSettingsEditor({ section = "sales", onDirtyChange }
             onLineChange={(key, line) => updateGeneralField(key, { line })}
           />
           <Box sx={{ ...baseCardSx, p: 2.5 }}>
-            <Typography component="label" sx={fieldLabelSx}>Payment QR</Typography>
-            <Typography sx={{ mb: 1.5, maxWidth: 768, fontSize: 12.25, lineHeight: 1.7, color: "text.secondary" }}>
-              Prints a &ldquo;Scan to Pay&rdquo; QR at the end of the receipt. Only the UPI ID option can carry the bill amount -- an uploaded image is a fixed picture, so the customer types the amount themselves.
-            </Typography>
+            <Box sx={{ display: "flex", alignItems: "center", mb: 1.5 }}>
+              <Typography component="label" sx={fieldLabelSx}>Payment QR</Typography>
+              <InfoHint label="About Payment QR">Prints a &ldquo;Scan to Pay&rdquo; QR at the end of the receipt. Only the UPI ID option can carry the bill amount -- an uploaded image is a fixed picture, so the customer types the amount themselves.</InfoHint>
+            </Box>
             <Stack direction="row" sx={{ flexWrap: "wrap", gap: 1.5 }}>
               {PAYMENT_QR_MODE_OPTIONS.map((option) => (
                 <Stack
@@ -1669,9 +1661,7 @@ export default function SalesSettingsEditor({ section = "sales", onDirtyChange }
                     </Typography>
                   )}
                 </Stack>
-                <Typography sx={{ mt: 1.5, borderRadius: "10.5px", border: "1px dashed", borderColor: "divider", bgcolor: "action.hover", px: 2, py: 1.5, fontSize: TYPE.small, lineHeight: 1.4, color: "text.secondary" }}>
-                  The image is resized to 512px and stored with these settings. Thermal printers render QR codes best in plain black on white.
-                </Typography>
+                <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 0.5 }}><InfoHint label="About the payment QR image">The image is resized to 512px and stored with these settings. Thermal printers render QR codes best in plain black on white.</InfoHint></Box>
               </Box>
             ) : null}
           </Box>
@@ -1691,9 +1681,7 @@ export default function SalesSettingsEditor({ section = "sales", onDirtyChange }
               placeholder="Enter the closing message shown at the end of the receipt"
               sx={muiFieldSx}
             />
-            <Typography sx={{ mt: 1.5, borderRadius: "10.5px", border: "1px dashed", borderColor: "divider", bgcolor: "action.hover", px: 2, py: 1.5, fontSize: TYPE.small, lineHeight: 1.4, color: "text.secondary" }}>
-              This message is printed at the end of the POS receipt. Line breaks entered here are preserved in the preview and on print.
-            </Typography>
+            <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 0.5 }}><InfoHint label="About the receipt footer message">This message is printed at the end of the POS receipt. Line breaks entered here are preserved in the preview and on print.</InfoHint></Box>
           </Box>
 
 

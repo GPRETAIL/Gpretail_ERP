@@ -62,6 +62,7 @@ import { HeaderApprovalButton, HeaderRenewalNotice } from "./HeaderStatusActions
 import QuickNavigation from "./QuickNavigation";
 import { navItems, ownerNavItems } from "./navItems";
 import { canSwitchStores, getVisibleNavItems } from "@/features/auth/utils/accessControl";
+import InfoHint from "@/shared/components/InfoHint";
 
 const PRINTER_FUNCTION_OPTIONS = [
   { value: "", label: "Select function" },
@@ -664,12 +665,12 @@ const Navbar = ({ sidebarExpanded, isMobile = false, toggleSidebar, onEnterPosFo
       <Dialog open={printerDialogOpen} onClose={() => setPrinterDialogOpen(false)} maxWidth="md" fullWidth>
         <DialogTitle sx={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 1.5 }}>
           <Box>
-            <Typography variant="subtitle1" fontWeight={600}>
+            <Box sx={{ display: "flex", alignItems: "center" }}>
+              <Typography variant="subtitle1" fontWeight={600}>
               My Printers
             </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-              Assign yourself from connector-selected printers that are unassigned or already assigned to you.
-            </Typography>
+              <InfoHint label="About My Printers">Assign yourself from connector-selected printers that are unassigned or already assigned to you.</InfoHint>
+            </Box>
           </Box>
           <IconButton size="small" onClick={() => setPrinterDialogOpen(false)} aria-label="Close printer dialog">
             <XMarkIcon style={{ width: 20, height: 20 }} />
@@ -768,15 +769,15 @@ const Navbar = ({ sidebarExpanded, isMobile = false, toggleSidebar, onEnterPosFo
       <Dialog open={storeDialogOpen} onClose={() => setStoreDialogOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle sx={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 1.5 }}>
           <Box>
-            <Typography variant="subtitle1" fontWeight={600} sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <Box sx={{ display: "flex", alignItems: "center" }}>
+              <Typography variant="subtitle1" fontWeight={600} sx={{ display: "flex", alignItems: "center", gap: 1 }}>
               <Box sx={{ color: "primary.main", display: "inline-flex" }}>
                 <BuildingStorefrontIcon style={{ width: 20, height: 20 }} />
               </Box>
               Switch Active Store Scope
             </Typography>
-            <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 0.5 }}>
-              Select a store to manage data (create, view, edit, delete) directly within that store scope.
-            </Typography>
+              <InfoHint label="About Switch Active Store Scope">Select a store to manage data (create, view, edit, delete) directly within that store scope.</InfoHint>
+            </Box>
           </Box>
           <IconButton size="small" onClick={() => setStoreDialogOpen(false)} aria-label="Close store dialog">
             <XMarkIcon style={{ width: 20, height: 20 }} />
@@ -790,10 +791,10 @@ const Navbar = ({ sidebarExpanded, isMobile = false, toggleSidebar, onEnterPosFo
             </Alert>
           ) : (
             <Stack spacing={1}>
-              <Typography sx={{ fontSize: 13, fontWeight: 600 }}>Active Store Location</Typography>
-              <Typography sx={{ fontSize: TYPE.small, color: "text.secondary" }}>
-                Pick one store to create or edit data there. All Stores shows combined data across your authorised stores.
-              </Typography>
+              <Box sx={{ display: "flex", alignItems: "center" }}>
+                <Typography sx={{ fontSize: 13, fontWeight: 600 }}>Active Store Location</Typography>
+                <InfoHint label="About Active Store Location">Pick one store to create or edit data there. All Stores shows combined data across your authorised stores.</InfoHint>
+              </Box>
               <Box sx={{ maxHeight: 256, overflowY: "auto", border: 1, borderColor: "divider", borderRadius: 1.5, p: 1 }}>
                 <FormControlLabel
                   sx={{ display: "flex", mx: 0, borderRadius: 1, px: 1, py: 0.5, "&:hover": { bgcolor: "action.hover" } }}

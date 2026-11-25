@@ -51,6 +51,7 @@ import {
   getRemoteSupportSessions,
   endRemoteSupportSession,
 } from "./api/remoteSupportApi";
+import InfoHint from "@/shared/components/InfoHint";
 
 const cardSx = {
   borderRadius: "10px",
@@ -262,13 +263,13 @@ export default function RemoteSupport() {
       {/* Header */}
       <Box sx={{ mb: 3, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 2 }}>
         <Box>
-          <Typography variant="h5" sx={{ fontWeight: 700, display: "flex", alignItems: "center", gap: 1.5, color: "text.primary" }}>
+          <Box sx={{ display: "flex", alignItems: "center" }}>
+            <Typography variant="h5" sx={{ fontWeight: 700, display: "flex", alignItems: "center", gap: 1.5, color: "text.primary" }}>
             <Monitor size={28} color="#2563eb" />
             Vynerix Remote Support & Desktop Assistance
           </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Request instant remote desktop assistance from Vynerix technical support engineers for your POS, thermal printers, and software issues.
-          </Typography>
+            <InfoHint label="About Vynerix Remote Support & Desktop Assistance">Request instant remote desktop assistance from Vynerix technical support engineers for your POS, thermal printers, and software issues.</InfoHint>
+          </Box>
         </Box>
         <Chip
           icon={<Radio size={14} className="animate-pulse" />}
@@ -753,13 +754,13 @@ export default function RemoteSupport() {
         <CardContent sx={{ p: 3 }}>
           <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2.5, flexWrap: "wrap", gap: 2 }}>
             <Box>
-              <Typography variant="h6" sx={{ fontWeight: 700, display: "flex", alignItems: "center", gap: 1 }}>
+              <Box sx={{ display: "flex", alignItems: "center" }}>
+                <Typography variant="h6" sx={{ fontWeight: 700, display: "flex", alignItems: "center", gap: 1 }}>
                 <Clock size={20} color="#2563eb" />
                 Remote Support History & Time Consumed
               </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Log of all remote desktop sessions requested by this store, showing duration consumed and resolution notes.
-              </Typography>
+                <InfoHint label="About Remote Support History & Time Consumed">Log of all remote desktop sessions requested by this store, showing duration consumed and resolution notes.</InfoHint>
+              </Box>
             </Box>
 
             <Box sx={{ display: "flex", gap: 1.5, alignItems: "center", flexWrap: "wrap" }}>

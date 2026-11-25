@@ -16,6 +16,7 @@ import {
   savePrinterRouting,
 } from "@/features/printing/utils/localPrinterService";
 import { muiFieldSx } from "@/shared/theme/formControlSizes";
+import InfoHint from "@/shared/components/InfoHint";
 
 const DEFAULT_PRINTER_SERVICE_URL =
   import.meta.env.VITE_LOCAL_PRINTER_SERVICE_URL ||
@@ -274,12 +275,12 @@ export default function PrintingConfiguration() {
   return (
     <Stack spacing={1.5} sx={{ pb: 10 }}>
       <Box sx={{ ...cardSx, px: 1.5, py: 1 }}>
-        <Typography component="h1" sx={{ fontSize: 13, fontWeight: 600, color: "text.primary" }}>
+        <Box sx={{ display: "flex", alignItems: "center" }}>
+          <Typography component="h1" sx={{ fontSize: 13, fontWeight: 600, color: "text.primary" }}>
           Settings / Printing Configuration
         </Typography>
-        <Typography sx={{ fontSize: 10.5, color: "text.secondary", mt: 0.25 }}>
-          Printing is managed by the local printer connector. You can select multiple printers in the connector terminal and route them here by function and user.
-        </Typography>
+          <InfoHint label="About Settings / Printing Configuration">Printing is managed by the local printer connector. You can select multiple printers in the connector terminal and route them here by function and user.</InfoHint>
+        </Box>
       </Box>
 
       <Box sx={{ display: "grid", gap: 1.5, gridTemplateColumns: { xs: "1fr", xl: "repeat(2, 1fr)" } }}>
@@ -421,12 +422,12 @@ export default function PrintingConfiguration() {
       <Box sx={{ ...cardSx, overflow: "auto" }}>
         <Stack direction="row" sx={{ alignItems: "flex-start", justifyContent: "space-between", gap: 1.5, borderBottom: 1, borderColor: "divider", px: 2, py: 1.5 }}>
           <Box>
-            <Typography component="h2" sx={{ fontSize: 13, fontWeight: 600, color: "text.primary" }}>
+            <Box sx={{ display: "flex", alignItems: "center" }}>
+              <Typography component="h2" sx={{ fontSize: 13, fontWeight: 600, color: "text.primary" }}>
               Connector Printers
             </Typography>
-            <Typography sx={{ fontSize: 10.5, color: "text.secondary", mt: 0.25 }}>
-              This table shows printers reported by the currently connected local printer connector.
-            </Typography>
+              <InfoHint label="About Connector Printers">This table shows printers reported by the currently connected local printer connector.</InfoHint>
+            </Box>
           </Box>
           <Button
             type="button"

@@ -41,6 +41,7 @@ import {
   savePrintFormatSettings,
 } from "./utils/printFormatDefaults";
 import ErrorBoundary from "@/shared/components/ErrorBoundary";
+import InfoHint from "@/shared/components/InfoHint";
 
 export default function DocumentFormatsDesigner({ onDirtyChange }) {
   const theme = useTheme();
@@ -283,9 +284,7 @@ export default function DocumentFormatsDesigner({ onDirtyChange }) {
               {settings.orientation.toUpperCase()} &bull; {settings.pageSize}
             </Box>
           </Stack>
-          <Typography sx={{ fontSize: TYPE.small, color: isDark ? "#94a3b8" : "#64748b", mt: "1.75px" }}>
-              Configure A4/A5 and other sheet invoice layouts with live preview and print styling.
-          </Typography>
+          <InfoHint label="About document formats">Configure A4/A5 and other sheet invoice layouts with live preview and print styling.</InfoHint>
         </Box>
 
         {/* Action Buttons */}

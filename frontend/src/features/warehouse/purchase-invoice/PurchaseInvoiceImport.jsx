@@ -34,6 +34,7 @@ import {
 import api from "@/shared/api/apiClient";
 import AsyncSearchSelect from "@/shared/components/AsyncSearchSelect";
 import PhoneUploadDialog from "./components/PhoneUploadDialog";
+import InfoHint from "@/shared/components/InfoHint";
 
 const ACCEPTED_TYPES = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
 const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15 MB
@@ -1359,12 +1360,12 @@ export default function PurchaseInvoiceImport() {
                       }}
                     >
                       <Box>
-                        <Typography sx={{ fontSize: 13.5, fontWeight: 700, color: "text.primary" }}>
+                        <Box sx={{ display: "flex", alignItems: "center" }}>
+                          <Typography sx={{ fontSize: 13.5, fontWeight: 700, color: "text.primary" }}>
                           Invoice Ready for Analysis
                         </Typography>
-                        <Typography sx={{ fontSize: TYPE.small, color: "text.secondary" }}>
-                          Extracts GSTIN, supplier, carrier, LR, line items & taxes automatically.
-                        </Typography>
+                          <InfoHint label="About Invoice Ready for Analysis">Extracts GSTIN, supplier, carrier, LR, line items & taxes automatically.</InfoHint>
+                        </Box>
                       </Box>
                       <Button
                         variant="contained"
@@ -1870,12 +1871,12 @@ export default function PurchaseInvoiceImport() {
                       }}
                     >
                       <Box>
-                        <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "text.primary" }}>
+                        <Box sx={{ display: "flex", alignItems: "center" }}>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "text.primary" }}>
                           Extracted Line Items & Product Mapping
                         </Typography>
-                        <Typography variant="caption" sx={{ color: "text.secondary" }}>
-                          Verify matched products or toggle "New Product" to register them in the master catalog.
-                        </Typography>
+                          <InfoHint label="About Extracted Line Items & Product Mapping">Verify matched products or toggle "New Product" to register them in the master catalog.</InfoHint>
+                        </Box>
                       </Box>
                       <Button
                         size="small"
@@ -2001,12 +2002,12 @@ export default function PurchaseInvoiceImport() {
                         }
                         label={
                           <Box>
-                            <Typography sx={{ fontWeight: 600, fontSize: 13 }}>
+                            <Box sx={{ display: "flex", alignItems: "center" }}>
+                              <Typography sx={{ fontWeight: 600, fontSize: 13 }}>
                               Generate Barcodes Automatically
                             </Typography>
-                            <Typography variant="caption" sx={{ color: "text.secondary" }}>
-                              Automatically creates stickers and inventory barcodes for all items upon flow approval.
-                            </Typography>
+                              <InfoHint label="About Generate Barcodes Automatically">Automatically creates stickers and inventory barcodes for all items upon flow approval.</InfoHint>
+                            </Box>
                           </Box>
                         }
                       />
