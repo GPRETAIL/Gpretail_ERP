@@ -63,7 +63,7 @@ class SalesReportController extends Controller
     }
 
     /** Stock aging, shelf period, stock audit, loyalty redemptions and incentive tabs of Sales Reports. */
-    public function storeReport(string $report, StoreReports $reports)
+    public function storeReport(Request $request, string $report, StoreReports $reports)
     {
         abort_unless(in_array($report, [...StoreReports::REPORTS, ...StoreReports::EXPORT_REPORTS], true), 404);
         abort_if(in_array($report, StoreReports::EXPORT_REPORTS, true) && ! app(BusinessPermissions::class)->allows($request->user(), 'reports.export'), 403,
