@@ -1,6 +1,8 @@
 import { Box, Typography } from "@mui/material";
 import { CalendarDays, CalendarPlus, ChevronRight, ClipboardCheck, Clock, HandCoins, Landmark, Receipt, Users, Wallet } from "lucide-react";
 import MyAttendanceCard from "@/mobile/components/MyAttendanceCard";
+import StaffScreen from "../StaffScreen";
+import StaffInstallPrompt from "../StaffInstallPrompt";
 import { monthLabel } from "@/features/hr/payroll/payslipPrint";
 import { STAFF_COLOR, STAFF_TEXT, TOUCH, card, rupee, sectionTitle } from "../staffUi";
 import RevealToggle from "../RevealToggle";
@@ -32,7 +34,8 @@ export default function HomeTab({ home, go }) {
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-      <MyAttendanceCard />
+      <StaffInstallPrompt />
+      <StaffScreen><MyAttendanceCard /></StaffScreen>
 
       <Box sx={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1 }}>
         <Tile icon={CalendarPlus} label="Apply leave" onClick={() => go("leave")} />

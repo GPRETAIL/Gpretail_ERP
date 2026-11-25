@@ -11,6 +11,11 @@ import HomeTab from "./tabs/HomeTab";
 import ApprovalsTab from "./tabs/ApprovalsTab";
 import SalaryTab from "./tabs/SalaryTab";
 import MeTab from "./tabs/MeTab";
+import StaffScreen from "./StaffScreen";
+import { OfflineBar, PullIndicator, UpdateBar } from "./StaffBars";
+import usePullToRefresh from "./usePullToRefresh";
+import useOnline from "./useOnline";
+import useServiceWorkerUpdate from "./useServiceWorkerUpdate";
 import { STAFF_COLOR, STAFF_TEXT, STAFF_THEMES, TOUCH, card, staffThemeVars } from "./staffUi";
 import useStaffTheme from "./useStaffTheme";
 import LoadingSkeleton from "@/shared/components/LoadingSkeleton";
@@ -24,18 +29,26 @@ const TABS = [
   { key: "approvals", label: "Approvals", icon: ClipboardCheck, approver: true },
   { key: "me", label: "Me", icon: UserRound },
 ];
+/** The tab a home-screen shortcut (or a link) opens: /hr?tab=leave. */
+const startTab = () => {
+  const wanted = new URLSearchParams(window.location.search).get("tab");
+  return TABS.some((t) => t.key === wanted && !t.approver) ? wanted : "home";
+};
 const TITLES = { home: "Home", leave: "Leave", expenses: "Expenses and advances", salary: "Salary", approvals: "Approvals", me: "Me" };
 
 /** While on /hr the browser offers to install "Vynerix HRMS", not the business app. */
 function useStaffManifest() {
   useEffect(() => {
     const link = document.querySelector('link[rel="manifest"]');
-    const before = { href: link?.getAttribute("href"), title: document.title };
+    const appleTitle = document.querySelector('meta[name="apple-mobile-web-app-title"]');
+    const before = { href: link?.getAttribute("href"), title: document.title, apple: appleTitle?.getAttribute("content") };
     link?.setAttribute("href", "/manifest-staff.webmanifest");
     document.title = "Vynerix HRMS";
+    appleTitle?.setAttribute("content", "HRMS"); // the name iPhone gives the home-screen icon
     return () => {
       if (link && before.href) link.setAttribute("href", before.href);
       document.title = before.title;
+      if (appleTitle && before.apple) appleTitle.setAttribute("content", before.apple);
     };
   }, []);
 }
@@ -91,13 +104,16 @@ function NotificationsSheet({ onClose }) {
 }
 
 function Shell({ session, onSignOut, theme }) {
-  const [tab, setTab] = useState("home");
+  const [tab, setTab] = useState(startTab);
   const [salaryView, setSalaryView] = useState("slips");
   const [home, setHome] = useState(null);
   const [unread, setUnread] = useState(0);
   const [bell, setBell] = useState(false);
   const [error, setError] = useState("");
   const [exitHint, setExitHint] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const online = useOnline();
+  const { updateReady, apply: applyUpdate } = useServiceWorkerUpdate();
 
   const loadHome = useCallback(async () => {
     try {
@@ -122,7 +138,7 @@ function Shell({ session, onSignOut, theme }) {
   useEffect(() => {
     if (window.history.state?.vxhr !== "screen") {
       window.history.replaceState({ vxhr: "root" }, "");
-      window.history.pushState({ vxhr: "screen", tab: "home", view: "slips", bell: false }, "");
+      window.history.pushState({ vxhr: "screen", tab: startTab(), view: "slips", bell: false }, "");
     }
     const onPop = (event) => {
       const state = event.state;
@@ -170,6 +186,12 @@ function Shell({ session, onSignOut, theme }) {
     if (window.history.state?.bell) window.history.back();
     else setBell(false);
   };
+  // Pull down to refresh: Home reloads, and the open tab is shown afresh so it fetches its own data again.
+  const refreshAll = useCallback(async () => {
+    await loadHome();
+    setRefreshKey((key) => key + 1);
+  }, [loadHome]);
+  const pulling = usePullToRefresh(refreshAll, { enabled: !bell });
   const tabs = TABS.filter((t) => !t.approver || home?.can_approve);
   const approvalCount = Object.values(home?.approvals || {}).reduce((sum, n) => sum + n, 0);
   const firstName = (home?.employee?.name || session.employee?.name || "").split(" ")[0];
@@ -192,12 +214,16 @@ function Shell({ session, onSignOut, theme }) {
         </Box>
       </Box>
 
+      {!online && <OfflineBar />}
+      {updateReady && <UpdateBar onUpdate={applyUpdate} />}
+      <PullIndicator {...pulling} />
+
       <Box component="main" sx={{ px: 2, pt: 2, pb: "calc(88px + env(safe-area-inset-bottom))", maxWidth: 640, mx: "auto" }}>
         {error && <Box role="alert" sx={{ ...card, mb: 2, bgcolor: STAFF_COLOR.dangerSoft, borderColor: STAFF_COLOR.dangerBorder, color: STAFF_COLOR.danger, fontSize: STAFF_TEXT.body, fontWeight: 600 }}>{error}</Box>}
-        <ErrorBoundary variant="page" where={`hr:${tab}`} resetKeys={[tab, salaryView]}>
+        <ErrorBoundary key={refreshKey} variant="page" where={`hr:${tab}`} resetKeys={[tab, salaryView]}>
         {tab === "home" && <HomeTab home={home} go={go} />}
-        {tab === "leave" && <LeaveScreen showApprovals={false} />}
-        {tab === "expenses" && <ClaimsScreen />}
+        {tab === "leave" && <StaffScreen><LeaveScreen showApprovals={false} /></StaffScreen>}
+        {tab === "expenses" && <StaffScreen><ClaimsScreen /></StaffScreen>}
         {tab === "salary" && <SalaryTab home={home} view={salaryView} setView={(view) => go("salary", view)} />}
         {tab === "approvals" && <ApprovalsTab onChanged={loadHome} />}
         {tab === "me" && <MeTab onSignOut={onSignOut} theme={theme} />}
@@ -241,6 +267,7 @@ export default function StaffApp() {
       // Signed out on this phone either way.
     }
     clearStaffSession();
+    navigator.serviceWorker?.controller?.postMessage({ type: "VX_CLEAR_API_CACHE" }); // saved data is for the person who signed in
     setSignInPin("");
     setSession(null);
   }, []);

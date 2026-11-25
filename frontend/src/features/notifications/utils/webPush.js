@@ -1,6 +1,8 @@
 import api from "@/shared/api/apiClient";
 
-const deviceKey = () => {
+// The staff app (/hr) has no ERP user in storage, so it names its own storage key: { deviceKey: "..." }.
+const deviceKey = (override) => {
+  if (override) return override;
   try {
     const user = JSON.parse(localStorage.getItem("user") || "null");
     return user?.id
@@ -12,7 +14,7 @@ const deviceKey = () => {
 };
 const changed = () =>
   window.dispatchEvent(new Event("vx-notifications-updated"));
-export async function pushDeviceState() {
+export async function pushDeviceState({ deviceKey: storageKey } = {}) {
   if (
     !window.isSecureContext ||
     !("serviceWorker" in navigator) ||
@@ -25,10 +27,10 @@ export async function pushDeviceState() {
     supported: true,
     registered:
       Boolean(await registration?.pushManager?.getSubscription()) &&
-      Boolean(deviceKey() && localStorage.getItem(deviceKey())),
+      Boolean(deviceKey(storageKey) && localStorage.getItem(deviceKey(storageKey))),
   };
 }
-export async function enableWebPush() {
+export async function enableWebPush({ deviceKey: storageKey } = {}) {
   if (
     !window.isSecureContext ||
     !("serviceWorker" in navigator) ||
@@ -61,7 +63,7 @@ export async function enableWebPush() {
       userVisibleOnly: true,
       applicationServerKey: bytes,
     }));
-  const key = deviceKey();
+  const key = deviceKey(storageKey);
   if (!key) throw new Error("Sign in before registering notifications.");
   const device = localStorage.getItem(key) || crypto.randomUUID();
   try {
@@ -76,9 +78,9 @@ export async function enableWebPush() {
   localStorage.setItem(key, device);
   changed();
 }
-export async function disableWebPush() {
+export async function disableWebPush({ deviceKey: storageKey } = {}) {
   if (!("serviceWorker" in navigator)) return;
-  const key = deviceKey();
+  const key = deviceKey(storageKey);
   const device = key ? localStorage.getItem(key) : null;
   try {
     if (device)

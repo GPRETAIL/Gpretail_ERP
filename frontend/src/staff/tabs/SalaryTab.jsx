@@ -1,6 +1,7 @@
 import { Box, Typography } from "@mui/material";
 import PayslipsScreen from "@/mobile/screens/PayslipsScreen";
 import TaxScreen from "@/mobile/screens/TaxScreen";
+import StaffScreen from "../StaffScreen";
 import { STAFF_COLOR, STAFF_TEXT, card, rupee } from "../staffUi";
 import RevealToggle from "../RevealToggle";
 import useReveal, { MASKED_AMOUNT } from "../useReveal";
@@ -20,7 +21,7 @@ export default function SalaryTab({ home, view, setView }) {
           </Box>
         ))}
       </Box>
-      {view === "tax" ? <TaxScreen /> : (
+      {view === "tax" ? <StaffScreen><TaxScreen /></StaffScreen> : (
         <>
           {pay && (
             <Box sx={{ ...card, background: "linear-gradient(135deg, #0f766e, #0d9488)", border: 0, color: "#fff" }}>
@@ -32,7 +33,7 @@ export default function SalaryTab({ home, view, setView }) {
               <Typography sx={{ fontSize: STAFF_TEXT.small, opacity: 0.9 }}>Gross earned {reveal.shown ? rupee(pay.year_gross) : MASKED_AMOUNT}</Typography>
             </Box>
           )}
-          <PayslipsScreen masked={!reveal.shown} />
+          <StaffScreen><PayslipsScreen masked={!reveal.shown} /></StaffScreen>
         </>
       )}
     </Box>

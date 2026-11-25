@@ -9,7 +9,7 @@
  * 5. Lifecycle Updates — skipWaiting and client claim support
  */
 
-const CACHE_VERSION = "vynerix-pwa-v3.0.5";
+const CACHE_VERSION = "vynerix-pwa-v3.1.0";
 const CACHE_STATIC = `vynerix-static-${CACHE_VERSION}`;
 const CACHE_API = `vynerix-api-${CACHE_VERSION}`;
 let apiCacheGeneration = 0;
@@ -20,6 +20,8 @@ const PRECACHE_ASSETS = [
   "/app/",
   "/index.html",
   "/manifest.webmanifest",
+  "/hr",
+  "/manifest-staff.webmanifest",
   "/pwa-icon.svg",
   "/pwa-192x192.png",
   "/pwa-512x512.png",
@@ -37,7 +39,17 @@ const CACHEABLE_API_PATTERNS = [
   "/api/direct-purchases",
   "/api/products",
   "/api/customers",
-  "/api/suppliers"
+  "/api/suppliers",
+  // The staff app (/hr): what an employee sees without a connection. The cache key includes the token, so one
+  // employee's saved data is never shown to another.
+  "/api/staff-app/home",
+  "/api/staff-app/profile",
+  "/api/holidays",
+  "/api/leave/mine",
+  "/api/my-payslips",
+  "/api/attendance/me",
+  "/api/staff-requests/mine",
+  "/api/staff-money/mine"
 ];
 
 // Cache matching normally ignores Authorization/store headers. Use an opaque
@@ -150,7 +162,9 @@ self.addEventListener("fetch", (event) => {
           const cachedPage = await caches.match(request);
           if (cachedPage) return cachedPage;
 
-          const shell = (await caches.match("/app/")) || (await caches.match("/")) || (await caches.match("/index.html"));
+          // The staff app opens its own saved page, not the business app.
+          const staffShell = /^\/hr(\/|$)/.test(url.pathname) ? await caches.match("/hr") : null;
+          const shell = staffShell || (await caches.match("/app/")) || (await caches.match("/")) || (await caches.match("/index.html"));
           return shell || Response.error();
         })
     );
@@ -201,7 +215,7 @@ self.addEventListener("message", (event) => {
 // Payload-free Web Push: keep subscription/account details off locked screens.
 self.addEventListener("push", event => {
   event.waitUntil(self.registration.showNotification("Vynerix", {
-    body: "An account or service update is available. Open ERP to review it.",
+    body: "You have an update. Open the app to review it.",
     icon: "/pwa-icon.svg", badge: "/pwa-icon.svg", tag: "vynerix-inbox",
   }));
 });
@@ -210,6 +224,8 @@ self.addEventListener("notificationclick", event => {
   event.waitUntil((async () => {
     const windows = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
     const existing = windows.find(client => new URL(client.url).origin === self.location.origin);
+    // Someone already in the staff app stays there; their bell shows what is new.
+    if (existing && /^\/hr(\/|$)/.test(new URL(existing.url).pathname)) return existing.focus();
     const target = self.location.origin + "/notifications";
     if (existing) { await existing.navigate(target); return existing.focus(); }
     return self.clients.openWindow(target);

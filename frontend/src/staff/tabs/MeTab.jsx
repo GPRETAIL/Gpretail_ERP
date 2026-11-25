@@ -3,6 +3,8 @@ import { Box, Typography } from "@mui/material";
 import { KeyRound, LogOut, Monitor, Moon, Sun } from "lucide-react";
 import api from "@/shared/api/apiClient";
 import MyRequestsCard from "@/mobile/components/MyRequestsCard";
+import StaffScreen from "../StaffScreen";
+import StaffPushCard from "../StaffPushCard";
 import ChangePin from "../ChangePin";
 import { STAFF_COLOR, STAFF_TEXT, card, sectionTitle, secondaryButton } from "../staffUi";
 
@@ -40,8 +42,10 @@ export default function MeTab({ onSignOut, theme }) {
 
       <Box>
         <Typography sx={sectionTitle}>Attendance and shift requests</Typography>
-        <MyRequestsCard />
+        <StaffScreen><MyRequestsCard /></StaffScreen>
       </Box>
+
+      <StaffPushCard />
 
       {theme && (
         <Box>
