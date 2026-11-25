@@ -8,6 +8,7 @@ use App\Models\DealerInvoiceReturn;
 use App\Models\DealerReceipt;
 use App\Models\DealerReceiptItem;
 use App\Models\DirectPurchase;
+use App\Models\GiftCredit;
 use App\Models\HrExpenseClaim;
 use App\Models\HrLoan;
 use App\Models\HrLoanRecovery;
@@ -38,8 +39,9 @@ use RuntimeException;
  */
 class LedgerPoster
 {
-    /** source type => [table, store column, voucher type] */
+    /** source type => [table, store column, voucher type, optional column filter for tables that hold more than one kind of document] */
     public const SOURCES = [
+        'gift_voucher_sale' => ['gift_credits', 'store_id', 'receipt', ['kind' => 'GIFT_VOUCHER']],
         'pos_sale' => ['pos_sales', 'store_id', 'sales'],
         'pos_return' => ['pos_returns', 'store_id', 'sales_return'],
         'settlement' => ['settlements', 'store_id', 'receipt'],
@@ -71,6 +73,7 @@ class LedgerPoster
     public static function observe(): void
     {
         $targets = [
+            GiftCredit::class => fn ($m) => $m->kind === GiftCredit::GIFT_VOUCHER ? [['gift_voucher_sale', $m->id]] : [], // Credit notes and coupons post nothing when issued.
             PosSale::class => fn ($m) => [['pos_sale', $m->id], ['settlement', $m->settlement_id], ['pos_return', $m->applied_pos_return_id]],
             PosPayment::class => fn ($m) => [['pos_sale', $m->pos_sale_id]],
             PosReturn::class => fn ($m) => [['pos_return', $m->id], ['pos_sale', $m->credit_applied_to_sale_id]],
@@ -215,6 +218,7 @@ class LedgerPoster
     private static function build(string $type, int $id): ?array
     {
         $entry = match ($type) {
+            'gift_voucher_sale' => self::giftVoucherSale($id),
             'pos_sale' => self::posSale($id),
             'pos_return' => self::posReturn($id),
             'settlement' => self::settlement($id),
@@ -420,6 +424,25 @@ class LedgerPoster
 
         return ['store_id' => $store, 'no' => $invoice->invoice_no, 'date' => $invoice->invoice_date ?: self::businessDate($invoice->created_at),
             'narration' => 'Dealer invoice '.$invoice->invoice_no, 'created_by' => $invoice->created_by, 'lines' => $lines];
+    }
+
+    /**
+     * A gift voucher sold at the counter: what the customer paid goes into the till or card/UPI clearing, and the store now
+     * owes that value as Gift Vouchers Outstanding until bills use it. A cancelled voucher leaves the books.
+     */
+    private static function giftVoucherSale(int $id): ?array
+    {
+        $voucher = DB::table('gift_credits')->where('id', $id)->first();
+        if (! $voucher || $voucher->kind !== 'GIFT_VOUCHER' || self::closed($voucher->status) || ! $voucher->payment_mode || (float) $voucher->original_amount <= 0) {
+            return null;
+        }
+        $store = (int) $voucher->store_id;
+        $amount = (float) $voucher->original_amount;
+
+        return ['store_id' => $store, 'no' => $voucher->number, 'reference' => $voucher->payment_reference,
+            'date' => $voucher->issued_on, 'created_by' => $voucher->created_by,
+            'narration' => 'Gift voucher '.$voucher->number.' sold ('.strtolower((string) $voucher->payment_mode).')',
+            'lines' => [[self::tender($store, (string) $voucher->payment_mode), $amount], [ChartOfAccounts::system($store, 'gift_voucher'), -$amount]]];
     }
 
     /** Money collected from a dealer: the till/bank is debited, the dealer's account credited. */

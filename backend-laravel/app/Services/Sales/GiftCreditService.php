@@ -37,7 +37,7 @@ class GiftCreditService
 
     private const SETTING_KEY = [GiftCredit::GIFT_VOUCHER => 'voucherExpiryDays', GiftCredit::CREDIT_NOTE => 'creditNoteExpiryDays'];
 
-    /** @param array{customer_id?: int|null, source_pos_return_id?: int|null, source_pos_sale_id?: int|null, expires_on?: string|null, min_bill_amount?: float|null, date?: \DateTimeInterface|null, created_by?: int|null}  $attributes */
+    /** @param array{customer_id?: int|null, source_pos_return_id?: int|null, source_pos_sale_id?: int|null, expires_on?: string|null, min_bill_amount?: float|null, payment_mode?: string|null, payment_reference?: string|null, counter_id?: int|null, buyer_name?: string|null, buyer_phone?: string|null, date?: \DateTimeInterface|null, created_by?: int|null}  $attributes */
     public function issue(Request $request, int $storeId, string $kind, float $amount, array $attributes = []): GiftCredit
     {
         $date = $attributes['date'] ?? null;
@@ -57,6 +57,11 @@ class GiftCreditService
             'original_amount' => round($amount, 2),
             'balance' => round($amount, 2),
             'min_bill_amount' => $attributes['min_bill_amount'] ?? null,
+            'payment_mode' => $attributes['payment_mode'] ?? null,
+            'payment_reference' => $attributes['payment_reference'] ?? null,
+            'counter_id' => $attributes['counter_id'] ?? null,
+            'buyer_name' => $attributes['buyer_name'] ?? null,
+            'buyer_phone' => $attributes['buyer_phone'] ?? null,
             'status' => 'ACTIVE',
             'created_by' => $attributes['created_by'] ?? $request->user()?->id,
         ]);

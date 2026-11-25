@@ -112,6 +112,7 @@ const CustomerOrderList = lazy(() => import("@/features/crm/CustomerOrderList"))
 const CustomerOrderForm = lazy(() => import("@/features/crm/CustomerOrderForm"));
 const BillReprint = lazy(() => import("@/features/sales/bill-reprint/BillReprint"));
 const LoyaltyManagement = lazy(() => import("@/features/crm/LoyaltyManagement"));
+const GiftVoucher = lazy(() => import("@/features/crm/GiftVoucher"));
 const PosSales = lazy(() => import("@/features/sales/pos/PosSales"));
 const PosReturn = lazy(() => import("@/features/sales/pos/PosReturn"));
 const DealerInvoice = lazy(() => import("@/features/sales/dealer/DealerInvoice"));
@@ -276,6 +277,7 @@ export const protectedLayoutRoutes = [
   // CRM > Bill Print became Sales > Bill Reprint (every sales document, not only customer orders).
   { path: "/crm/bill-print", render: () => <Navigate to="/sales/bill-reprint?types=customer_order" replace /> },
   { path: "/crm/loyalty-management", render: () => <LoyaltyManagement /> },
+  { path: "/crm/gift-voucher", render: () => <GiftVoucher /> },
   { path: "/sales/pos-sales", render: () => <PosSales /> },
   { path: "/sales/pos-sales-return", render: () => <PosReturn /> },
   { path: "/sales/dealer-invoice", render: () => <DealerInvoice /> },

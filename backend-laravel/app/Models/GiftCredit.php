@@ -18,11 +18,12 @@ class GiftCredit extends Model
     public const KINDS = [self::GIFT_VOUCHER, self::CREDIT_NOTE, self::COUPON];
 
     protected $fillable = ['store_id', 'kind', 'number', 'customer_id', 'source_pos_return_id', 'source_pos_sale_id', 'issued_on', 'expires_on',
-        'original_amount', 'balance', 'min_bill_amount', 'status', 'created_by'];
+        'original_amount', 'balance', 'min_bill_amount', 'payment_mode', 'payment_reference', 'counter_id', 'buyer_name', 'buyer_phone',
+        'status', 'cancelled_at', 'cancelled_by', 'cancel_reason', 'created_by'];
 
     protected function casts(): array
     {
-        return ['issued_on' => 'date', 'expires_on' => 'date', 'original_amount' => 'decimal:2', 'balance' => 'decimal:2', 'min_bill_amount' => 'decimal:2'];
+        return ['issued_on' => 'date', 'expires_on' => 'date', 'cancelled_at' => 'datetime', 'original_amount' => 'decimal:2', 'balance' => 'decimal:2', 'min_bill_amount' => 'decimal:2'];
     }
 
     public function customer(): BelongsTo

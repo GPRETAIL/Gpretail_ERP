@@ -52,6 +52,7 @@ import {
   PAYMENT_DIALOG_PAGES,
   CASH_OPENING_CHECKS,
   CREDIT_NOTE_EXPIRY_CHOICES,
+  VOUCHER_EXPIRY_CHOICES,
 } from "@/features/sales/customisation/utils/salesReceiptCustomisation";
 import { Box, Stack, Typography, TextField, Button, IconButton, Switch, FormControlLabel, Table, TableHead, TableBody, TableRow, TableCell, Dialog, DialogTitle, DialogContent, Tabs, Tab, MenuItem, alpha } from "@mui/material";
 import { FIELD_HEIGHT, muiFieldSx } from "@/shared/theme/formControlSizes";
@@ -1238,6 +1239,19 @@ export default function SalesSettingsEditor({ section = "sales", onDirtyChange }
             <TextField id="credit-note-expiry-days" select size="small" value={settings.creditNoteExpiryDays ?? 90} sx={{ minWidth: 320 }}
               onChange={(e) => updateSetting({ creditNoteExpiryDays: Number(e.target.value) })}>
               {[...CREDIT_NOTE_EXPIRY_CHOICES, ...(CREDIT_NOTE_EXPIRY_CHOICES.some((c) => c.value === Number(settings.creditNoteExpiryDays ?? 90)) ? [] : [{ value: Number(settings.creditNoteExpiryDays), label: `${settings.creditNoteExpiryDays} days` }])]
+                .map((option) => <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>)}
+            </TextField>
+          </Box>
+
+          <Box sx={{ ...baseCardSx, p: 2.5 }}>
+            <Typography component="label" htmlFor="voucher-expiry-days" sx={fieldLabelSx}>Gift voucher validity</Typography>
+            <Typography sx={{ fontSize: TYPE.small, color: "text.secondary", mb: 1.5 }}>
+              A gift voucher is sold at the counter and used later as a payment on a bill, in parts. This is how long a new gift voucher can be used.
+              The person selling it can choose a different number of days for one voucher.
+            </Typography>
+            <TextField id="voucher-expiry-days" select size="small" value={settings.voucherExpiryDays ?? 365} sx={{ minWidth: 320 }}
+              onChange={(e) => updateSetting({ voucherExpiryDays: Number(e.target.value) })}>
+              {[...VOUCHER_EXPIRY_CHOICES, ...(VOUCHER_EXPIRY_CHOICES.some((c) => c.value === Number(settings.voucherExpiryDays ?? 365)) ? [] : [{ value: Number(settings.voucherExpiryDays), label: `${settings.voucherExpiryDays} days` }])]
                 .map((option) => <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>)}
             </TextField>
           </Box>

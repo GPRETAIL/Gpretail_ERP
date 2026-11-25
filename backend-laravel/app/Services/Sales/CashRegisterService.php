@@ -174,9 +174,15 @@ class CashRegisterService
             ? max(0, (float) $return->total_refund - (float) ($appliedTo[$return->credit_applied_to_sale_id] ?? 0))
             : (float) $return->total_refund);
 
+        // Gift vouchers sold for cash come into this counter's drawer; one cancelled for cash goes back out of it.
+        $vouchers = DB::table('gift_credits')->where('store_id', $session->store_id)->where('kind', 'GIFT_VOUCHER')->where('payment_mode', 'CASH')
+            ->when($session->counter_id, fn ($q) => $q->where('counter_id', $session->counter_id), fn ($q) => $q->whereNull('counter_id'));
+        $voucherCash = (float) (clone $vouchers)->where('created_at', '>=', $from)->where('created_at', '<=', $until)->sum('original_amount');
+        $voucherRefunds = (float) (clone $vouchers)->where('cancelled_at', '>=', $from)->where('cancelled_at', '<=', $until)->sum('original_amount');
+
         $opening = (float) $session->opening_cash;
-        $cashSales = round($cashTaken - $changeGiven, 2);
-        $cashRefunds = round($cashRefunds, 2);
+        $cashSales = round($cashTaken - $changeGiven + $voucherCash, 2);
+        $cashRefunds = round($cashRefunds + $voucherRefunds, 2);
 
         return [
             'opening' => $opening,

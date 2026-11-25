@@ -21,10 +21,18 @@ class PostAccountingVouchers extends Command
     {
         $store = $this->option('store') ? (int) $this->option('store') : null;
         $failed = 0;
-        foreach (LedgerPoster::SOURCES as $type => [$table, $storeColumn]) {
+        foreach (LedgerPoster::SOURCES as $type => $source) {
+            [$table, $storeColumn] = $source;
+            $only = $source[3] ?? [];
             $query = DB::table("$table as d")
                 ->leftJoin('vouchers as v', fn ($join) => $join->on('v.source_id', '=', 'd.id')->where('v.source_type', '=', $type))
                 ->when($store, fn ($q) => $q->where("d.$storeColumn", $store))
+                // A table that also holds documents which post nothing (credit notes and coupons share gift_credits).
+                ->when(! empty($only), function ($q) use ($only) {
+                    foreach ($only as $column => $value) {
+                        $q->where("d.$column", $value);
+                    }
+                })
                 ->when(! $this->option('all'), fn ($q) => $q->where(fn ($q) => $q->whereNull('v.id')->orWhereColumn('d.updated_at', '>', 'v.updated_at')));
             $posted = 0;
             // By id, not offset: posting changes which rows still match the filter.

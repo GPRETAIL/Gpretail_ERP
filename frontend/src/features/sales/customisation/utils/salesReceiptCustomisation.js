@@ -310,6 +310,7 @@ export const DEFAULT_SALES_RECEIPT_CUSTOMIZATION = {
   cashOpeningCheck: "warn",
   /** Days a credit note (a return refunded as a numbered note) can be used on bills. 0 means it never expires. */
   creditNoteExpiryDays: 90,
+  voucherExpiryDays: 365,
   paymentDialogPages: [],
   reprintCopyLabels: false,
   /** Printed POS receipt copies when using the printer queue (1–3). */
@@ -516,6 +517,7 @@ const normalizePaymentQrSize = (value) => {
 
 /** How long a credit note lasts, to pick from (any saved number of days is kept and shown). */
 export const CREDIT_NOTE_EXPIRY_CHOICES = [{ value: 0, label: "Never expires" }, { value: 30, label: "30 days" }, { value: 60, label: "60 days" }, { value: 90, label: "90 days" }, { value: 180, label: "180 days" }, { value: 365, label: "1 year" }];
+export const VOUCHER_EXPIRY_CHOICES = [...CREDIT_NOTE_EXPIRY_CHOICES, { value: 730, label: "2 years" }];
 
 /** How POS treats a bill made while the counter's cash is not opened (Sales Customisation). */
 export const CASH_OPENING_CHECKS = [
@@ -609,6 +611,7 @@ export const normalizeSalesReceiptCustomization = (value = {}) => {
     reprintCopyLabels: Boolean(value.reprintCopyLabels),
     cashOpeningCheck: normalizeCashOpeningCheck(value),
     creditNoteExpiryDays: Number.isFinite(Number(value.creditNoteExpiryDays)) && Number(value.creditNoteExpiryDays) >= 0 ? Math.min(3650, Math.trunc(Number(value.creditNoteExpiryDays))) : 90,
+    voucherExpiryDays: Number.isFinite(Number(value.voucherExpiryDays)) && Number(value.voucherExpiryDays) >= 0 ? Math.min(3650, Math.trunc(Number(value.voucherExpiryDays))) : 365,
     paymentDialogPages: (Array.isArray(value.paymentDialogPages) ? value.paymentDialogPages : []).filter((page) => PAYMENT_DIALOG_PAGES.includes(page)),
     posReceiptPrintCopies: normalizePosReceiptPrintCopies(value.posReceiptPrintCopies),
     generalFields,

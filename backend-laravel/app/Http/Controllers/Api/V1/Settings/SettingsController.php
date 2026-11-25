@@ -162,7 +162,7 @@ class SettingsController extends Controller
                 $locked = Store::whereKey($store->id)->lockForUpdate()->firstOrFail();
                 $incoming = $request->except(['companyId', 'company_id', 'settingsSection']);
                 if ($request->has('settingsSection')) {
-                    $salesKeys = ['billNumberReset', 'billNumberOverride', 'settlementNumberReset', 'settlementNumberOverride', 'saleSaveAs', 'posPaymentDialogVisible', 'posSalespersonScan', 'deliveryVerifyAll', 'billingDateAfterClosing', 'billingDateChangers', 'reprintReasonAfter', 'reprintCopyLabels', 'requireCashOpening', 'cashOpeningCheck', 'creditNoteExpiryDays', 'paymentDialogPages', 'employeeSticker'];
+                    $salesKeys = ['billNumberReset', 'billNumberOverride', 'settlementNumberReset', 'settlementNumberOverride', 'saleSaveAs', 'posPaymentDialogVisible', 'posSalespersonScan', 'deliveryVerifyAll', 'billingDateAfterClosing', 'billingDateChangers', 'reprintReasonAfter', 'reprintCopyLabels', 'requireCashOpening', 'cashOpeningCheck', 'creditNoteExpiryDays', 'voucherExpiryDays', 'paymentDialogPages', 'employeeSticker'];
                     $receiptKeys = ['showBarcodeOnBill', 'showBarcodeOnReturnSlip', 'receiptCodeType', 'showDiscountOnReceipt', 'discountDisplayMode', 'showTaxTableOnReceipt', 'receiptWidthInches', 'thankYouMessage', 'receiptFontFamily', 'receiptFormat', 'printMode', 'paymentQrMode', 'paymentUpiId', 'paymentQrImageUrl', 'paymentQrSize', 'posReceiptPrintCopies', 'generalFields', 'taxFields', 'productFields'];
                     $allowed = $request->input('settingsSection') === 'sales' ? $salesKeys : $receiptKeys;
                     $incoming = array_intersect_key($incoming, array_flip($allowed));
@@ -173,13 +173,15 @@ class SettingsController extends Controller
                     if (array_key_exists('employeeSticker', $incoming)) {
                         $incoming['employeeSticker'] = \App\Support\EmployeeStickerSize::sanitize($incoming['employeeSticker']);
                     }
-                    // Days a credit note lasts (0 = never expires). Anything else keeps what is saved.
-                    if (array_key_exists('creditNoteExpiryDays', $incoming)) {
-                        $days = filter_var($incoming['creditNoteExpiryDays'], FILTER_VALIDATE_INT);
-                        if ($days === false || $days < 0 || $days > 3650) {
-                            unset($incoming['creditNoteExpiryDays']);
-                        } else {
-                            $incoming['creditNoteExpiryDays'] = $days;
+                    // Days a credit note or gift voucher lasts (0 = never expires). Anything else keeps what is saved.
+                    foreach (['creditNoteExpiryDays', 'voucherExpiryDays'] as $expiryKey) {
+                        if (array_key_exists($expiryKey, $incoming)) {
+                            $days = filter_var($incoming[$expiryKey], FILTER_VALIDATE_INT);
+                            if ($days === false || $days < 0 || $days > 3650) {
+                                unset($incoming[$expiryKey]);
+                            } else {
+                                $incoming[$expiryKey] = $days;
+                            }
                         }
                     }
                     // Who may change the POS billing date is the tenant admin's call alone; anyone else keeps what is saved.

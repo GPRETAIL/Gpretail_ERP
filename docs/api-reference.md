@@ -1,6 +1,6 @@
 # API reference
 
-Every endpoint under `/api`, grouped by module (745 endpoints). Generated from
+Every endpoint under `/api`, grouped by module (749 endpoints). Generated from
 `php artisan route:list --sort=definition --json`; regenerate it after changing routes.
 
 - Each signed-in endpoint is also served under `/api/v1/...` with the same behaviour.
@@ -22,7 +22,7 @@ Every endpoint under `/api`, grouped by module (745 endpoints). Generated from
 - [Notifications](#notifications) (11)
 - [Other](#other) (1)
 - [Platform](#platform) (29)
-- [Sales](#sales) (128)
+- [Sales](#sales) (132)
 - [Settings](#settings) (89)
 - [Store](#store) (18)
 - [Warehouse](#warehouse) (67)
@@ -537,6 +537,10 @@ Every endpoint under `/api`, grouped by module (745 endpoints). Generated from
 | POST | `/api/loyalty-redeem/otp` | LoyaltyRedeemController@sendOtp | yes |
 | POST | `/api/loyalty-redeem/otp/{id}/verify` | LoyaltyRedeemController@verifyOtp | yes |
 | GET | `/api/gift-credits/lookup` | GiftCreditController@lookup | yes |
+| GET | `/api/gift-vouchers` | GiftVoucherController@index | yes |
+| POST | `/api/gift-vouchers` | GiftVoucherController@store | yes |
+| GET | `/api/gift-vouchers/{id}` | GiftVoucherController@show | yes |
+| POST | `/api/gift-vouchers/{id}/cancel` | GiftVoucherController@cancel | yes |
 | GET | `/api/bill-reprints` | BillReprintController@index | yes |
 | GET | `/api/bill-reprints/{type}/{id}` | BillReprintController@show | yes |
 | GET | `/api/bill-reprints/{type}/{id}/history` | BillReprintController@history | yes |
