@@ -304,7 +304,8 @@ const AsyncSearchSelect = ({ name, value, onChange, options, onAsyncSearch, plac
                 <Box component="span" sx={{ fontSize: TYPE.small, color: "#3b82f6", fontWeight: 500, flexShrink: 0, px: 0.5, animation: "app-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite" }}>Searching...</Box>
               )}
             </Box>
-            <Box component="ul" ref={listRef} sx={{ maxHeight: dropdownPlacement.maxHeight, overflowY: "auto" }}>
+            {/* listStyle/m/p: no browser bullets or indent (the old Tailwind reset that hid them is gone). */}
+            <Box component="ul" ref={listRef} sx={{ maxHeight: dropdownPlacement.maxHeight, overflowY: "auto", listStyle: "none", m: 0, p: 0 }}>
               <Box
                 component="li"
                 onClick={() => selectVal("")}

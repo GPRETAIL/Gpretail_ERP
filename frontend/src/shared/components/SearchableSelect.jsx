@@ -282,7 +282,8 @@ const SearchableSelect = ({
         />
       </Box>
 
-      <Box component="ul" sx={{ overflowY: "auto", ...listMaxStyle }}>
+      {/* listStyle/m/p: no browser bullets or indent (the old Tailwind reset that hid them is gone). */}
+      <Box component="ul" sx={{ overflowY: "auto", listStyle: "none", m: 0, p: 0, ...listMaxStyle }}>
         {showEmptyOption && (
           <Box
             component="li"
