@@ -1,5 +1,5 @@
 import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Stack, Typography } from "@mui/material";
-import { waitedText } from "../utils/heldBills";
+import { heldAtText, waitedText } from "../utils/heldBills";
 
 const money = (value) => Number(value || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -18,7 +18,7 @@ export default function HeldBillsDialog({ open, bills, onResume, onDelete, onClo
                 <Box sx={{ flex: 1, minWidth: 0 }}>
                   <Typography sx={{ fontWeight: 600, fontSize: 14 }} noWrap>{bill.label}</Typography>
                   <Typography sx={{ fontSize: 12.5, color: "text.secondary" }}>
-                    {bill.items} item{bill.items === 1 ? "" : "s"} · ₹{money(bill.amount)} · held {waitedText(bill.heldAt)}
+                    {bill.items} item{bill.items === 1 ? "" : "s"} · ₹{money(bill.amount)} · held {heldAtText(bill.heldAt)} ({waitedText(bill.heldAt)})
                   </Typography>
                 </Box>
                 <Button size="small" variant="contained" onClick={() => onResume(bill.id)}>Resume</Button>

@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { toast } from "react-toastify";
 import PosSales from "@/features/sales/pos/PosSales";
 import api from "@/shared/api/apiClient";
-import { MAX_HELD_BILLS, addHeldBill, heldBillLabel, heldBillsKey, loadHeldBills, makeHeldBill, removeHeldBill, saveHeldBills, waitedText } from "@/features/sales/pos/utils/heldBills";
+import { MAX_HELD_BILLS, addHeldBill, heldAtText, heldBillLabel, heldBillsKey, loadHeldBills, makeHeldBill, removeHeldBill, saveHeldBills, waitedText } from "@/features/sales/pos/utils/heldBills";
 
 const mocks = vi.hoisted(() => ({ print: vi.fn(), user: { id: 1, name: "Cashier", company_id: 1, store_id: 1, counter_id: 1, counter_name: "Till" } }));
 vi.mock("react-redux", () => ({ useDispatch: () => vi.fn(), useSelector: selector => selector({ auth: { user: mocks.user } }) }));
@@ -50,6 +50,7 @@ describe("held bills storage", () => {
     expect(waitedText(1000, 1000 + 20000)).toBe("just now");
     expect(waitedText(1000, 1000 + 5 * 60000)).toBe("5 min ago");
     expect(waitedText(1000, 1000 + 130 * 60000)).toBe("2 h ago");
+    expect(heldAtText(new Date(2026, 10, 26, 0, 31).getTime())).toMatch(/^26 Nov,? 12:31\s?(am|AM)$/);
   });
 });
 
@@ -92,6 +93,7 @@ it("Hold sets the bill aside, clears the screen, and Resume brings it back", asy
   fireEvent.click(screen.getByRole("button", { name: /Held \(1\)/ }));
   const dialog = await screen.findByRole("dialog");
   expect(within(dialog).getByText(/1 item · ₹300\.00/)).toBeInTheDocument();
+  expect(within(dialog).getByText(/held \d{1,2} [A-Z][a-z]{2},? .*\(just now\)/)).toBeInTheDocument(); // the day and time, then how long ago
   fireEvent.click(within(dialog).getByRole("button", { name: "Resume" }));
 
   expect(await screen.findByText("Coffee beans")).toBeInTheDocument();

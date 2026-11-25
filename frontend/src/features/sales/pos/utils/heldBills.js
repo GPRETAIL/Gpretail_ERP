@@ -50,6 +50,9 @@ export const addHeldBill = (list, bill) => [bill, ...list].slice(0, MAX_HELD_BIL
 
 export const removeHeldBill = (list, id) => list.filter((bill) => bill.id !== id);
 
+/** "26 Nov, 12:31 am": the day and time a bill was put on hold. */
+export const heldAtText = (heldAt) => new Date(Number(heldAt)).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
+
 /** "5 min ago", "2 h ago": how long a bill has waited. */
 export const waitedText = (heldAt, now = Date.now()) => {
   const minutes = Math.max(0, Math.floor((now - Number(heldAt)) / 60000));
