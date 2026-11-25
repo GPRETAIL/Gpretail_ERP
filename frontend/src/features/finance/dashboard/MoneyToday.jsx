@@ -1,15 +1,7 @@
-import { useMemo } from "react";
 import { Link } from "react-router-dom";
-import { useSelector } from "react-redux";
-import { Alert, Box, Button, Card, Chip, Paper, Skeleton, Stack, Typography } from "@mui/material";
+import { Alert, Box, Button, Paper, Skeleton, Stack, Typography } from "@mui/material";
 import { Banknote, Building2, CreditCard, Landmark, ReceiptIndianRupee, RefreshCw, TrendingUp, Users } from "lucide-react";
-import PageHeader from "@/shared/components/PageHeader";
-import { navItems } from "@/shared/layout/navItems";
-import { getVisibleNavItems } from "@/features/auth/utils/accessControl";
-import FinanceDashboardTabPane from "@/features/dashboard/components/FinanceDashboardTabPane";
-import { DashboardLayoutProvider } from "@/features/dashboard/context/DashboardLayoutContext";
 import { money, useFinanceReport } from "@/features/finance/accounting/utils/financeUtils";
-import { groupFinancePages } from "./utils/financeHomePages";
 
 const rupees = (value) => `₹${money(value)}`;
 
@@ -35,26 +27,26 @@ function Lines({ rows }) {
   ));
 }
 
-/** Finance home (/finance): where the money is today, from the books, then every Finance page this user may open. */
-export default function FinanceHome() {
-  const user = useSelector((state) => state.auth.user);
+const GRID = { display: "grid", gap: 1.5, gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(4, 1fr)" } };
+
+/** Finance > Dashboard: where the money is today, straight from the books (cash, bank, today, GST, dues, profit). */
+export default function MoneyToday() {
   const home = useFinanceReport("/accounting/home", null);
   const data = home.data;
-  const groups = useMemo(() => groupFinancePages(getVisibleNavItems(navItems, user).find((item) => item.path === "/finance")?.subItems), [user]);
-  const storeId = sessionStorage.getItem("activeStoreId") || String(user?.store_id || "");
 
   return (
-    <Box component="section" sx={{ height: "100%", overflowY: "auto", p: { xs: 1.5, sm: 2 }, display: "flex", flexDirection: "column", gap: 2 }}>
-      <PageHeader title="Finance" actions={<Button size="small" startIcon={<RefreshCw size={14} />} onClick={home.reload}>Refresh</Button>} />
+    <Box component="section" sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+      <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between" }}>
+        <Typography component="h2" variant="subtitle2" sx={{ fontWeight: 700 }}>Money today</Typography>
+        <Button size="small" startIcon={<RefreshCw size={14} />} onClick={home.reload}>Refresh</Button>
+      </Stack>
 
       {home.error ? <Alert severity="info">{home.error}</Alert> : null}
       {!data && !home.error ? (
-        <Box sx={{ display: "grid", gap: 1.5, gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(4, 1fr)" } }}>
-          {[0, 1, 2, 3].map((n) => <Skeleton key={n} variant="rounded" height={110} />)}
-        </Box>
+        <Box sx={GRID}>{[0, 1, 2, 3].map((n) => <Skeleton key={n} variant="rounded" height={110} />)}</Box>
       ) : null}
       {data ? (
-        <Box aria-label="Money today" sx={{ display: "grid", gap: 1.5, gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(4, 1fr)" } }}>
+        <Box aria-label="Money today" sx={GRID}>
           <MoneyCard icon={Banknote} title="Cash in hand" value={rupees(data.totals.cash)}>
             {data.cash.length > 1 ? <Lines rows={data.cash} /> : null}
           </MoneyCard>
@@ -81,29 +73,6 @@ export default function FinanceHome() {
           </MoneyCard>
         </Box>
       ) : null}
-
-      {groups.map((group) => (
-        <Box key={group.title}>
-          <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>{group.title}</Typography>
-          <Box sx={{ display: "grid", gap: 1.5, gridTemplateColumns: { xs: "repeat(2, 1fr)", sm: "repeat(3, 1fr)", md: "repeat(4, 1fr)", lg: "repeat(6, 1fr)" } }}>
-            {group.items.map((page) => (
-              <Card key={page.path} component={Link} to={page.path} variant="outlined"
-                sx={{ display: "flex", alignItems: "center", gap: 1, px: 1.5, py: 1, minHeight: 48, textDecoration: "none", "&:hover": { boxShadow: 2, bgcolor: "action.hover" } }}>
-                {page.icon ? <page.icon style={{ width: 16, height: 16, color: "#6366f1", flexShrink: 0 }} /> : null}
-                <Typography variant="body2" sx={{ fontWeight: 500, color: "text.primary", flex: 1 }}>{page.name}</Typography>
-                {page.soon ? <Chip label="Soon" size="small" variant="outlined" sx={{ height: 18, fontSize: 10 }} /> : null}
-              </Card>
-            ))}
-          </Box>
-        </Box>
-      ))}
-
-      <Box>
-        <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>Payables, purchases and dues</Typography>
-        <DashboardLayoutProvider>
-          <FinanceDashboardTabPane active companyId={storeId} />
-        </DashboardLayoutProvider>
-      </Box>
     </Box>
   );
 }

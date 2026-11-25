@@ -7,10 +7,12 @@ import Breadcrumbs from "@/shared/components/Breadcrumbs";
 import FinanceDashboardTabPane from "@/features/dashboard/components/FinanceDashboardTabPane";
 import { DashboardLayoutProvider } from "@/features/dashboard/context/DashboardLayoutContext";
 import { isoDate } from "@/features/finance/accounting/utils/financeUtils";
+import MoneyToday from "./MoneyToday";
 
 /**
- * Finance > Dashboard: the Finance tab of the main Dashboard as a page of its own in the Finance menu (like
- * Warehouse > Dashboard and HR > Dashboard): payables, receivables, purchases, payments and dealer dues.
+ * Finance > Dashboard: where the money is today (cash, bank, GST, dues, profit), then the Finance tab of the main
+ * Dashboard as a page of its own in the Finance menu (like Warehouse > Dashboard and HR > Dashboard): payables,
+ * receivables, purchases, payments and dealer dues. The Finance page itself is only the menu, like the other modules.
  */
 export default function FinanceDashboard() {
   const navigate = useNavigate();
@@ -34,6 +36,7 @@ export default function FinanceDashboard() {
             ))}
           </Stack>
         } />
+      <MoneyToday />
       <DashboardLayoutProvider>
         <FinanceDashboardTabPane active fromDate={range.from} toDate={range.to} companyId={storeId} />
       </DashboardLayoutProvider>
