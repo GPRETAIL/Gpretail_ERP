@@ -5,14 +5,29 @@ namespace App\Http\Controllers\Api\V1\Settings;
 use App\Http\Controllers\Controller;
 use App\Models\PlatformActivation;
 use App\Models\Store;
-use App\Services\Tenancy\StoreContext;
 use App\Services\Platform\StoreLicenceVerifier;
+use App\Services\Tenancy\StoreContext;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
 class StoreController extends Controller
 {
+    /** Details Vynerix Admin owns for a store it provisioned. They come in with the sync and are never edited here. */
+    public const PLATFORM_LOCKED = ['code', 'name', 'is_active', 'reg_name', 'gstin', 'address', 'location', 'phone', 'city', 'state', 'country', 'pincode'];
+
+    /** Screen field name => column, for the fields the Company page sends in camelCase. */
+    private const CAMEL_COLUMNS = [
+        'regName' => 'reg_name', 'contactPerson' => 'contact_person', 'contactNo' => 'phone', 'emailId' => 'email',
+        'pinCode' => 'pincode', 'gstNo' => 'gstin', 'tanPan' => 'tan_pan', 'gstUsername' => 'gst_username',
+        'einvoiceUsername' => 'einvoice_username', 'einvoicePassword' => 'einvoice_password', 'gstAccessKey' => 'gst_access_key',
+        'pfEsiNo' => 'pf_esi_no', 'bankAccountName' => 'bank_account_name', 'accountNo' => 'account_no',
+        'internalVendorMargin' => 'internal_vendor_margin', 'asSupplier' => 'as_supplier', 'asCustomer' => 'as_customer',
+    ];
+
+    /** Secrets are kept when the screen sends them blank (a role that is not shown them cannot send them back). */
+    private const KEEP_WHEN_BLANK = ['einvoice_password', 'gst_access_key'];
+
     /**
      * Format a store record for consistent frontend consumption.
      */
@@ -37,6 +52,8 @@ class StoreController extends Controller
         $data['asSupplier'] = (bool) $store->as_supplier;
         $data['asCustomer'] = (bool) $store->as_customer;
         $data['printerConfigurations'] = $store->printer_configurations ?: [];
+        $data['vx_admin_managed'] = (bool) $store->platform_store_id;
+        $data['locked_fields'] = $store->platform_store_id ? self::PLATFORM_LOCKED : [];
         $data['receiptCustomization'] = $store->receipt_customization ?: [];
         $data['barcodeCustomization'] = $store->barcode_customization ?: [];
 
@@ -155,26 +172,23 @@ class StoreController extends Controller
             $data['printer_configurations'] = json_decode($data['printerConfigurations'], true) ?: [];
         }
 
-        if (isset($data['regName'])) {
-            $data['reg_name'] = $data['regName'];
-        }
-        if (isset($data['contactPerson'])) {
-            $data['contact_person'] = $data['contactPerson'];
-        }
-        if (isset($data['contactNo'])) {
-            $data['phone'] = $data['contactNo'];
+        foreach (self::CAMEL_COLUMNS as $field => $column) {
+            if (! array_key_exists($field, $data)) {
+                continue;
+            }
+            $value = $data[$field];
+            if (in_array($column, self::KEEP_WHEN_BLANK, true) && trim((string) $value) === '') {
+                continue;
+            }
+            if (in_array($column, ['as_supplier', 'as_customer'], true)) {
+                $value = filter_var($value, FILTER_VALIDATE_BOOLEAN);
+            } elseif ($column === 'internal_vendor_margin') {
+                $value = trim((string) $value) === '' ? null : $value;
+            }
+            $data[$column] = $value;
         }
         if (isset($data['emailId'])) {
             $data['email'] = $data['emailId'];
-        }
-        if (isset($data['pinCode'])) {
-            $data['pincode'] = $data['pinCode'];
-        }
-        if (isset($data['gstNo'])) {
-            $data['gstin'] = $data['gstNo'];
-        }
-        if (isset($data['tanPan'])) {
-            $data['tan_pan'] = $data['tanPan'];
         }
         if (isset($data['active'])) {
             $data['is_active'] = filter_var($data['active'], FILTER_VALIDATE_BOOLEAN);
@@ -184,7 +198,8 @@ class StoreController extends Controller
             unset($data[$field]);
         }
         if ($store->platform_store_id) {
-            foreach (['code', 'is_active', 'name'] as $field) {
+            // Vynerix Admin owns these; the store keeps whatever the last sync brought in. Its admin login is managed there too.
+            foreach ([...self::PLATFORM_LOCKED, 'admin_name', 'admin_email', 'admin_password'] as $field) {
                 unset($data[$field]);
             }
         }

@@ -25,7 +25,10 @@ import api from "@/shared/api/apiClient";
 import { muiFieldSx } from "@/shared/theme/formControlSizes";
 import LoadingSkeleton from "@/shared/components/LoadingSkeleton";
 
-const REQUIRED_FIELDS = ["code", "name", "regName", "contactPerson", "contactNo"];
+// A store Vynerix Admin provisioned gets these from Admin and cannot change them here. Other stores fill them in.
+const ADMIN_OWNED_FIELDS = ["code", "name", "regName", "gstNo", "address", "location", "contactNo", "city", "state", "country", "pinCode"];
+const REQUIRED_FIELDS = ["code", "name", "regName", "contactNo", "location"];
+const FIELD_LABELS = { code: "Code", name: "Name", regName: "Reg. Name", contactNo: "Contact No", location: "Location" };
 
 const PRINTER_TYPE_OPTIONS = [
   { value: "printer_only", label: "Printer Only" },
@@ -39,16 +42,14 @@ const emptyForm = {
   regName: "",
   contactPerson: "",
   contactNo: "",
-  adminName: "",
-  adminEmail: "",
-  adminPassword: "",
   accessLevel: "full",
   accessModules: [],
   address: "",
-  cityId: "",
+  location: "",
+  city: "",
   pinCode: "",
-  stateId: "",
-  countryId: "",
+  state: "",
+  country: "",
   internalVendorMargin: "",
   asSupplier: false,
   asCustomer: false,
@@ -119,10 +120,6 @@ const CompanySettings = () => {
   const [form, setForm] = useState(emptyForm);
   const [currentId, setCurrentId] = useState(null);
 
-  const [cityOptions, setCityOptions] = useState([]);
-  const [stateOptions, setStateOptions] = useState([]);
-  const [countryOptions, setCountryOptions] = useState([]);
-
   const [printerRow, setPrinterRow] = useState(emptyPrinterRow);
   const [printerConfigurations, setPrinterConfigurations] = useState([]);
 
@@ -145,14 +142,12 @@ const CompanySettings = () => {
     regName: record.reg_name || "",
     contactPerson: record.contact_person || "",
     contactNo: record.contact_no || "",
-    adminName: record.admin_user?.name || "",
-    adminEmail: record.admin_user?.email || record.email_id || record.email || "",
-    adminPassword: "",
     address: record.address || "",
-    cityId: record.city_id ? String(record.city_id) : "",
+    location: record.location || "",
+    city: record.city || "",
     pinCode: record.pin_code || record.pincode || "",
-    stateId: record.state_id ? String(record.state_id) : "",
-    countryId: record.country_id ? String(record.country_id) : "",
+    state: record.state || "",
+    country: record.country || "",
     internalVendorMargin:
       record.internal_vendor_margin !== null && record.internal_vendor_margin !== undefined
         ? String(record.internal_vendor_margin)
@@ -176,17 +171,21 @@ const CompanySettings = () => {
     vxAdminManaged: !!record.vx_admin_managed,
   });
 
+  const applyRecord = (record) => {
+    setCurrentId(record.id);
+    setForm(mapApiToForm(record));
+    setPrinterConfigurations(Array.isArray(record.printer_configurations) ? record.printer_configurations : []);
+    setPrinterRow(emptyPrinterRow);
+    setLogoFile(null);
+    setLogoPreview(resolveAssetUrl(record.logo));
+  };
+
   const loadCompanyById = async (id) => {
     if (!id) return;
     const res = await api.get(`/companies/${id}`);
     const record = res.data?.data;
     if (!record) return;
-
-    setCurrentId(record.id);
-    setForm(mapApiToForm(record));
-    setPrinterConfigurations(Array.isArray(record.printer_configurations) ? record.printer_configurations : []);
-    setLogoFile(null);
-    setLogoPreview(resolveAssetUrl(record.logo));
+    applyRecord(record);
   };
 
   const loadSearchResults = async (query = "") => {
@@ -220,30 +219,19 @@ const CompanySettings = () => {
   };
 
   useEffect(() => {
+    // Open on the store the user is working in, so its saved details are already on screen.
     let mounted = true;
-
-    const load = async () => {
+    (async () => {
       try {
-        const [citiesRes, statesRes, countriesRes] = await Promise.all([
-          api.get("/configurations/city"),
-          api.get("/configurations/state"),
-          api.get("/configurations/country"),
-        ]);
-
-        if (!mounted) return;
-
-        setCityOptions((citiesRes.data?.data || []).map((x) => ({ value: String(x.id), label: x.name })));
-        setStateOptions((statesRes.data?.data || []).map((x) => ({ value: String(x.id), label: x.name })));
-        setCountryOptions((countriesRes.data?.data || []).map((x) => ({ value: String(x.id), label: x.name })));
-      } catch (err) {
-        toast.error(err.response?.data?.message || "Failed to load company setup");
+        const res = await api.get("/companies/default");
+        const record = res.data?.data;
+        if (mounted && record) applyRecord(record);
+      } catch {
+        // A tenant admin has no single store yet: the table above picks one.
       } finally {
         if (mounted) setLoading(false);
       }
-    };
-
-    load();
-
+    })();
     return () => {
       mounted = false;
       if (logoPreview && logoPreview.startsWith("blob:")) {
@@ -355,6 +343,15 @@ const CompanySettings = () => {
     }
   };
 
+  const handleSelectStore = async (row) => {
+    if (!row?.id || String(row.id) === String(currentId)) return;
+    try {
+      await loadCompanyById(row.id);
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to load store");
+    }
+  };
+
   const handleDeleteCompany = async (row) => {
     const companyName = row?.name || "this company";
     const confirmed = window.confirm(
@@ -388,10 +385,12 @@ const CompanySettings = () => {
   };
 
   const handleSave = async () => {
-    for (const field of REQUIRED_FIELDS) {
-      if (!String(form[field] || "").trim()) {
-        toast.warn(`${field.replace(/[A-Z]/g, (m) => ` ${m}`).trim()} is required`);
-        return;
+    if (!form.vxAdminManaged) {
+      for (const field of REQUIRED_FIELDS) {
+        if (!String(form[field] || "").trim()) {
+          toast.warn(`${FIELD_LABELS[field]} is required`);
+          return;
+        }
       }
     }
 
@@ -401,9 +400,6 @@ const CompanySettings = () => {
     payload.append("regName", form.regName);
     payload.append("contactPerson", form.contactPerson);
     payload.append("contactNo", form.contactNo);
-    payload.append("adminName", form.adminName);
-    payload.append("adminEmail", form.adminEmail);
-    payload.append("adminPassword", form.adminPassword);
     // Per-store module entitlement chosen by the super admin.
     if (form.accessLevel) {
       payload.append("access_level", form.accessLevel);
@@ -413,10 +409,11 @@ const CompanySettings = () => {
     }
 
     payload.append("address", form.address);
-    payload.append("cityId", form.cityId);
+    payload.append("location", form.location);
+    payload.append("city", form.city);
     payload.append("pinCode", form.pinCode);
-    payload.append("stateId", form.stateId);
-    payload.append("countryId", form.countryId);
+    payload.append("state", form.state);
+    payload.append("country", form.country);
 
     payload.append("internalVendorMargin", form.internalVendorMargin);
     payload.append("asSupplier", String(form.asSupplier));
@@ -468,6 +465,7 @@ const CompanySettings = () => {
     }
   };
 
+  const locked = (field) => form.vxAdminManaged && ADMIN_OWNED_FIELDS.includes(field);
   const cardSx = { bgcolor: "background.paper", border: "1px solid", borderColor: "divider", borderRadius: "5.25px", boxShadow: 1 };
   const fieldSx = muiFieldSx;
 
@@ -524,17 +522,18 @@ const CompanySettings = () => {
       {(overview.stores.length > 0 || overview.warehouses.length > 0) && (
         <Box sx={{ ...cardSx, p: 1.5 }}>
           <Typography component="h2" sx={{ fontSize: 13, fontWeight: 600, color: "text.primary", mb: 1 }}>
-            Stores &amp; Warehouses <Box component="span" sx={{ fontSize: TYPE.small, fontWeight: 400, color: "text.disabled" }}>(synced from Vynerix Admin)</Box>
+            Stores &amp; Warehouses <Box component="span" sx={{ fontSize: TYPE.small, fontWeight: 400, color: "text.disabled" }}>(synced from Vynerix Admin. Click a store to open its saved details.)</Box>
           </Typography>
           {/* One table rather than two side-by-side lists: a warehouse is a location under the same
               company as the stores, so it belongs in the same list distinguished by Store Type.
               Split columns made them look like unrelated things and hid warehouses entirely from
               anyone scanning the stores column. */}
           <Box sx={{ overflowX: "auto" }}>
-            <Table size="small" sx={{ minWidth: 520, "& th, & td": { fontSize: 12.25 } }}>
+            <Table size="small" sx={{ minWidth: 620, "& th, & td": { fontSize: 12.25 } }}>
               <TableHead>
                 <TableRow>
                   <TableCell sx={{ borderColor: "divider", fontSize: TYPE.small, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.03em", color: "text.secondary" }}>Name</TableCell>
+                  <TableCell sx={{ borderColor: "divider", fontSize: TYPE.small, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.03em", color: "text.secondary" }}>Location</TableCell>
                   <TableCell sx={{ borderColor: "divider", fontSize: TYPE.small, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.03em", color: "text.secondary" }}>Store Type</TableCell>
                   <TableCell sx={{ borderColor: "divider", fontSize: TYPE.small, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.03em", color: "text.secondary" }}>Tagged To</TableCell>
                   <TableCell sx={{ borderColor: "divider", fontSize: TYPE.small, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.03em", color: "text.secondary" }}>Status</TableCell>
@@ -550,8 +549,20 @@ const CompanySettings = () => {
                     : [];
                   const isWarehouse = row.__type === "Warehouse";
                   return (
-                    <TableRow key={`${row.__type}-${row.code || i}`}>
+                    <TableRow
+                      key={`${row.__type}-${row.code || i}`}
+                      hover={!isWarehouse}
+                      selected={!isWarehouse && String(row.id) === String(currentId)}
+                      onClick={isWarehouse ? undefined : () => handleSelectStore(row)}
+                      onKeyDown={isWarehouse ? undefined : (event) => { if (event.key === "Enter") handleSelectStore(row); }}
+                      tabIndex={isWarehouse ? undefined : 0}
+                      aria-label={isWarehouse ? undefined : `Open store ${row.name || row.code}`}
+                      sx={isWarehouse ? undefined : { cursor: "pointer" }}
+                    >
                       <TableCell sx={{ borderColor: "divider", color: "text.secondary" }}>{row.name || row.code}</TableCell>
+                      <TableCell sx={{ borderColor: "divider", color: row.location ? "text.secondary" : "warning.main" }}>
+                        {isWarehouse ? "—" : row.location || "Not set"}
+                      </TableCell>
                       <TableCell sx={{ borderColor: "divider" }}>
                         <Box
                           component="span"
@@ -694,37 +705,29 @@ const CompanySettings = () => {
                   border: "1px solid", borderColor: "primary.main", borderRadius: "4px", px: 1, py: 0.75,
                 }}
               >
-                Name, Reg. Name, Contact Person, Contact No, GST No, City, PIN Code and State are set by your
-                platform administrator (Vynerix Admin) for this store. View only here. To change one, reach out to
-                Vynerix Admin.
+                Store name, Reg. Name, GST No, Address, Location, Contact No, City, State, Country and PIN Code come from
+                Vynerix Admin and cannot be changed here. Printers, e-invoice and GST login details, bank details, logo and
+                the other fields below can be edited and saved for this store.
+                {!form.location ? " Location is not set yet. Add it in Vynerix Admin under Stores." : ""}
               </Typography>
             ) : null}
             <Box sx={{ display: "grid", gap: 1.5, gridTemplateColumns: { md: "repeat(2, 1fr)" } }}>
               <InputField label="Code" required>
-                <TextField size="small" fullWidth sx={fieldSx} value={form.code} onChange={setField("code")} />
+                <TextField size="small" fullWidth sx={fieldSx} value={form.code} onChange={setField("code")} disabled={locked("code")} />
               </InputField>
               <InputField label="Name" required>
-                <TextField size="small" fullWidth sx={fieldSx} value={form.name} onChange={setField("name")} disabled={form.vxAdminManaged} />
+                <TextField size="small" fullWidth sx={fieldSx} value={form.name} onChange={setField("name")} disabled={locked("name")} />
               </InputField>
 
               <InputField label="Reg. Name" required>
-                <TextField size="small" fullWidth sx={fieldSx} value={form.regName} onChange={setField("regName")} disabled={form.vxAdminManaged} />
+                <TextField size="small" fullWidth sx={fieldSx} value={form.regName} onChange={setField("regName")} disabled={locked("regName")} />
               </InputField>
-              <InputField label="Contact Person" required>
-                <TextField size="small" fullWidth sx={fieldSx} value={form.contactPerson} onChange={setField("contactPerson")} disabled={form.vxAdminManaged} />
+              <InputField label="Contact Person">
+                <TextField size="small" fullWidth sx={fieldSx} value={form.contactPerson} onChange={setField("contactPerson")} />
               </InputField>
 
               <InputField label="Contact No" required>
-                <TextField size="small" fullWidth sx={fieldSx} value={form.contactNo} onChange={setField("contactNo")} disabled={form.vxAdminManaged} />
-              </InputField>
-              <InputField label="Admin Name">
-                <TextField size="small" fullWidth sx={fieldSx} value={form.adminName} onChange={setField("adminName")} />
-              </InputField>
-              <InputField label="Admin Email">
-                <TextField size="small" fullWidth sx={fieldSx} value={form.adminEmail} onChange={setField("adminEmail")} />
-              </InputField>
-              <InputField label="Admin Password">
-                <TextField type="password" size="small" fullWidth sx={fieldSx} value={form.adminPassword} onChange={setField("adminPassword")} />
+                <TextField size="small" fullWidth sx={fieldSx} value={form.contactNo} onChange={setField("contactNo")} disabled={locked("contactNo")} />
               </InputField>
               <InputField label="Email ID">
                 <TextField size="small" fullWidth sx={fieldSx} value={form.emailId} onChange={setField("emailId")} />
@@ -773,36 +776,26 @@ const CompanySettings = () => {
               </InputField>
 
               <InputField label="Address" sx={{ gridColumn: { md: "span 2" } }}>
-                <TextField multiline rows={2} size="small" fullWidth sx={fieldSx} value={form.address} onChange={setField("address")} />
+                <TextField multiline rows={2} size="small" fullWidth sx={fieldSx} value={form.address} onChange={setField("address")} disabled={locked("address")} />
+              </InputField>
+
+              <InputField label="Location" required={!form.vxAdminManaged} sx={{ gridColumn: { md: "span 2" } }}>
+                <TextField size="small" fullWidth sx={fieldSx} value={form.location} onChange={setField("location")} disabled={locked("location")}
+                  error={!form.location} helperText={!form.location ? "Location is required." : undefined} />
               </InputField>
 
               <InputField label="City">
-                <TextField select size="small" fullWidth sx={fieldSx} value={form.cityId} onChange={setField("cityId")} disabled={form.vxAdminManaged}>
-                  <MenuItem value="">Select City</MenuItem>
-                  {cityOptions.map((opt) => (
-                    <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
-                  ))}
-                </TextField>
+                <TextField size="small" fullWidth sx={fieldSx} value={form.city} onChange={setField("city")} disabled={locked("city")} />
               </InputField>
               <InputField label="PIN Code">
-                <TextField size="small" fullWidth sx={fieldSx} value={form.pinCode} onChange={setField("pinCode")} disabled={form.vxAdminManaged} />
+                <TextField size="small" fullWidth sx={fieldSx} value={form.pinCode} onChange={setField("pinCode")} disabled={locked("pinCode")} />
               </InputField>
 
               <InputField label="State">
-                <TextField select size="small" fullWidth sx={fieldSx} value={form.stateId} onChange={setField("stateId")} disabled={form.vxAdminManaged}>
-                  <MenuItem value="">Select State</MenuItem>
-                  {stateOptions.map((opt) => (
-                    <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
-                  ))}
-                </TextField>
+                <TextField size="small" fullWidth sx={fieldSx} value={form.state} onChange={setField("state")} disabled={locked("state")} />
               </InputField>
               <InputField label="Country">
-                <TextField select size="small" fullWidth sx={fieldSx} value={form.countryId} onChange={setField("countryId")}>
-                  <MenuItem value="">Select Country</MenuItem>
-                  {countryOptions.map((opt) => (
-                    <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
-                  ))}
-                </TextField>
+                <TextField size="small" fullWidth sx={fieldSx} value={form.country} onChange={setField("country")} disabled={locked("country")} />
               </InputField>
 
               <InputField label="Internal VendorMargin">
@@ -822,7 +815,7 @@ const CompanySettings = () => {
               </Box>
 
               <InputField label="GST No">
-                <TextField size="small" fullWidth sx={fieldSx} value={form.gstNo} onChange={setField("gstNo")} disabled={form.vxAdminManaged} />
+                <TextField size="small" fullWidth sx={fieldSx} value={form.gstNo} onChange={setField("gstNo")} disabled={locked("gstNo")} />
               </InputField>
               <InputField label="GST Username">
                 <TextField size="small" fullWidth sx={fieldSx} value={form.gstUsername} onChange={setField("gstUsername")} />

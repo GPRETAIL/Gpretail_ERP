@@ -179,6 +179,29 @@ class PlatformActivationService
         });
     }
 
+    /**
+     * The store details Vynerix Admin owns (registration name, GST, address, location, city, state, country, PIN code, contact number). They are copied
+     * here only when Admin sent a value, so a detail Admin has not captured yet never blanks one already on the store.
+     * The Company page shows them read-only.
+     */
+    private function profileFrom(array $source): array
+    {
+        $contact = is_array($source['contact'] ?? null) ? $source['contact'] : [];
+        $values = [
+            'reg_name' => $source['registration_name'] ?? null,
+            'gstin' => $source['gst_no'] ?? null,
+            'address' => $source['address'] ?? null,
+            'location' => $contact['location'] ?? null,
+            'city' => $source['city'] ?? null,
+            'state' => $source['state'] ?? null,
+            'country' => $source['country'] ?? null,
+            'pincode' => $source['pin_code'] ?? null,
+            'phone' => $contact['phone'] ?? null,
+        ];
+
+        return array_filter($values, fn ($value) => is_string($value) && trim($value) !== '');
+    }
+
     private function importStores(PlatformActivation $activation, array $stores): void
     {
         DB::transaction(function () use ($activation, $stores): void {
@@ -200,6 +223,7 @@ class PlatformActivationService
                 }
                 $local ??= new Store;
                 $local->fill([
+                    ...$this->profileFrom($source),
                     'name' => $source['name'], 'code' => $source['code'],
                     'platform_store_id' => $id, 'platform_company_code' => $activation->company_code,
                     'activation_required' => true, 'activated_at' => $source['activated_at'] ?? null,
