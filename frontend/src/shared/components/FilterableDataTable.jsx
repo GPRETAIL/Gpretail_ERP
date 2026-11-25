@@ -82,6 +82,7 @@ export default function FilterableDataTable({
   showExport = true,
   onExportRows = null,
   exportFileName = "table_data",
+  exportPeriod = "",
   exportTitle = "",
   exportTitleResolver = null,
   exportSubtitle = "",
@@ -2102,6 +2103,7 @@ export default function FilterableDataTable({
             columns={visibleColumnDefs}
             rows={filteredRows}
             fileName={exportFileName}
+            exportPeriod={exportPeriod}
             title={exportTitle}
             titleResolver={exportTitleResolver}
             subtitle={exportSubtitle}

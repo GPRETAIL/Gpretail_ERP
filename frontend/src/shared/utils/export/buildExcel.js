@@ -19,7 +19,7 @@ const displayLength = (value, kind) => {
  * page width, header repeated on every page, page numbers). `rawBody` holds the cell values as the table has them
  * (numbers stay numbers); text-looking columns such as phone numbers and codes stay text.
  */
-export default async function buildExcel({ headingLines = [], headers, rawBody, sheetName = "Export", metaLine = "" }) {
+export default async function buildExcel({ headerLines = [], headers, rawBody, sheetName = "Export" }) {
   const { default: ExcelJS } = await import("exceljs");
   const workbook = new ExcelJS.Workbook();
   workbook.creator = "Vynerix";
@@ -27,14 +27,19 @@ export default async function buildExcel({ headingLines = [], headers, rawBody, 
   const sheet = workbook.addWorksheet(safeSheetName(sheetName), { views: [] });
 
   const columnCount = Math.max(headers.length, 1);
-  const lines = [...headingLines, metaLine].map((line) => String(line ?? "").trim()).filter(Boolean);
-  lines.forEach((line, index) => {
-    const row = sheet.addRow([line]);
+  const FONTS = {
+    store: { bold: true, size: 14, color: { argb: "FF0F172A" } },
+    title: { bold: true, size: 12, color: { argb: "FF1E293B" } },
+    text: { size: 10, color: { argb: "FF334155" } },
+    muted: { size: 9, color: { argb: "FF64748B" } },
+  };
+  headerLines.forEach((line) => {
+    const row = sheet.addRow([line.text]);
     if (columnCount > 1) sheet.mergeCells(row.number, 1, row.number, columnCount);
-    row.getCell(1).font = index === 0 ? { bold: true, size: 14 } : { size: 10, color: { argb: index === lines.length - 1 && metaLine ? "FF64748B" : "FF334155" } };
+    row.getCell(1).font = FONTS[line.style] || FONTS.text;
     row.getCell(1).alignment = { vertical: "middle", horizontal: "left" };
   });
-  if (lines.length) sheet.addRow([]);
+  if (headerLines.length) sheet.addRow([]);
 
   const kinds = headers.map((header, col) => inferColumnKind(header, rawBody.map((row) => row?.[col])));
 

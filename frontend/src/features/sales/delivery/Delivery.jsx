@@ -485,6 +485,7 @@ export default function Delivery() {
           searchPlaceholder="Search deliveries..."
           tablePreferenceKey="sales.delivery-register"
           exportFileName="delivery_register"
+          exportPeriod={{ from, to }}
           paginationMode="client"
           page={page}
           limit={limit}

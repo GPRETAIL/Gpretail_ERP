@@ -4,7 +4,8 @@ import { useLocation } from "react-router-dom";
 import { Button, ListItemIcon, ListItemText, Menu, MenuItem } from "@mui/material";
 import { useTransferActivity } from "@/features/store/context/TransferActivityContext";
 import { tryBuildTextCsv } from "@/shared/utils/csvExport";
-import useExportStoreName from "@/shared/hooks/useExportStoreName";
+import useExportContext from "@/shared/hooks/useExportContext";
+import buildHeaderLines, { generatedStamp } from "@/shared/utils/export/exportHeader";
 import buildExportFileName from "@/shared/utils/export/exportFileName";
 import buildExcel from "@/shared/utils/export/buildExcel";
 import buildPdf from "@/shared/utils/export/buildPdf";
@@ -15,9 +16,6 @@ const rawCell = (value) => {
   if (Array.isArray(value)) return value.join(", ");
   return JSON.stringify(value);
 };
-
-const exportedAt = (now = new Date()) =>
-  `${now.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }).replace(/ /g, "-")} ${now.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}`;
 
 const toCellText = (value) => {
   if (value === null || value === undefined) return "";
@@ -59,7 +57,7 @@ export default function ExportBottomSheet({
   const open = Boolean(anchorEl);
   const [exporting, setExporting] = useState(false);
   const location = useLocation();
-  const storeName = useExportStoreName();
+  const { storeName, userName } = useExportContext();
   const fileName = useMemo(
     () => buildExportFileName({ fileName: screenFileName, pathname: location.pathname, storeName, period: exportPeriod }),
     [screenFileName, location.pathname, storeName, exportPeriod]
@@ -113,11 +111,9 @@ export default function ExportBottomSheet({
     return { headers, rawBody };
   }, [columns, getValue]);
 
-  const documentLines = useCallback((resolvedTitle) =>
-    [resolvedTitle, subtitle, ...(Array.isArray(headingLines) ? headingLines : [])].map((line) => toCellText(line).trim()).filter(Boolean),
-  [headingLines, subtitle]);
-
-  const detailLine = useCallback(() => [storeName && `Store: ${storeName}`, `Exported: ${exportedAt()}`].filter(Boolean).join("   |   "), [storeName]);
+  const headerLines = useCallback((resolvedTitle) => buildHeaderLines({
+    storeName, userName, title: resolvedTitle, subtitle, headingLines, period: exportPeriod, fileName: screenFileName, pathname: location.pathname,
+  }), [storeName, userName, subtitle, headingLines, exportPeriod, screenFileName, location.pathname]);
 
   const resolveRowsForExport = useCallback(async () => {
     const localRows = Array.isArray(rows) ? rows : [];
@@ -255,7 +251,7 @@ export default function ExportBottomSheet({
       updateActivity(activityId, { progressPercent: 65, statusMessage: "Building Excel file..." });
       const resolvedTitle = resolveExportTitle(sourceRows);
       const { headers, rawBody } = buildRawMatrix(sourceRows);
-      const blob = await buildExcel({ headingLines: documentLines(resolvedTitle), headers, rawBody, sheetName, metaLine: detailLine() });
+      const blob = await buildExcel({ headerLines: headerLines(resolvedTitle), headers, rawBody, sheetName });
       updateActivity(activityId, { progressPercent: 90, statusMessage: "Downloading Excel file..." });
       downloadBlob(blob, `${fileName}.xlsx`);
       finishActivity(activityId, {
@@ -274,7 +270,7 @@ export default function ExportBottomSheet({
     } finally {
       setExporting(false);
     }
-  }, [STATUS.SUCCESS, STATUS.FAILED, TYPE.EXPORT, buildRawMatrix, detailLine, documentLines, exporting, fileName, finishActivity, location.pathname, resolveExportTitle, resolveRowsForExport, sheetName, startActivity, updateActivity]);
+  }, [STATUS.SUCCESS, STATUS.FAILED, TYPE.EXPORT, buildRawMatrix, headerLines, exporting, fileName, finishActivity, location.pathname, resolveExportTitle, resolveRowsForExport, sheetName, startActivity, updateActivity]);
 
   const exportPdf = useCallback(async () => {
     if (exporting) return;
@@ -293,11 +289,10 @@ export default function ExportBottomSheet({
       const resolvedTitle = resolveExportTitle(sourceRows);
       const { headers, rawBody } = buildRawMatrix(sourceRows);
       const blob = await buildPdf({
-        headingLines: documentLines(resolvedTitle),
+        headerLines: headerLines(resolvedTitle),
         headers,
         rawBody,
-        metaLine: detailLine(),
-        footerLeft: [storeName, exportedAt()].filter(Boolean).join("  |  "),
+        footerLeft: [storeName, `Generated ${generatedStamp()}`].filter(Boolean).join("  |  "),
       });
       updateActivity(activityId, { progressPercent: 90, statusMessage: "Downloading PDF..." });
       downloadBlob(blob, `${fileName}.pdf`);
@@ -317,7 +312,7 @@ export default function ExportBottomSheet({
     } finally {
       setExporting(false);
     }
-  }, [STATUS.SUCCESS, STATUS.FAILED, TYPE.EXPORT, buildRawMatrix, detailLine, documentLines, exporting, fileName, finishActivity, location.pathname, resolveExportTitle, resolveRowsForExport, startActivity, storeName, updateActivity]);
+  }, [STATUS.SUCCESS, STATUS.FAILED, TYPE.EXPORT, buildRawMatrix, headerLines, exporting, fileName, finishActivity, location.pathname, resolveExportTitle, resolveRowsForExport, startActivity, storeName, updateActivity]);
 
   return (
     <>

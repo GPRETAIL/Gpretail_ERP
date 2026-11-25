@@ -208,6 +208,7 @@ export default function BillReprint() {
             searchPlaceholder="Filter these results..."
             tablePreferenceKey="sales.bill-reprint"
             exportFileName="bill_reprints"
+            exportPeriod={{ from: filters.from, to: filters.to }}
             paginationMode="client"
             page={page}
             limit={limit}

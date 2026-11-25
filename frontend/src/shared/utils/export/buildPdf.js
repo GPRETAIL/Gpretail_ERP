@@ -11,7 +11,7 @@ const formatNumber = (value, decimals) => value.toLocaleString("en-IN", { minimu
  * right-aligns numbers and repeats its header on every page, bold total rows, and "Page x of y" with the store and date
  * at the foot. Uses an embedded font so the rupee sign and accented letters print.
  */
-export default async function buildPdf({ headingLines = [], headers, rawBody, metaLine = "", footerLeft = "" }) {
+export default async function buildPdf({ headerLines = [], headers, rawBody, footerLeft = "" }) {
   const [{ jsPDF }, { default: autoTable }] = await Promise.all([import("jspdf"), import("jspdf-autotable")]);
   const columnCount = Math.max(headers.length, 1);
   const doc = new jsPDF({ orientation: columnCount > 6 ? "landscape" : "portrait", unit: "pt", format: "a4", compress: true });
@@ -20,24 +20,23 @@ export default async function buildPdf({ headingLines = [], headers, rawBody, me
 
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
-  const lines = headingLines.map(pdfSafeText).filter(Boolean);
+  const LOOK = {
+    store: { font: "bold", size: 15, color: [15, 23, 42], gap: 18 },
+    title: { font: "bold", size: 12, color: [30, 41, 59], gap: 15 },
+    text: { font: "normal", size: 9, color: [51, 65, 85], gap: 12 },
+    muted: { font: "normal", size: 8, color: [100, 116, 139], gap: 12 },
+  };
 
-  let y = MARGIN + 6;
-  lines.forEach((line, index) => {
-    doc.setFont(PDF_FONT, index === 0 ? "bold" : "normal");
-    doc.setFontSize(index === 0 ? 14 : 9);
-    doc.setTextColor(index === 0 ? 15 : 51, index === 0 ? 23 : 65, index === 0 ? 42 : 85);
-    const wrapped = doc.splitTextToSize(line, pageWidth - MARGIN * 2);
+  let y = MARGIN + 8;
+  headerLines.forEach((line) => {
+    const look = LOOK[line.style] || LOOK.text;
+    doc.setFont(PDF_FONT, look.font);
+    doc.setFontSize(look.size);
+    doc.setTextColor(...look.color);
+    const wrapped = doc.splitTextToSize(pdfSafeText(line.text), pageWidth - MARGIN * 2);
     doc.text(wrapped, MARGIN, y);
-    y += wrapped.length * (index === 0 ? 17 : 12);
+    y += wrapped.length * look.gap;
   });
-  if (metaLine) {
-    doc.setFont(PDF_FONT, "normal");
-    doc.setFontSize(8);
-    doc.setTextColor(100, 116, 139);
-    doc.text(pdfSafeText(metaLine), MARGIN, y);
-    y += 12;
-  }
 
   const kinds = headers.map((header, col) => inferColumnKind(header, rawBody.map((row) => row?.[col])));
   const body = rawBody.map((row) => headers.map((_, col) => {

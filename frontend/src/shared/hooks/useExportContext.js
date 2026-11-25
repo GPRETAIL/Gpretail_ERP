@@ -9,7 +9,9 @@ const readUser = () => {
   }
 };
 
-/** The signed-in store's name for export file names and footers; "" when nobody is signed in or there is no store state (isolated component tests). */
-export default function useExportStoreName() {
-  return useStoreDisplayName(readUser());
+/** Who and where an export is for: the signed-in store's name and the user's name. Both "" when there is no store state (isolated component tests). */
+export default function useExportContext() {
+  const user = readUser();
+  const storeName = useStoreDisplayName(user);
+  return { storeName, userName: String(user?.name || user?.username || "").trim() };
 }
