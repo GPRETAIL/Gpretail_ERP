@@ -60,6 +60,10 @@ class PurchaseInvoiceController extends Controller
         if ($request->filled('status')) {
             $query->where('status', $request->input('status'));
         }
+        // The supplier's own page (mobile): only this supplier's invoices.
+        if ($request->filled('supplier_id')) {
+            $query->where('supplier_id', (int) $request->input('supplier_id'));
+        }
         if ($request->filled('transport_entry_id')) {
             $query->where('transport_entry_id', (int) $request->input('transport_entry_id'));
         }

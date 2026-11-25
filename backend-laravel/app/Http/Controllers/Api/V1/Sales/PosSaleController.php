@@ -310,6 +310,8 @@ class PosSaleController extends Controller
                 $q->whereBetween('sale_date', BusinessDay::range($request->input('from'), $request->input('to')));
             })
             ->when($request->filled('billNo'), fn ($query) => $query->billNumber((string) $request->input('billNo')))
+            // The customer's own page (mobile): only this customer's bills.
+            ->when($request->filled('customer_id'), fn ($q) => $q->where('customer_id', (int) $request->input('customer_id')))
             ->when($request->filled('search'), function ($q) use ($request) {
                 $s = trim($request->input('search'));
                 $q->where(function ($sub) use ($s) {

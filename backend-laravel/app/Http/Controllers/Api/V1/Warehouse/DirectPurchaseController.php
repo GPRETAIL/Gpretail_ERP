@@ -91,6 +91,11 @@ class DirectPurchaseController extends Controller
             });
         }
 
+        // The supplier's own page (mobile): only this supplier's purchase bills.
+        if ($request->filled('supplier_id')) {
+            $query->where('supplier_id', (int) $request->input('supplier_id'));
+        }
+
         if ($request->filled('from') && $request->filled('to')) {
             $query->whereBetween('purchase_date', [
                 Carbon::parse($request->input('from'))->startOfDay(),
