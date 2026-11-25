@@ -54,6 +54,9 @@ const StaffAppSetup = lazy(() => import("@/features/hr/staffApp/StaffAppSetup"))
 const AttendanceRegisterPage = lazy(() => import("@/features/hr/HrSectionPages").then((m) => ({ default: m.AttendanceRegisterPage })));
 const PunchLogPage = lazy(() => import("@/features/hr/HrSectionPages").then((m) => ({ default: m.PunchLogPage })));
 const HolidaysPage = lazy(() => import("@/features/hr/HrSectionPages").then((m) => ({ default: m.HolidaysPage })));
+const AnnouncementsPage = lazy(() => import("@/features/hr/HrSectionPages").then((m) => ({ default: m.AnnouncementsPage })));
+const HelpdeskPage = lazy(() => import("@/features/hr/HrSectionPages").then((m) => ({ default: m.HelpdeskPage })));
+const EmployeeDocumentsPage = lazy(() => import("@/features/hr/HrSectionPages").then((m) => ({ default: m.EmployeeDocumentsPage })));
 const LeaveApprovalsPage = lazy(() => import("@/features/hr/HrSectionPages").then((m) => ({ default: m.LeaveApprovalsPage })));
 const LeaveApplicationsPage = lazy(() => import("@/features/hr/HrSectionPages").then((m) => ({ default: m.LeaveApplicationsPage })));
 const LeaveBalancesPage = lazy(() => import("@/features/hr/HrSectionPages").then((m) => ({ default: m.LeaveBalancesPage })));
@@ -195,6 +198,9 @@ export const protectedLayoutRoutes = [
   { path: "/hrms/attendance-register", render: () => <AttendanceRegisterPage /> },
   { path: "/hrms/punch-log", render: () => <PunchLogPage /> },
   { path: "/hrms/holidays", render: () => <HolidaysPage /> },
+  { path: "/hrms/announcements", render: () => <AnnouncementsPage /> },
+  { path: "/hrms/helpdesk", render: () => <HelpdeskPage /> },
+  { path: "/hrms/documents", render: () => <EmployeeDocumentsPage /> },
   { path: "/hrms/leave-approvals", render: () => <LeaveApprovalsPage /> },
   { path: "/hrms/leave-applications", render: () => <LeaveApplicationsPage /> },
   { path: "/hrms/leave-balances", render: () => <LeaveBalancesPage /> },

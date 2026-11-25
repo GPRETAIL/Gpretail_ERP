@@ -84,8 +84,11 @@ class BusinessPermissions
         if ($controller === 'InvoiceAiController') {
             return in_array($action, ['getEngineConfig', 'saveEngineConfig'], true) ? 'settings.manage' : 'purchases.post';
         }
-        if ($this->isHrSelfService($request) || in_array($controller, ['StaffAppController', 'StaffAuthController'], true)) {
+        if ($this->isHrSelfService($request) || in_array($controller, ['StaffAppController', 'StaffAuthController', 'StaffCompanyController'], true)) {
             return 'personal'; // Only the signed-in employee's own data and team, and changing their own PIN.
+        }
+        if (in_array($controller, ['HrAnnouncementController', 'HrTicketController', 'HrDocumentController'], true)) {
+            return $read ? 'hr.view' : 'hr.manage'; // HR's side of the staff app's Company part.
         }
         if ($controller === 'StaffAppSetupController') {
             return $read ? 'hr.view' : 'hr.manage';

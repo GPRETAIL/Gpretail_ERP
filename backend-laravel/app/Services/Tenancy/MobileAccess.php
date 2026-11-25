@@ -58,6 +58,7 @@ class MobileAccess
         'ConfigurationController' => '/settings/application-settings', 'BackupController' => '/settings/backup',
         'StoreController' => '/settings/company', 'UserAccessController' => '/settings/company',
         'ItemLocatorController' => '/sales/stock-item-locator', 'StaffAppSetupController' => '/hrms/staff-app',
+        'HrAnnouncementController' => '/hrms/announcements', 'HrTicketController' => '/hrms/helpdesk', 'HrDocumentController' => '/hrms/documents',
     ];
 
     public function tenantAdmin(User $user): bool

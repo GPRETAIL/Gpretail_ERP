@@ -14,6 +14,7 @@ import MeTab from "./tabs/MeTab";
 import AttendanceTab from "./tabs/AttendanceTab";
 import HolidaysTab from "./tabs/HolidaysTab";
 import TeamTab from "./tabs/TeamTab";
+import CompanyTab from "./tabs/CompanyTab";
 import TeamOnLeaveCard from "./TeamOnLeaveCard";
 import StaffScreen from "./StaffScreen";
 import { OfflineBar, PullIndicator, UpdateBar } from "./StaffBars";
@@ -39,7 +40,7 @@ const startTab = () => {
   return TABS.some((t) => t.key === wanted && !t.approver) ? wanted : "home";
 };
 // Screens opened from Home that are not in the bottom bar. Back returns to the screen before.
-const EXTRA_TITLES = { attendance: "My attendance", holidays: "Holidays", team: "My team" };
+const EXTRA_TITLES = { attendance: "My attendance", holidays: "Holidays", team: "My team", company: "Company" };
 const TITLES = { home: "Home", leave: "Leave", expenses: "Expenses and advances", salary: "Salary", approvals: "Approvals", me: "Me", ...EXTRA_TITLES };
 
 /** While on /hr the browser offers to install "Vynerix HRMS", not the business app. */
@@ -118,12 +119,14 @@ function Shell({ session, onSignOut, theme }) {
   const [error, setError] = useState("");
   const [exitHint, setExitHint] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [company, setCompany] = useState({ unread: 0, to_acknowledge: 0 }); // what is new from HR
   const online = useOnline();
   const { updateReady, apply: applyUpdate } = useServiceWorkerUpdate();
 
   const loadHome = useCallback(async () => {
     try {
-      const [h, n] = await Promise.all([api.get("/staff-app/home"), api.get("/notifications/unread-count").catch(() => null)]);
+      const [h, n, c] = await Promise.all([api.get("/staff-app/home"), api.get("/notifications/unread-count").catch(() => null), api.get("/staff-company/announcements").catch(() => null)]);
+      if (c?.data?.data) setCompany({ unread: c.data.data.unread || 0, to_acknowledge: c.data.data.to_acknowledge || 0 });
       setHome(h.data?.data || null);
       setUnread(n?.data?.data?.count || 0);
       setError("");
@@ -233,7 +236,7 @@ function Shell({ session, onSignOut, theme }) {
       <Box component="main" sx={{ px: 2, pt: 2, pb: "calc(88px + env(safe-area-inset-bottom))", maxWidth: 640, mx: "auto" }}>
         {error && <Box role="alert" sx={{ ...card, mb: 2, bgcolor: STAFF_COLOR.dangerSoft, borderColor: STAFF_COLOR.dangerBorder, color: STAFF_COLOR.danger, fontSize: STAFF_TEXT.body, fontWeight: 600 }}>{error}</Box>}
         <ErrorBoundary key={refreshKey} variant="page" where={`hr:${tab}`} resetKeys={[tab, salaryView]}>
-        {tab === "home" && <HomeTab home={home} go={go} />}
+        {tab === "home" && <HomeTab home={home} go={go} company={company} />}
         {tab === "leave" && <><StaffScreen><LeaveScreen showApprovals={false} /></StaffScreen><TeamOnLeaveCard /></>}
         {tab === "expenses" && <StaffScreen><ClaimsScreen /></StaffScreen>}
         {tab === "salary" && <SalaryTab home={home} view={salaryView} setView={(view) => go("salary", view)} />}
@@ -242,6 +245,7 @@ function Shell({ session, onSignOut, theme }) {
         {tab === "attendance" && <AttendanceTab />}
         {tab === "holidays" && <HolidaysTab />}
         {tab === "team" && <TeamTab />}
+        {tab === "company" && <CompanyTab onCounts={(data) => setCompany({ unread: data?.unread || 0, to_acknowledge: data?.to_acknowledge || 0 })} />}
         </ErrorBoundary>
       </Box>
 

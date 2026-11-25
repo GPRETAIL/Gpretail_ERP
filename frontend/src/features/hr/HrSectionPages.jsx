@@ -3,6 +3,9 @@ import { useSelector } from "react-redux";
 import { TextField } from "@mui/material";
 import HrPage from "./components/HrPage";
 import Holidays from "./attendance/Holidays";
+import Announcements from "./company/Announcements";
+import EmployeeDocuments from "./company/EmployeeDocuments";
+import Helpdesk from "./company/Helpdesk";
 import MonthlyRegister from "./attendance/MonthlyRegister";
 import PunchLog from "./attendance/PunchLog";
 import LeaveApplications from "./leave/LeaveApplications";
@@ -35,6 +38,18 @@ export function PunchLogPage() {
 
 export function HolidaysPage() {
   return <HrPage title="Holidays"><Holidays canManage={useCanManage()} /></HrPage>;
+}
+
+export function AnnouncementsPage() {
+  return <HrPage title="Announcements"><Announcements canManage={useCanManage()} /></HrPage>;
+}
+
+export function HelpdeskPage() {
+  return <HrPage title="Helpdesk"><Helpdesk canManage={useCanManage()} /></HrPage>;
+}
+
+export function EmployeeDocumentsPage() {
+  return <HrPage title="Employee Documents"><EmployeeDocuments canManage={useCanManage()} /></HrPage>;
 }
 
 export function LeaveApprovalsPage() {

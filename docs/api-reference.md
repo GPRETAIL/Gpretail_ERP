@@ -1,6 +1,6 @@
 # API reference
 
-Every endpoint under `/api`, grouped by module (757 endpoints). Generated from
+Every endpoint under `/api`, grouped by module (780 endpoints). Generated from
 `php artisan route:list --sort=definition --json`; regenerate it after changing routes.
 
 - Each signed-in endpoint is also served under `/api/v1/...` with the same behaviour.
@@ -17,7 +17,7 @@ Every endpoint under `/api`, grouped by module (757 endpoints). Generated from
 - [Crm](#crm) (39)
 - [Dashboards](#dashboards) (26)
 - [Finance](#finance) (31)
-- [Hr](#hr) (162)
+- [Hr](#hr) (185)
 - [Masters](#masters) (120)
 - [Notifications](#notifications) (11)
 - [Other](#other) (1)
@@ -337,6 +337,29 @@ Every endpoint under `/api`, grouped by module (757 endpoints). Generated from
 | GET | `/api/staff-app/attendance-month` | StaffAppController@attendanceMonth | yes |
 | GET | `/api/staff-app/attendance-day` | StaffAppController@attendanceDay | yes |
 | GET | `/api/staff-app/team-on-leave` | StaffAppController@teamOnLeave | yes |
+| GET | `/api/staff-company/announcements` | StaffCompanyController@announcements | yes |
+| POST | `/api/staff-company/announcements/{id}/read` | StaffCompanyController@readAnnouncement | yes |
+| POST | `/api/staff-company/announcements/{id}/acknowledge` | StaffCompanyController@acknowledgeAnnouncement | yes |
+| GET | `/api/staff-company/tickets` | StaffCompanyController@tickets | yes |
+| POST | `/api/staff-company/tickets` | StaffCompanyController@createTicket | yes |
+| GET | `/api/staff-company/tickets/{id}` | StaffCompanyController@ticket | yes |
+| POST | `/api/staff-company/tickets/{id}/reply` | StaffCompanyController@replyTicket | yes |
+| GET | `/api/staff-company/directory` | StaffCompanyController@directory | yes |
+| GET | `/api/staff-company/celebrations` | StaffCompanyController@celebrations | yes |
+| GET | `/api/staff-company/documents` | StaffCompanyController@documents | yes |
+| GET | `/api/staff-company/documents/{id}/download` | StaffCompanyController@downloadDocument | yes |
+| GET | `/api/company-announcements` | HrAnnouncementController@index | yes |
+| POST | `/api/company-announcements` | HrAnnouncementController@store | yes |
+| PUT | `/api/company-announcements/{id}` | HrAnnouncementController@update | yes |
+| DELETE | `/api/company-announcements/{id}` | HrAnnouncementController@destroy | yes |
+| GET | `/api/helpdesk-tickets` | HrTicketController@index | yes |
+| GET | `/api/helpdesk-tickets/{id}` | HrTicketController@show | yes |
+| POST | `/api/helpdesk-tickets/{id}/reply` | HrTicketController@reply | yes |
+| PUT | `/api/helpdesk-tickets/{id}/status` | HrTicketController@setStatus | yes |
+| GET | `/api/employee-documents` | HrDocumentController@index | yes |
+| POST | `/api/employee-documents` | HrDocumentController@store | yes |
+| GET | `/api/employee-documents/{id}/download` | HrDocumentController@download | yes |
+| DELETE | `/api/employee-documents/{id}` | HrDocumentController@destroy | yes |
 | GET | `/api/staff-app-setup` | StaffAppSetupController@index | yes |
 | POST | `/api/staff-app-setup/{id}/pin` | StaffAppSetupController@setPin | yes |
 | POST | `/api/staff-app-setup/{id}/disable` | StaffAppSetupController@disable | yes |

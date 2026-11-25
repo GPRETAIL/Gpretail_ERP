@@ -642,6 +642,24 @@
       "edit": true,
       "delete": false
     },
+    "/hrms/announcements": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
+    "/hrms/helpdesk": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": false
+    },
+    "/hrms/documents": {
+      "view": true,
+      "add": true,
+      "edit": true,
+      "delete": true
+    },
     "/settings/incentive-configuration": {
       "view": true,
       "add": true,

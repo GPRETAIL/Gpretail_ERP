@@ -34,12 +34,12 @@ class StaffAppAccess
     ];
 
     private const ALWAYS = [
-        'StaffAppController' => null, 'NotificationController' => null, 'PushSubscriptionController' => null, 'ClientErrorController' => null,
+        'StaffAppController' => null, 'StaffCompanyController' => null, 'NotificationController' => null, 'PushSubscriptionController' => null, 'ClientErrorController' => null,
         'HolidayController' => ['index'], 'StaffAuthController' => ['changePin'], 'AuthController' => ['me', 'logout'],
     ];
 
     /** HR notifications (leave, requests, money, exits, tax, payroll) addressed to this user: all the staff app lists. */
-    public const HR_NOTIFICATION_REFERENCES = ['LEAVE_APPLICATION', 'HR_REQUEST', 'HR_MONEY', 'PAYROLL_RUN'];
+    public const HR_NOTIFICATION_REFERENCES = ['LEAVE_APPLICATION', 'HR_REQUEST', 'HR_MONEY', 'PAYROLL_RUN', 'HR_TICKET'];
 
     /**
      * @param  \Illuminate\Database\Eloquent\Builder<\Illuminate\Database\Eloquent\Model>  $query

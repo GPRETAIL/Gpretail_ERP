@@ -4,6 +4,9 @@ use App\Http\Controllers\Api\V1\Hr\AdditionalPayController;
 use App\Http\Controllers\Api\V1\Hr\AttendanceController;
 use App\Http\Controllers\Api\V1\Hr\EmployeeController;
 use App\Http\Controllers\Api\V1\Hr\HolidayController;
+use App\Http\Controllers\Api\V1\Hr\HrAnnouncementController;
+use App\Http\Controllers\Api\V1\Hr\HrDocumentController;
+use App\Http\Controllers\Api\V1\Hr\HrTicketController;
 use App\Http\Controllers\Api\V1\Hr\HrRequestController;
 use App\Http\Controllers\Api\V1\Hr\LeaveApplicationController;
 use App\Http\Controllers\Api\V1\Hr\LeavePolicyController;
@@ -21,6 +24,7 @@ use App\Http\Controllers\Api\V1\Hr\TaxDeclarationController;
 use App\Http\Controllers\Api\V1\Hr\FinalSettlementController;
 use App\Http\Controllers\Api\V1\Hr\StaffMoneyController;
 use App\Http\Controllers\Api\V1\Hr\StaffAppController;
+use App\Http\Controllers\Api\V1\Hr\StaffCompanyController;
 use App\Http\Controllers\Api\V1\Hr\StaffAppSetupController;
 use App\Http\Controllers\Api\V1\Hr\HrConfigurationController;
 use Illuminate\Support\Facades\Route;
@@ -193,6 +197,34 @@ Route::get('staff-app/team', [StaffAppController::class, 'team']);
 Route::get('staff-app/attendance-month', [StaffAppController::class, 'attendanceMonth']);
 Route::get('staff-app/attendance-day', [StaffAppController::class, 'attendanceDay']);
 Route::get('staff-app/team-on-leave', [StaffAppController::class, 'teamOnLeave']);
+
+// Staff app, Company: announcements and policies, helpdesk, directory, celebrations and my documents.
+Route::get('staff-company/announcements', [StaffCompanyController::class, 'announcements']);
+Route::post('staff-company/announcements/{id}/read', [StaffCompanyController::class, 'readAnnouncement'])->whereNumber('id');
+Route::post('staff-company/announcements/{id}/acknowledge', [StaffCompanyController::class, 'acknowledgeAnnouncement'])->whereNumber('id');
+Route::get('staff-company/tickets', [StaffCompanyController::class, 'tickets']);
+Route::post('staff-company/tickets', [StaffCompanyController::class, 'createTicket']);
+Route::get('staff-company/tickets/{id}', [StaffCompanyController::class, 'ticket'])->whereNumber('id');
+Route::post('staff-company/tickets/{id}/reply', [StaffCompanyController::class, 'replyTicket'])->whereNumber('id');
+Route::get('staff-company/directory', [StaffCompanyController::class, 'directory']);
+Route::get('staff-company/celebrations', [StaffCompanyController::class, 'celebrations']);
+Route::get('staff-company/documents', [StaffCompanyController::class, 'documents']);
+Route::get('staff-company/documents/{id}/download', [StaffCompanyController::class, 'downloadDocument'])->whereNumber('id');
+
+// HR side of the Company part: write announcements and policies, answer tickets, keep employee documents.
+Route::get('company-announcements', [HrAnnouncementController::class, 'index']);
+Route::post('company-announcements', [HrAnnouncementController::class, 'store']);
+Route::put('company-announcements/{id}', [HrAnnouncementController::class, 'update'])->whereNumber('id');
+Route::delete('company-announcements/{id}', [HrAnnouncementController::class, 'destroy'])->whereNumber('id');
+Route::get('helpdesk-tickets', [HrTicketController::class, 'index']);
+Route::get('helpdesk-tickets/{id}', [HrTicketController::class, 'show'])->whereNumber('id');
+Route::post('helpdesk-tickets/{id}/reply', [HrTicketController::class, 'reply'])->whereNumber('id');
+Route::put('helpdesk-tickets/{id}/status', [HrTicketController::class, 'setStatus'])->whereNumber('id');
+Route::get('employee-documents', [HrDocumentController::class, 'index']);
+Route::post('employee-documents', [HrDocumentController::class, 'store']);
+Route::get('employee-documents/{id}/download', [HrDocumentController::class, 'download'])->whereNumber('id');
+Route::delete('employee-documents/{id}', [HrDocumentController::class, 'destroy'])->whereNumber('id');
+
 Route::get('staff-app-setup', [StaffAppSetupController::class, 'index']);
 Route::post('staff-app-setup/{id}/pin', [StaffAppSetupController::class, 'setPin'])->whereNumber('id');
 Route::post('staff-app-setup/{id}/disable', [StaffAppSetupController::class, 'disable'])->whereNumber('id');

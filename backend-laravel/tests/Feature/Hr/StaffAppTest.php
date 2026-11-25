@@ -5,10 +5,13 @@ namespace Tests\Feature\Hr;
 use App\Models\Attendance;
 use App\Models\Employee;
 use App\Models\HrCheckin;
+use App\Models\HrDepartment;
+use App\Models\HrDocument;
 use App\Models\HrHoliday;
 use App\Models\HrLeaveApplication;
 use App\Models\HrLeaveType;
 use App\Models\HrRequest;
+use App\Models\HrTicket;
 use App\Models\Notification;
 use App\Models\PlatformActivation;
 use App\Models\Store;
@@ -392,6 +395,148 @@ class StaffAppTest extends TestCase
         $this->get("/api/attendance/punches/{$punch->id}/photo")->assertOk()->assertHeader('Content-Type', 'image/jpeg');
         $row = collect($this->getJson('/api/attendance/punches?from='.now()->toDateString().'&to='.now()->addDay()->toDateString())->assertOk()->json('data'))->firstWhere('id', $punch->id);
         $this->assertTrue($row['has_photo']);
+    }
+
+    private function hrToken(): string
+    {
+        return $this->hr->createToken('web-token', ['client:web'])->plainTextToken;
+    }
+
+    public function test_hr_publishes_announcements_and_policies_and_each_employee_sees_only_theirs(): void
+    {
+        $dept = HrDepartment::create(['store_id' => $this->store->id, 'configuration_type' => 'department', 'name' => 'Sales']);
+        $this->staff->update(['department_id' => $dept->id]);
+        $today = Carbon::parse(app(AttendanceService::class)->today());
+
+        $this->as($this->hrToken());
+        $mk = fn (array $more) => $this->postJson('/api/company-announcements', $more + ['category' => 'ANNOUNCEMENT', 'body' => 'Please read.'])->assertCreated()->json('data');
+        $all = $mk(['title' => 'Diwali timings', 'is_pinned' => true]);
+        $policy = $mk(['title' => 'Dress code', 'category' => 'POLICY']);
+        $mk(['title' => 'Sales only', 'department_id' => $dept->id]);
+        $mk(['title' => 'Other department', 'department_id' => $dept->id + 999]);
+        $mk(['title' => 'Next month', 'publish_on' => $today->copy()->addMonth()->toDateString()]);
+        $mk(['title' => 'Old news', 'publish_on' => $today->copy()->subMonths(2)->toDateString(), 'expires_on' => $today->copy()->subMonth()->toDateString()]);
+        $this->postJson('/api/company-announcements', ['category' => 'POLICY', 'title' => 'x', 'body' => 'y', 'publish_on' => '2026-12-10', 'expires_on' => '2026-12-01'])
+            ->assertUnprocessable()->assertJsonValidationErrors(['expires_on' => 'The end date cannot be before the start date.']);
+
+        $this->as($this->staffToken($this->staff, '+91 98765 43210'));
+        $list = $this->getJson('/api/staff-company/announcements')->assertOk()->json('data');
+        $this->assertSame(['Diwali timings', 'Dress code', 'Sales only'], collect($list['items'])->pluck('title')->sort()->values()->all());
+        $this->assertSame('Diwali timings', $list['items'][0]['title'], 'pinned first');
+        $this->assertSame([3, 1], [$list['unread'], $list['to_acknowledge']]);
+
+        $this->postJson("/api/staff-company/announcements/{$all['id']}/read")->assertOk();
+        $this->postJson("/api/staff-company/announcements/{$all['id']}/acknowledge")->assertUnprocessable()->assertJsonValidationErrors('announcement');
+        $this->postJson("/api/staff-company/announcements/{$policy['id']}/acknowledge")->assertOk()->assertJsonPath('message', 'Thank you. Your agreement is recorded.');
+        $after = $this->getJson('/api/staff-company/announcements')->assertOk()->json('data');
+        $this->assertSame([1, 0], [$after['unread'], $after['to_acknowledge']]);
+
+        $this->as($this->hrToken());
+        $row = collect($this->getJson('/api/company-announcements')->assertOk()->json('data'))->keyBy('id');
+        $this->assertSame([1, 0], [$row[$all['id']]['read_count'], $row[$all['id']]['agreed_count']]);
+        $this->assertSame([1, 1], [$row[$policy['id']]['read_count'], $row[$policy['id']]['agreed_count']]);
+    }
+
+    public function test_only_hr_writes_announcements_and_a_staff_token_cannot_reach_hr_screens(): void
+    {
+        $cashier = $this->login('cashier', $this->store);
+        $this->as($cashier->createToken('web-token', ['client:web'])->plainTextToken);
+        $this->postJson('/api/company-announcements', ['category' => 'ANNOUNCEMENT', 'title' => 'Hello', 'body' => 'x'])->assertForbidden();
+        $this->getJson('/api/helpdesk-tickets')->assertForbidden();
+        $this->getJson('/api/employee-documents')->assertForbidden();
+
+        $this->as($this->staffToken($this->staff, '+91 98765 43210'));
+        $this->getJson('/api/company-announcements')->assertForbidden()->assertJsonPath('code', 'STAFF_APP_SCOPE');
+        $this->getJson('/api/helpdesk-tickets')->assertForbidden();
+    }
+
+    public function test_helpdesk_an_employee_raises_a_ticket_hr_replies_and_the_employee_is_told(): void
+    {
+        $other = $this->employee('Other Omar', '98400 22222', $this->store);
+        $token = $this->staffToken($this->staff, '+91 98765 43210');
+        $this->as($token);
+        $this->postJson('/api/staff-company/tickets', ['category' => 'PAYROLL', 'subject' => '', 'message' => ''])->assertUnprocessable()
+            ->assertJsonValidationErrors(['subject' => 'Write a short title for your question.', 'message' => 'Write your question or problem.']);
+        $ticket = $this->postJson('/api/staff-company/tickets', ['category' => 'PAYROLL', 'subject' => 'Missing travel allowance', 'message' => 'Not in October.'])->assertCreated()->json('data');
+        $this->assertSame('OPEN', $ticket['status']);
+        $theirs = HrTicket::create(['store_id' => $this->store->id, 'employee_id' => $other->id, 'category' => 'OTHER', 'subject' => 'Private', 'message' => 'Not yours', 'status' => 'OPEN']);
+
+        $this->getJson("/api/staff-company/tickets/{$theirs->id}")->assertNotFound();
+        $this->postJson("/api/staff-company/tickets/{$theirs->id}/reply", ['body' => 'hi'])->assertNotFound();
+        $this->assertSame(['Missing travel allowance'], collect($this->getJson('/api/staff-company/tickets')->assertOk()->json('data'))->pluck('subject')->all());
+
+        $this->as($this->hrToken());
+        $inbox = $this->getJson('/api/helpdesk-tickets')->assertOk();
+        $this->assertSame(2, $inbox->json('open'));
+        $this->postJson("/api/helpdesk-tickets/{$ticket['id']}/reply", ['body' => ''])->assertUnprocessable()->assertJsonValidationErrors(['body' => 'Write your reply.']);
+        $this->postJson("/api/helpdesk-tickets/{$ticket['id']}/reply", ['body' => 'We will add it in November.'])->assertOk()->assertJsonPath('data.status', 'IN_PROGRESS');
+        $note = Notification::withoutGlobalScopes()->where('reference_type', 'HR_TICKET')->firstOrFail();
+        $this->assertSame([$this->staff->fresh()->user_id, 'HR replied'], [$note->user_id, $note->title]);
+
+        $this->as($token);
+        $seen = $this->getJson("/api/staff-company/tickets/{$ticket['id']}")->assertOk()->json('data');
+        $this->assertSame(['HR', 'We will add it in November.'], [$seen['replies'][0]['from'], $seen['replies'][0]['body']]);
+        $this->postJson("/api/staff-company/tickets/{$ticket['id']}/reply", ['body' => 'Thank you.'])->assertOk();
+
+        $this->as($this->hrToken());
+        $this->putJson("/api/helpdesk-tickets/{$ticket['id']}/status", ['status' => 'CLOSED'])->assertOk()->assertJsonPath('data.status', 'CLOSED');
+        $this->assertSame(2, Notification::withoutGlobalScopes()->where('reference_type', 'HR_TICKET')->count(), 'closing tells the employee too');
+        $this->as($token);
+        $this->postJson("/api/staff-company/tickets/{$ticket['id']}/reply", ['body' => 'Still missing.'])->assertOk()->assertJsonPath('data.status', 'OPEN');
+    }
+
+    public function test_the_directory_shows_colleagues_without_pay_and_celebrations_show_day_and_month_only(): void
+    {
+        $today = Carbon::parse(app(AttendanceService::class)->today());
+        $this->staff->forceFill(['salary' => 45000, 'master_details' => ['date_of_birth' => $today->copy()->subYears(30)->addDays(3)->toDateString(), 'bank_account_no' => '123456789012']])->save();
+        $this->lead->forceFill(['joining_date' => $today->copy()->subYears(4)->addDays(1)->toDateString()])->save();
+        $far = $this->employee('Far Farid', '98400 55555', $this->store);
+        $far->forceFill(['master_details' => ['date_of_birth' => $today->copy()->subYears(25)->addDays(40)->toDateString()]])->save();
+
+        $this->as($this->staffToken($this->lead->fresh() ? $this->staff : $this->staff, '+91 98765 43210'));
+        $directory = $this->getJson('/api/staff-company/directory')->assertOk();
+        $this->assertContains('Lead Lakshmi', collect($directory->json('data'))->pluck('name')->all());
+        $this->assertStringNotContainsString('45000', $directory->getContent());
+        $this->assertStringNotContainsString('123456789012', $directory->getContent());
+        $this->assertSame(['Lead Lakshmi'], collect($this->getJson('/api/staff-company/directory?q=Lakshmi')->json('data'))->pluck('name')->all());
+
+        $items = collect($this->getJson('/api/staff-company/celebrations')->assertOk()->json('data.items'));
+        $birthday = $items->firstWhere('type', 'BIRTHDAY');
+        $this->assertSame('Staff Senthil', $birthday['name']);
+        $this->assertSame($today->copy()->addDays(3)->toDateString(), $birthday['date'], 'the next one, this year: not the birth year');
+        $this->assertNull($birthday['years']);
+        $anniversary = $items->firstWhere('type', 'ANNIVERSARY');
+        $this->assertSame(['Lead Lakshmi', 4], [$anniversary['name'], $anniversary['years']]);
+        $this->assertNotContains('Far Farid', $items->pluck('name')->all(), 'more than two weeks away');
+    }
+
+    public function test_an_employee_downloads_only_their_own_documents_and_hr_manages_them(): void
+    {
+        Storage::fake('local');
+        $this->as($this->hrToken());
+        $file = UploadedFile::fake()->create('offer.pdf', 100, 'application/pdf');
+        $doc = $this->post('/api/employee-documents', ['employee_id' => $this->staff->id, 'type' => 'OFFER_LETTER', 'title' => 'Offer letter', 'file' => $file], ['Accept' => 'application/json'])
+            ->assertCreated()->json('data');
+        $this->post('/api/employee-documents', ['employee_id' => $this->lead->id, 'type' => 'FORM_16', 'title' => 'Form 16 2025', 'file' => UploadedFile::fake()->create('f16.pdf', 50, 'application/pdf')], ['Accept' => 'application/json'])->assertCreated();
+        $this->post('/api/employee-documents', ['employee_id' => $this->staff->id, 'type' => 'OTHER', 'title' => 'Script', 'file' => UploadedFile::fake()->create('x.exe', 5, 'application/octet-stream')], ['Accept' => 'application/json'])
+            ->assertUnprocessable()->assertJsonValidationErrors(['file' => 'The file must be a PDF, JPG or PNG.']);
+        $this->post('/api/employee-documents', ['employee_id' => $this->staff->id, 'type' => 'OTHER', 'title' => 'Big', 'file' => UploadedFile::fake()->create('big.pdf', 6000, 'application/pdf')], ['Accept' => 'application/json'])
+            ->assertUnprocessable()->assertJsonValidationErrors(['file' => 'The file is too big. Keep it under 5 MB.']);
+        $this->assertCount(2, $this->getJson('/api/employee-documents')->assertOk()->json('data'));
+        $this->assertStringStartsWith('hr-documents/'.$this->store->id.'/', HrDocument::find($doc['id'])->file_path);
+
+        $this->as($this->staffToken($this->staff, '+91 98765 43210'));
+        $mine = $this->getJson('/api/staff-company/documents')->assertOk()->json('data');
+        $this->assertSame(['Offer letter'], collect($mine)->pluck('title')->all());
+        $this->assertArrayNotHasKey('file_path', $mine[0]);
+        $this->get("/api/staff-company/documents/{$doc['id']}/download")->assertOk()->assertDownload('Offer letter.pdf');
+        $leadDoc = HrDocument::where('title', 'Form 16 2025')->firstOrFail();
+        $this->getJson("/api/staff-company/documents/{$leadDoc->id}/download")->assertNotFound();
+
+        $this->as($this->hrToken());
+        $path = HrDocument::find($doc['id'])->file_path;
+        $this->deleteJson("/api/employee-documents/{$doc['id']}")->assertOk();
+        Storage::disk('local')->assertMissing($path);
     }
 
     public function test_a_refused_punch_leaves_no_photo_behind(): void

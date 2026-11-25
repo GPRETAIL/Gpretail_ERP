@@ -3,7 +3,7 @@ import { CalendarDays, CalendarPlus, ChevronRight, ClipboardCheck, Clock, HandCo
 import MyAttendanceCard from "@/mobile/components/MyAttendanceCard";
 import StaffScreen from "../StaffScreen";
 import StaffInstallPrompt from "../StaffInstallPrompt";
-import { CalendarCheck } from "lucide-react";
+import { CalendarCheck, Building2 } from "lucide-react";
 import { monthLabel } from "@/features/hr/payroll/payslipPrint";
 import { STAFF_COLOR, STAFF_TEXT, TOUCH, card, rupee, sectionTitle } from "../staffUi";
 import RevealToggle from "../RevealToggle";
@@ -25,7 +25,7 @@ function Tile({ icon: Icon, label, onClick }) {
 }
 
 /** Home: check in, quick links, what waits for me (and my approval), leave left, pay and holidays. */
-export default function HomeTab({ home, go }) {
+export default function HomeTab({ home, go, company }) {
   const reveal = useReveal();
   const pending = home?.my_pending || {};
   const myPending = (pending.leave || 0) + (pending.requests || 0) + (pending.loans || 0) + (pending.claims || 0);
@@ -40,6 +40,15 @@ export default function HomeTab({ home, go }) {
       <Box component="button" type="button" onClick={() => go("attendance")} sx={{ ...card, display: "flex", alignItems: "center", gap: 1.25, minHeight: TOUCH, textAlign: "left", fontFamily: "inherit", cursor: "pointer" }}>
         <CalendarCheck size={20} color="var(--hr-teal-text)" />
         <Typography sx={{ flex: 1, fontSize: STAFF_TEXT.body, fontWeight: 700, color: STAFF_COLOR.text }}>My attendance calendar</Typography>
+        <ChevronRight size={18} color="var(--hr-faint)" />
+      </Box>
+      <Box component="button" type="button" onClick={() => go("company")} sx={{ ...card, display: "flex", alignItems: "center", gap: 1.25, minHeight: TOUCH, textAlign: "left", fontFamily: "inherit", cursor: "pointer" }}>
+        <Building2 size={20} color="var(--hr-teal-text)" />
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Typography sx={{ fontSize: STAFF_TEXT.body, fontWeight: 700, color: STAFF_COLOR.text }}>Company</Typography>
+          <Typography sx={{ fontSize: STAFF_TEXT.small, color: STAFF_COLOR.faint }}>News, ask HR, people and my documents</Typography>
+        </Box>
+        {(company?.unread || 0) > 0 && <Box sx={{ minWidth: 22, height: 22, px: 0.75, borderRadius: "999px", bgcolor: "#e11d48", color: "#fff", fontSize: 12, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }} aria-label={`${company.unread} new`}>{company.unread}</Box>}
         <ChevronRight size={18} color="var(--hr-faint)" />
       </Box>
 
