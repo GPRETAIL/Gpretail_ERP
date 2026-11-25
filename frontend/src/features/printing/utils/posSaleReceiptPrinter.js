@@ -32,7 +32,7 @@ const getSaleReceiptPaymentMethod = (sale = {}) => {
   if (payments.length > 0) {
     const modes = [...new Set(payments.map((p) => String(p.payment_mode || "").trim()).filter(Boolean))];
     if (modes.length > 0) {
-      return modes.map((mode) => mode.charAt(0) + mode.slice(1).toLowerCase()).join(" / ");
+      return modes.map((mode) => mode.charAt(0) + mode.slice(1).replaceAll("_", " ").toLowerCase()).join(" / ");
     }
   }
   if (sale?.payment_mode) {
@@ -173,6 +173,7 @@ export const buildSimplePosSaleReceiptData = async (
     generalBalanceVisible: Boolean(receiptCustomization?.generalFields?.balanceAmt?.visible),
     generalYouSavedVisible: Boolean(receiptCustomization?.generalFields?.youSaved?.visible),
     loyalty: savedSale?.loyalty || null, // points redeemed / earned / balance (sale response)
+    vouchers: savedSale?.vouchers || [], // gift vouchers, credit notes and coupons the bill used (sale response)
     footerNote: "",
     message: receiptCustomization?.thankYouMessage || DEFAULT_SALES_RECEIPT_MESSAGE,
     billCodeMarkup: await buildReceiptCodeMarkupAsync(displayBillNo, receiptCustomization, "bill"),

@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\V1\Sales\DealerInvoiceController;
 use App\Http\Controllers\Api\V1\Sales\DealerReceiptController;
 use App\Http\Controllers\Api\V1\Sales\DeliveryController;
 use App\Http\Controllers\Api\V1\Sales\IncentiveController;
+use App\Http\Controllers\Api\V1\Sales\GiftCreditController;
 use App\Http\Controllers\Api\V1\Sales\LoyaltyRedeemController;
 use App\Http\Controllers\Api\V1\Sales\PosOfflineController;
 use App\Http\Controllers\Api\V1\Sales\PosReturnController;
@@ -35,6 +36,9 @@ Route::post('incentives/approve', [IncentiveController::class, 'approve']);
 Route::get('loyalty-redeem/quote', [LoyaltyRedeemController::class, 'quote']);
 Route::post('loyalty-redeem/otp', [LoyaltyRedeemController::class, 'sendOtp']);
 Route::post('loyalty-redeem/otp/{id}/verify', [LoyaltyRedeemController::class, 'verifyOtp'])->whereNumber('id');
+
+// POS: what a gift voucher, credit note or coupon code is worth on this bill. Limited, so codes cannot be guessed at.
+Route::get('gift-credits/lookup', [GiftCreditController::class, 'lookup'])->middleware('throttle:30,1');
 
 // Sales > Bill Reprint: search every sales document, and the reprint log.
 Route::get('bill-reprints', [BillReprintController::class, 'index']);

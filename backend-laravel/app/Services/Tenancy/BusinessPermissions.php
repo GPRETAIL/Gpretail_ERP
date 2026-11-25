@@ -9,7 +9,7 @@ class BusinessPermissions
 {
     private const MASTERS = ['BrandController', 'CategoryController', 'TaxController', 'SupplierController', 'AgentController', 'TransportController', 'CustomerController', 'EmployeeController', 'ProductController', 'ProductAttributeController', 'SizeController', 'HrConfigurationController', 'ItemController', 'LoyaltyController'];
 
-    private const TRANSACTIONS = ['PosSaleController', 'PosReturnController', 'CustomerOrderController', 'DealerInvoiceController', 'PurchaseInvoiceController', 'PurchaseReturnController', 'DirectPurchaseController', 'InventoryEntryController', 'PhysicalStockController', 'SalesApprovalController', 'StockOutwardController', 'SupplierPaymentController', 'SettlementController', 'CashRegisterController', 'TransportEntryController', 'BarcodeController', 'PurchaseOrderController', 'PosOfflineController', 'DeliveryController', 'DealerReceiptController', 'BillReprintController', 'LoyaltyRedeemController'];
+    private const TRANSACTIONS = ['PosSaleController', 'PosReturnController', 'CustomerOrderController', 'DealerInvoiceController', 'PurchaseInvoiceController', 'PurchaseReturnController', 'DirectPurchaseController', 'InventoryEntryController', 'PhysicalStockController', 'SalesApprovalController', 'StockOutwardController', 'SupplierPaymentController', 'SettlementController', 'CashRegisterController', 'TransportEntryController', 'BarcodeController', 'PurchaseOrderController', 'PosOfflineController', 'DeliveryController', 'DealerReceiptController', 'BillReprintController', 'LoyaltyRedeemController', 'GiftCreditController'];
 
     private const ADMINISTRATION = ['ThemeWorkspaceController', 'BackupController', 'SettingsController', 'ConfigurationController', 'CompanyController', 'StoreController', 'UserAccessController', 'StoreActivationController', 'SyncController', 'LoginSessionController', 'MessagingSettingsController', 'ReportScheduleController'];
 
@@ -149,7 +149,7 @@ class BusinessPermissions
 
             // POS returns are a counter action (cashier preset allows them); refunds over the
             // user's limit are additionally gated by ApprovalService. A dealer invoice is a sale too.
-            return in_array($controller, ['PosSaleController', 'PosOfflineController', 'PosReturnController', 'CustomerOrderController', 'CashRegisterController', 'DealerInvoiceController', 'DeliveryController', 'DealerReceiptController', 'BillReprintController', 'LoyaltyRedeemController'], true) ? 'sales.post' : 'purchases.post';
+            return in_array($controller, ['PosSaleController', 'PosOfflineController', 'PosReturnController', 'CustomerOrderController', 'CashRegisterController', 'DealerInvoiceController', 'DeliveryController', 'DealerReceiptController', 'BillReprintController', 'LoyaltyRedeemController', 'GiftCreditController'], true) ? 'sales.post' : 'purchases.post';
         }
 
         return 'unassigned';

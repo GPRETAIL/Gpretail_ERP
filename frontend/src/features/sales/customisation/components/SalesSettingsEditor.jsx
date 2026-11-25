@@ -51,6 +51,7 @@ import {
   wrapSalesReceiptText,
   PAYMENT_DIALOG_PAGES,
   CASH_OPENING_CHECKS,
+  CREDIT_NOTE_EXPIRY_CHOICES,
 } from "@/features/sales/customisation/utils/salesReceiptCustomisation";
 import { Box, Stack, Typography, TextField, Button, IconButton, Switch, FormControlLabel, Table, TableHead, TableBody, TableRow, TableCell, Dialog, DialogTitle, DialogContent, Tabs, Tab, MenuItem, alpha } from "@mui/material";
 import { FIELD_HEIGHT, muiFieldSx } from "@/shared/theme/formControlSizes";
@@ -1225,6 +1226,19 @@ export default function SalesSettingsEditor({ section = "sales", onDirtyChange }
             <TextField id="cash-opening-check" select size="small" value={settings.cashOpeningCheck || "warn"} sx={{ minWidth: 320 }}
               onChange={(e) => updateSetting({ cashOpeningCheck: e.target.value })}>
               {CASH_OPENING_CHECKS.map((option) => <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>)}
+            </TextField>
+          </Box>
+
+          <Box sx={{ ...baseCardSx, p: 2.5 }}>
+            <Typography component="label" htmlFor="credit-note-expiry-days" sx={fieldLabelSx}>Credit note validity</Typography>
+            <Typography sx={{ fontSize: TYPE.small, color: "text.secondary", mb: 1.5 }}>
+              A return can be refunded as a credit note: a numbered note with a balance that bills use as a payment, in parts. This is how long a new
+              credit note can be used.
+            </Typography>
+            <TextField id="credit-note-expiry-days" select size="small" value={settings.creditNoteExpiryDays ?? 90} sx={{ minWidth: 320 }}
+              onChange={(e) => updateSetting({ creditNoteExpiryDays: Number(e.target.value) })}>
+              {[...CREDIT_NOTE_EXPIRY_CHOICES, ...(CREDIT_NOTE_EXPIRY_CHOICES.some((c) => c.value === Number(settings.creditNoteExpiryDays ?? 90)) ? [] : [{ value: Number(settings.creditNoteExpiryDays), label: `${settings.creditNoteExpiryDays} days` }])]
+                .map((option) => <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>)}
             </TextField>
           </Box>
 

@@ -131,6 +131,8 @@ const PosReturn = () => {
   const [customers, setCustomers] = useState([]);
   const [returnReasons, setReturnReasons] = useState([]);
   const [selectedReturnReasonId, setSelectedReturnReasonId] = useState("");
+  // How the customer is paid back: cash, or a numbered credit note (a balance bills use as a payment, with an expiry).
+  const [refundMode, setRefundMode] = useState("CASH");
   const [billLookup, setBillLookup] = useState("");
   const [sourceSale, setSourceSale] = useState(null);
   const [cart, setCart] = useState([]);
@@ -487,6 +489,7 @@ const PosReturn = () => {
     setExistingCustomerId("");
     setNewCustomer({ ...blankCustomer });
     setSelectedReturnReasonId("");
+    setRefundMode("CASH");
     setBillLookup("");
     setSourceSale(null);
     setCart([]);
@@ -570,7 +573,8 @@ const PosReturn = () => {
         paidAmount: 0,
         receivedAmount: 0,
         balanceAmount: 0,
-        paymentMethod: "Return",
+        paymentMethod: savedReturn?.credit_note ? "Credit note" : "Return",
+        creditNote: savedReturn?.credit_note || null,
         generalTaxVisible: Boolean(receiptCustomization.generalFields?.tax?.visible),
         generalPaidVisible: Boolean(receiptCustomization.generalFields?.paid?.visible),
         generalReceivedVisible: Boolean(receiptCustomization.generalFields?.receivedAmount?.visible),
@@ -632,6 +636,7 @@ const PosReturn = () => {
       customerName: String(newCustomer.name || "").trim() || null,
       customerMobile: String(newCustomer.mobileNo || "").trim() || null,
       returnReasonId: selectedReturnReasonId || null,
+      refundMode,
       returnReasonName: returnReasons.find((row) => row.value === selectedReturnReasonId)?.label || null,
       ...(isStandalone ? { standalone: true } : { sourcePosSaleId: sourceSale.id, sourceBillNo: sourceSale.billNo }),
       returnAt: now.toISOString(),
@@ -658,7 +663,9 @@ const PosReturn = () => {
       setLatestPosDocument(saved ? { type: "return", ...saved } : null);
       try { await printReturnReceipt(saved); }
       catch (error) { toast.error(`Return saved, but receipt was not printed. ${error.message || "Please retry printing."}`); }
-      toast.success(`POS return saved successfully (Return #${saved?.display_return_no || formatReturnNo(saved?.return_no)})`);
+      toast.success(saved?.credit_note
+        ? `Return saved. Credit note ${saved.credit_note.display_number} for ₹${formatMoney(saved.credit_note.amount)}${saved.credit_note.expires_on ? `, valid until ${saved.credit_note.expires_on}` : ""}.`
+        : `POS return saved successfully (Return #${saved?.display_return_no || formatReturnNo(saved?.return_no)})`);
       handleResetEntry();
       await Promise.all([loadMasterData(), loadNextReturnNo(), refreshLatestPosDocument()]);
     } catch (err) {
@@ -871,6 +878,14 @@ const PosReturn = () => {
                       {row.label}
                     </MenuItem>
                   ))}
+                </TextField>
+              </Box>
+
+              <Box sx={{ minWidth: 0 }}>
+                <Typography component="label" htmlFor="return-refund-mode" sx={{ display: "block", mb: 0.5, fontSize: TYPE.label, fontWeight: 700, color: "text.secondary" }}>Refund as</Typography>
+                <TextField id="return-refund-mode" select value={refundMode} onChange={(e) => setRefundMode(e.target.value)} size="small" fullWidth sx={muiFieldSx}>
+                  <MenuItem value="CASH">Cash</MenuItem>
+                  <MenuItem value="CREDIT_NOTE">Credit note</MenuItem>
                 </TextField>
               </Box>
             </Box>

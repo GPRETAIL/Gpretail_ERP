@@ -162,12 +162,21 @@ class SettingsController extends Controller
                 $locked = Store::whereKey($store->id)->lockForUpdate()->firstOrFail();
                 $incoming = $request->except(['companyId', 'company_id', 'settingsSection']);
                 if ($request->has('settingsSection')) {
-                    $salesKeys = ['billNumberReset', 'billNumberOverride', 'settlementNumberReset', 'settlementNumberOverride', 'saleSaveAs', 'posPaymentDialogVisible', 'posSalespersonScan', 'deliveryVerifyAll', 'billingDateAfterClosing', 'billingDateChangers', 'reprintReasonAfter', 'reprintCopyLabels', 'requireCashOpening', 'cashOpeningCheck', 'paymentDialogPages'];
+                    $salesKeys = ['billNumberReset', 'billNumberOverride', 'settlementNumberReset', 'settlementNumberOverride', 'saleSaveAs', 'posPaymentDialogVisible', 'posSalespersonScan', 'deliveryVerifyAll', 'billingDateAfterClosing', 'billingDateChangers', 'reprintReasonAfter', 'reprintCopyLabels', 'requireCashOpening', 'cashOpeningCheck', 'creditNoteExpiryDays', 'paymentDialogPages'];
                     $receiptKeys = ['showBarcodeOnBill', 'showBarcodeOnReturnSlip', 'receiptCodeType', 'showDiscountOnReceipt', 'discountDisplayMode', 'showTaxTableOnReceipt', 'receiptWidthInches', 'thankYouMessage', 'receiptFontFamily', 'receiptFormat', 'printMode', 'paymentQrMode', 'paymentUpiId', 'paymentQrImageUrl', 'paymentQrSize', 'posReceiptPrintCopies', 'generalFields', 'taxFields', 'productFields'];
                     $allowed = $request->input('settingsSection') === 'sales' ? $salesKeys : $receiptKeys;
                     $incoming = array_intersect_key($incoming, array_flip($allowed));
                     if (array_key_exists('cashOpeningCheck', $incoming) && ! in_array($incoming['cashOpeningCheck'], \App\Services\Sales\CashRegisterService::CASH_OPENING_MODES, true)) {
                         unset($incoming['cashOpeningCheck']);
+                    }
+                    // Days a credit note lasts (0 = never expires). Anything else keeps what is saved.
+                    if (array_key_exists('creditNoteExpiryDays', $incoming)) {
+                        $days = filter_var($incoming['creditNoteExpiryDays'], FILTER_VALIDATE_INT);
+                        if ($days === false || $days < 0 || $days > 3650) {
+                            unset($incoming['creditNoteExpiryDays']);
+                        } else {
+                            $incoming['creditNoteExpiryDays'] = $days;
+                        }
                     }
                     // Who may change the POS billing date is the tenant admin's call alone; anyone else keeps what is saved.
                     if (array_key_exists('billingDateChangers', $incoming)) {

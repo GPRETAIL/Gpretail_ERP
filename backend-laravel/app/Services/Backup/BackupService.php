@@ -28,6 +28,8 @@ class BackupService
             'pos_payments' => ['scope' => 'via_parent', 'parent' => 'pos_sales', 'local_fk' => 'pos_sale_id'],
             'pos_returns' => ['scope' => 'store_id'],
             'pos_return_items' => ['scope' => 'via_parent', 'parent' => 'pos_returns', 'local_fk' => 'pos_return_id'],
+            'gift_credits' => ['scope' => 'store_id'],
+            'gift_credit_redemptions' => ['scope' => 'store_id'],
             'dealer_invoices' => ['scope' => 'store_id'],
             'dealer_invoice_items' => ['scope' => 'via_parent', 'parent' => 'dealer_invoices', 'local_fk' => 'dealer_invoice_id'],
             'sales_approvals' => ['scope' => 'store_id'],

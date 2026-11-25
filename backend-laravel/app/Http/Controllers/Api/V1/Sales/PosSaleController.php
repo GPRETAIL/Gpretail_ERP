@@ -10,6 +10,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Barcode;
 use App\Models\CreditLedger;
 use App\Models\Customer;
+use App\Models\GiftCredit;
 use App\Models\LoyaltyTransaction;
 use App\Models\Notification;
 use App\Models\PosPayment;
@@ -33,6 +34,7 @@ use App\Services\Pos\PosOfflineBilling;
 use App\Services\Pos\PosReturnWriter;
 use App\Services\Sales\BusinessDate;
 use App\Services\Sales\CashRegisterService;
+use App\Services\Sales\GiftCreditService;
 use App\Services\Sales\Salespeople;
 use App\Services\Tenancy\PagePermissions;
 use App\Support\GroupAggregationService;
@@ -486,6 +488,9 @@ class PosSaleController extends Controller
             'loyaltyRedeem.points' => 'nullable|integer|min:0',
             'loyaltyRedeem.otpToken' => 'nullable|string|max:100',
             'loyaltyRedeem.approvalToken' => 'nullable|string|max:100',
+            'vouchers' => 'nullable|array|list|max:'.GiftCreditService::MAX_PER_BILL,
+            'vouchers.*.number' => 'required|string|max:80',
+            'vouchers.*.amount' => 'nullable|numeric|min:0',
             'offline' => 'nullable|array',
             'offline.invoiceNo' => 'required_with:offline|string|max:80',
             'offline.billedAt' => 'required_with:offline|date',
@@ -548,6 +553,10 @@ class PosSaleController extends Controller
 
                     if (! $appliedReturn || $appliedReturn->credit_applied_to_sale_id) {
                         throw new PosReturnCreditUnavailableException;
+                    }
+                    // A return issued as a credit note is used by its own number (it has a balance and an expiry), not by the return.
+                    if (GiftCredit::where('store_id', $storeId)->where('source_pos_return_id', $appliedReturn->id)->exists()) {
+                        throw ValidationException::withMessages(['appliedPosReturnId' => 'This return was issued as a credit note. Use the credit note number instead.']);
                     }
                     $creditAmount = (float) $appliedReturn->total_refund;
                 }
@@ -627,7 +636,14 @@ class PosSaleController extends Controller
                 $loyaltyCustomer = $customerId ? Customer::where('id', $customerId)->lockForUpdate()->first() : null;
                 $redeem = $offline ? null : app(LoyaltyRedemption::class)->authorize($user, (int) $storeId, $loyaltyCustomer, $request->input('loyaltyRedeem'), $netPayable);
                 $loyaltyAmount = (float) ($redeem['amount'] ?? 0);
-                $paid = $cashAmount + $cardAmount + $upiAmount + $loyaltyAmount;
+                // Gift vouchers, credit notes and coupons pay part of the bill too, up to what is still due after loyalty points.
+                if ($offline && $request->input('vouchers')) {
+                    throw ValidationException::withMessages(['vouchers' => 'Vouchers, credit notes and coupons cannot be used on a bill saved offline.']);
+                }
+                $giftCredits = app(GiftCreditService::class);
+                $voucherUses = $giftCredits->authorize((int) $storeId, $request->input('vouchers'), (float) $grandTotal, max(0, $netPayable - $loyaltyAmount));
+                $voucherAmount = round(array_sum(array_column($voucherUses, 'amount')), 2);
+                $paid = $cashAmount + $cardAmount + $upiAmount + $loyaltyAmount + $voucherAmount;
                 $change = max(0, $paid - $netPayable);
                 if ($request->input('saleSaveAs') === 'paid_settled' && ! $isCredit && round($paid, 2) < round($netPayable, 2)) {
                     throw ValidationException::withMessages(['cashAmount' => 'Full payment is required to save a paid invoice.']);
@@ -640,7 +656,7 @@ class PosSaleController extends Controller
 
                 $paymentMode = $isCredit || $paid <= 0
                     ? ($isCredit ? 'CREDIT' : 'UNSETTLED')
-                    : ($cashAmount > 0 ? 'CASH' : ($cardAmount > 0 ? 'CARD' : ($upiAmount > 0 ? 'UPI' : 'LOYALTY')));
+                    : ($cashAmount > 0 ? 'CASH' : ($cardAmount > 0 ? 'CARD' : ($upiAmount > 0 ? 'UPI' : ($loyaltyAmount > 0 || ! $voucherUses ? 'LOYALTY' : GiftCreditService::PAYMENT_MODE[$voucherUses[0]['credit']->kind]))));
 
                 // After the counter's cash closing (Sales Customisation), the bill belongs to the next business date.
                 $business = $offline ? null : app(BusinessDate::class)->forCounter((int) $storeId, $counter?->id);
@@ -710,6 +726,8 @@ class PosSaleController extends Controller
                         ], $tender['extra']));
                     }
                 }
+
+                $giftCredits->redeem($sale, $voucherUses, $user->id ?? null);
 
                 if ($appliedReturn) {
                     $appliedReturn->update([
@@ -786,6 +804,8 @@ class PosSaleController extends Controller
             'earned' => (int) $rows->whereIn('type', ['EARN', 'BONUS'])->sum('points'),
             'balance' => (int) $rows->last()->balance_after,
         ];
+        // Gift vouchers, credit notes and coupons the bill used, for the receipt.
+        $data['vouchers'] = app(GiftCreditService::class)->usedOnSale($sale->id);
 
         return $data;
     }
@@ -855,6 +875,9 @@ class PosSaleController extends Controller
                     $creditEntry->delete();
                 }
             }
+
+            // Vouchers, credit notes and coupons the bill used are given back (the use rows stay, marked reversed).
+            app(GiftCreditService::class)->reverseSale($sale);
 
             $sale->payments()->delete();
             $sale->items()->delete();

@@ -271,6 +271,10 @@ class LedgerPoster
             'UPI' => 'upi_clearing',
             // Points the customer redeemed: a discount the store gives (Loyalty Points Redeemed).
             'LOYALTY' => 'loyalty_redemption',
+            // A credit note used on a bill clears what the return left owing; a voucher clears the voucher liability; a coupon is a discount.
+            'CREDIT_NOTE' => 'return_credit',
+            'GIFT_VOUCHER' => 'gift_voucher',
+            'COUPON' => 'coupon_discount',
             default => 'bank',
         });
     }

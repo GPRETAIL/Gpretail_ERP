@@ -98,12 +98,13 @@ it.each([
   ["HR Reports", "Employee Detail Report"], ["HR Reports", "Incentive Report - Employees"], ["HR Reports", "Incentive Report - Section"],
   ["Stock Reports", "Stock Aging Detail Report"], ["Stock Reports", "Stock Report With Shelf Period"], ["Stock Reports", "Stock Audit Report"],
   ["Customer Reports", "Loyalty Reward Consumption Report"], ["Customer Reports", "Birthday Wishes"], ["Customer Reports", "Anniversary Wishes"],
+  ["Customer Reports", "Customer Gift Voucher/Credit Note Report"], ["Customer Reports", "Gift Voucher/Credit Note Consumption Report"],
 ])("%s / %s handles an empty response without errors", async (group, report) => {
   expect(await open(group, report)).toEqual([]);
   expect(screen.queryByText(/Failed to load/)).not.toBeInTheDocument();
 });
 
-it.each([["Customer Reports", "Customer Gift Voucher/Credit Note Report"], ["HR Reports", "Employee Advance Pending Report"], ["Stock Reports", "Price Changer Report"]])("%s / %s does not present unrelated records as a report", async (group, title) => {
+it.each([["Customer Reports", "Coupon Consumption Report"], ["HR Reports", "Employee Advance Pending Report"], ["Stock Reports", "Price Changer Report"]])("%s / %s does not present unrelated records as a report", async (group, title) => {
   const store = configureStore({ reducer: { auth: authReducer }, preloadedState: { auth: { user: { id: 1, role: "admin", company_id: 1 } } } });
   render(<Provider store={store}><MemoryRouter><TransferActivityProvider><SalesReports /></TransferActivityProvider></MemoryRouter></Provider>);
   fireEvent.click(screen.getByText(new RegExp(`^${group} \\(`)));

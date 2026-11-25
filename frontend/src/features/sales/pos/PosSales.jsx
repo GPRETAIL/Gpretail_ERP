@@ -4,7 +4,9 @@ import useBillingGate from "@/features/sales/pos/hooks/useBillingGate";
 import CashNotOpenedDialog from "@/features/sales/pos/components/CashNotOpenedDialog";
 import CashNotOpenedBanner from "@/features/sales/pos/components/CashNotOpenedBanner";
 import LoyaltyRedeemPanel from "@/features/sales/pos/components/LoyaltyRedeemPanel";
+import GiftCreditPanel from "@/features/sales/pos/components/GiftCreditPanel";
 import { loyaltyRedeemPayload } from "@/features/sales/pos/utils/loyaltyRedeem";
+import { giftCreditPayload, giftCreditTotal } from "@/features/sales/pos/utils/giftCredit";
 import LiveDateTime from "@/shared/components/LiveDateTime";
 import useBillingDate from "@/features/sales/pos/hooks/useBillingDate";
 import ApprovalDialog from "@/features/sales/approvals/components/ApprovalDialog";
@@ -782,9 +784,12 @@ const PosSales = () => {
   // Loyalty points redeemed in the payment dialog, kept with the customer they belong to (another customer: none).
   const [loyaltyRedeemState, setLoyaltyRedeemState] = useState(null);
   const loyaltyRedeem = loyaltyRedeemState && String(loyaltyRedeemState.customerId) === String(existingCustomerId) ? loyaltyRedeemState : null;
+  // Gift vouchers, credit notes and coupons applied in the payment dialog: paid like loyalty points, from the server's balances.
+  const [giftCredits, setGiftCredits] = useState([]);
+  const giftCreditAmount = giftCreditTotal(giftCredits);
   const paymentTotals = useMemo(
-    () => computePaymentTotalsFromForm(paymentForm, summary, loyaltyRedeem?.amount),
-    [paymentForm, summary, loyaltyRedeem?.amount]
+    () => computePaymentTotalsFromForm(paymentForm, summary, (loyaltyRedeem?.amount || 0) + giftCreditAmount),
+    [paymentForm, summary, loyaltyRedeem?.amount, giftCreditAmount]
   );
   const paymentDisplayTotals = useMemo(() => {
     if (!paymentForm.refundApproved || paymentTotals.refundAmount <= 0) {
@@ -1696,6 +1701,7 @@ const PosSales = () => {
     clearAppliedReturn();
     setPaymentForm({ ...blankPaymentForm });
     setLoyaltyRedeemState(null);
+    setGiftCredits([]);
     setPaymentDialogOpen(false);
     setTimeout(() => barcodeInputRef.current?.focus(), 0);
   };
@@ -1869,7 +1875,7 @@ const PosSales = () => {
 
     const pf = formSnapshot === undefined ? paymentForm : formSnapshot;
     const { cashAmount, cardAmount, upiAmount, loyaltyAmount, receivedAmount, balanceAmount, netAmount, refundAmount } =
-      computePaymentTotalsFromForm(pf, summary, loyaltyRedeem?.amount);
+      computePaymentTotalsFromForm(pf, summary, (loyaltyRedeem?.amount || 0) + giftCreditAmount);
     const nonCashLimit = netAmount > 0 ? Math.max(netAmount - cashAmount - loyaltyAmount, 0) : 0;
 
     if (netAmount > 0 && cardAmount > nonCashLimit) {
@@ -1966,6 +1972,7 @@ const PosSales = () => {
       upiAmount,
       upiProviderId: pf.upiProviderId || null,
       ...loyaltyRedeemPayload(loyaltyRedeem),
+      ...giftCreditPayload(giftCredits),
       receivedAmount,
       refundAmount: refundAmount > 0 ? refundAmount : 0,
       appliedPosReturnId:
@@ -2117,6 +2124,7 @@ const PosSales = () => {
       generalBalanceVisible: Boolean(receiptCustomization.generalFields?.balanceAmt?.visible),
       generalYouSavedVisible: Boolean(receiptCustomization.generalFields?.youSaved?.visible),
       loyalty: savedSale?.loyalty || null, // points redeemed / earned / balance (sale response)
+      vouchers: savedSale?.vouchers || [], // gift vouchers, credit notes and coupons the bill used (sale response)
       footerNote: commonSalesMan ? `Salesman: ${commonSalesMan}` : "",
       message: receiptCustomization.thankYouMessage || DEFAULT_SALES_RECEIPT_MESSAGE,
       billCodeMarkup: await buildReceiptCodeMarkupAsync(displayBillNo, receiptCustomization, "bill"),
@@ -2237,6 +2245,7 @@ const PosSales = () => {
         generalBalanceVisible: Boolean(receiptCustomization.generalFields?.balanceAmt?.visible),
         generalYouSavedVisible: Boolean(receiptCustomization.generalFields?.youSaved?.visible),
         loyalty: saved?.loyalty || null, // points redeemed / earned / balance (sale response)
+        vouchers: saved?.vouchers || [], // gift vouchers, credit notes and coupons the bill used (sale response)
         footerNote: "",
         message: receiptCustomization.thankYouMessage || DEFAULT_SALES_RECEIPT_MESSAGE,
         billCodeMarkup: await buildReceiptCodeMarkupAsync(displayBillNo, receiptCustomization, "bill"),
@@ -3235,10 +3244,17 @@ const PosSales = () => {
 
       {paymentDialogOpen && (
         <PaymentDialog
-          loyaltySlot={existingCustomerId ? (
-            <LoyaltyRedeemPanel customerId={existingCustomerId} billAmount={summary.amount} value={loyaltyRedeem}
-              onChange={(value) => setLoyaltyRedeemState(value ? { ...value, customerId: existingCustomerId } : null)} />
-          ) : null}
+          loyaltySlot={(
+            <>
+              {existingCustomerId ? (
+                <LoyaltyRedeemPanel customerId={existingCustomerId} billAmount={summary.amount} value={loyaltyRedeem}
+                  onChange={(value) => setLoyaltyRedeemState(value ? { ...value, customerId: existingCustomerId } : null)} />
+              ) : null}
+              {!isOffline ? (
+                <GiftCreditPanel billAmount={summary.amount} otherPaid={loyaltyRedeem?.amount || 0} value={giftCredits} onChange={setGiftCredits} />
+              ) : null}
+            </>
+          )}
           totals={paymentDisplayTotals}
           totalDiscount={summary.totalDiscount}
           refundAmount={paymentTotals.refundAmount}

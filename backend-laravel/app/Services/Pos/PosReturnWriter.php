@@ -5,6 +5,7 @@ namespace App\Services\Pos;
 use App\Exceptions\PosReturnNotReturnableException;
 use App\Models\Barcode;
 use App\Models\Customer;
+use App\Models\GiftCredit;
 use App\Models\PosReturn;
 use App\Models\PosReturnItem;
 use App\Models\PosSale;
@@ -14,6 +15,7 @@ use App\Services\Crm\LoyaltyLedger;
 use App\Services\Documents\DocumentNumberService;
 use App\Services\Inventory\StockService;
 use App\Services\Sales\BusinessDate;
+use App\Services\Sales\GiftCreditService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -160,6 +162,16 @@ class PosReturnWriter
             $customer = $customerId ? Customer::whereKey($customerId)->lockForUpdate()->first() : null;
             if ($customer && $posReturn->pos_sale_id) {
                 app(LoyaltyLedger::class)->onReturn($posReturn, $customer, $request->user()?->id);
+            }
+
+            // Refunded as a credit note: a numbered note for the amount, with an expiry, that bills can use in parts.
+            if (strtoupper((string) ($input['refundMode'] ?? '')) === GiftCredit::CREDIT_NOTE && $totalRefund > 0) {
+                app(GiftCreditService::class)->issue($request, $storeId, GiftCredit::CREDIT_NOTE, $totalRefund, [
+                    'customer_id' => $customerId ?: null,
+                    'source_pos_return_id' => $posReturn->id,
+                    'source_pos_sale_id' => $posReturn->pos_sale_id,
+                    'date' => $business['shifted'] ? Carbon::parse($business['date']) : null,
+                ]);
             }
 
             return $posReturn;

@@ -18,12 +18,14 @@ import { toast } from "react-toastify";
 import ApprovalDialog from "@/features/sales/approvals/components/ApprovalDialog";
 import { approvalRequirementFrom, isApprovalRequired, withApprovalTokens } from "@/features/sales/approvals/utils/approvals";
 import LoyaltyRedeemPanel from "@/features/sales/pos/components/LoyaltyRedeemPanel";
+import GiftCreditPanel from "@/features/sales/pos/components/GiftCreditPanel";
 import useBillingGate from "@/features/sales/pos/hooks/useBillingGate";
 import CashNotOpenedDialog from "@/features/sales/pos/components/CashNotOpenedDialog";
 import CashNotOpenedBanner from "@/features/sales/pos/components/CashNotOpenedBanner";
 import CheckoutPaymentDialog from "@/features/sales/pos/components/CheckoutPaymentDialog";
 import { checkoutPaymentPayload } from "@/features/sales/pos/utils/checkoutPayment";
 import { loyaltyRedeemPayload } from "@/features/sales/pos/utils/loyaltyRedeem";
+import { giftCreditPayload, giftCreditTotal } from "@/features/sales/pos/utils/giftCredit";
 import useBillingDate from "@/features/sales/pos/hooks/useBillingDate";
 import { billDateText } from "@/features/sales/pos/utils/billingDate";
 import { useNavigate } from "react-router-dom";
@@ -618,6 +620,7 @@ const TouchSales = () => {
         generalBalanceVisible: Boolean(receiptCustomization.generalFields?.balanceAmt?.visible),
         generalYouSavedVisible: Boolean(receiptCustomization.generalFields?.youSaved?.visible),
         loyalty: savedSale?.loyalty || null, // points redeemed / earned / balance (sale response)
+        vouchers: savedSale?.vouchers || [], // gift vouchers, credit notes and coupons the bill used (sale response)
         message: receiptCustomization.thankYouMessage || DEFAULT_SALES_RECEIPT_MESSAGE,
         billCodeMarkup: await buildReceiptCodeMarkupAsync(displayBillNo, receiptCustomization, "bill"),
         paymentQrMarkup: await buildPaymentQrMarkup(receiptCustomization, {
@@ -651,7 +654,9 @@ const TouchSales = () => {
   const [approvalRequirement, setApprovalRequirement] = useState(null);
   const loyaltyCustomerId = detectedCustomer?.id ? String(detectedCustomer.id) : "";
   const loyaltyRedeem = loyaltyRedeemState && loyaltyCustomerId && String(loyaltyRedeemState.customerId) === loyaltyCustomerId ? loyaltyRedeemState : null;
-  const cashToCollect = round2(Math.max(0, billSummary.netAmount - (loyaltyRedeem?.amount || 0)));
+  // Gift vouchers, credit notes and coupons applied to this bill pay part of it too.
+  const [giftCredits, setGiftCredits] = useState([]);
+  const cashToCollect = round2(Math.max(0, billSummary.netAmount - (loyaltyRedeem?.amount || 0) - giftCreditTotal(giftCredits)));
   // Sales Customisation can make Save open the payment dialog (cash / card / UPI, points) on this page.
   const [checkout, setCheckout] = useState(null); // { shouldPrint } while the dialog is open
   const lastPaymentRef = useRef(null);
@@ -690,6 +695,7 @@ const TouchSales = () => {
       cashAmount: pay ? pay.cashAmount : cashToCollect,
       ...(pay ? checkoutPaymentPayload(pay) : {}),
       ...loyaltyRedeemPayload(pay ? pay.loyalty : loyaltyRedeem),
+      ...giftCreditPayload(pay ? pay.giftCredits : giftCredits),
       appliedPosReturnId: appliedReturn?.id || null,
       appliedReturnNo:
         appliedReturn?.displayReturnNo || (appliedReturn?.returnNo ? formatReturnNo(appliedReturn.returnNo) : null),
@@ -718,6 +724,7 @@ const TouchSales = () => {
         catch (error) { toast.error(`Sale saved, but receipt was not printed. ${error.message || "Please retry printing."}`); }
       }
       setLoyaltyRedeemState(null);
+      setGiftCredits([]);
       lastPaymentRef.current = null;
       resetDraftAndCart();
       await Promise.all([loadMasterData(), loadNextBillNo()]);
@@ -1040,7 +1047,10 @@ const TouchSales = () => {
                 <LoyaltyRedeemPanel customerId={loyaltyCustomerId} billAmount={billSummary.netAmount} value={loyaltyRedeem}
                   onChange={(value) => setLoyaltyRedeemState(value ? { ...value, customerId: loyaltyCustomerId } : null)} />
               )}
-              {loyaltyRedeem && (
+              {!paymentDialogMode && billSummary.netAmount > 0 && (
+                <GiftCreditPanel billAmount={billSummary.netAmount} otherPaid={loyaltyRedeem?.amount || 0} value={giftCredits} onChange={setGiftCredits} />
+              )}
+              {(loyaltyRedeem || giftCredits.length > 0) && (
                 <Stack direction="row" sx={{ justifyContent: "space-between", fontSize: 12.25, fontWeight: 600 }}>
                   <Box component="span">Cash to collect</Box><Box component="b">{formatMoney(cashToCollect)}</Box>
                 </Stack>

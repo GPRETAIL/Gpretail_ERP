@@ -28,7 +28,8 @@ class ScheduledReportCatalog
         'stock_movement' => 'Stock movement', 'pending_inward' => 'Pending inward transfers', 'pending_outward' => 'Pending outward transfers', 'retail_stock' => 'Retail stock'];
 
     private const STORE_LABELS = ['stock_aging' => 'Stock ageing', 'shelf_period' => 'Shelf period', 'stock_audit' => 'Stock audit',
-        'loyalty_redemptions' => 'Loyalty redemptions', 'incentives' => 'Salesperson incentives'];
+        'loyalty_redemptions' => 'Loyalty redemptions', 'incentives' => 'Salesperson incentives',
+        'gift_credit_issues' => 'Gift vouchers and credit notes issued', 'gift_credit_uses' => 'Gift voucher and credit note use'];
 
     /** The ERP's menu modules, in menu order: the Scheduler lists its report library this way. */
     public const MODULES = ['Dashboard', 'Sales', 'Warehouse', 'Store', 'Finance', 'CRM', 'HR'];
@@ -46,7 +47,7 @@ class ScheduledReportCatalog
     private const SUMMARY_MODULES = ['supplier_payments' => 'Finance', 'voucher_lines' => 'Finance', 'customer_orders' => 'CRM', 'customers' => 'CRM',
         'employees' => 'HR', 'store_stock' => 'Store', 'stock_audits' => 'Store'];
 
-    private const STORE_MODULES = ['loyalty_redemptions' => 'CRM', 'incentives' => 'HR'];
+    private const STORE_MODULES = ['loyalty_redemptions' => 'CRM', 'incentives' => 'HR', 'gift_credit_issues' => 'Sales', 'gift_credit_uses' => 'Sales'];
 
     public function __construct(private ReportSummaryService $summaries) {}
 

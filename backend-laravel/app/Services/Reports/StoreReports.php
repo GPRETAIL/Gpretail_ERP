@@ -2,8 +2,13 @@
 
 namespace App\Services\Reports;
 
+use App\Models\GiftCredit;
+use App\Models\GiftCreditRedemption;
+use App\Models\PosReturn;
+use App\Models\PosSale;
 use App\Models\ReportScheduleRun;
 use App\Services\Reports\Scheduled\ScheduledReportCatalog;
+use App\Services\Sales\GiftCreditService;
 use App\Services\Sales\IncentiveCalculator;
 use App\Services\Tenancy\StoreQuery;
 use Carbon\CarbonImmutable;
@@ -16,7 +21,7 @@ use Illuminate\Support\Facades\DB;
  */
 class StoreReports
 {
-    public const REPORTS = ['stock_aging', 'shelf_period', 'stock_audit', 'loyalty_redemptions', 'incentives'];
+    public const REPORTS = ['stock_aging', 'shelf_period', 'stock_audit', 'loyalty_redemptions', 'incentives', 'gift_credit_issues', 'gift_credit_uses'];
 
     /**
      * Reports for people who may export reports, and not offered in the Scheduler: the Scheduler's own delivery history
@@ -30,6 +35,8 @@ class StoreReports
     {
         return match ($report) {
             'scheduled_messages' => $this->scheduledMessages(),
+            'gift_credit_issues' => $this->giftCreditIssues([GiftCredit::GIFT_VOUCHER, GiftCredit::CREDIT_NOTE]),
+            'gift_credit_uses' => $this->giftCreditUses([GiftCredit::GIFT_VOUCHER, GiftCredit::CREDIT_NOTE]),
             'stock_aging' => $this->stockAging(),
             'shelf_period' => $this->shelfPeriod(),
             'stock_audit' => $this->stockAudit(),
@@ -147,6 +154,70 @@ class StoreReports
                 'skipped_recipients' => implode(', ', $skipped),
                 'files' => implode(', ', $this->fileNames($run->files ?? [])),
                 'error' => (string) ($run->error ?? ''),
+            ];
+        })->values();
+    }
+
+    private const GIFT_CREDIT_KIND_LABEL = [GiftCredit::GIFT_VOUCHER => 'Gift voucher', GiftCredit::CREDIT_NOTE => 'Credit note', GiftCredit::COUPON => 'Coupon'];
+
+    private const GIFT_CREDIT_STATE_LABEL = ['ACTIVE' => 'Active', 'USED' => 'Used', 'EXPIRED' => 'Expired', 'CANCELLED' => 'Cancelled'];
+
+    /**
+     * Customer Gift Voucher/Credit Note: every one issued, what it was for, how much has been used and what is left.
+     * (Coupons have their own pages.)
+     *
+     * @param  list<string>  $kinds
+     */
+    private function giftCreditIssues(array $kinds): Collection
+    {
+        $credits = GiftCredit::with('customer:id,name,phone')->whereIn('kind', $kinds)->orderByDesc('issued_on')->orderByDesc('id')->limit(20000)->get();
+        $returns = PosReturn::whereIn('id', $credits->pluck('source_pos_return_id')->filter()->unique())->pluck('return_no', 'id');
+        $sales = PosSale::whereIn('id', $credits->pluck('source_pos_sale_id')->filter()->unique())->get(['id', 'invoice_no'])->keyBy('id');
+        $service = app(GiftCreditService::class);
+
+        return $credits->map(fn (GiftCredit $credit) => [
+            'issued_on' => $credit->issued_on?->toDateString() ?? '-',
+            'number' => $service->displayNumber($credit),
+            'type' => self::GIFT_CREDIT_KIND_LABEL[$credit->kind] ?? $credit->kind,
+            'customer_name' => $credit->customer?->name ?? '-',
+            'mobile_no' => $credit->customer?->phone ?? '-',
+            'source' => $credit->source_pos_return_id ? 'Return '.($returns[$credit->source_pos_return_id] ?? '') : ($credit->source_pos_sale_id ? 'Bill '.($sales[$credit->source_pos_sale_id]->bill_no ?? '') : '-'),
+            'amount' => round((float) $credit->original_amount, 2),
+            'used' => $credit->status === 'CANCELLED' ? 0.0 : round((float) $credit->original_amount - (float) $credit->balance, 2),
+            'balance' => $credit->status === 'CANCELLED' ? 0.0 : round((float) $credit->balance, 2),
+            'expires_on' => $credit->expires_on?->toDateString() ?? 'Never',
+            'status' => self::GIFT_CREDIT_STATE_LABEL[$credit->state] ?? $credit->state,
+        ])->values();
+    }
+
+    /**
+     * Gift Voucher/Credit Note Consumption: each use on a bill (a bill that was cancelled gave it back, so its use is not listed),
+     * with the balance on the voucher or note now.
+     *
+     * @param  list<string>  $kinds
+     */
+    private function giftCreditUses(array $kinds): Collection
+    {
+        $uses = GiftCreditRedemption::with('giftCredit.customer:id,name,phone')->whereNull('reversed_at')
+            ->whereHas('giftCredit', fn ($q) => $q->whereIn('kind', $kinds))->orderByDesc('redeemed_on')->orderByDesc('id')->limit(20000)->get();
+        $sales = PosSale::with('customer:id,name,phone')->whereIn('id', $uses->pluck('pos_sale_id')->unique())->get(['id', 'invoice_no', 'customer_id'])->keyBy('id');
+        $service = app(GiftCreditService::class);
+
+        return $uses->map(function (GiftCreditRedemption $use) use ($sales, $service) {
+            $credit = $use->giftCredit;
+            $sale = $sales[$use->pos_sale_id] ?? null;
+            $customer = $sale?->customer ?? $credit?->customer;
+
+            return [
+                'redeemed_on' => $use->redeemed_on?->toDateString() ?? '-',
+                'number' => $credit ? $service->displayNumber($credit) : '-',
+                'type' => self::GIFT_CREDIT_KIND_LABEL[$credit?->kind] ?? '-',
+                'bill_no' => $sale?->bill_no ?? '-',
+                'customer_name' => $customer?->name ?? '-',
+                'mobile_no' => $customer?->phone ?? '-',
+                'amount' => round((float) $use->amount, 2),
+                'balance' => round((float) ($credit?->balance ?? 0), 2),
+                'status' => $credit ? (self::GIFT_CREDIT_STATE_LABEL[$credit->state] ?? $credit->state) : '-',
             ];
         })->values();
     }

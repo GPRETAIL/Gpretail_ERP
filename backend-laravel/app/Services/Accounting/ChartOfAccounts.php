@@ -47,6 +47,10 @@ class ChartOfAccounts
         'upi_clearing' => ['UPI Receipts (not yet in bank)', 'current_assets'],
         'pos_receivable' => ['Unsettled POS Bills', 'current_assets'],
         'return_credit' => ['Return Credit Notes', 'current_liabilities'],
+        // Gift vouchers the store sold and has not yet been paid back in goods: what it still owes.
+        'gift_voucher' => ['Gift Vouchers Outstanding', 'current_liabilities'],
+        // Coupons the store gave and customers used on a bill: a discount the store carries.
+        'coupon_discount' => ['Coupon Discounts', 'indirect_expenses'],
         'capital' => ['Capital Account', 'capital'],
         'sales' => ['Sales', 'sales'],
         'sales_return' => ['Sales Returns', 'sales'],

@@ -1385,6 +1385,33 @@ const scheduledMessageColumns = [
   { key: "error", label: "Problem" },
 ];
 
+// Gift vouchers and credit notes: every one issued, and each use of one on a bill.
+const giftCreditIssueColumns = [
+  { key: "issued_on", label: "Issued on" },
+  { key: "number", label: "Number" },
+  { key: "type", label: "Type" },
+  { key: "customer_name", label: "Customer" },
+  { key: "mobile_no", label: "Mobile" },
+  { key: "source", label: "Issued for" },
+  { key: "amount", label: "Amount", render: rightNumber(2) },
+  { key: "used", label: "Used", render: rightNumber(2) },
+  { key: "balance", label: "Balance", render: rightNumber(2) },
+  { key: "expires_on", label: "Valid until" },
+  { key: "status", label: "Status" },
+];
+
+const giftCreditUseColumns = [
+  { key: "redeemed_on", label: "Used on" },
+  { key: "number", label: "Number" },
+  { key: "type", label: "Type" },
+  { key: "bill_no", label: "Bill no" },
+  { key: "customer_name", label: "Customer" },
+  { key: "mobile_no", label: "Mobile" },
+  { key: "amount", label: "Amount used", render: rightNumber(2) },
+  { key: "balance", label: "Balance now", render: rightNumber(2) },
+  { key: "status", label: "Status" },
+];
+
 const incentiveSectionColumns = [
   { key: "month", label: "Month" },
   { key: "section", label: "Section" },
@@ -2271,10 +2298,18 @@ const REPORT_DATA_SOURCES = {
     },
     emptyText: "No credit outstanding rows found.",
   },
-  customer_gift_voucher_credit_note_report: { unavailableReason: "A dedicated data source for this report is not connected." },
+  customer_gift_voucher_credit_note_report: {
+    columns: giftCreditIssueColumns,
+    fetchRows: () => getStoreReportRows("gift_credit_issues"),
+    emptyText: "No gift vouchers or credit notes have been issued yet.",
+  },
   settlement_coupon_issue_report: { unavailableReason: "A dedicated data source for this report is not connected." },
   coupon_consumption_report: { unavailableReason: "A dedicated data source for this report is not connected." },
-  gift_voucher_credit_note_consumption_report: { unavailableReason: "A dedicated data source for this report is not connected." },
+  gift_voucher_credit_note_consumption_report: {
+    columns: giftCreditUseColumns,
+    fetchRows: () => getStoreReportRows("gift_credit_uses"),
+    emptyText: "No gift voucher or credit note has been used on a bill yet.",
+  },
   loyalty_reward_consumption_report: {
     summary: { dataset: "customers", layouts: ["type", "city", "status"] },
     columns: loyaltyRedemptionColumns,

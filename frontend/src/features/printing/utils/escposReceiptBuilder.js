@@ -370,6 +370,11 @@ export const buildEscposReceiptBytes = (receiptData = {}, customization = {}, { 
     if (receiptData.generalReceivedVisible) writer.line(twoColLine("Received Amount", Number(receiptData.receivedAmount || 0).toFixed(2), cpl));
     if (receiptData.generalBalanceVisible) writer.line(twoColLine("Balance Amount", Number(receiptData.balanceAmount || 0).toFixed(2), cpl));
     if (receiptData.generalYouSavedVisible) writer.line(twoColLine("You Saved", discountAmount.toFixed(2), cpl));
+    for (const used of Array.isArray(receiptData.vouchers) ? receiptData.vouchers : []) {
+      const label = used.kind === "COUPON" ? "Coupon" : used.kind === "GIFT_VOUCHER" ? "Gift Voucher" : "Credit Note";
+      writer.line(twoColLine(`${label} ${used.display_number || used.number || ""}`.slice(0, cpl - 10), Number(used.amount || 0).toFixed(2), cpl));
+      if (used.kind !== "COUPON") writer.line(twoColLine("Balance Left On It", Number(used.balance_after || 0).toFixed(2), cpl));
+    }
     if (toNum(receiptData.refundAmount, 0) > 0) writer.line(twoColLine("Refund", Number(receiptData.refundAmount).toFixed(2), cpl));
     if (receiptData.changeAmount) writer.line(twoColLine("Change", Number(receiptData.changeAmount || 0).toFixed(2), cpl));
 

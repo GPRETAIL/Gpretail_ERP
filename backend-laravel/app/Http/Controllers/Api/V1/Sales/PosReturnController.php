@@ -7,12 +7,14 @@ use App\Exceptions\PosReturnNotReturnableException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Sales\StorePosReturnRequest;
 use App\Models\Barcode;
+use App\Models\GiftCredit;
 use App\Models\PosReturn;
 use App\Models\PosReturnItem;
 use App\Models\PosSale;
 use App\Models\Product;
 use App\Services\Documents\DocumentNumberService;
 use App\Services\Pos\PosReturnWriter;
+use App\Services\Sales\GiftCreditService;
 use App\Support\GroupAggregationService;
 use App\Support\PaginationService;
 use Illuminate\Http\Request;
@@ -106,15 +108,21 @@ class PosReturnController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'POS Return processed successfully',
-            'data' => $this->withDisplayReturnNo($return->load(['posSale', 'items.product'])),
+            'data' => $this->withDisplayReturnNo($return->load(['posSale', 'items.product']), true),
         ], 201);
     }
 
-    private function withDisplayReturnNo(PosReturn $return): array
+    private function withDisplayReturnNo(PosReturn $return, bool $withCreditNote = false): array
     {
         $data = $return->toArray();
         $data['display_return_no'] = 'RR/'.$return->id;
         $data['source_bill_no'] = $return->pos_sale_id;
+        // The credit note this return was issued as, for the receipt (null for a cash refund). Not for lists: one lookup each.
+        $note = $withCreditNote ? GiftCredit::where('store_id', $return->store_id)->where('source_pos_return_id', $return->id)->first() : null;
+        $data['credit_note'] = $note ? [
+            'number' => $note->number, 'display_number' => app(GiftCreditService::class)->displayNumber($note),
+            'amount' => (float) $note->original_amount, 'expires_on' => $note->expires_on?->toDateString(),
+        ] : null;
 
         return $data;
     }
@@ -132,7 +140,7 @@ class PosReturnController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $this->withDisplayReturnNo($return),
+            'data' => $this->withDisplayReturnNo($return, true),
         ]);
     }
 
@@ -288,6 +296,13 @@ class PosReturnController extends Controller
                 'success' => false,
                 'message' => 'POS return not found or already applied',
             ], 404);
+        }
+        // A return issued as a credit note is used by the note's own number, so it can never be used twice.
+        if ($note = GiftCredit::where('store_id', $storeId)->where('source_pos_return_id', $return->id)->first()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This return was issued as credit note '.app(GiftCreditService::class)->displayNumber($note).'. Use that number in the payment step.',
+            ], 422);
         }
 
         return response()->json([

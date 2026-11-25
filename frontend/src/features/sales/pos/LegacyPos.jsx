@@ -6,12 +6,14 @@ import NoStockChip from "@/shared/components/NoStockChip";
 import ApprovalDialog from "@/features/sales/approvals/components/ApprovalDialog";
 import { approvalRequirementFrom, isApprovalRequired, withApprovalTokens } from "@/features/sales/approvals/utils/approvals";
 import LoyaltyRedeemPanel from "@/features/sales/pos/components/LoyaltyRedeemPanel";
+import GiftCreditPanel from "@/features/sales/pos/components/GiftCreditPanel";
 import useBillingGate from "@/features/sales/pos/hooks/useBillingGate";
 import CashNotOpenedDialog from "@/features/sales/pos/components/CashNotOpenedDialog";
 import CashNotOpenedBanner from "@/features/sales/pos/components/CashNotOpenedBanner";
 import CheckoutPaymentDialog from "@/features/sales/pos/components/CheckoutPaymentDialog";
 import { checkoutPaymentPayload } from "@/features/sales/pos/utils/checkoutPayment";
 import { loyaltyRedeemPayload } from "@/features/sales/pos/utils/loyaltyRedeem";
+import { giftCreditPayload, giftCreditTotal } from "@/features/sales/pos/utils/giftCredit";
 import {
   POS_OLD_SALE_IMPORT_CONFIG,
   mapCustomerRow,
@@ -367,7 +369,9 @@ const LegacyPos = () => {
   const [loyaltyRedeemState, setLoyaltyRedeemState] = useState(null);
   const loyaltyCustomerId = activeTab.customerMode === "existing" ? activeTab.existingCustomerId : "";
   const loyaltyRedeem = loyaltyRedeemState && loyaltyCustomerId && String(loyaltyRedeemState.customerId) === String(loyaltyCustomerId) ? loyaltyRedeemState : null;
-  const paidCash = Math.max(round2(totalAmount - (loyaltyRedeem?.amount || 0)), 0);
+  // Gift vouchers, credit notes and coupons applied to the active bill pay part of it too.
+  const [giftCredits, setGiftCredits] = useState([]);
+  const paidCash = Math.max(round2(totalAmount - (loyaltyRedeem?.amount || 0) - giftCreditTotal(giftCredits)), 0);
   // Sales Customisation can make Save open the payment dialog (cash / card / UPI, points) on this page.
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const lastPaymentRef = useRef(null);
@@ -1221,6 +1225,7 @@ const LegacyPos = () => {
       paidCash: pay ? pay.cashAmount : paidCash,
       ...(pay ? checkoutPaymentPayload(pay) : {}),
       ...loyaltyRedeemPayload(pay ? pay.loyalty : loyaltyRedeem),
+      ...giftCreditPayload(pay ? pay.giftCredits : giftCredits),
       returnSaleId: activeTab.returnSaleId || null,
       returnBillNo: activeTab.returnBillNo || null,
       returnSaleType: activeTab.returnSaleType || null,
@@ -1295,6 +1300,7 @@ const LegacyPos = () => {
       // reset tab
       updateActiveTab({ cart: [], paidCash: "", returnSaleId: null, returnBillNo: null, returnSaleType: null, returnAmount: 0, isExchange: false });
       setLoyaltyRedeemState(null);
+      setGiftCredits([]);
       lastPaymentRef.current = null;
       await Promise.all([loadMasterData(), loadNextBillNo()]);
     } catch (err) {
@@ -2495,6 +2501,9 @@ const LegacyPos = () => {
             {!paymentDialogMode && loyaltyCustomerId && totalAmount > 0 && (
               <LoyaltyRedeemPanel customerId={loyaltyCustomerId} billAmount={totalAmount} value={loyaltyRedeem}
                 onChange={(value) => setLoyaltyRedeemState(value ? { ...value, customerId: loyaltyCustomerId } : null)} />
+            )}
+            {!paymentDialogMode && totalAmount > 0 && (
+              <GiftCreditPanel billAmount={totalAmount} otherPaid={loyaltyRedeem?.amount || 0} value={giftCredits} onChange={setGiftCredits} />
             )}
             {/* Row 1: Discount, SubTotal, Total, Balance */}
             <Box sx={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 1.5, alignItems: "flex-end" }}>
