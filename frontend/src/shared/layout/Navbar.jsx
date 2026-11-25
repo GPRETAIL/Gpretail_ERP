@@ -74,7 +74,7 @@ const PRINTER_FUNCTION_OPTIONS = [
 // backend, only used to decide locally whether to clear the active store or set one.
 const ALL_STORES_ID = "__all__";
 
-const Navbar = ({ sidebarExpanded, isMobile = false, toggleSidebar }) => {
+const Navbar = ({ sidebarExpanded, isMobile = false, toggleSidebar, onEnterPosFocus }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { activeTabPath, navigateActiveTab } = useTabs();
@@ -503,6 +503,10 @@ const Navbar = ({ sidebarExpanded, isMobile = false, toggleSidebar }) => {
             >
               <span className="text-base">{theme === "dark" ? "☀️" : "🌙"}</span>
             </IconButton>
+
+            {onEnterPosFocus ? (
+              <Button size="small" onClick={onEnterPosFocus} title="Hide the side menu and top bar so billing fills the window" sx={{ whiteSpace: "nowrap" }}>Full-window billing</Button>
+            ) : null}
 
             <IconButton
               size="small"

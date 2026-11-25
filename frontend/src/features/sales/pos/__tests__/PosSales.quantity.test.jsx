@@ -19,7 +19,10 @@ describe("quantity shortcut parsing", () => {
     expect(parseQuantityShortcut(" 3 * 8901234 ")).toEqual({ kind: "scan", quantity: 3, barcode: "8901234" });
     expect(parseQuantityShortcut("10*")).toEqual({ kind: "next", quantity: 10 });
     expect(parseQuantityShortcut("*12")).toEqual({ kind: "last", quantity: 12 });
-    for (const text of ["SC00001", "", "10", "C", "D", "0", "*", "a*5", "1.5*SC1", "-2*SC1", "*abc", "123456*SC1"]) expect(parseQuantityShortcut(text)).toBeNull();
+    expect(parseQuantityShortcut("*10+2")).toEqual({ kind: "row", quantity: 10, row: 2 });
+    expect(parseQuantityShortcut("*10,2")).toEqual({ kind: "row", quantity: 10, row: 2 });
+    expect(parseQuantityShortcut(" * 10 = 12 ")).toEqual({ kind: "row", quantity: 10, row: 12 });
+    for (const text of ["SC00001", "", "10", "C", "D", "0", "*", "a*5", "1.5*SC1", "-2*SC1", "*abc", "123456*SC1", "*10+", "*10+a", "*10+1234", "10+2"]) expect(parseQuantityShortcut(text)).toBeNull();
     expect(parseQuantityShortcut("0*SC1")).toEqual({ kind: "scan", quantity: 0, barcode: "SC1" }); // refused later with a message
   });
 
@@ -100,4 +103,30 @@ it("says what is wrong instead of adding anything", async () => {
   await type(barcode, "25*COFFEE");
   await waitFor(() => expect(toast.error).toHaveBeenCalledWith("Quantity exceeds stock. Available: 20 pcs"));
   expect(screen.queryByText("Coffee beans")).not.toBeInTheDocument(); // no line was added
+});
+
+it("*10+2, *10,2 and *10=2 change the item on that S.No, whichever was scanned last", async () => {
+  const lookup = { COFFEE: { id: 1, name: "Coffee beans", barcode: "COFFEE", stock_qty: 50, selling_price: 100 }, TEA: { id: 2, name: "Green tea", barcode: "TEA", stock_qty: 50, selling_price: 10 } };
+  const base = api.get.getMockImplementation();
+  api.get.mockImplementation(async (url, config) => (url === "/pos-sales/barcode-lookup" ? { data: { data: lookup[config.params.barcode] } } : base(url, config)));
+  const barcode = await open();
+  await type(barcode, "COFFEE");
+  await type(barcode, "TEA"); // the last scanned is S.No 2
+  await screen.findByText("Green tea");
+
+  await type(barcode, "*5+1"); // S.No 1 is the coffee
+  expect((await screen.findAllByText(/500\.00/)).length).toBeGreaterThan(0);
+  await type(barcode, "*20,2"); // S.No 2 is the tea
+  expect((await screen.findAllByText(/200\.00/)).length).toBeGreaterThan(0);
+  await type(barcode, "*6=1");
+  expect((await screen.findAllByText(/600\.00/)).length).toBeGreaterThan(0);
+  expect(screen.getAllByText(/200\.00/).length).toBeGreaterThan(0); // the tea stayed as it was
+});
+
+it("says there is no item on an S.No that is not on the bill", async () => {
+  const barcode = await open();
+  await type(barcode, "COFFEE");
+  await screen.findByText("Coffee beans");
+  await type(barcode, "*5+3");
+  expect(toast.error).toHaveBeenCalledWith("There is no item on S.No 3.");
 });

@@ -5,6 +5,8 @@ import CashNotOpenedDialog from "@/features/sales/pos/components/CashNotOpenedDi
 import CashNotOpenedBanner from "@/features/sales/pos/components/CashNotOpenedBanner";
 import LoyaltyRedeemPanel from "@/features/sales/pos/components/LoyaltyRedeemPanel";
 import GiftCreditPanel from "@/features/sales/pos/components/GiftCreditPanel";
+import HeldBillsDialog from "@/features/sales/pos/components/HeldBillsDialog";
+import { addHeldBill, heldBillLabel, heldBillsKey, loadHeldBills, makeHeldBill, removeHeldBill, saveHeldBills } from "@/features/sales/pos/utils/heldBills";
 import { loyaltyRedeemPayload } from "@/features/sales/pos/utils/loyaltyRedeem";
 import { lastScannedLineId, parseQuantityShortcut } from "@/features/sales/pos/utils/quantityShortcut";
 import { giftCreditPayload, giftCreditTotal } from "@/features/sales/pos/utils/giftCredit";
@@ -31,7 +33,7 @@ import { masterSearchAreaSx } from "@/shared/theme/erpUi";
 import SearchGridPanel from "@/shared/components/SearchGridPanel";
 import useSearchGrid, { createSearchGridAdapter } from "@/shared/hooks/useSearchGrid";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { FileText, Pencil, PlusCircle, Printer, Save, Search, Trash2, UserRound } from "lucide-react";
+import { Clock3, FileText, Pause, Pencil, PlusCircle, Printer, Save, Search, Trash2, UserRound } from "lucide-react";
 import { toast } from "react-toastify";
 import useBillReprint from "@/features/sales/bill-reprint/hooks/useBillReprint";
 import { reprintErrorMessage, reprintLastBill } from "@/features/sales/bill-reprint/utils/reprintRules";
@@ -1709,6 +1711,76 @@ const PosSales = () => {
     setTimeout(() => barcodeInputRef.current?.focus(), 0);
   };
 
+  // Held bills: the screen's bill set aside for the next customer (see utils/heldBills.js).
+  const heldKey = heldBillsKey(sessionStorage.getItem("activeStoreId") || authUser?.store_id, authUser?.id);
+  const [heldBills, setHeldBills] = useState(() => loadHeldBills(heldKey));
+  const [heldOpen, setHeldOpen] = useState(false);
+
+  const captureBill = () => ({
+    cart, existingCustomerId, newCustomer, creditEnabled, creditRemarks, igstEnabled, addnlEnabled, placeOfSupplyStateId, posAddnlLines, appliedReturn,
+  });
+
+  /** Sets the current bill aside and starts a new one. Returns false when nothing was held. */
+  const holdCurrentBill = () => {
+    if (cart.length === 0) return false;
+    const label = heldBillLabel(selectedCustomer?.name || newCustomer.name, selectedCustomer?.mobileNo || newCustomer.mobileNo);
+    const next = addHeldBill(loadHeldBills(heldKey), makeHeldBill({ snapshot: captureBill(), label, amount: summary.saleAmount }));
+    if (!saveHeldBills(heldKey, next)) {
+      toast.error("This bill could not be put on hold. The browser would not keep it. Save the bill instead.");
+      return false;
+    }
+    setHeldBills(next);
+    handleResetEntry();
+    return true;
+  };
+
+  const requestHold = () => {
+    if (saving || pendingScans > 0) {
+      toast.info("Wait for the last scan to finish, then hold the bill.");
+      return;
+    }
+    if (cart.length === 0) {
+      toast.info("There is nothing to hold. Add an item first.");
+      focusBarcodeInput();
+      return;
+    }
+    const label = heldBillLabel(selectedCustomer?.name || newCustomer.name, selectedCustomer?.mobileNo || newCustomer.mobileNo);
+    if (holdCurrentBill()) toast.success(`Bill on hold for ${label}. Start the next customer.`);
+  };
+
+  const resumeHeldBill = (id) => {
+    const bill = loadHeldBills(heldKey).find((row) => row.id === id);
+    if (!bill) {
+      toast.error("This held bill is no longer there.");
+      setHeldBills(loadHeldBills(heldKey));
+      return;
+    }
+    if (cart.length > 0 && !holdCurrentBill()) return; // The bill on screen is set aside first, so nothing is lost.
+    const snapshot = bill.snapshot;
+    setCart(snapshot.cart);
+    setExistingCustomerId(snapshot.existingCustomerId || "");
+    setNewCustomer({ ...blankCustomer, ...(snapshot.newCustomer || {}) });
+    setCreditEnabled(Boolean(snapshot.creditEnabled));
+    setCreditRemarks(snapshot.creditRemarks || "");
+    setIgstEnabled(Boolean(snapshot.igstEnabled));
+    setAddnlEnabled(Boolean(snapshot.addnlEnabled));
+    setPlaceOfSupplyStateId(snapshot.placeOfSupplyStateId || "");
+    setPosAddnlLines(snapshot.posAddnlLines || []);
+    setAppliedReturn(snapshot.appliedReturn || null);
+    const remaining = removeHeldBill(loadHeldBills(heldKey), id);
+    saveHeldBills(heldKey, remaining);
+    setHeldBills(remaining);
+    setHeldOpen(false);
+    toast.success(`Resumed the bill for ${bill.label}.`);
+    focusBarcodeInput();
+  };
+
+  const deleteHeldBill = (id) => {
+    const remaining = removeHeldBill(loadHeldBills(heldKey), id);
+    saveHeldBills(heldKey, remaining);
+    setHeldBills(remaining);
+  };
+
   const validateSaleEntry = () => {
     if (cartWithTotals.length === 0) {
       toast.error("Add at least one product before save");
@@ -2583,7 +2655,7 @@ const PosSales = () => {
             </Stack>
             {selectedStockHint ? <Typography sx={{ mt: 1, fontSize: TYPE.small, color: "text.secondary" }}>{selectedStockHint}</Typography> : null}
             <Typography sx={{ mt: 0.75, fontSize: TYPE.small, color: "text.secondary" }} data-testid="pos-quantity-hint">
-              Many pieces: type <b>10*</b> then scan, or scan once and type <b>*10</b> + Enter to change the last item. Also C customer, D discount, 0 save and print.
+              Many pieces: type <b>10*</b> then scan, or type <b>*10</b> + Enter to change the last item, or <b>*10+2</b> (also <b>*10,2</b> or <b>*10=2</b>) to make S.No 2 ten pieces. Also C customer, D discount, H hold the bill, R held bills, 0 save and print.
             </Typography>
           </Box>
 
@@ -2705,13 +2777,13 @@ const PosSales = () => {
                     No matching products found.
                   </Box>
                 ) : (
-                  filteredCartLines.map((line, index) => {
+                  filteredCartLines.map((line) => {
                     const isLineEditable = editingLineId === line.lineId;
                     const isReturnDisplayLine = Boolean(line.isReturnDisplayLine);
                     return (
                       <Box key={line.lineId} sx={[{ display: "flex", borderBottom: 1, borderColor: "divider", fontSize: { xs: 11, md: 16, lg: 18 }, "&:hover": { bgcolor: "action.hover" } }, shortByStock.has(line.stockId) && noStockRowSx]}>
                         <Box sx={posSalesColCellSx("sNo", { textAlign: "center" })}>
-                          {index + 1}
+                          {displayCartLines.indexOf(line) + 1}
                         </Box>
                         <Box sx={posSalesColCellSx("barcode")}>
                           <Box sx={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", wordBreak: "break-all", fontFamily: "monospace", lineHeight: 1.2 }}>
@@ -3117,6 +3189,15 @@ const PosSales = () => {
       focusBarcodeInput();
       return;
     }
+    if (shortcut.kind === "row") {
+      // The S.No on screen counts every line, a returned item included, so the number typed is the number seen.
+      const target = displayCartLines[shortcut.row - 1];
+      if (!target) toast.error(`There is no item on S.No ${shortcut.row}.`);
+      else if (target.isReturnDisplayLine) toast.error(`S.No ${shortcut.row} is a returned item. Its quantity cannot be changed here.`);
+      else handleLineQtyChange(target.lineId, shortcut.quantity);
+      focusBarcodeInput();
+      return;
+    }
     const lineId = lastScannedLineId(cart, lastLineIdRef.current);
     if (!lineId) {
       toast.info("Scan an item first, then set its quantity.");
@@ -3148,6 +3229,16 @@ const PosSales = () => {
                       if (shortcut === "0") {
                         setAddBarcode("");
                         requestCheckout(true);
+                        return;
+                      }
+                      if (shortcut === "H") {
+                        setAddBarcode("");
+                        requestHold();
+                        return;
+                      }
+                      if (shortcut === "R") {
+                        setAddBarcode("");
+                        setHeldOpen(true);
                         return;
                       }
                       handleAddLine();
@@ -3193,6 +3284,12 @@ const PosSales = () => {
               >
                 PDF
               </Button>
+              <Button onClick={requestHold} disabled={saving || pendingScans > 0 || cart.length === 0} className="glass-btn glass-btn-secondary" startIcon={<Pause size={16} />} title="Set this bill aside for the next customer (H)">
+                Hold
+              </Button>
+              <Button onClick={() => setHeldOpen(true)} className="glass-btn glass-btn-secondary" startIcon={<Clock3 size={16} />} title="Bills on hold (R)">
+                Held ({heldBills.length})
+              </Button>
               <Button
                 onClick={() => requestCheckout(false)}
                 disabled={saving || pendingScans > 0}
@@ -3237,6 +3334,8 @@ const PosSales = () => {
 
         {loading && <Typography sx={{ fontSize: TYPE.small, color: "text.secondary", px: 0.5 }}>Loading master data...</Typography>}
       </Box>
+
+      <HeldBillsDialog open={heldOpen} bills={heldBills} onResume={resumeHeldBill} onDelete={deleteHeldBill} onClose={() => { setHeldOpen(false); focusBarcodeInput(); }} />
 
       {salesManDialog.open && (
         <SalesManDialog

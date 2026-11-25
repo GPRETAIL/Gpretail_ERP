@@ -3,6 +3,8 @@ import { ERP_UI } from "@/shared/theme/erpUi";
 import Sidebar from "./Sidebar";
 import Navbar from "./Navbar";
 import TabBar from "./TabBar";
+import PosFocusBar from "./PosFocusBar";
+import { POS_FOCUS_PATHS, usePosFocusPreference } from "./posFocus";
 import { useSelector } from "react-redux";
 import { TabProvider, useTabs } from "./TabContext";
 import { TransferActivityProvider, useTransferActivity } from "@/features/store/context/TransferActivityContext";
@@ -328,6 +330,11 @@ const MainLayout = () => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < MOBILE_BREAKPOINT);
   const [mobileOpen, setMobileOpen] = useState(false);
+  // Billing screens fill the window (no side menu, top bar or tabs) unless the cashier chose to keep them.
+  const { pathname } = useLocation();
+  const [posFocusOn, setPosFocusOn] = usePosFocusPreference();
+  const onBillingScreen = POS_FOCUS_PATHS.includes(pathname);
+  const focusMode = onBillingScreen && posFocusOn;
 
   useEffect(() => {
     const onResize = () => {
@@ -358,7 +365,7 @@ const MainLayout = () => {
             />
           )}
 
-          <Box
+          {!focusMode && <Box
             sx={isMobile
               ? {
                   position: "fixed", top: 0, bottom: 0, left: 0, zIndex: 50,
@@ -374,14 +381,18 @@ const MainLayout = () => {
               isMobile={isMobile}
               onNavigate={closeMobileSidebar}
             />
-          </Box>
+          </Box>}
 
           <Box sx={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", width: "100%", minWidth: 0, transition: "all 0.3s ease-in-out" }}>
-            <Navbar sidebarExpanded={isExpanded} isMobile={isMobile} toggleSidebar={toggleSidebar} />
-            <TabBar />
+            {focusMode ? <PosFocusBar pathname={pathname} onShowMenu={() => setPosFocusOn(false)} /> : (
+              <>
+                <Navbar sidebarExpanded={isExpanded} isMobile={isMobile} toggleSidebar={toggleSidebar} onEnterPosFocus={onBillingScreen ? () => setPosFocusOn(true) : undefined} />
+                <TabBar />
+              </>
+            )}
             <FailoverBanner />
-            <SubscriptionExpiryBanner />
-            {isTenantAdmin(authUser) && authUser?.store_ids?.length === 0 && (
+            {!focusMode && <SubscriptionExpiryBanner />}
+            {!focusMode && isTenantAdmin(authUser) && authUser?.store_ids?.length === 0 && (
               <Alert severity="info" sx={{ borderRadius: 0 }}>
                 Tenant Administrator · {authUser.platform_company_code}. No stores are available in this deployment yet.
                 Create your stores in Vynerix Admin, then <ButtonBase component={Link} to="/store-activation" sx={{ textDecoration: "underline" }}>refresh and activate stores</ButtonBase>.
