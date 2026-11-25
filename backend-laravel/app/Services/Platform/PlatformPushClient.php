@@ -5,8 +5,10 @@ namespace App\Services\Platform;
 use App\Models\PlatformActivation;
 use App\Models\User;
 use App\Models\Warehouse;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use App\Services\Tenancy\MobileAccess;
 use App\Services\Tenancy\StoreContext;
 
@@ -17,11 +19,14 @@ class PlatformPushClient
         return hash_hmac('sha256', PlatformActivation::current()?->deployment_id.'|'.$user->id, (string) config('app.key'));
     }
 
+    /** Set when Vynerix Admin did not answer: the rest of this run's pushes are skipped, the next run tries again. */
+    private bool $unreachable = false;
+
     public function request(string $path, array $data = [], string $method = 'POST'): array
     {
         $activation = PlatformActivation::current();
         $url = rtrim((string) config('platform.base_url'), '/');
-        if (! $activation?->activated || ! $activation->sync_token || ! str_starts_with($url, 'https://')) {
+        if (! $activation?->activated || ! $activation->sync_token || ! str_starts_with($url, 'https://') || $this->unreachable) {
             return ['ok' => false, 'data' => []];
         }
         try {
@@ -29,6 +34,13 @@ class PlatformPushClient
             $response = $client->send($method, $url.'/api/v1/tenant/'.$activation->company_code.'/push/'.$path, $method === 'GET' ? [] : ['json' => array_merge(['deployment_id' => $activation->deployment_id], $data)]);
 
             return ['ok' => $response->successful() && (bool) $response->json('success'), 'data' => $response->json('data') ?? []];
+        } catch (ConnectionException $error) {
+            // Vynerix Admin slow or briefly unreachable: this runs every minute and tries again by itself, so it is a
+            // warning, not an error alert. Further calls in this run would only wait out another timeout each.
+            $this->unreachable = true;
+            Log::warning('GP Admin push: '.$error->getMessage());
+
+            return ['ok' => false, 'data' => []];
         } catch (\Throwable $error) {
             report($error);
 
