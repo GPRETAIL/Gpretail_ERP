@@ -4,18 +4,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import ExportBottomSheet from "@/shared/components/ExportBottomSheet";
 
 const tracker = vi.hoisted(() => ({
-  loads: 0,
-  writeFile: vi.fn(),
   finish: vi.fn(),
   start: vi.fn(() => "export-1"),
   update: vi.fn(),
 }));
 
-vi.mock("xlsx", async () => {
-  tracker.loads += 1;
-  const actual = await vi.importActual("xlsx");
-  return { ...actual, writeFile: tracker.writeFile };
-});
 vi.mock("@/features/store/context/TransferActivityContext", () => ({
   useTransferActivity: () => ({
     startActivity: tracker.start,
@@ -35,6 +28,13 @@ const props = {
   sheetName: "A long worksheet title exceeding thirty one characters",
 };
 
+const readBuffer = (blob) => new Promise((resolve, reject) => {
+  const reader = new FileReader();
+  reader.onload = () => resolve(reader.result);
+  reader.onerror = reject;
+  reader.readAsArrayBuffer(blob);
+});
+
 function mount(extra = {}) {
   render(<MemoryRouter><ExportBottomSheet {...props} {...extra} /></MemoryRouter>);
   fireEvent.click(screen.getByRole("button", { name: "Export" }));
@@ -43,28 +43,40 @@ function mount(extra = {}) {
 describe("Export contract v1", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("defers spreadsheet loading until export and preserves selection, headings, Unicode and leading zeros", async () => {
+  it("builds a styled workbook with the selection, headings, Unicode and leading zeros, named Page_Store_Date", async () => {
+    const createUrl = vi.fn(() => "blob:excel-test");
+    vi.stubGlobal("URL", { createObjectURL: createUrl, revokeObjectURL: vi.fn() });
+    const names = [];
+    const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function () { names.push(this.download); });
     mount();
-    expect(tracker.loads).toBe(0);
     fireEvent.click(screen.getByText("EXCEL"));
-    await waitFor(() => expect(tracker.writeFile).toHaveBeenCalledOnce());
-    expect(tracker.loads).toBe(1);
-    const [book, filename] = tracker.writeFile.mock.calls[0];
-    expect(filename).toBe("stores.xlsx");
-    expect(book.SheetNames[0]).toHaveLength(31);
-    const sheet = book.Sheets[book.SheetNames[0]];
-    expect(sheet.A1.v).toBe("Store export");
-    expect(sheet.A3.v).toBe("Code");
-    expect(sheet.A4).toMatchObject({ v: "001", t: "s" });
-    expect(sheet.B4.v).toBe("தமிழ்");
-    expect(sheet.A5).toBeUndefined();
+    await waitFor(() => expect(createUrl).toHaveBeenCalledOnce(), { timeout: 20000 });
+    expect(names[0]).toMatch(/^Stores_\d{4}-\d{2}-\d{2}\.xlsx$/);
+    const { default: ExcelJS } = await import("exceljs");
+    const book = new ExcelJS.Workbook();
+    await book.xlsx.load(await readBuffer(createUrl.mock.calls[0][0]));
+    const sheet = book.worksheets[0];
+    expect(sheet.name).toHaveLength(31);
+    expect(sheet.getCell("A1").value).toBe("Store export");
+    const headerRow = sheet.getRow(sheet.rowCount - 1);
+    expect(headerRow.getCell(1).value).toBe("Code");
+    expect(headerRow.getCell(1).font.bold).toBe(true);
+    expect(sheet.views[0]).toMatchObject({ state: "frozen", ySplit: headerRow.number });
+    expect(sheet.autoFilter).toBeTruthy();
+    const dataRow = sheet.getRow(sheet.rowCount);
+    expect(dataRow.getCell(1).value).toBe("001");
+    expect(dataRow.getCell(2).value).toBe("தமிழ்");
+    expect(sheet.rowCount).toBe(headerRow.number + 1);
     expect(tracker.finish).toHaveBeenCalledWith("export-1", expect.objectContaining({ status: "success" }));
+    click.mockRestore();
+    vi.unstubAllGlobals();
   });
 
   it("exports CSV with the same selected rows and text formatting", async () => {
     const createUrl = vi.fn(() => "blob:export-test");
     vi.stubGlobal("URL", { createObjectURL: createUrl, revokeObjectURL: vi.fn() });
-    const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+    const names = [];
+    const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function () { names.push(this.download); });
     mount();
     fireEvent.click(screen.getByText("CSV"));
     await waitFor(() => expect(createUrl).toHaveBeenCalledOnce());
@@ -77,6 +89,7 @@ describe("Export contract v1", () => {
     });
     expect(content).toContain("Store export");
     expect(content).toContain("001,தமிழ்");
+    expect(names[0]).toMatch(/^Stores_\d{4}-\d{2}-\d{2}\.csv$/);
     expect(content).not.toContain("002");
     expect(tracker.finish).toHaveBeenCalledWith("export-1", expect.objectContaining({ status: "success" }));
     click.mockRestore();
@@ -87,12 +100,17 @@ describe("Export contract v1", () => {
     const errorLog = vi.spyOn(console, "error").mockImplementation(() => {});
     const loadRows = vi.fn().mockRejectedValueOnce(new Error("Offline")).mockResolvedValueOnce(props.rows);
     mount({ rows: [], onExportRows: loadRows });
+    const createUrl = vi.fn(() => "blob:retry");
+    vi.stubGlobal("URL", { createObjectURL: createUrl, revokeObjectURL: vi.fn() });
+    const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
     fireEvent.click(screen.getByText("EXCEL"));
     await waitFor(() => expect(tracker.finish).toHaveBeenCalledWith("export-1", expect.objectContaining({ status: "failed" })));
-    expect(tracker.writeFile).not.toHaveBeenCalled();
+    expect(createUrl).not.toHaveBeenCalled();
     await waitFor(() => expect(screen.getByText("EXCEL")).toBeEnabled());
     fireEvent.click(screen.getByText("EXCEL"));
-    await waitFor(() => expect(tracker.writeFile).toHaveBeenCalledOnce());
+    await waitFor(() => expect(createUrl).toHaveBeenCalledOnce(), { timeout: 20000 });
+    click.mockRestore();
+    vi.unstubAllGlobals();
     errorLog.mockRestore();
   });
 });

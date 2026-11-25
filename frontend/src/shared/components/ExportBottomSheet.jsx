@@ -1,9 +1,23 @@
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { ChevronDown, Download, FileSpreadsheet, FileText } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { Button, ListItemIcon, ListItemText, Menu, MenuItem } from "@mui/material";
 import { useTransferActivity } from "@/features/store/context/TransferActivityContext";
 import { tryBuildTextCsv } from "@/shared/utils/csvExport";
+import useExportStoreName from "@/shared/hooks/useExportStoreName";
+import buildExportFileName from "@/shared/utils/export/exportFileName";
+import buildExcel from "@/shared/utils/export/buildExcel";
+import buildPdf from "@/shared/utils/export/buildPdf";
+
+const rawCell = (value) => {
+  if (value === null || value === undefined) return "";
+  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") return value;
+  if (Array.isArray(value)) return value.join(", ");
+  return JSON.stringify(value);
+};
+
+const exportedAt = (now = new Date()) =>
+  `${now.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }).replace(/ /g, "-")} ${now.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}`;
 
 const toCellText = (value) => {
   if (value === null || value === undefined) return "";
@@ -24,204 +38,18 @@ const downloadBlob = (blob, fileName) => {
   URL.revokeObjectURL(url);
 };
 
-const escapePdfText = (value) =>
-  String(value ?? "")
-    .replace(/[^\x20-\x7E]/g, "?")
-    .replace(/\\/g, "\\\\")
-    .replace(/\(/g, "\\(")
-    .replace(/\)/g, "\\)");
-
-const trimToCellWidth = (value, width, fontSize = 8) => {
-  const text = String(value ?? "").replace(/\s+/g, " ").trim();
-  const maxChars = Math.max(1, Math.floor((width - 6) / (fontSize * 0.55)));
-  if (text.length <= maxChars) return text;
-  if (maxChars <= 3) return text.slice(0, maxChars);
-  return `${text.slice(0, maxChars - 3)}...`;
-};
-const estimatePdfTextWidth = (value, fontSize = 8) =>
-  String(value ?? "").length * fontSize * 0.52;
-
-const buildSimplePdf = ({ title, subtitle = "", headingLines = [], headers, body }) => {
-  const safeHeaders = (headers || []).map((h) => toCellText(h));
-  const resolvedHeaders = safeHeaders.length > 0 ? safeHeaders : ["Data"];
-  const resolvedBody = (body || []).map((row) =>
-    resolvedHeaders.map((_, idx) => toCellText(row?.[idx] ?? ""))
-  );
-
-  const pageWidth = 842; // A4 landscape
-  const pageHeight = 595;
-  const margin = 24;
-  const tableWidth = pageWidth - margin * 2;
-  const sanitizedHeadingLines = (headingLines || [])
-    .map((line) => toCellText(line).trim())
-    .filter(Boolean);
-  const topLines = [toCellText(title || "Export"), toCellText(subtitle || "").trim(), ...sanitizedHeadingLines]
-    .filter(Boolean);
-  const headingLineHeight = 14;
-  const titleY = pageHeight - margin;
-  const tableTop = pageHeight - margin - Math.max(24, topLines.length * headingLineHeight + 10);
-  const bottomLimit = margin;
-  const headerHeight = 20;
-  const rowHeight = 18;
-  const bodyFontSize = 8;
-  const headerFontSize = 8;
-
-  const sampleRows = resolvedBody.slice(0, 200);
-  const rawWidths = resolvedHeaders.map((header, colIdx) => {
-    const bodyMax = sampleRows.reduce((acc, row) => {
-      return Math.max(acc, String(row[colIdx] ?? "").length);
-    }, 0);
-    return Math.max(6, Math.min(40, Math.max(header.length, bodyMax)));
-  });
-
-  let colWidths;
-  if (resolvedHeaders.length > 12) {
-    colWidths = resolvedHeaders.map(() => tableWidth / resolvedHeaders.length);
-  } else {
-    const totalRaw = rawWidths.reduce((sum, w) => sum + w, 0) || 1;
-    colWidths = rawWidths.map((w) => (w / totalRaw) * tableWidth);
-    const minWidth = 44;
-    if (resolvedHeaders.length * minWidth <= tableWidth) {
-      colWidths = colWidths.map((w) => Math.max(minWidth, w));
-      const sumAfterMin = colWidths.reduce((sum, w) => sum + w, 0);
-      if (sumAfterMin > tableWidth) {
-        const shrink = sumAfterMin - tableWidth;
-        const adjustable = colWidths.reduce((sum, w) => sum + (w - minWidth), 0);
-        if (adjustable > 0) {
-          colWidths = colWidths.map((w) => {
-            const room = w - minWidth;
-            const delta = (room / adjustable) * shrink;
-            return w - delta;
-          });
-        }
-      }
-    }
-  }
-
-  const xCoords = [margin];
-  colWidths.forEach((w) => xCoords.push(xCoords[xCoords.length - 1] + w));
-
-  const rowsPerPage = Math.max(
-    1,
-    Math.floor((tableTop - bottomLimit - headerHeight) / rowHeight)
-  );
-  const pageRows = [];
-  if (resolvedBody.length === 0) {
-    pageRows.push([]);
-  } else {
-    for (let i = 0; i < resolvedBody.length; i += rowsPerPage) {
-      pageRows.push(resolvedBody.slice(i, i + rowsPerPage));
-    }
-  }
-
-  const objects = [];
-  const addObject = (content) => {
-    objects.push(content);
-    return objects.length;
-  };
-
-  const bodyFontId = addObject("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>");
-  const headerFontId = addObject("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>");
-  const pageIds = [];
-
-  pageRows.forEach((rowsChunk) => {
-    const renderedRows =
-      rowsChunk.length > 0
-        ? rowsChunk
-        : [resolvedHeaders.map((_, idx) => (idx === 0 ? "No records found." : ""))];
-    const tableBottom = tableTop - headerHeight - renderedRows.length * rowHeight;
-
-    const commands = [];
-    topLines.forEach((line, index) => {
-      const fontSize = index === 0 ? 13 : 10;
-      const y = titleY - index * headingLineHeight;
-      const x = Math.max(margin, (pageWidth - estimatePdfTextWidth(line, fontSize)) / 2);
-      commands.push("BT");
-      commands.push(`/F2 ${fontSize} Tf`);
-      commands.push(`1 0 0 1 ${x} ${y} Tm`);
-      commands.push(`(${escapePdfText(line)}) Tj`);
-      commands.push("ET");
-    });
-
-    commands.push(`0.95 g ${margin} ${tableTop - headerHeight} ${tableWidth} ${headerHeight} re f`);
-    commands.push("0 g");
-
-    for (let r = 0; r <= renderedRows.length + 1; r += 1) {
-      const y =
-        r === 0
-          ? tableTop
-          : r === 1
-            ? tableTop - headerHeight
-            : tableTop - headerHeight - (r - 1) * rowHeight;
-      commands.push(`${margin} ${y} m ${margin + tableWidth} ${y} l S`);
-    }
-
-    xCoords.forEach((x) => {
-      commands.push(`${x} ${tableTop} m ${x} ${tableBottom} l S`);
-    });
-
-    resolvedHeaders.forEach((header, colIdx) => {
-      const text = trimToCellWidth(header, colWidths[colIdx], headerFontSize);
-      const x = xCoords[colIdx] + 3;
-      const y = tableTop - headerHeight + 6;
-      commands.push(`BT /F2 ${headerFontSize} Tf 1 0 0 1 ${x} ${y} Tm (${escapePdfText(text)}) Tj ET`);
-    });
-
-    renderedRows.forEach((row, rowIdx) => {
-      resolvedHeaders.forEach((_, colIdx) => {
-        const text = trimToCellWidth(row[colIdx] ?? "", colWidths[colIdx], bodyFontSize);
-        const x = xCoords[colIdx] + 3;
-        const y = tableTop - headerHeight - rowIdx * rowHeight - 12;
-        commands.push(`BT /F1 ${bodyFontSize} Tf 1 0 0 1 ${x} ${y} Tm (${escapePdfText(text)}) Tj ET`);
-      });
-    });
-
-    const stream = `${commands.join("\n")}\n`;
-    const contentId = addObject(`<< /Length ${stream.length} >>\nstream\n${stream}endstream`);
-    const pageId = addObject(
-      `<< /Type /Page /Parent __PAGES__ /MediaBox [0 0 ${pageWidth} ${pageHeight}] /Resources << /Font << /F1 ${bodyFontId} 0 R /F2 ${headerFontId} 0 R >> >> /Contents ${contentId} 0 R >>`
-    );
-    pageIds.push(pageId);
-  });
-
-  const kids = pageIds.map((id) => `${id} 0 R`).join(" ");
-  const pagesId = addObject(`<< /Type /Pages /Kids [${kids}] /Count ${pageIds.length} >>`);
-  const catalogId = addObject(`<< /Type /Catalog /Pages ${pagesId} 0 R >>`);
-
-  for (let i = 0; i < objects.length; i += 1) {
-    objects[i] = objects[i].replaceAll("__PAGES__", `${pagesId} 0 R`);
-  }
-
-  let pdf = "%PDF-1.4\n";
-  const offsets = [0];
-
-  objects.forEach((obj, i) => {
-    offsets[i + 1] = pdf.length;
-    pdf += `${i + 1} 0 obj\n${obj}\nendobj\n`;
-  });
-
-  const xrefPos = pdf.length;
-  pdf += `xref\n0 ${objects.length + 1}\n`;
-  pdf += "0000000000 65535 f \n";
-  for (let i = 1; i <= objects.length; i += 1) {
-    pdf += `${String(offsets[i]).padStart(10, "0")} 00000 n \n`;
-  }
-  pdf += `trailer\n<< /Size ${objects.length + 1} /Root ${catalogId} 0 R >>\nstartxref\n${xrefPos}\n%%EOF`;
-
-  return new Blob([pdf], { type: "application/pdf" });
-};
-
 export default function ExportBottomSheet({
   columns = [],
   rows = [],
   selectedRowKeys = [],
   rowKey = "id",
-  fileName = "table_data",
+  fileName: screenFileName = "table_data",
   title = "",
   titleResolver = null,
   subtitle = "",
   headingLines = [],
   sheetName = "Export",
+  exportPeriod = "",
   buttonClassName = "",
   buttonLabel = "Export",
   getValue,
@@ -231,6 +59,11 @@ export default function ExportBottomSheet({
   const open = Boolean(anchorEl);
   const [exporting, setExporting] = useState(false);
   const location = useLocation();
+  const storeName = useExportStoreName();
+  const fileName = useMemo(
+    () => buildExportFileName({ fileName: screenFileName, pathname: location.pathname, storeName, period: exportPeriod }),
+    [screenFileName, location.pathname, storeName, exportPeriod]
+  );
   const { startActivity, updateActivity, finishActivity, TYPE, STATUS } = useTransferActivity();
   const hasSelectedRows = Array.isArray(selectedRowKeys) && selectedRowKeys.length > 0;
 
@@ -264,6 +97,27 @@ export default function ExportBottomSheet({
     );
     return { headers, body };
   }, [columns, getValue]);
+
+  const buildRawMatrix = useCallback((sourceRows) => {
+    const safeColumns = (columns || []).filter((c) => c && c.key);
+    const headers = safeColumns.map((c) => toCellText(c.label || c.key));
+    const rawBody = (sourceRows || []).map((row) =>
+      safeColumns.map((column) => rawCell(getValue
+        ? getValue(row, column)
+        : column.searchValue
+          ? column.searchValue(row)
+          : column.valueGetter
+            ? column.valueGetter(row)
+            : row?.[column.key]))
+    );
+    return { headers, rawBody };
+  }, [columns, getValue]);
+
+  const documentLines = useCallback((resolvedTitle) =>
+    [resolvedTitle, subtitle, ...(Array.isArray(headingLines) ? headingLines : [])].map((line) => toCellText(line).trim()).filter(Boolean),
+  [headingLines, subtitle]);
+
+  const detailLine = useCallback(() => [storeName && `Store: ${storeName}`, `Exported: ${exportedAt()}`].filter(Boolean).join("   |   "), [storeName]);
 
   const resolveRowsForExport = useCallback(async () => {
     const localRows = Array.isArray(rows) ? rows : [];
@@ -400,13 +254,10 @@ export default function ExportBottomSheet({
       const sourceRows = await resolveRowsForExport();
       updateActivity(activityId, { progressPercent: 65, statusMessage: "Building Excel file..." });
       const resolvedTitle = resolveExportTitle(sourceRows);
-      const exportMatrix = buildExportMatrix(sourceRows);
-      const XLSX = await import("xlsx");
-      const { ws } = buildWorksheet(XLSX, exportMatrix, resolvedTitle);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, String(sheetName || "Export").slice(0, 31));
+      const { headers, rawBody } = buildRawMatrix(sourceRows);
+      const blob = await buildExcel({ headingLines: documentLines(resolvedTitle), headers, rawBody, sheetName, metaLine: detailLine() });
       updateActivity(activityId, { progressPercent: 90, statusMessage: "Downloading Excel file..." });
-      XLSX.writeFile(wb, `${fileName}.xlsx`);
+      downloadBlob(blob, `${fileName}.xlsx`);
       finishActivity(activityId, {
         status: STATUS.SUCCESS,
         progressPercent: 100,
@@ -423,7 +274,7 @@ export default function ExportBottomSheet({
     } finally {
       setExporting(false);
     }
-  }, [STATUS.SUCCESS, STATUS.FAILED, TYPE.EXPORT, buildExportMatrix, buildWorksheet, exporting, fileName, finishActivity, location.pathname, resolveExportTitle, resolveRowsForExport, sheetName, startActivity, updateActivity]);
+  }, [STATUS.SUCCESS, STATUS.FAILED, TYPE.EXPORT, buildRawMatrix, detailLine, documentLines, exporting, fileName, finishActivity, location.pathname, resolveExportTitle, resolveRowsForExport, sheetName, startActivity, updateActivity]);
 
   const exportPdf = useCallback(async () => {
     if (exporting) return;
@@ -440,13 +291,13 @@ export default function ExportBottomSheet({
       const sourceRows = await resolveRowsForExport();
       updateActivity(activityId, { progressPercent: 65, statusMessage: "Building PDF..." });
       const resolvedTitle = resolveExportTitle(sourceRows);
-      const exportMatrix = buildExportMatrix(sourceRows);
-      const blob = buildSimplePdf({
-        title: resolvedTitle,
-        subtitle,
-        headingLines,
-        headers: exportMatrix.headers,
-        body: exportMatrix.body,
+      const { headers, rawBody } = buildRawMatrix(sourceRows);
+      const blob = await buildPdf({
+        headingLines: documentLines(resolvedTitle),
+        headers,
+        rawBody,
+        metaLine: detailLine(),
+        footerLeft: [storeName, exportedAt()].filter(Boolean).join("  |  "),
       });
       updateActivity(activityId, { progressPercent: 90, statusMessage: "Downloading PDF..." });
       downloadBlob(blob, `${fileName}.pdf`);
@@ -466,7 +317,7 @@ export default function ExportBottomSheet({
     } finally {
       setExporting(false);
     }
-  }, [STATUS.SUCCESS, STATUS.FAILED, TYPE.EXPORT, buildExportMatrix, exporting, fileName, finishActivity, headingLines, location.pathname, resolveExportTitle, resolveRowsForExport, startActivity, subtitle, updateActivity]);
+  }, [STATUS.SUCCESS, STATUS.FAILED, TYPE.EXPORT, buildRawMatrix, detailLine, documentLines, exporting, fileName, finishActivity, location.pathname, resolveExportTitle, resolveRowsForExport, startActivity, storeName, updateActivity]);
 
   return (
     <>

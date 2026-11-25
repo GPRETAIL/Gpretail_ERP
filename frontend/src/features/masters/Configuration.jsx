@@ -186,6 +186,7 @@ const Configuration = () => {
             fillHeight
             rows={rows}
             columns={configColumns}
+            exportFileName={configType ? `configuration_${configType}` : "configuration"}
             enableSelection
             selectedRows={selectedRows}
             onSelectionChange={setSelectedRows}

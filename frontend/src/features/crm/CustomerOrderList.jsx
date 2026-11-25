@@ -200,6 +200,7 @@ const CustomerOrderList = () => {
           <FilterableDataTable
             rows={orders}
             columns={visibleColumns}
+            exportFileName="customer_orders"
             loading={loading}
             emptyText="No customer orders found. Click Search to load data."
             searchPlaceholder="Search customer orders..."

@@ -37,7 +37,7 @@ export default function QuickNavigation({ items, onNavigate }) {
         <Squares2X2Icon style={{ width: 20, height: 20 }} />
       </IconButton>
       <Popover open={open} anchorEl={anchor} onClose={close} anchorOrigin={{ vertical: "bottom", horizontal: "right" }} transformOrigin={{ vertical: "top", horizontal: "right" }}
-        slotProps={{ paper: { role: "dialog", "aria-label": "Quick navigation", sx: { width: "min(1100px, 96vw)", maxHeight: "82vh", display: "flex", flexDirection: "column", borderRadius: 2, mt: 0.5 } } }}>
+        slotProps={{ paper: { role: "dialog", "aria-label": "Quick navigation", sx: { width: "min(760px, 96vw)", maxHeight: "82vh", display: "flex", flexDirection: "column", borderRadius: 2, mt: 0.5 } } }}>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1, px: 2, py: 1.25, borderBottom: 1, borderColor: "divider" }}>
           <MagnifyingGlassIcon style={{ width: 18, height: 18, opacity: 0.6 }} />
           <InputBase autoFocus fullWidth value={query} placeholder="Search modules and pages..." inputProps={{ "aria-label": "Search modules and pages" }}

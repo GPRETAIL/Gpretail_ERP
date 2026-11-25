@@ -165,6 +165,7 @@ const HrConfiguration = () => {
             fillHeight
             rows={rows}
             columns={hrColumns}
+            exportFileName={`hr_${safeType}`}
             onRowClick={(row) => navigate(`/hrms/hr-configuration/new?type=${configType}&id=${row.id}`)}
             enableKeyboardNav
             loading={loading}
