@@ -52,6 +52,13 @@ class RetriesRefusedConnectionsTest extends TestCase
         $this->assertSame(2, $connector->calls);
     }
 
+    public function test_too_many_connections_is_retried_too(): void
+    {
+        $connector = new RetryingFlakyConnector(2, 'SQLSTATE[08004] [1040] Too many connections');
+        $this->assertSame('connected', $connector->createConnection('dsn', [], []));
+        $this->assertSame(3, $connector->calls);
+    }
+
     public function test_it_gives_up_after_two_retries(): void
     {
         $connector = new RetryingFlakyConnector(5, self::REFUSED);
