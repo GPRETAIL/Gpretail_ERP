@@ -8,6 +8,7 @@ import { approvalRequirementFrom, isApprovalRequired, withApprovalTokens } from 
 import LoyaltyRedeemPanel from "@/features/sales/pos/components/LoyaltyRedeemPanel";
 import useBillingGate from "@/features/sales/pos/hooks/useBillingGate";
 import CashNotOpenedDialog from "@/features/sales/pos/components/CashNotOpenedDialog";
+import CashNotOpenedBanner from "@/features/sales/pos/components/CashNotOpenedBanner";
 import CheckoutPaymentDialog from "@/features/sales/pos/components/CheckoutPaymentDialog";
 import { checkoutPaymentPayload } from "@/features/sales/pos/utils/checkoutPayment";
 import { loyaltyRedeemPayload } from "@/features/sales/pos/utils/loyaltyRedeem";
@@ -2197,7 +2198,7 @@ const LegacyPos = () => {
   /* ───────────────── RENDER ───────────────── */
   return (
     <Box className="pos-billing" sx={{ height: "100%", display: "flex", flexDirection: "column", bgcolor: "background.default", color: "text.primary", overflow: "hidden", ...(showSearchPage ? { height: "100%", minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden" } : {}) }}>
-      {!showSearchPage && <Box sx={{ px: 1, pt: 0.5, flexShrink: 0 }}><BillingDateBanner /></Box>}
+      {!showSearchPage && <Box sx={{ px: 1, pt: 0.5, flexShrink: 0, display: "flex", flexDirection: "column", gap: 0.5 }}><CashNotOpenedBanner warning={billingGate.warning} /><BillingDateBanner /></Box>}
       {/* ─── TOP BAR ─── */}
       <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", px: 1.5, py: 0.75, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", boxShadow: 1, flexShrink: 0 }}>
         {/* Tabs */}

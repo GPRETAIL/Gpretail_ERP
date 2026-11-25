@@ -81,7 +81,8 @@ class CashRegisterController extends Controller
 
         return response()->json(['success' => true, 'data' => [
             'counter_id' => $counter?->id, 'counter_name' => $counter?->value ?? $counter?->config_value,
-            'cash_required' => $this->registers->cashOpeningRequired($storeId), 'block' => $block,
+            'cash_required' => $this->registers->cashOpeningRequired($storeId), 'cash_check' => $this->registers->cashOpeningMode($storeId),
+            'block' => $block, 'warning' => $block ? null : $this->registers->cashWarning($storeId, $counter?->id, $counter?->value ?? $counter?->config_value),
         ]]);
     }
 

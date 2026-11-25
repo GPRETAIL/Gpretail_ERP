@@ -306,7 +306,8 @@ export const DEFAULT_SALES_RECEIPT_CUSTOMIZATION = {
   /** Manual mode: roles and users (ids) the tenant admin allows to change the billing date (the tenant admin always can). */
   billingDateChangers: { roles: [], users: [] },
   reprintReasonAfter: 1,
-  requireCashOpening: true,
+  /** Counter's cash not opened when billing: "off", "warn" (POS shows a notice; default) or "block" (no bill until opened). */
+  cashOpeningCheck: "warn",
   paymentDialogPages: [],
   reprintCopyLabels: false,
   /** Printed POS receipt copies when using the printer queue (1–3). */
@@ -511,6 +512,19 @@ const normalizePaymentQrSize = (value) => {
   return Math.min(PAYMENT_QR_SIZE_MAX, Math.max(PAYMENT_QR_SIZE_MIN, n));
 };
 
+/** How POS treats a bill made while the counter's cash is not opened (Sales Customisation). */
+export const CASH_OPENING_CHECKS = [
+  { value: "off", label: "Off: no check" },
+  { value: "warn", label: "Warn: show a notice on POS, billing still works" },
+  { value: "block", label: "Block: no bill until the counter's cash is opened" },
+];
+
+/** The chosen mode; before the three-way choice a store could only switch the (then blocking) yes/no setting off. */
+export const normalizeCashOpeningCheck = (value = {}) => {
+  if (CASH_OPENING_CHECKS.some((option) => option.value === value.cashOpeningCheck)) return value.cashOpeningCheck;
+  return value.requireCashOpening === false || value.requireCashOpening === "false" ? "off" : "warn";
+};
+
 /** Pages besides POS Sales (posPaymentDialogVisible) that open the checkout payment dialog when ticked. */
 export const PAYMENT_DIALOG_PAGES = ["pos_old", "touch_sales", "dealer_invoice"];
 
@@ -588,7 +602,7 @@ export const normalizeSalesReceiptCustomization = (value = {}) => {
     },
     reprintReasonAfter: Number.isFinite(Number(value.reprintReasonAfter)) ? Math.min(20, Math.max(0, Math.trunc(Number(value.reprintReasonAfter)))) : 1,
     reprintCopyLabels: Boolean(value.reprintCopyLabels),
-    requireCashOpening: value.requireCashOpening !== false && value.requireCashOpening !== "false",
+    cashOpeningCheck: normalizeCashOpeningCheck(value),
     paymentDialogPages: (Array.isArray(value.paymentDialogPages) ? value.paymentDialogPages : []).filter((page) => PAYMENT_DIALOG_PAGES.includes(page)),
     posReceiptPrintCopies: normalizePosReceiptPrintCopies(value.posReceiptPrintCopies),
     generalFields,

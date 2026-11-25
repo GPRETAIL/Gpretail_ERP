@@ -50,6 +50,7 @@ import {
   shouldShowSalesReceiptDiscountColumn,
   wrapSalesReceiptText,
   PAYMENT_DIALOG_PAGES,
+  CASH_OPENING_CHECKS,
 } from "@/features/sales/customisation/utils/salesReceiptCustomisation";
 import { Box, Stack, Typography, TextField, Button, IconButton, Switch, FormControlLabel, Table, TableHead, TableBody, TableRow, TableCell, Dialog, DialogTitle, DialogContent, Tabs, Tab, MenuItem, alpha } from "@mui/material";
 import { FIELD_HEIGHT, muiFieldSx } from "@/shared/theme/formControlSizes";
@@ -1194,11 +1195,6 @@ export default function SalesSettingsEditor({ section = "sales", onDirtyChange }
                 visible: (settings.paymentDialogPages || []).includes(page),
               })),
               {
-                key: "requireCashOpening",
-                label: "Require Cash Opening before billing (counter's cash must be opened first)",
-                visible: settings.requireCashOpening !== false,
-              },
-              {
                 key: "salespersonScan",
                 label: "Scan salesperson for every item (employee sticker, for incentives)",
                 visible: settings.posSalespersonScan === true,
@@ -1214,14 +1210,23 @@ export default function SalesSettingsEditor({ section = "sales", onDirtyChange }
                 if (visible) pages.add(page); else pages.delete(page);
                 updateSetting({ paymentDialogPages: PAYMENT_DIALOG_PAGES.filter((p) => pages.has(p)) });
               }
-              if (key === "requireCashOpening") {
-                updateSetting({ requireCashOpening: visible });
-              }
               if (key === "salespersonScan") {
                 updateSetting({ posSalespersonScan: visible });
               }
             }}
           />
+
+          <Box sx={{ ...baseCardSx, p: 2.5 }}>
+            <Typography component="label" htmlFor="cash-opening-check" sx={fieldLabelSx}>Cash Opening before billing</Typography>
+            <Typography sx={{ fontSize: TYPE.small, color: "text.secondary", mb: 1.5 }}>
+              What POS does when a bill is made on a counter whose cash has not been opened for the day (Sales &gt; Cash Opening). A counter is always
+              needed to bill.
+            </Typography>
+            <TextField id="cash-opening-check" select size="small" value={settings.cashOpeningCheck || "warn"} sx={{ minWidth: 320 }}
+              onChange={(e) => updateSetting({ cashOpeningCheck: e.target.value })}>
+              {CASH_OPENING_CHECKS.map((option) => <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>)}
+            </TextField>
+          </Box>
 
           <Box sx={{ ...baseCardSx, p: 2.5 }}>
             <Typography component="label" htmlFor="billing-date-after-closing" sx={fieldLabelSx}>Billing date after cash closing</Typography>

@@ -20,6 +20,7 @@ import { approvalRequirementFrom, isApprovalRequired, withApprovalTokens } from 
 import LoyaltyRedeemPanel from "@/features/sales/pos/components/LoyaltyRedeemPanel";
 import useBillingGate from "@/features/sales/pos/hooks/useBillingGate";
 import CashNotOpenedDialog from "@/features/sales/pos/components/CashNotOpenedDialog";
+import CashNotOpenedBanner from "@/features/sales/pos/components/CashNotOpenedBanner";
 import CheckoutPaymentDialog from "@/features/sales/pos/components/CheckoutPaymentDialog";
 import { checkoutPaymentPayload } from "@/features/sales/pos/utils/checkoutPayment";
 import { loyaltyRedeemPayload } from "@/features/sales/pos/utils/loyaltyRedeem";
@@ -751,7 +752,7 @@ const TouchSales = () => {
         </Stack>
         </>}
       />
-      <Box sx={{ px: 1, pt: 0.5 }}><BillingDateBanner /></Box>
+      <Box sx={{ px: 1, pt: 0.5, display: "flex", flexDirection: "column", gap: 0.5 }}><CashNotOpenedBanner warning={billingGate.warning} /><BillingDateBanner /></Box>
 
       <Stack sx={{ minHeight: 0, flex: 1, p: { xs: 1.5, sm: 2 } }}>
         <Box sx={{ display: "grid", height: "100%", minHeight: 0, gridTemplateColumns: { xs: "1fr", lg: "repeat(12, 1fr)" }, gap: { xs: 1.5, sm: 2 } }}>

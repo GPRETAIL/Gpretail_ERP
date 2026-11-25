@@ -2,6 +2,7 @@ import { TYPE } from "@/shared/theme/typeScale";
 import BillingDateBanner from "@/features/sales/pos/components/BillingDateBanner";
 import useBillingGate from "@/features/sales/pos/hooks/useBillingGate";
 import CashNotOpenedDialog from "@/features/sales/pos/components/CashNotOpenedDialog";
+import CashNotOpenedBanner from "@/features/sales/pos/components/CashNotOpenedBanner";
 import LoyaltyRedeemPanel from "@/features/sales/pos/components/LoyaltyRedeemPanel";
 import { loyaltyRedeemPayload } from "@/features/sales/pos/utils/loyaltyRedeem";
 import LiveDateTime from "@/shared/components/LiveDateTime";
@@ -3178,7 +3179,7 @@ const PosSales = () => {
         </Stack>
         </>}
       />
-      {!showSearchPage && <Box sx={{ px: 1, pt: 0.5 }}><BillingDateBanner /></Box>}
+      {!showSearchPage && <Box sx={{ px: 1, pt: 0.5, display: "flex", flexDirection: "column", gap: 0.5 }}><CashNotOpenedBanner warning={billingGate.warning} /><BillingDateBanner /></Box>}
 
       <Box sx={showSearchPage ? masterSearchAreaSx : { flex: 1, minHeight: 0, p: 2, display: "flex", flexDirection: "column", gap: 2, pb: { xs: 14, xl: 2 } }}>
         {showSearchPage ? renderSearchPage() : renderEntryPage()}

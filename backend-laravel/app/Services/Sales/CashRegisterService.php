@@ -40,16 +40,33 @@ class CashRegisterService
         return [$counts, (float) $total];
     }
 
-    /** Sales Customisation > "Require Cash Opening before billing" (on unless switched off). */
-    public function cashOpeningRequired(int $storeId): bool
+    /** What POS does when a bill is made on a counter whose cash is not opened (Sales Customisation). */
+    public const CASH_OPENING_MODES = ['off', 'warn', 'block'];
+
+    /**
+     * Sales Customisation > "Cash Opening before billing": off (nothing), warn (POS shows a notice, billing still
+     * works) or block (no bill until the counter's cash is opened). Warn unless the store chose otherwise; a store
+     * that only ever switched the old yes/no setting off stays off.
+     */
+    public function cashOpeningMode(int $storeId): string
     {
         $value = json_decode((string) (DB::table('stores')->where('id', $storeId)->value('receipt_customization') ?? ''), true) ?: [];
+        $mode = $value['cashOpeningCheck'] ?? null;
+        if (in_array($mode, self::CASH_OPENING_MODES, true)) {
+            return $mode;
+        }
 
-        return (bool) ($value['requireCashOpening'] ?? true);
+        return ($value['requireCashOpening'] ?? true) === false ? 'off' : 'warn';
+    }
+
+    /** True when a bill is refused until the counter's cash is opened (mode block). */
+    public function cashOpeningRequired(int $storeId): bool
+    {
+        return $this->cashOpeningMode($storeId) === 'block';
     }
 
     /**
-     * Whether a bill may be saved on this counter now: a counter is needed, and (when the store requires it) its
+     * Whether a bill may be saved on this counter now: a counter is needed, and (when the store blocks on it) its
      * cash must be opened first. Returns null when it may, else ['code' => COUNTER_REQUIRED|CASH_NOT_OPENED, 'message'].
      */
     public function billingBlock(int $storeId, ?int $counterId, ?string $counterName = null): ?array
@@ -67,6 +84,20 @@ class CashRegisterService
         }
 
         return null;
+    }
+
+    /**
+     * Mode "warn": a notice for POS when the counter's cash is not opened, with the same shape as a block. Billing is
+     * not refused. Null when the cash is open, there is no counter yet, or the store does not warn.
+     */
+    public function cashWarning(int $storeId, ?int $counterId, ?string $counterName = null): ?array
+    {
+        if (! config('pos.billing_checks', true) || ! $counterId || $this->cashOpeningMode($storeId) !== 'warn' || $this->openSession($storeId, $counterId)) {
+            return null;
+        }
+        $name = $counterName ?: 'this counter';
+
+        return ['code' => 'CASH_NOT_OPENED', 'message' => "Cash is not opened for {$name}. Open it in Sales > Cash Opening so the day's cash adds up."];
     }
 
     public function openSession(int $storeId, ?int $counterId): ?CashRegisterSession
