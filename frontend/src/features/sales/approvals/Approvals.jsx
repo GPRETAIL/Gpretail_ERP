@@ -214,7 +214,7 @@ function Limits() {
   };
 
   return (
-    <Stack spacing={1.5} sx={{ maxWidth: 820 }}>
+    <Stack spacing={1.5}>
       <FormControlLabel control={<Switch checked={Boolean(data.enabled)} onChange={(e) => setData((prev) => ({ ...prev, enabled: e.target.checked }))} />}
         label="Require approval when a discount, refund or credit sale exceeds the user's limit" />
       <Alert severity="info">

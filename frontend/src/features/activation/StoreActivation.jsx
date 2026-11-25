@@ -71,7 +71,7 @@ export default function StoreActivation() {
   return <Box sx={{ height: "100%", minHeight: 0, display: "flex", flexDirection: "column" }}>
     <PageHeader title="Store Activation" actions={<Button size="small" startIcon={<RefreshCw size={15} />} onClick={() => run(false)} disabled={Boolean(busy) || loading}>{busy === "sync" ? "Refreshing…" : "Refresh from Vynerix Admin"}</Button>} />
     <Box sx={{ flex: 1, minHeight: 0, overflowY: "auto", p: { xs: 1.5, sm: 2 } }}>
-      <Stack spacing={2} sx={{ maxWidth: 1200, mx: "auto" }}>
+      <Stack spacing={2} sx={{ minWidth: 0 }}>
         <Typography variant="body2" color="text.secondary">Connect the stores provisioned for your company in Vynerix Admin, then activate each branch using its welcome email.</Typography>
         {error && <Alert severity="error" action={!busy && <Button color="inherit" size="small" onClick={() => { setError(""); reload(); }}>Reload list</Button>}>{error}</Alert>}
         {message && <Alert severity="success" role="status">{message}</Alert>}

@@ -98,15 +98,18 @@ export default function MessagingSettings() {
     <Box sx={{ height: "100%", overflow: "auto", bgcolor: "background.default" }}>
       <PageHeader onBack={() => navigate("/settings")} backLabel="Back to settings"
         title={<Breadcrumbs items={[{ label: "Settings", onClick: () => navigate("/settings") }, { label: "Messaging" }]} />} />
-      <Stack spacing={2} sx={{ p: { xs: 1, md: 2 }, maxWidth: 980 }}>
-        <Typography sx={{ fontSize: 13, color: "text.secondary" }}>
+      <Stack spacing={2} sx={{ p: { xs: 1, md: 2 } }}>
+        <Typography sx={{ fontSize: 13, color: "text.secondary", maxWidth: 900 }}>
           Customers get a one-time password to approve redeeming loyalty points at POS. Switch on the channels you have an account for; the
           first one that can reach the customer is used (SMS, then WhatsApp, then email). With none, a supervisor approves the redemption.
         </Typography>
         {error && <Alert severity="error">{error}</Alert>}
-        {data && CHANNELS.map((channel) => (
-          <ChannelCard key={channel.key} channel={channel} initial={data[channel.key] || { enabled: false }} />
-        ))}
+        {/* SMS, WhatsApp and email cards sit side by side on a wide screen and stack on a narrow one. */}
+        {data && <Box sx={{ display: "grid", gap: 2, gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 560px), 1fr))", alignItems: "start" }}>
+          {CHANNELS.map((channel) => (
+            <ChannelCard key={channel.key} channel={channel} initial={data[channel.key] || { enabled: false }} />
+          ))}
+        </Box>}
       </Stack>
     </Box>
   );

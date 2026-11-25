@@ -549,7 +549,7 @@ function TaxRules({ fy }) {
     }
   };
   return (
-    <Stack spacing={1.5} sx={{ maxWidth: 1100 }}>
+    <Stack spacing={1.5}>
       <Alert severity="info" sx={{ py: 0 }}>Starting figures are the FY 2025-26 rates. Please confirm them with your accountant for {fy}; they change with each budget.</Alert>
       <Paper variant="outlined" sx={{ p: 1.5 }}>
         <FormControlLabel control={<Checkbox size="small" checked={Boolean(rules.enabled)} onChange={(e) => set(["enabled"], e.target.checked)} />} label="Deduct income tax (TDS) in payroll" />
