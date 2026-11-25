@@ -7,6 +7,7 @@ use App\Models\GiftCreditRedemption;
 use App\Models\PosReturn;
 use App\Models\PosSale;
 use App\Models\ReportScheduleRun;
+use App\Services\Accounting\LedgerPoster;
 use App\Services\Reports\Scheduled\ScheduledReportCatalog;
 use App\Services\Sales\GiftCreditService;
 use App\Services\Sales\IncentiveCalculator;
@@ -21,7 +22,7 @@ use Illuminate\Support\Facades\DB;
  */
 class StoreReports
 {
-    public const REPORTS = ['stock_aging', 'shelf_period', 'stock_audit', 'loyalty_redemptions', 'incentives', 'gift_credit_issues', 'gift_credit_uses', 'coupon_issues', 'coupon_uses'];
+    public const REPORTS = ['stock_aging', 'shelf_period', 'stock_audit', 'loyalty_redemptions', 'incentives', 'gift_credit_issues', 'gift_credit_uses', 'coupon_issues', 'coupon_uses', 'gift_issues'];
 
     /**
      * Reports for people who may export reports, and not offered in the Scheduler: the Scheduler's own delivery history
@@ -39,6 +40,7 @@ class StoreReports
             'gift_credit_uses' => $this->giftCreditUses([GiftCredit::GIFT_VOUCHER, GiftCredit::CREDIT_NOTE]),
             'coupon_issues' => $this->giftCreditIssues([GiftCredit::COUPON]),
             'coupon_uses' => $this->giftCreditUses([GiftCredit::COUPON]),
+            'gift_issues' => $this->giftIssues(),
             'stock_aging' => $this->stockAging(),
             'shelf_period' => $this->shelfPeriod(),
             'stock_audit' => $this->stockAudit(),
@@ -222,6 +224,36 @@ class StoreReports
                 'status' => $credit ? (self::GIFT_CREDIT_STATE_LABEL[$credit->state] ?? $credit->state) : '-',
             ];
         })->values();
+    }
+
+    /**
+     * Gift Issue: items given free with a bill. Each line went out of stock with its bill; what it would have sold for
+     * (the normal price on the line) and what it cost the store (the product's cost price) are shown. A cancelled bill is not listed.
+     */
+    private function giftIssues(): Collection
+    {
+        return StoreQuery::table('pos_sales as s')
+            ->join('pos_sale_items as i', 'i.pos_sale_id', '=', 's.id')
+            ->join('products as p', 'p.id', '=', 'i.product_id')
+            ->leftJoin('customers as c', 'c.id', '=', 's.customer_id')
+            ->leftJoin('users as u', 'u.id', '=', 's.user_id')
+            ->where('i.is_gift', true)->where('s.status', '!=', 'CANCELLED')
+            ->select('s.invoice_no', 's.sale_date', 'c.name as customer_name', 'c.phone as customer_phone', 'u.name as billed_by', 'p.name as product_name', 'p.code as product_code',
+                'p.cost_price', 'i.quantity', 'i.unit_mrp', 'i.sales_man_name')
+            ->orderByDesc('s.sale_date')->orderByDesc('i.id')->limit(20000)->get()
+            ->map(fn ($row) => [
+                'sale_date' => LedgerPoster::businessDate($row->sale_date),
+                'bill_no' => (new PosSale(['invoice_no' => $row->invoice_no]))->bill_no,
+                'customer_name' => $row->customer_name ?? '-',
+                'mobile_no' => $row->customer_phone ?? '-',
+                'product_name' => $row->product_name,
+                'product_code' => $row->product_code ?? '-',
+                'quantity' => (float) $row->quantity,
+                'price_value' => round((float) $row->quantity * (float) $row->unit_mrp, 2),
+                'cost_value' => round((float) $row->quantity * (float) $row->cost_price, 2),
+                'billed_by' => $row->billed_by ?? '-',
+                'salesperson' => $row->sales_man_name ?: '-',
+            ])->values();
     }
 
     /** File names only (a run may keep name => path); a server path is never shown. */

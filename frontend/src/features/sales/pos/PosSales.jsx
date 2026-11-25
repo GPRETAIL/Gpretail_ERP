@@ -33,7 +33,7 @@ import { masterSearchAreaSx } from "@/shared/theme/erpUi";
 import SearchGridPanel from "@/shared/components/SearchGridPanel";
 import useSearchGrid, { createSearchGridAdapter } from "@/shared/hooks/useSearchGrid";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Clock3, FileText, Pause, Pencil, PlusCircle, Printer, Save, Search, Trash2, UserRound } from "lucide-react";
+import { Clock3, FileText, Gift, Pause, Pencil, PlusCircle, Printer, Save, Search, Trash2, UserRound } from "lucide-react";
 import { toast } from "react-toastify";
 import useBillReprint from "@/features/sales/bill-reprint/hooks/useBillReprint";
 import { reprintErrorMessage, reprintLastBill } from "@/features/sales/bill-reprint/utils/reprintRules";
@@ -1487,7 +1487,7 @@ const PosSales = () => {
       const perItemSalesperson = posCheckoutPrefs.salespersonScan;
       const newLineId = `${source.id}-${Date.now()}`;
       setCart((prev) => {
-        const index = perItemSalesperson ? -1 : prev.findIndex((line) => line.stockId === source.id);
+        const index = perItemSalesperson ? -1 : prev.findIndex((line) => line.stockId === source.id && !line.isGift); // a scan never adds to a gift line
         lastLineIdRef.current = index === -1 ? newLineId : prev[index].lineId;
         if (index === -1) {
           return [
@@ -1551,7 +1551,7 @@ const PosSales = () => {
     const numeric = Math.max(0, toNum(raw, 0));
     setCart((prev) =>
       prev.map((line) =>
-        line.lineId === lineId
+        line.lineId === lineId && !(line.isGift && (field === "price" || field === "discount"))
           ? {
               ...line,
               [field]: numeric,
@@ -1560,6 +1560,16 @@ const PosSales = () => {
           : line
       )
     );
+  };
+
+  /** Gift: the item goes free with this bill. Its price is set aside (kept as the MRP) and comes back when Gift is switched off. */
+  const handleToggleGift = (lineId) => {
+    setCart((prev) => prev.map((line) => {
+      if (line.lineId !== lineId) return line;
+      return line.isGift
+        ? { ...line, isGift: false, price: line.giftMrp || 0, giftMrp: undefined }
+        : { ...line, isGift: true, giftMrp: toNum(line.price, 0), price: 0, discount: 0, discountSource: null };
+    }));
   };
 
   const handleLineQtyChange = (lineId, raw) => {
@@ -2068,12 +2078,14 @@ const PosSales = () => {
         barcode: line.barcode,
         productName: line.productName,
         qty: line.qty,
-        price: line.price,
+        // A gift item goes out free: no price or discount, its normal price kept as the MRP for the Gift Issue report.
+        price: line.isGift ? 0 : line.price,
+        ...(line.isGift ? { isGift: true, mrp: line.giftMrp || 0 } : {}),
         tax: line.tax,
         taxName: line.taxName || null,
         taxType: line.taxType || null,
         cost: line.cost,
-        discount: line.discount,
+        discount: line.isGift ? 0 : line.discount,
         salesManId: line.salesManId || null,
         salesManName: line.salesManName || null,
       })),
@@ -2127,7 +2139,7 @@ const PosSales = () => {
       const amount = round2(toNum(item.subtotal, qty * rate - discountAmount + taxAmount));
       const subtotal = round2(amount - taxAmount);
       const salesManName = String(item.sales_man_name || "").trim();
-      const baseName = String(item.product?.name || item.barcode?.product_name || "-").trim();
+      const baseName = `${String(item.product?.name || item.barcode?.product_name || "-").trim()}${item.is_gift ? " (Gift)" : ""}`;
       const itemName =
         commonSalesMan || !salesManName ? baseName : `${baseName} / SM: ${salesManName}`;
 
@@ -2793,6 +2805,7 @@ const PosSales = () => {
                         <Box sx={posSalesColCellSx("product")}>
                           <Box sx={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", wordBreak: "break-word" }}>{line.productName}</Box>
                           <NoStockChip shortQty={shortByStock.get(line.stockId)} />
+                          {line.isGift ? <Box component="span" sx={{ fontSize: { xs: 10, md: 12.25, lg: 14 }, fontWeight: 700, color: "success.main" }}>Gift (free)</Box> : null}
                           {isReturnDisplayLine ? (
                             <Box sx={{ fontSize: { xs: 10, md: 12.25, lg: 14 }, color: "text.disabled" }}>{line.salesManName}</Box>
                           ) : null}
@@ -2860,6 +2873,16 @@ const PosSales = () => {
                                 title={isLineEditable ? "Lock row editing" : "Edit qty, price and discount"}
                               >
                                 <Pencil size={20} style={{ color: "#334155" }} />
+                              </IconButton>
+                              <IconButton
+                                onClick={() => handleToggleGift(line.lineId)}
+                                className={line.isGift ? "glass-btn glass-btn-success" : "glass-btn glass-btn-secondary"}
+                                sx={{ height: 36, width: 36, flexShrink: 0, borderRadius: "3.5px", p: 0.75 }}
+                                aria-label={line.isGift ? `Remove gift from ${line.productName}` : `Give ${line.productName} as a gift`}
+                                aria-pressed={Boolean(line.isGift)}
+                                title={line.isGift ? "Gift: given free. Click to charge for it again" : "Give this item free as a gift"}
+                              >
+                                <Gift size={20} style={{ color: "#334155" }} />
                               </IconButton>
                               <IconButton
                                 onClick={() => openSalesManDialog(line)}

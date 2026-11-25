@@ -478,6 +478,7 @@ class PosSaleController extends Controller
             'items.*.variantId' => 'nullable|integer|min:1',
             'items.*.qty' => 'required|numeric|min:0.01',
             'items.*.price' => 'required|numeric|min:0',
+            'items.*.isGift' => 'nullable|boolean',
             'customerId' => 'nullable|exists:customers,id',
             'cashAmount' => 'nullable|numeric|min:0',
             'cardAmount' => 'nullable|numeric|min:0',
@@ -592,6 +593,15 @@ class PosSaleController extends Controller
                             }
                             $pieceBarcodes[$barcode->id] = true;
                         }
+                    }
+                }
+
+                // A gift item is given free: it has no price or discount, only the stock it takes. Its normal price is kept as the
+                // MRP, so the Gift Issue report can show what it was worth. Giving things away above the cashier's discount limit
+                // needs the same approval as any other discount (the line looks like a 100% discount).
+                foreach ($itemsData as $index => $item) {
+                    if (! empty($item['isGift']) && ((float) $item['price'] > 0.004 || (float) ($item['discount'] ?? 0) > 0.004)) {
+                        throw ValidationException::withMessages(["items.$index.isGift" => 'A gift item is given free. Remove its price and discount, or untick Gift.']);
                     }
                 }
 

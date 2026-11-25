@@ -1416,6 +1416,21 @@ const giftCreditUseColumns = [
 const couponIssueColumns = giftCreditIssueColumns.filter((column) => column.key !== "type").map((column) => (column.key === "source" ? { ...column, label: "Earned on" } : column));
 const couponUseColumns = giftCreditUseColumns.filter((column) => column.key !== "type");
 
+// Gift items: free items given with a bill, what they would have sold for and what they cost the store.
+const giftIssueColumns = [
+  { key: "sale_date", label: "Date" },
+  { key: "bill_no", label: "Bill no" },
+  { key: "customer_name", label: "Customer" },
+  { key: "mobile_no", label: "Mobile" },
+  { key: "product_name", label: "Item" },
+  { key: "product_code", label: "Code" },
+  { key: "quantity", label: "Qty", render: rightNumber() },
+  { key: "price_value", label: "Worth at price", render: rightNumber(2) },
+  { key: "cost_value", label: "Cost", render: rightNumber(2) },
+  { key: "billed_by", label: "Billed by" },
+  { key: "salesperson", label: "Salesperson" },
+];
+
 const incentiveSectionColumns = [
   { key: "month", label: "Month" },
   { key: "section", label: "Section" },
@@ -2328,7 +2343,11 @@ const REPORT_DATA_SOURCES = {
     fetchRows: () => getStoreReportRows("loyalty_redemptions"),
     emptyText: "No loyalty points have been redeemed yet.",
   },
-  gift_issue_report: { unavailableReason: "A dedicated data source for this report is not connected." },
+  gift_issue_report: {
+    columns: giftIssueColumns,
+    fetchRows: () => getStoreReportRows("gift_issues"),
+    emptyText: "No item has been given free with a bill yet.",
+  },
   birthday_wishes: {
     summary: { dataset: "customers", layouts: ["birth_month", "city", "type"] },
     columns: occasionColumns("Date of birth", "Turning"),

@@ -126,7 +126,7 @@ export const buildSimplePosSaleReceiptData = async (
     const subtotal = round2(amount - taxAmount);
 
     return {
-      name: String(item.product?.name || item.barcode?.product_name || "-").trim(),
+      name: `${String(item.product?.name || item.barcode?.product_name || "-").trim()}${item.is_gift ? " (Gift)" : ""}`, // a gift item is marked on the bill
       qty,
       rate,
       taxPerc,

@@ -92,6 +92,7 @@ class PosCheckoutWriter
                 'cost_price' => $item['cost'] ?? null, 'sales_man_id' => isset($salespeople[(int) ($item['salesManId'] ?? 0)]) ? (int) $item['salesManId'] : null,
                 'sales_man_name' => ($item['salesManName'] ?? null) ?: null,
                 'short_qty' => $allowNegative ? StockRules::shortQty($qty, $after) : 0,
+                'is_gift' => ! empty($item['isGift']),
                 'created_at' => $timestamp, 'updated_at' => $timestamp,
             ];
             $movements[] = [
