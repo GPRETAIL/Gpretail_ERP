@@ -1,4 +1,4 @@
-import { parseDateTime } from "./cellTypes";
+import { inferColumnKind, parseDateTime } from "./cellTypes";
 import { splitPageAndPeriod } from "./exportFileName";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -39,6 +39,26 @@ export const periodText = ({ period, fileName }) => {
   return dates.length === 1 ? dates[0] : `${dates[0]} to ${dates[dates.length - 1]}`;
 };
 
+const DATE_LABEL = /date|time|created|\bon\b|day/i;
+
+/**
+ * When a screen gives no period, the dates in the rows themselves tell it: "Data from 12-Nov-2026 to 25-Nov-2026",
+ * read from the first date column (one whose heading says date or time wins). "" when no column holds dates.
+ */
+export const dataRangeText = (headers, rawBody) => {
+  const kinds = headers.map((header, col) => inferColumnKind(header, rawBody.map((row) => row?.[col])));
+  const dated = kinds.map((kind, col) => ({ kind, col })).filter(({ kind }) => kind.kind === "date" || kind.kind === "datetime");
+  if (dated.length === 0) return "";
+  const pick = dated.find(({ col }) => DATE_LABEL.test(String(headers[col] ?? ""))) || dated[0];
+  const stamps = rawBody.map((row) => parseDateTime(row?.[pick.col])).filter(Boolean).map((parsed) => parsed.date.getTime());
+  if (stamps.length === 0) return "";
+  const first = new Date(Math.min(...stamps));
+  const last = new Date(Math.max(...stamps));
+  const from = formatParsed({ date: first, time: false });
+  const to = formatParsed({ date: last, time: false });
+  return from === to ? `Data for ${from}` : `Data from ${from} to ${to}`;
+};
+
 export const generatedStamp = (now = new Date()) => {
   const day = displayDate(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`);
   const time = now.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true }).toLowerCase();
@@ -57,7 +77,7 @@ const pageName = (fileName, pathname) => {
  * store name, what the report is, the period it covers (when the screen has one), any extra detail lines the screen
  * supplies, and when it was generated and by whom. A screen that names no report gets its page name, never "Export".
  */
-export default function buildHeaderLines({ storeName = "", title = "", subtitle = "", headingLines = [], period, fileName = "", pathname = "", userName = "", now = new Date() }) {
+export default function buildHeaderLines({ storeName = "", title = "", subtitle = "", headingLines = [], period, dataRange = "", fileName = "", pathname = "", userName = "", now = new Date() }) {
   const store = clean(storeName);
   const given = clean(title);
   const titleIsStore = !given || GENERIC_TITLE.test(given) || (store && given.toLowerCase() === store.toLowerCase());
@@ -79,6 +99,7 @@ export default function buildHeaderLines({ storeName = "", title = "", subtitle 
   add(storeLine, "store");
   add(report, "title");
   if (periodLine) add(/^(period|from|as on)\b/i.test(periodLine) ? periodLine : `Period: ${periodLine}`, "text");
+  else if (clean(dataRange)) add(dataRange, "text");
   if (!storeLine && given && !titleIsStore && clean(subtitle)) add(given, "text");
   extra.forEach((line) => add(line, "text"));
   add(stamp, "muted");

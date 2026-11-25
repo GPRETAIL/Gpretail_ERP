@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import buildHeaderLines, { displayDate, periodText } from "../exportHeader";
+import buildHeaderLines, { dataRangeText, displayDate, periodText } from "../exportHeader";
 
 const now = new Date(2026, 10, 25, 22, 1);
 const texts = (lines) => lines.map((line) => line.text);
@@ -32,4 +32,15 @@ it("keeps extra detail lines from the screen without repeating the store or the 
 it("uses the screen's own title when there is no store name yet", () => {
   expect(texts(buildHeaderLines({ title: "Store export", now }))[0]).toBe("Store export");
   expect(displayDate("25/11/2026")).toBe("25-Nov-2026");
+});
+
+it("with no period from the screen, shows the first and last date in the rows", () => {
+  const headers = ["Bill No", "Date", "Amount"];
+  const rows = [["A1", "11/25/2026, 10:09:44 PM", "10"], ["A2", "11/12/2026, 9:00:00 AM", "20"]];
+  expect(dataRangeText(headers, rows)).toBe("Data from 12-Nov-2026 to 25-Nov-2026");
+  expect(dataRangeText(headers, [["A1", "2026-11-25", "1"]])).toBe("Data for 25-Nov-2026");
+  expect(dataRangeText(["Name"], [["Asha"]])).toBe("");
+  const lines = buildHeaderLines({ storeName: "A", fileName: "pos_sale_report", dataRange: dataRangeText(headers, rows), now });
+  expect(texts(lines)).toContain("Data from 12-Nov-2026 to 25-Nov-2026");
+  expect(texts(buildHeaderLines({ storeName: "A", fileName: "x", period: "01-Nov-2026 to 02-Nov-2026", dataRange: "Data from 1 to 2", now }))).not.toContain("Data from 1 to 2");
 });

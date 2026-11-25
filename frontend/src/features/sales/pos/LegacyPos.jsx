@@ -72,6 +72,7 @@ import {
 const { onFetchGroupSummaries: fetchPosOldSaleGroupSummaries, onFetchGroupRows: fetchPosOldSaleGroupRows } =
   createGroupFetchers("/pos-old-sales", { customer_name: "customer_id", user_name: "user_id" });
 import { buildPosReturnReceiptHtml, buildPosSaleReceiptHtml } from "@/features/printing/utils/posReceiptHtml";
+import { lastScannedLineId, parseQuantityShortcut } from "@/features/sales/pos/utils/quantityShortcut";
 
 // mobileNo previously read r.mobile_no, a field the /customers API never actually returns (the
 // real column/response key is `phone`) -- phone lookup on this page never matched anything at all,
@@ -193,6 +194,8 @@ const LegacyPos = () => {
 
   // barcode input
   const [barcodeInput, setBarcodeInput] = useState("");
+  const [lastLineId, setLastLineId] = useState(null);
+  const [nextScanQty, setNextScanQty] = useState(1);
   const [discountDialogOpen, setDiscountDialogOpen] = useState(false);
   const [discountPercentInput, setDiscountPercentInput] = useState("");
   const [discountValueInput, setDiscountValueInput] = useState("");
@@ -594,7 +597,7 @@ const LegacyPos = () => {
 
   /* ─── add product to cart ─── */
   const addToCart = useCallback(
-    (source) => {
+    (source, quantity = 1) => {
       if (!source) return;
       const used = usedQtyByBarcode.get(source.id) || 0;
       const remaining = source.qty - used;
@@ -602,11 +605,18 @@ const LegacyPos = () => {
         toast.error("No stock available");
         return;
       }
+      if (quantity > remaining && !allowSaleWithoutStock) {
+        toast.error(`Only ${remaining} in stock`);
+        return;
+      }
+      const existingLine = cart.find((l) => !isExchangeReturnLine(l) && l.stockId === source.id);
+      const newLineId = `${source.id}-${Date.now()}`;
+      setLastLineId(existingLine?.lineId ?? newLineId);
       setCart((prev) => {
         const idx = prev.findIndex((l) => !isExchangeReturnLine(l) && l.stockId === source.id);
         if (idx !== -1) {
           const next = [...prev];
-          const newQty = toNum(next[idx].qty, 0) + 1;
+          const newQty = toNum(next[idx].qty, 0) + quantity;
           if (newQty > source.qty && !allowSaleWithoutStock) {
             toast.error("Quantity exceeds stock");
             return prev;
@@ -614,10 +624,11 @@ const LegacyPos = () => {
           next[idx] = { ...next[idx], qty: newQty };
           return next;
         }
+        const lineId = newLineId;
         return [
           ...prev,
           {
-            lineId: `${source.id}-${Date.now()}`,
+            lineId,
             stockId: source.id,
             variantId: source.variantId ?? null,
             barcode: source.barcode,
@@ -625,14 +636,14 @@ const LegacyPos = () => {
             mrp: source.mrp,
             price: source.price,
             tax: source.tax,
-            qty: 1,
+            qty: quantity,
             discPerc: 0,
             discAmt: 0,
           },
         ];
       });
     },
-    [usedQtyByBarcode, setCart, allowSaleWithoutStock]
+    [cart, usedQtyByBarcode, setCart, allowSaleWithoutStock]
   );
 
   const stopScanner = useCallback(() => {
@@ -662,6 +673,8 @@ const LegacyPos = () => {
     const { silentNotFound = false } = options;
     const code = String(value || "").trim();
     if (!code) return false;
+    const quantity = options.quantity ?? nextScanQty;
+    setNextScanQty(1);
     const normalizedCode = normalize(code);
     const compactCode = compactBarcode(code);
     const source = stockRows.find((r) => {
@@ -687,21 +700,60 @@ const LegacyPos = () => {
           };
           // Keep it in the stock list so quantity checks and the "No stock" mark see its stock too.
           setStockRows((prev) => (prev.some((r) => r.id === row.id) ? prev : [...prev, row]));
-          addToCart(row);
+          addToCart(row, quantity);
           setBarcodeInput("");
           setShowScanner(false);
         })
         .catch(() => { if (!silentNotFound) toast.error("Barcode not found"); });
       return false;
     }
-    addToCart(source);
+    addToCart(source, quantity);
     setBarcodeInput("");
     return true;
-  }, [addToCart, stockRows]);
+  }, [addToCart, nextScanQty, stockRows]);
+
+  /** Quantity typed in the barcode box ("10*CODE", "10*" then scan, "*10", "*10+2"). See utils/quantityShortcut.js. */
+  const applyQuantityShortcut = (shortcut) => {
+    setBarcodeInput("");
+    if (!(shortcut.quantity >= 1)) {
+      toast.error("Quantity must be at least 1.");
+      return;
+    }
+    if (shortcut.kind === "scan") {
+      handleBarcodeValue(shortcut.barcode, { quantity: shortcut.quantity });
+      return;
+    }
+    if (shortcut.kind === "next") {
+      setNextScanQty(shortcut.quantity);
+      toast.info(`The next item scanned adds ${shortcut.quantity} pieces.`);
+      return;
+    }
+    const lineId = shortcut.kind === "row" ? cart[shortcut.row - 1]?.lineId : lastScannedLineId(cart, lastLineId);
+    const line = cart.find((l) => l.lineId === lineId);
+    if (!line) {
+      toast.error(shortcut.kind === "row" ? `There is no item on S.No ${shortcut.row}.` : "Scan an item first, then set its quantity.");
+      return;
+    }
+    if (isExchangeReturnLine(line)) {
+      toast.error("A returned item's quantity cannot be changed here.");
+      return;
+    }
+    const stock = stockRows.find((r) => r.id === line.stockId);
+    if (stock && shortcut.quantity > stock.qty && !allowSaleWithoutStock) {
+      toast.error(`Only ${stock.qty} in stock`);
+      return;
+    }
+    setCart((prev) => prev.map((l) => (l.lineId === lineId ? { ...l, qty: shortcut.quantity } : l)));
+  };
 
   const handleBarcodeSubmit = (e) => {
     if (e.key !== "Enter") return;
     e.preventDefault();
+    const quantityShortcut = parseQuantityShortcut(barcodeInput);
+    if (quantityShortcut) {
+      applyQuantityShortcut(quantityShortcut);
+      return;
+    }
     const shortcut = String(barcodeInput || "").trim().toUpperCase();
     if (shortcut === "D") {
       setBarcodeInput("");

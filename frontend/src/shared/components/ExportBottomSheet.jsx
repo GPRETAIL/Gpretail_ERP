@@ -5,7 +5,7 @@ import { Button, ListItemIcon, ListItemText, Menu, MenuItem } from "@mui/materia
 import { useTransferActivity } from "@/features/store/context/TransferActivityContext";
 import { tryBuildTextCsv } from "@/shared/utils/csvExport";
 import useExportContext from "@/shared/hooks/useExportContext";
-import buildHeaderLines, { generatedStamp } from "@/shared/utils/export/exportHeader";
+import buildHeaderLines, { dataRangeText, generatedStamp } from "@/shared/utils/export/exportHeader";
 import buildExportFileName from "@/shared/utils/export/exportFileName";
 import buildExcel from "@/shared/utils/export/buildExcel";
 import buildPdf from "@/shared/utils/export/buildPdf";
@@ -111,8 +111,8 @@ export default function ExportBottomSheet({
     return { headers, rawBody };
   }, [columns, getValue]);
 
-  const headerLines = useCallback((resolvedTitle) => buildHeaderLines({
-    storeName, userName, title: resolvedTitle, subtitle, headingLines, period: exportPeriod, fileName: screenFileName, pathname: location.pathname,
+  const headerLines = useCallback((resolvedTitle, headers = [], rawBody = []) => buildHeaderLines({
+    storeName, userName, title: resolvedTitle, subtitle, headingLines, period: exportPeriod, dataRange: dataRangeText(headers, rawBody), fileName: screenFileName, pathname: location.pathname,
   }), [storeName, userName, subtitle, headingLines, exportPeriod, screenFileName, location.pathname]);
 
   const resolveRowsForExport = useCallback(async () => {
@@ -251,7 +251,7 @@ export default function ExportBottomSheet({
       updateActivity(activityId, { progressPercent: 65, statusMessage: "Building Excel file..." });
       const resolvedTitle = resolveExportTitle(sourceRows);
       const { headers, rawBody } = buildRawMatrix(sourceRows);
-      const blob = await buildExcel({ headerLines: headerLines(resolvedTitle), headers, rawBody, sheetName });
+      const blob = await buildExcel({ headerLines: headerLines(resolvedTitle, headers, rawBody), headers, rawBody, sheetName });
       updateActivity(activityId, { progressPercent: 90, statusMessage: "Downloading Excel file..." });
       downloadBlob(blob, `${fileName}.xlsx`);
       finishActivity(activityId, {
@@ -289,7 +289,7 @@ export default function ExportBottomSheet({
       const resolvedTitle = resolveExportTitle(sourceRows);
       const { headers, rawBody } = buildRawMatrix(sourceRows);
       const blob = await buildPdf({
-        headerLines: headerLines(resolvedTitle),
+        headerLines: headerLines(resolvedTitle, headers, rawBody),
         headers,
         rawBody,
         footerLeft: [storeName, `Generated ${generatedStamp()}`].filter(Boolean).join("  |  "),

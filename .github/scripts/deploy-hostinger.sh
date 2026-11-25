@@ -41,9 +41,13 @@ cd "$APP_DIR"
 test -f artisan && test -f .env && test -f composer.json
 umask 077
 export ERP_DEPLOY_APP_DIR="$APP_DIR"
-"$PHP" "$RECOVERY_DIR/backup-erp.php"
+# Backups run at the lowest CPU and disk priority, so the live site is not starved while they run on shared hosting.
+LOWPRI=()
+command -v nice >/dev/null 2>&1 && LOWPRI+=(nice -n 19)
+command -v ionice >/dev/null 2>&1 && LOWPRI+=(ionice -c3)
+${LOWPRI[@]+"${LOWPRI[@]}"} "$PHP" "$RECOVERY_DIR/backup-erp.php"
 CODE_BACKUP="$RECOVERY_DIR/code-$(date -u +%Y%m%dT%H%M%SZ)-$$.tar.gz"
-tar -czf "$CODE_BACKUP" --exclude='./.env' --exclude='./.env.*' --exclude='./storage' --exclude='./bootstrap/cache/*.php' --exclude='./vendor' --exclude='./.git' --exclude='./node_modules' --exclude='./deploy.zip' --exclude='./deploy.tar.gz' -C "$APP_DIR" .
+${LOWPRI[@]+"${LOWPRI[@]}"} tar -czf "$CODE_BACKUP" --exclude='./.env' --exclude='./.env.*' --exclude='./storage' --exclude='./bootstrap/cache/*.php' --exclude='./vendor' --exclude='./.git' --exclude='./node_modules' --exclude='./deploy.zip' --exclude='./deploy.tar.gz' -C "$APP_DIR" .
 test -s "$CODE_BACKUP"
 "$PHP" artisan down --retry=60
 # A failed step after "down" must not leave the shop on the maintenance page. The new code is already unpacked, so
