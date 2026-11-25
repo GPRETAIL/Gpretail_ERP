@@ -52,14 +52,26 @@ React SPA (frontend/)  ──HTTPS──▶  Laravel API (backend-laravel/)  ─
 Shared hosting runs no queue workers, so background work is done by scheduled commands through cron
 (`routes/console.php`):
 
-| Command | When |
-|---|---|
-| `platform:sync` | every 5 minutes |
-| `platform:notifications-sync` | every minute |
-| `purchase-orders:generate` | 02:30 daily |
-| `accounting:post` | 02:45 daily (catch-up for any document that did not post) |
-| `security:purge-plaintext-snapshots --encrypt` | 03:15 daily |
-| `ops:error-alerts` | every 10 minutes (see "Error alerts" below) |
+| Command | When | What |
+|---|---|---|
+| `ops:heartbeat` (closure) | every minute | Lets `/api/health` report whether the cron is running |
+| `platform:notifications-sync` | every minute | Imports company notifications from Vynerix admin (not on a server that took its identity from the cloud) |
+| `sync:cycle` | every 15 seconds | On-prem server only: pushes pending writes to the cloud, pulls the cloud's pending writes for the store, then sends a heartbeat |
+| `platform:sync` | every 5 minutes | Pulls this deployment's status, limits and licence from Vynerix admin (same condition as notifications) |
+| `reports:run-scheduled` | every 5 minutes | Emails the scheduled reports that are due (Settings > Scheduler) |
+| `backups:run-scheduled` | every 15 minutes | Runs each store's scheduled backup that is due |
+| `ops:error-alerts` | every 10 minutes | Alerts admins to new server errors and screen crashes (see "Error alerts" below) |
+| `hr:apply-movements` | 00:10 daily* | Applies the employee promotions, transfers and salary revisions that are due |
+| `hr:relieve-employees` | 00:15 daily* | Relieves employees whose last working day has passed (marked inactive, login switched off) |
+| `hr:close-attendance` | 00:20 daily* | Closes yesterday's attendance (absent, holiday, weekly off) |
+| `hr:lock-tax-declarations` | 00:20 daily* | Closes income tax declarations whose proof deadline has passed |
+| `hr:allocate-leave` | 00:40 on 1 January* | Allocates the year's leave to every active employee |
+| `loyalty:expire` | 01:30 daily* | Expires loyalty points past their date and reminds customers whose points expire within a week |
+| `purchase-orders:generate` | 02:30 daily | Drafts purchase orders for items at or below their reorder level |
+| `accounting:post` | 02:45 daily | Catch-up for any bill or payment whose voucher did not post when it was saved |
+| `security:purge-plaintext-snapshots --encrypt` | 03:15 daily | Protects legacy private snapshots and removes temporary backup files older than 24 hours |
+
+\* In the business time zone (`app.business_timezone`). The others use the server time.
 
 Realtime updates use hosted Pusher, configured in `.env`.
 
