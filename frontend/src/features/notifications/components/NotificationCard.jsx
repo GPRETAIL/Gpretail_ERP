@@ -85,22 +85,27 @@ export default function NotificationCard({ notification: row, compact = false, p
     <Box component="article" aria-label={row.title} sx={{ p: 2, border: 1, borderColor: "divider", borderRadius: 2, bgcolor: row.read_at ? "background.paper" : "action.hover", overflowWrap: "anywhere" }}>
       <Stack direction="row" spacing={1.25} sx={{ alignItems: "flex-start" }}>
         <Box sx={{ width: 34, height: 34, flexShrink: 0, display: "grid", placeItems: "center", borderRadius: 2, bgcolor: "background.paper", color: `${color}.main`, border: 1, borderColor: "divider" }}><Icon size={17} aria-hidden="true" /></Box>
-        <Box sx={{ flex: 1, minWidth: 0 }}>
-          <Stack direction="row" spacing={1} sx={{ alignItems: "center", justifyContent: "space-between" }}>
-            <Typography component="h3" sx={{ fontSize: 14, fontWeight: row.read_at ? 500 : 700 }}>{row.title}</Typography>
-            {!row.read_at && <Box component="span" aria-label="Unread" sx={{ width: 7, height: 7, borderRadius: "50%", bgcolor: "primary.main", flexShrink: 0 }} />}
-          </Stack>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, fontSize: 13, whiteSpace: "pre-wrap" }}>{row.message}</Typography>
-          <Stack direction="row" spacing={1} useFlexGap sx={{ alignItems: "center", flexWrap: "wrap", mt: 1 }}>
-            <Typography variant="caption" color="text.secondary">{label}</Typography>
-            {validDate && <Typography component="time" dateTime={date.toISOString()} variant="caption" color="text.secondary">{date.toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</Typography>}
-            {important && <Chip label="Important" color="warning" size="small" variant="outlined" sx={{ height: 20, fontSize: TYPE.small }} />}
-          </Stack>
-          <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: "wrap", mt: 0.5 }}>
-            {!row.read_at && <Button size="small" disabled={pending} onClick={() => onRead(row.id)} sx={{ fontSize: 12 }}>Mark read</Button>}
-            {row.platform_action === "subscription" ? <Button size="small" href={portalUrl} target="_blank" rel="noopener noreferrer">Manage subscription</Button> : internalLink && <Button size="small" href={onOpen ? undefined : internalLink} onClick={onOpen ? () => onOpen(internalLink) : undefined}>View details</Button>}
-          </Stack>
-        </Box>
+        {/* Wide screens: the text on the left, the actions in a column on the right. Narrow: stacked, as before. */}
+        <Stack direction={{ xs: "column", md: "row" }} spacing={{ xs: 0.5, md: 3 }} sx={{ flex: 1, minWidth: 0, alignItems: { md: "center" } }}>
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Stack direction="row" spacing={1} sx={{ alignItems: "center", justifyContent: "space-between" }}>
+              <Typography component="h3" sx={{ fontSize: 14, fontWeight: row.read_at ? 500 : 700 }}>{row.title}</Typography>
+              {!row.read_at && <Box component="span" aria-label="Unread" sx={{ width: 7, height: 7, borderRadius: "50%", bgcolor: "primary.main", flexShrink: 0 }} />}
+            </Stack>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, fontSize: 13, whiteSpace: "pre-wrap" }}>{row.message}</Typography>
+            <Stack direction="row" spacing={1} useFlexGap sx={{ alignItems: "center", flexWrap: "wrap", mt: 1 }}>
+              <Typography variant="caption" color="text.secondary">{label}</Typography>
+              {validDate && <Typography component="time" dateTime={date.toISOString()} variant="caption" color="text.secondary">{date.toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</Typography>}
+              {important && <Chip label="Important" color="warning" size="small" variant="outlined" sx={{ height: 20, fontSize: TYPE.small }} />}
+            </Stack>
+          </Box>
+          {(!row.read_at || row.platform_action === "subscription" || internalLink) && (
+            <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: "wrap", flexShrink: 0, justifyContent: { md: "flex-end" } }}>
+              {!row.read_at && <Button size="small" disabled={pending} onClick={() => onRead(row.id)} sx={{ fontSize: 12 }}>Mark read</Button>}
+              {row.platform_action === "subscription" ? <Button size="small" href={portalUrl} target="_blank" rel="noopener noreferrer">Manage subscription</Button> : internalLink && <Button size="small" href={onOpen ? undefined : internalLink} onClick={onOpen ? () => onOpen(internalLink) : undefined}>View details</Button>}
+            </Stack>
+          )}
+        </Stack>
       </Stack>
     </Box>
   );

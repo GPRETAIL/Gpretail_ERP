@@ -19,7 +19,7 @@ export default function Notifications() {
   return <Box sx={{ height: "100%", minHeight: 0, display: "flex", flexDirection: "column" }}>
     <PageHeader title="Notifications" />
     <Box sx={{ flex: 1, minHeight: 0, overflowY: "auto" }}>
-      <NotificationInboxPanel showHeading={false} section={section} onSectionChange={changeSection} onOpen={navigateActiveTab} />
+      <NotificationInboxPanel fullWidth showHeading={false} section={section} onSectionChange={changeSection} onOpen={navigateActiveTab} />
     </Box>
   </Box>;
 }

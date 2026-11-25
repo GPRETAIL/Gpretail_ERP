@@ -65,7 +65,8 @@ function NotificationPreferences() {
   </Stack>;
 }
 
-export default function NotificationInboxPanel({ showHeading = true, section: controlledSection, onSectionChange, onOpen }) {
+// fullWidth: the Notifications page uses the whole workspace. The mobile modal keeps the readable 1000 px column.
+export default function NotificationInboxPanel({ showHeading = true, section: controlledSection, onSectionChange, onOpen, fullWidth = false }) {
   const user = useSelector(state => state.auth.user);
   const [localSection, setLocalSection] = useState("inbox");
   const section = controlledSection ?? localSection;
@@ -76,7 +77,7 @@ export default function NotificationInboxPanel({ showHeading = true, section: co
   const feed = useNotificationFeed({ category, unread, page, enabled: section === "inbox" });
   const total = feed.data?.pagination?.total;
   return <Box sx={{ p: { xs: 1.5, sm: 2 } }}>
-    <Stack spacing={2.5} sx={{ maxWidth: 1000, mx: "auto", minWidth: 0 }}>
+    <Stack spacing={2.5} sx={{ maxWidth: fullWidth ? "none" : 1000, mx: "auto", minWidth: 0 }}>
       {showHeading ? <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}><Box sx={{ p: 1.25, bgcolor: "action.hover", color: "primary.main", borderRadius: 2, display: "flex" }}><Bell size={24} /></Box><Box><Typography component="h1" sx={{ fontSize: { xs: 20, sm: 24 }, fontWeight: 700 }}>Notifications</Typography><Typography variant="body2" color="text.secondary">Account messages, service alerts and store updates in one place.</Typography></Box></Stack> : <Typography variant="body2" color="text.secondary">Account messages, service alerts and store updates in one place.</Typography>}
       <Paper variant="outlined" sx={{ borderRadius: 3, overflow: "hidden", bgcolor: "background.paper", backgroundImage: "none" }}>
         <Tabs value={section} onChange={(_, value) => setSection(value)} aria-label="Notification sections" sx={{ px: 2, borderBottom: 1, borderColor: "divider" }}><Tab value="inbox" icon={<Bell size={16} />} iconPosition="start" label="Inbox" id="notification-inbox-tab" aria-controls="notification-inbox-panel" /><Tab value="preferences" icon={<Settings2 size={16} />} iconPosition="start" label="Preferences" id="notification-preferences-tab" aria-controls="notification-preferences-panel" /></Tabs>
