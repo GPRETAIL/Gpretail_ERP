@@ -22,6 +22,6 @@ it("keeps the shortcuts behind a small i button, and lists them when it is press
 });
 
 it("every quantity example it shows really is a shortcut the box understands", () => {
-  const quantity = BILLING_SHORTCUTS.flatMap((row) => row.keys).filter((key) => /\d/.test(key) && key !== "0" && key !== "then scan");
+  const quantity = BILLING_SHORTCUTS.flatMap((row) => row.keys).filter((key) => /^(\d+\*|\*\d)/.test(key));
   quantity.forEach((key) => expect(parseQuantityShortcut(key), key).not.toBeNull());
 });

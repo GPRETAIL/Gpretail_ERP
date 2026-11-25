@@ -1792,6 +1792,22 @@ const PosSales = () => {
     setHeldBills(remaining);
   };
 
+  const clearAllHeldBills = () => {
+    saveHeldBills(heldKey, []);
+    setHeldBills([]);
+    toast.success("All held bills are deleted.");
+  };
+
+  /** R2 + Enter in the barcode box: resume the second bill in the Held list (1 is the newest). */
+  const resumeHeldByNumber = (number) => {
+    const bill = loadHeldBills(heldKey)[number - 1];
+    if (!bill) {
+      toast.error(number === 1 ? "No bill is on hold." : `There is no held bill number ${number}. Press R to see the list.`);
+      return;
+    }
+    resumeHeldBill(bill.id);
+  };
+
   const validateSaleEntry = () => {
     if (cartWithTotals.length === 0) {
       toast.error("Add at least one product before save");
@@ -3265,6 +3281,12 @@ const PosSales = () => {
                         setHeldOpen(true);
                         return;
                       }
+                      const heldNumber = /^R\s*(\d{1,2})$/.exec(shortcut);
+                      if (heldNumber) {
+                        setAddBarcode("");
+                        resumeHeldByNumber(Number(heldNumber[1]));
+                        return;
+                      }
                       handleAddLine();
                       focusBarcodeInput();
                     }
@@ -3359,7 +3381,7 @@ const PosSales = () => {
         {loading && <Typography sx={{ fontSize: TYPE.small, color: "text.secondary", px: 0.5 }}>Loading master data...</Typography>}
       </Box>
 
-      <HeldBillsDialog open={heldOpen} bills={heldBills} onResume={resumeHeldBill} onDelete={deleteHeldBill} onClose={() => { setHeldOpen(false); focusBarcodeInput(); }} />
+      <HeldBillsDialog open={heldOpen} bills={heldBills} onResume={resumeHeldBill} onDelete={deleteHeldBill} onClearAll={clearAllHeldBills} onClose={() => { setHeldOpen(false); focusBarcodeInput(); }} />
 
       {salesManDialog.open && (
         <SalesManDialog

@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { toast } from "react-toastify";
 import PosSales from "@/features/sales/pos/PosSales";
 import api from "@/shared/api/apiClient";
+import HeldBillsDialog from "@/features/sales/pos/components/HeldBillsDialog";
 import { MAX_HELD_BILLS, addHeldBill, heldAtText, heldBillLabel, heldBillsKey, loadHeldBills, makeHeldBill, removeHeldBill, saveHeldBills, waitedText } from "@/features/sales/pos/utils/heldBills";
 
 const mocks = vi.hoisted(() => ({ print: vi.fn(), user: { id: 1, name: "Cashier", company_id: 1, store_id: 1, counter_id: 1, counter_name: "Till" } }));
@@ -142,4 +143,103 @@ it("will not hold an empty bill", async () => {
   await type(barcode, "H");
   expect(toast.info).toHaveBeenCalledWith("There is nothing to hold. Add an item first.");
   expect(localStorage.getItem("vx:pos-held:1:1")).toBeNull();
+});
+
+const seed = (labels) => localStorage.setItem("vx:pos-held:1:1", JSON.stringify(labels.map((label, index) => makeHeldBill({
+  label, amount: 100 * (index + 1), now: Date.now() - index * 60000,
+  snapshot: { cart: [{ lineId: `l${index}`, stockId: 1, productId: 1, barcode: "COFFEE", productName: `Item of ${label}`, qty: 1, price: 100, tax: 0, cost: 100, discount: 0, salesManId: "", salesManName: "" }], existingCustomerId: "", newCustomer: {} },
+}))));
+
+it("R2 and Enter resumes the second held bill without opening the list", async () => {
+  seed(["Meena", "Bala", "Chitra"]); // newest first: 1 Meena, 2 Bala, 3 Chitra
+  const barcode = await open();
+  await type(barcode, "R2");
+  expect(await screen.findByText("Item of Bala")).toBeInTheDocument();
+  expect(toast.success).toHaveBeenCalledWith("Resumed the bill for Bala.");
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  expect(heldBills().map((bill) => bill.label)).toEqual(["Meena", "Chitra"]);
+});
+
+it("R9 says there is no such held bill, and changes nothing", async () => {
+  seed(["Meena"]);
+  const barcode = await open();
+  await type(barcode, "R9");
+  expect(toast.error).toHaveBeenCalledWith("There is no held bill number 9. Press R to see the list.");
+  expect(heldBills()).toHaveLength(1);
+});
+
+describe("the held list from the keyboard", () => {
+  const bills = [
+    { id: "a", label: "Meena", items: 1, amount: 100, heldAt: Date.now() },
+    { id: "b", label: "Bala", items: 2, amount: 200, heldAt: Date.now() },
+    { id: "c", label: "Chitra", items: 3, amount: 300, heldAt: Date.now() },
+  ];
+  const draw = (extra = {}) => {
+    const handlers = { onResume: vi.fn(), onDelete: vi.fn(), onClearAll: vi.fn(), onClose: vi.fn() };
+    render(<HeldBillsDialog open bills={bills} {...handlers} {...extra} />);
+    return { ...handlers, list: screen.getByRole("listbox", { name: "Held bills" }) };
+  };
+
+  it("Down and Up choose a bill and Enter resumes the chosen one", () => {
+    const { list, onResume } = draw();
+    expect(screen.getAllByRole("option")[0]).toHaveAttribute("aria-selected", "true");
+    fireEvent.keyDown(list, { key: "ArrowDown" });
+    fireEvent.keyDown(list, { key: "ArrowDown" });
+    fireEvent.keyDown(list, { key: "ArrowDown" }); // stops at the last one
+    expect(screen.getAllByRole("option")[2]).toHaveAttribute("aria-selected", "true");
+    fireEvent.keyDown(list, { key: "ArrowUp" });
+    fireEvent.keyDown(list, { key: "Enter" });
+    expect(onResume).toHaveBeenCalledExactlyOnceWith("b");
+  });
+
+  it("a number key resumes that bill at once, and a number with no bill does nothing", () => {
+    const { list, onResume } = draw();
+    fireEvent.keyDown(list, { key: "3" });
+    expect(onResume).toHaveBeenCalledWith("c");
+    fireEvent.keyDown(list, { key: "7" });
+    expect(onResume).toHaveBeenCalledTimes(1);
+  });
+
+  it("Delete removes the chosen bill, and Shift+Delete asks before clearing everything", () => {
+    const { list, onDelete, onClearAll } = draw();
+    fireEvent.keyDown(list, { key: "ArrowDown" });
+    fireEvent.keyDown(list, { key: "Delete" });
+    expect(onDelete).toHaveBeenCalledWith("b");
+
+    fireEvent.keyDown(list, { key: "Delete", shiftKey: true });
+    expect(screen.getByText("Delete all 3 held bills? This cannot be undone.")).toBeInTheDocument();
+    expect(onClearAll).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Keep them" }));
+    expect(screen.queryByText(/Delete all 3 held bills/)).not.toBeInTheDocument();
+    expect(onClearAll).not.toHaveBeenCalled();
+  });
+
+  it("Clear all asks first, then removes every bill", () => {
+    const { onClearAll } = draw();
+    fireEvent.click(screen.getByRole("button", { name: "Clear all" }));
+    expect(onClearAll).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Yes, delete all" }));
+    expect(onClearAll).toHaveBeenCalledOnce();
+  });
+
+  it("Enter on a button does what the button says, not also a resume of the chosen bill", () => {
+    const { onClose, onResume } = draw();
+    const close = screen.getByRole("button", { name: "Close" });
+    fireEvent.keyDown(close, { key: "Enter" });
+    expect(onResume).not.toHaveBeenCalled();
+    fireEvent.click(close);
+    expect(onClose).toHaveBeenCalled();
+  });
+});
+
+it("Clear all in the POS screen empties the list for good", async () => {
+  seed(["Meena", "Bala"]);
+  const barcode = await open();
+  await type(barcode, "R");
+  const dialog = await screen.findByRole("dialog");
+  fireEvent.click(within(dialog).getByRole("button", { name: "Clear all" }));
+  fireEvent.click(within(dialog).getByRole("button", { name: "Yes, delete all" }));
+  expect(await within(dialog).findByText(/No bills are on hold/)).toBeInTheDocument();
+  expect(heldBills()).toEqual([]);
+  expect(toast.success).toHaveBeenCalledWith("All held bills are deleted.");
 });

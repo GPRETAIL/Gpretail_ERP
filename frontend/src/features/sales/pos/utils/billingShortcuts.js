@@ -7,6 +7,7 @@ export const BILLING_SHORTCUTS = [
   { keys: ["C", "Enter"], does: "Opens the customer box." },
   { keys: ["D", "Enter"], does: "Opens the discount box." },
   { keys: ["H", "Enter"], does: "Holds this bill so the next customer can be served." },
-  { keys: ["R", "Enter"], does: "Shows the bills on hold." },
+  { keys: ["R", "Enter"], does: "Shows the bills on hold. In the list: Up and Down choose, Enter resumes, Delete removes, Shift+Delete clears all." },
+  { keys: ["R2", "Enter"], does: "Resumes held bill number 2 straight away (1 is the newest)." },
   { keys: ["0", "Enter"], does: "Saves the bill and prints it." },
 ];
