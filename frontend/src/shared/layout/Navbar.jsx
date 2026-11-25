@@ -59,6 +59,7 @@ import { savePrinterRouting } from "@/features/printing/utils/localPrinterServic
 import CounterAssignmentDialog from "@/features/sales/pos/components/CounterAssignmentDialog";
 import HeaderNotifications from "@/features/notifications/components/HeaderNotifications";
 import { HeaderApprovalButton, HeaderRenewalNotice } from "./HeaderStatusActions";
+import QuickNavigation from "./QuickNavigation";
 import { navItems, ownerNavItems } from "./navItems";
 import { canSwitchStores, getVisibleNavItems } from "@/features/auth/utils/accessControl";
 
@@ -97,6 +98,7 @@ const Navbar = ({ sidebarExpanded, isMobile = false, toggleSidebar }) => {
   const isOwner = String(user?.role || "").toLowerCase() === "owner";
 
   // Use the same company administration and plan permissions as the sidebar.
+  const quickNavItems = useMemo(() => getVisibleNavItems(isOwner ? ownerNavItems : navItems, user), [isOwner, user]);
   const settingsLandingPath = useMemo(() => {
     const sourceNavItems = isOwner ? ownerNavItems : navItems;
     const settingsModule = getVisibleNavItems(sourceNavItems, user).find((item) => item.name === "Settings");
@@ -491,6 +493,7 @@ const Navbar = ({ sidebarExpanded, isMobile = false, toggleSidebar }) => {
           <Box sx={{ display: "flex", alignItems: "center", justifyContent: "flex-end", flexWrap: "wrap", minWidth: 0, gap: 0.5 }}>
             {/* 🌙 / ☀️ DARK MODE TOGGLE */}
             <HeaderRenewalNotice />
+            <QuickNavigation items={quickNavItems} onNavigate={navigateActiveTab} />
             <IconButton
               size="small"
               onClick={(event) => switchThemeWithReveal(event, theme === "dark" ? "light" : "dark", setTheme)}
