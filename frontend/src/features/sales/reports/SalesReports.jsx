@@ -1369,6 +1369,22 @@ const incentiveEmployeeColumns = [
   { key: "incentive_amount", label: "Incentive", render: rightNumber(2) },
 ];
 
+// Settings > Scheduler > Delivery Log, as a report: every sending of a scheduled report email.
+const scheduledMessageColumns = [
+  { key: "sent_at", label: "Sent on" },
+  { key: "schedule", label: "Schedule" },
+  { key: "report", label: "Report" },
+  { key: "trigger", label: "How" },
+  { key: "period", label: "Period" },
+  { key: "status", label: "Status" },
+  { key: "rows", label: "Rows", render: rightNumber() },
+  { key: "recipient_count", label: "Sent to", render: rightNumber() },
+  { key: "recipients", label: "Recipients" },
+  { key: "skipped_recipients", label: "Skipped" },
+  { key: "files", label: "Files" },
+  { key: "error", label: "Problem" },
+];
+
 const incentiveSectionColumns = [
   { key: "month", label: "Month" },
   { key: "section", label: "Section" },
@@ -2279,7 +2295,12 @@ const REPORT_DATA_SOURCES = {
     emptyText: "No customer has a marriage date saved.",
   },
   customer_feedback_report: { unavailableReason: "A dedicated data source for this report is not connected." },
-  scheduled_message_log: { unavailableReason: "A dedicated data source for this report is not connected." },
+  scheduled_message_log: {
+    // Settings > Scheduler: who each scheduled report email went to, and what failed (needs permission to export reports).
+    columns: scheduledMessageColumns,
+    fetchRows: () => getStoreReportRows("scheduled_messages"),
+    emptyText: "No scheduled report emails have been sent yet.",
+  },
   scheme_details_report: { unavailableReason: "A dedicated data source for this report is not connected." },
   stock_report_with_shelf_period: {
     summary: { dataset: "store_stock", layouts: ["category", "brand", "item", "size", "section", "location"] },

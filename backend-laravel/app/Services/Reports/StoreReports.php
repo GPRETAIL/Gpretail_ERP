@@ -2,6 +2,8 @@
 
 namespace App\Services\Reports;
 
+use App\Models\ReportScheduleRun;
+use App\Services\Reports\Scheduled\ScheduledReportCatalog;
 use App\Services\Sales\IncentiveCalculator;
 use App\Services\Tenancy\StoreQuery;
 use Carbon\CarbonImmutable;
@@ -16,11 +18,18 @@ class StoreReports
 {
     public const REPORTS = ['stock_aging', 'shelf_period', 'stock_audit', 'loyalty_redemptions', 'incentives'];
 
+    /**
+     * Reports for people who may export reports, and not offered in the Scheduler: the Scheduler's own delivery history
+     * (it lists recipients' email addresses, and a log of the log would only repeat itself).
+     */
+    public const EXPORT_REPORTS = ['scheduled_messages'];
+
     private const AGE_BUCKETS = [30 => '0-30 days', 60 => '31-60 days', 90 => '61-90 days', 180 => '91-180 days'];
 
     public function rows(string $report): Collection
     {
         return match ($report) {
+            'scheduled_messages' => $this->scheduledMessages(),
             'stock_aging' => $this->stockAging(),
             'shelf_period' => $this->shelfPeriod(),
             'stock_audit' => $this->stockAudit(),
@@ -106,6 +115,48 @@ class StoreReports
      * Salesperson incentive per month for the last 12 months, worked out by the same rules as Finance > Incentive
      * Report (Services/Sales/IncentiveCalculator), so both reports agree.
      */
+    /**
+     * Scheduled Message Log: every sending of a scheduled report email (Settings > Scheduler), newest first, with who got
+     * it, who was skipped and why a sending failed. The same history as the Scheduler's Delivery Log, as a report that can
+     * be searched, filtered and exported.
+     */
+    private function scheduledMessages(): Collection
+    {
+        $labels = app(ScheduledReportCatalog::class)->all();
+        $zone = config('app.business_timezone');
+        $text = fn ($value) => is_array($value) ? ($value['email'] ?? $value['name'] ?? json_encode($value)) : (string) $value;
+
+        return ReportScheduleRun::with('schedule:id,name,report_key')->orderByDesc('started_at')->orderByDesc('id')->limit(2000)->get()->map(function (ReportScheduleRun $run) use ($labels, $zone, $text) {
+            $key = $run->schedule?->report_key;
+            $sent = array_map($text, $run->recipients ?? []);
+            $skipped = array_map($text, $run->skipped_recipients ?? []);
+            $at = $run->started_at ?? $run->created_at;
+
+            return [
+                'sent_at' => $at?->setTimezone($zone)->format('Y-m-d H:i') ?? '-',
+                'schedule' => $run->schedule?->name ?? '(deleted schedule)',
+                'report' => $key ? ($labels[$key]['label'] ?? $key) : '-',
+                'trigger' => $run->trigger === 'manual' ? 'Sent by hand' : 'On schedule',
+                'period' => $run->period_from ? $run->period_from->toDateString().($run->period_to && ! $run->period_to->equalTo($run->period_from) ? ' to '.$run->period_to->toDateString() : '') : '-',
+                'status' => match ($run->status) {
+                    'sent' => 'Sent', 'partial' => 'Partly sent', 'skipped' => 'Skipped', 'failed' => 'Failed', default => ucfirst((string) $run->status),
+                },
+                'rows' => (int) $run->rows,
+                'recipient_count' => count($sent),
+                'recipients' => implode(', ', $sent),
+                'skipped_recipients' => implode(', ', $skipped),
+                'files' => implode(', ', $this->fileNames($run->files ?? [])),
+                'error' => (string) ($run->error ?? ''),
+            ];
+        })->values();
+    }
+
+    /** File names only (a run may keep name => path); a server path is never shown. */
+    private function fileNames(array $files): array
+    {
+        return array_map(fn ($name) => basename((string) $name), array_is_list($files) ? $files : array_keys($files));
+    }
+
     private function incentives(): Collection
     {
         $storeIds = array_map('intval', (array) request()->attributes->get('store_context_ids', []));
