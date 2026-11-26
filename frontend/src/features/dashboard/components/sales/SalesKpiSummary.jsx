@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { ShoppingCart, Wallet, RotateCcw, CreditCard } from "lucide-react";
 import { ButtonBase, Stack, Typography } from "@mui/material";
 import { formatCurrency } from "@/features/dashboard/utils/dashboardFormatters";
+import { kpiTarget } from "@/features/dashboard/utils/dashboardLinks";
 
 // Four separate widgets (not one bundled row) so DashboardGrid can drag/resize each KPI card
 // independently in the layout customizer, same split as the Overview tab's KPI row.
@@ -20,7 +21,7 @@ const cardSx = (hoverColor) => ({
 export function TodaysSalesCard({ summary = {}, loading, privacyMode }) {
   const navigate = useNavigate();
   return (
-    <ButtonBase onClick={() => navigate("/sales/pos-sales")} sx={cardSx("primary.main")}>
+    <ButtonBase onClick={() => navigate(kpiTarget("sales.todays_sales"))} sx={cardSx("primary.main")}>
       <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", color: "text.secondary" }}>
         <Typography sx={{ fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
           Today's Sales
@@ -45,7 +46,7 @@ export function TodaysSalesCard({ summary = {}, loading, privacyMode }) {
 export function NetSalesCard({ summary = {}, loading, privacyMode }) {
   const navigate = useNavigate();
   return (
-    <ButtonBase onClick={() => navigate("/sales/reports?report=sales_report")} sx={cardSx("success.main")}>
+    <ButtonBase onClick={() => navigate(kpiTarget("sales.net_sales"))} sx={cardSx("success.main")}>
       <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", color: "text.secondary" }}>
         <Typography sx={{ fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
           Net Sales (Period)
@@ -70,7 +71,7 @@ export function NetSalesCard({ summary = {}, loading, privacyMode }) {
 export function ReturnsCard({ summary = {}, performance = {}, loading, privacyMode }) {
   const navigate = useNavigate();
   return (
-    <ButtonBase onClick={() => navigate("/sales/pos-sales-return")} sx={cardSx("error.main")}>
+    <ButtonBase onClick={() => navigate(kpiTarget("sales.returns"))} sx={cardSx("error.main")}>
       <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", color: "text.secondary" }}>
         <Typography sx={{ fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
           Returns (Period)
@@ -91,7 +92,7 @@ export function ReturnsCard({ summary = {}, performance = {}, loading, privacyMo
 export function CreditPendingCard({ summary = {}, performance = {}, loading, privacyMode }) {
   const navigate = useNavigate();
   return (
-    <ButtonBase onClick={() => navigate("/sales/pos-sales?filter=credit")} sx={cardSx("warning.main")}>
+    <ButtonBase onClick={() => navigate(kpiTarget("sales.credit_pending"))} sx={cardSx("warning.main")}>
       <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", color: "text.secondary" }}>
         <Typography sx={{ fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
           Credit Pending

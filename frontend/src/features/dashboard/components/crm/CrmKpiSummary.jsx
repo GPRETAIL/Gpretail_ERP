@@ -5,7 +5,7 @@ import { Users, ShoppingBag, CreditCard, Award } from "lucide-react";
 import { Box, Stack, Typography } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import { formatCurrency } from "@/features/dashboard/utils/dashboardFormatters";
-import { overviewTarget } from "@/features/dashboard/utils/dashboardLinks";
+import { kpiTarget } from "@/features/dashboard/utils/dashboardLinks";
 
 // Four separate widgets (not one bundled row) so DashboardGrid can drag/resize each KPI card
 // independently in the layout customizer, same split as the Overview tab's KPI row.
@@ -20,7 +20,7 @@ const cardSx = (hoverColor) => ({
 export function TotalCustomersCard({ summary = {}, loading, privacyMode }) {
   const navigate = useNavigate();
   return (
-    <Box onClick={() => navigate("/crm/customer")} sx={cardSx((theme) => alpha(theme.palette.primary.main, 0.5))}>
+    <Box onClick={() => navigate(kpiTarget("crm.customers"))} sx={cardSx((theme) => alpha(theme.palette.primary.main, 0.5))}>
       <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", color: "text.secondary" }}>
         <Typography sx={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
           Total Customers
@@ -66,7 +66,7 @@ export function CustomerOrdersCard({ summary = {}, loading, privacyMode }) {
 export function CustomerReceivablesCard({ summary = {}, loading, privacyMode }) {
   const navigate = useNavigate();
   return (
-    <Box onClick={() => navigate(overviewTarget("/crm/customer?filter=has_dues"))} sx={cardSx((theme) => alpha(theme.palette.warning.main, 0.5))}>
+    <Box onClick={() => navigate(kpiTarget("crm.receivables"))} sx={cardSx((theme) => alpha(theme.palette.warning.main, 0.5))}>
       <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", color: "text.secondary" }}>
         <Typography sx={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
           Customer Receivables

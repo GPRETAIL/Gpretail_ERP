@@ -5,6 +5,7 @@ import { Receipt } from "lucide-react";
 import { Box, Button, Stack, Table, TableBody, TableCell, TableHead, TableRow, Typography } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import { formatCurrency } from "@/features/dashboard/utils/dashboardFormatters";
+import { kpiTarget } from "@/features/dashboard/utils/dashboardLinks";
 
 export default function FinanceRecentPayments({ recentPayments = [] }) {
   const navigate = useNavigate();
@@ -20,7 +21,7 @@ export default function FinanceRecentPayments({ recentPayments = [] }) {
         </Typography>
         <Button
           size="small"
-          onClick={() => navigate("/finance/supplier-payment")}
+          onClick={() => navigate(kpiTarget("finance.recent_payments"))}
           sx={{ fontSize: 12, fontWeight: 600, p: 0, minWidth: "auto", "&:hover": { bgcolor: "transparent", textDecoration: "underline" } }}
         >
           View all payments

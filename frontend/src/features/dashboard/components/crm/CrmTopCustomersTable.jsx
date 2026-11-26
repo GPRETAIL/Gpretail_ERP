@@ -3,6 +3,7 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { UserCheck } from "lucide-react";
 import { Box, Button, Stack, Table, TableBody, TableCell, TableHead, TableRow, Typography } from "@mui/material";
+import { kpiTarget } from "@/features/dashboard/utils/dashboardLinks";
 
 export default function CrmTopCustomersTable({ topCustomers = [] }) {
   const navigate = useNavigate();
@@ -25,7 +26,7 @@ export default function CrmTopCustomersTable({ topCustomers = [] }) {
         </Stack>
         <Button
           size="small"
-          onClick={() => navigate("/crm/customer")}
+          onClick={() => navigate(kpiTarget("crm.top_customers"))}
           sx={{ fontSize: 12, fontWeight: 600, p: 0, minWidth: "auto", "&:hover": { bgcolor: "transparent", textDecoration: "underline" } }}
         >
           View Directory

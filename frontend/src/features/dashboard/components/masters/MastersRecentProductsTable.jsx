@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Clock } from "lucide-react";
 import { Box, Button, Stack, Table, TableBody, TableCell, TableHead, TableRow, Typography } from "@mui/material";
 import { alpha } from "@mui/material/styles";
+import { kpiTarget } from "@/features/dashboard/utils/dashboardLinks";
 
 export default function MastersRecentProductsTable({ recentProducts = [] }) {
   const navigate = useNavigate();
@@ -19,7 +20,7 @@ export default function MastersRecentProductsTable({ recentProducts = [] }) {
         </Stack>
         <Button
           size="small"
-          onClick={() => navigate("/masters/product")}
+          onClick={() => navigate(kpiTarget("masters.recent_products"))}
           sx={{ p: 0, minWidth: "auto", fontSize: 12, fontWeight: 600, "&:hover": { bgcolor: "transparent", textDecoration: "underline" } }}
         >
           View all products

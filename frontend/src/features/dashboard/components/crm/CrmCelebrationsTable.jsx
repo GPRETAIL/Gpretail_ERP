@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Cake } from "lucide-react";
 import { Box, Button, Stack, Table, TableBody, TableCell, TableHead, TableRow, Typography } from "@mui/material";
 import { alpha } from "@mui/material/styles";
+import { kpiTarget } from "@/features/dashboard/utils/dashboardLinks";
 
 export default function CrmCelebrationsTable({ upcomingEvents = [] }) {
   const navigate = useNavigate();
@@ -24,7 +25,7 @@ export default function CrmCelebrationsTable({ upcomingEvents = [] }) {
         </Typography>
         <Button
           size="small"
-          onClick={() => navigate("/crm/customer")}
+          onClick={() => navigate(kpiTarget("crm.celebrations"))}
           sx={{ fontSize: 12, fontWeight: 600, p: 0, minWidth: "auto", "&:hover": { bgcolor: "transparent", textDecoration: "underline" } }}
         >
           View all customers

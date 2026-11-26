@@ -6,6 +6,7 @@ import { Box, Button, Stack, Table, TableBody, TableCell, TableHead, TableRow, T
 import { alpha } from "@mui/material/styles";
 import NoStockChip from "@/shared/components/NoStockChip";
 import { noStockRowSx } from "@/shared/hooks/useStockRules";
+import { kpiTarget } from "@/features/dashboard/utils/dashboardLinks";
 
 export default function WarehouseLowStockTable({ alerts = [] }) {
   const navigate = useNavigate();
@@ -28,7 +29,7 @@ export default function WarehouseLowStockTable({ alerts = [] }) {
         </Stack>
         <Button
           size="small"
-          onClick={() => navigate("/warehouse/stock-item?stock_filter=low_stock")}
+          onClick={() => navigate(kpiTarget("warehouse.low_stock"))}
           sx={{ fontSize: 12, fontWeight: 600, p: 0, minWidth: "auto", "&:hover": { bgcolor: "transparent", textDecoration: "underline" } }}
         >
           Open Item Locator

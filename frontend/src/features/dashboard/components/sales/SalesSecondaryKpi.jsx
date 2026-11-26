@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { CalendarDays, Receipt, Package } from "lucide-react";
 import { Box, ButtonBase, Stack, Typography } from "@mui/material";
 import { formatCurrency } from "@/features/dashboard/utils/dashboardFormatters";
+import { kpiTarget } from "@/features/dashboard/utils/dashboardLinks";
 
 // Three separate widgets (not one bundled row) so DashboardGrid can drag/resize each card
 // independently in the layout customizer, same split as the Overview tab's KPI row.
@@ -22,7 +23,7 @@ const cardSx = (hoverColor) => ({
 export function MonthlySalesCard({ summary = {}, loading, privacyMode }) {
   const navigate = useNavigate();
   return (
-    <ButtonBase onClick={() => navigate("/sales/reports?report=sales_report")} sx={cardSx("#a5b4fc")}>
+    <ButtonBase onClick={() => navigate(kpiTarget("sales.monthly_sales"))} sx={cardSx("#a5b4fc")}>
       <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", color: "text.secondary" }}>
         <Typography sx={{ fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
           Monthly Sales
@@ -44,7 +45,7 @@ export function MonthlySalesCard({ summary = {}, loading, privacyMode }) {
 export function TotalInvoicesCard({ summary = {}, loading, privacyMode }) {
   const navigate = useNavigate();
   return (
-    <ButtonBase onClick={() => navigate("/sales/pos-sales")} sx={cardSx("primary.main")}>
+    <ButtonBase onClick={() => navigate(kpiTarget("sales.total_invoices"))} sx={cardSx("primary.main")}>
       <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", color: "text.secondary" }}>
         <Typography sx={{ fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
           Total Invoices (Period)

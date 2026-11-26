@@ -6,6 +6,7 @@ import { LayoutGrid, ShoppingCart, RotateCcw, Repeat, CreditCard, Undo2 } from "
 import { Box, ButtonBase, Stack, Typography } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import { formatCurrency } from "@/features/dashboard/utils/dashboardFormatters";
+import { kpiTarget } from "@/features/dashboard/utils/dashboardLinks";
 
 const TILES = [
   { key: "sales", label: "Sales", icon: ShoppingCart, color: "blue", route: "/sales/pos-sales" },
@@ -51,7 +52,7 @@ export default function SalesModuleBreakdown({ transactionBreakdown = {}, loadin
           return (
             <ButtonBase
               key={tile.key}
-              onClick={() => navigate(tile.route)}
+              onClick={() => navigate(kpiTarget(`sales.tile.${tile.key}`))}
               sx={{
                 display: "flex", flexDirection: "column", alignItems: "flex-start",
                 borderRadius: "7px", border: "1px solid", p: 1.5, textAlign: "left",

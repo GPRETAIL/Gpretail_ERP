@@ -4,6 +4,7 @@ import { CalendarDays, ClipboardCheck, IndianRupee, UserCheck, Users } from "luc
 import { Box, ButtonBase, Stack, Typography } from "@mui/material";
 import LoadingSkeleton from "@/shared/components/LoadingSkeleton";
 import { formatCurrency, wholeNumber } from "@/features/dashboard/utils/dashboardFormatters";
+import { kpiTarget } from "@/features/dashboard/utils/dashboardLinks";
 
 // One widget per KPI so DashboardGrid can move and resize each card, like the other tabs.
 const blurSx = (privacyMode) => (privacyMode ? { filter: "blur(4px)", userSelect: "none" } : {});
@@ -37,7 +38,7 @@ export function HeadcountCard({ summary = {}, loading }) {
 }
 
 export function PresentTodayCard({ summary = {}, loading }) {
-  return <KpiCard title="Present today" icon={UserCheck} color="success" path="/hrms/employee-in-out" loading={loading}
+  return <KpiCard title="Present today" icon={UserCheck} color="success" path={kpiTarget("hr.present_today")} loading={loading}
     value={wholeNumber(summary.present_today)} note={summary.attendance_pct == null ? "No working day today" : `${summary.attendance_pct}% of those working today`} />;
 }
 
@@ -54,6 +55,6 @@ export function ApprovalsWaitingCard({ summary = {}, loading }) {
 export function PayrollCostCard({ summary = {}, loading, privacyMode }) {
   const run = summary.payroll;
   const month = run?.month ? new Date(`${run.month}-01T00:00:00`).toLocaleDateString("en-IN", { month: "long", year: "numeric" }) : "";
-  return <KpiCard title="Payroll cost" icon={IndianRupee} color="info" path="/hrms/salary-management" loading={loading} blur={privacyMode}
+  return <KpiCard title="Payroll cost" icon={IndianRupee} color="info" path={kpiTarget("hr.payroll")} loading={loading} blur={privacyMode}
     value={run ? formatCurrency(run.employer_cost) : "—"} note={run ? `${month} · net pay ${formatCurrency(run.net)}` : "No payroll yet"} />;
 }

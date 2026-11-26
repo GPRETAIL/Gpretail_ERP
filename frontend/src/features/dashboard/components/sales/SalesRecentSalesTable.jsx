@@ -5,6 +5,7 @@ import { Receipt } from "lucide-react";
 import { Box, Button, Stack, Table, TableBody, TableCell, TableHead, TableRow, Typography } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import { formatCurrency } from "@/features/dashboard/utils/dashboardFormatters";
+import { kpiTarget } from "@/features/dashboard/utils/dashboardLinks";
 
 const Badge = ({ token, children }) => (
   <Box
@@ -34,7 +35,7 @@ export default function SalesRecentSalesTable({ recentSales = [] }) {
         </Typography>
         <Button
           size="small"
-          onClick={() => navigate("/sales/pos-sales")}
+          onClick={() => navigate(kpiTarget("sales.recent_sales"))}
           sx={{ fontSize: 12, fontWeight: 600, p: 0, minWidth: "auto", "&:hover": { bgcolor: "transparent", textDecoration: "underline" } }}
         >
           View all sales

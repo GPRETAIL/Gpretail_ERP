@@ -5,6 +5,7 @@ import { Truck } from "lucide-react";
 import { Box, Button, Stack, Table, TableBody, TableCell, TableHead, TableRow, Typography } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import { formatCurrency } from "@/features/dashboard/utils/dashboardFormatters";
+import { kpiTarget } from "@/features/dashboard/utils/dashboardLinks";
 
 export default function WarehouseIncomingShipmentsTable({ incoming = [] }) {
   const navigate = useNavigate();
@@ -25,7 +26,7 @@ export default function WarehouseIncomingShipmentsTable({ incoming = [] }) {
         </Typography>
         <Button
           size="small"
-          onClick={() => navigate("/warehouse/direct-purchase")}
+          onClick={() => navigate(kpiTarget("warehouse.incoming_shipments"))}
           sx={{ fontSize: 12, fontWeight: 600, p: 0, minWidth: "auto", "&:hover": { bgcolor: "transparent", textDecoration: "underline" } }}
         >
           View all incoming

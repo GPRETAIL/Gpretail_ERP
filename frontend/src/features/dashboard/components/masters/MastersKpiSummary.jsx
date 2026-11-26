@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { Package, Tag, Truck, FolderTree } from "lucide-react";
 import { Box, ButtonBase, Stack, Typography } from "@mui/material";
 import { wholeNumber } from "@/features/dashboard/utils/dashboardFormatters";
+import { kpiTarget } from "@/features/dashboard/utils/dashboardLinks";
 
 // Four separate widgets (not one bundled row) so DashboardGrid can drag/resize each KPI card
 // independently in the layout customizer, same split as the Overview tab's KPI row.
@@ -20,7 +21,7 @@ const cardSx = (hoverColor) => ({
 export function TotalProductsCard({ summary = {}, loading, privacyMode }) {
   const navigate = useNavigate();
   return (
-    <ButtonBase onClick={() => navigate("/masters/product")} sx={cardSx("primary.main")}>
+    <ButtonBase onClick={() => navigate(kpiTarget("masters.products"))} sx={cardSx("primary.main")}>
       <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", color: "text.secondary" }}>
         <Typography sx={{ fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Total Products</Typography>
         <Box sx={{ color: "primary.main", display: "inline-flex" }}>
@@ -62,7 +63,7 @@ export function BrandsCategoriesCard({ summary = {}, loading, privacyMode }) {
 export function SuppliersCard({ summary = {}, loading, privacyMode }) {
   const navigate = useNavigate();
   return (
-    <ButtonBase onClick={() => navigate("/masters/supplier")} sx={cardSx("success.main")}>
+    <ButtonBase onClick={() => navigate(kpiTarget("masters.suppliers"))} sx={cardSx("success.main")}>
       <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", color: "text.secondary" }}>
         <Typography sx={{ fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Suppliers</Typography>
         <Box sx={{ color: "success.main", display: "inline-flex" }}>

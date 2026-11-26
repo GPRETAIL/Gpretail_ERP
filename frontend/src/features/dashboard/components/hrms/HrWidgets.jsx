@@ -5,6 +5,7 @@ import { Box, ButtonBase, Stack, Typography } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import { formatCurrency, severityTileSx } from "@/features/dashboard/utils/dashboardFormatters";
 import LoadingSkeleton from "@/shared/components/LoadingSkeleton";
+import { kpiTarget } from "@/features/dashboard/utils/dashboardLinks";
 
 const fmtDate = (iso) => (iso ? new Date(`${iso}T00:00:00`).toLocaleDateString("en-IN", { day: "numeric", month: "short" }) : "");
 const monthShort = (ym) => new Date(`${ym}-01T00:00:00`).toLocaleDateString("en-IN", { month: "short", year: "2-digit" });
@@ -72,7 +73,7 @@ export function TodayAttendance({ today = {}, loading }) {
   const total = today.total || 0;
   const parts = TODAY_PARTS.filter(([key]) => today[key] > 0);
   return (
-    <Panel loading={loading} icon={PieChart} title="Today's attendance" color="success.main" onOpen={() => navigate("/hrms/employee-in-out")}>
+    <Panel loading={loading} icon={PieChart} title="Today's attendance" color="success.main" onOpen={() => navigate(kpiTarget("hr.attendance"))}>
       {total === 0 ? <Empty>No active employees.</Empty> : (
         <>
           <Box role="img" aria-label={parts.map(([key, label]) => `${label} ${today[key]}`).join(", ")} sx={{ display: "flex", height: 14, borderRadius: 7, overflow: "hidden", bgcolor: "action.hover" }}>
@@ -175,7 +176,7 @@ export function PayrollTrend({ payroll, privacyMode, loading }) {
   const runs = payroll?.runs || [];
   const max = Math.max(1, ...runs.map((r) => r.employer_cost));
   return (
-    <Panel loading={loading} icon={IndianRupee} title="Payroll, last 6 months" color="info.main" onOpen={() => navigate("/hrms/salary-management")}>
+    <Panel loading={loading} icon={IndianRupee} title="Payroll, last 6 months" color="info.main" onOpen={() => navigate(kpiTarget("hr.payroll"))}>
       {runs.length === 0 ? <Empty>No payroll yet.</Empty> : (
         <Box sx={{ display: "grid", gap: 1, gridAutoFlow: "column", gridAutoColumns: "minmax(44px, 1fr)", ...(privacyMode ? { filter: "blur(4px)", userSelect: "none" } : {}) }}>
           {runs.map((r) => (

@@ -71,3 +71,53 @@ const OVERVIEW_LINKS = {
 };
 
 export const overviewTarget = (link) => OVERVIEW_LINKS[link] || link || "/notifications";
+
+const PURCHASES = warehouseReport("purchase_report");
+const SALES_INVOICES = salesReport("sales_report_invoice_wise");
+const SALES_RETURNS = salesReport("sales_return_report");
+const STOCK = warehouseReport("stock_report");
+
+/**
+ * Where a KPI card, table heading or "View all" goes: the report that lists the rows behind the number.
+ * Cards for a record page (customer orders, loyalty, brands) and for settings keep their page.
+ */
+const KPI_TARGETS = {
+  "sales.todays_sales": SALES_INVOICES,
+  "sales.net_sales": salesReport("sales_report"),
+  "sales.returns": SALES_RETURNS,
+  "sales.credit_pending": CREDIT_OUTSTANDING,
+  "sales.monthly_sales": salesReport("sales_report"),
+  "sales.total_invoices": SALES_INVOICES,
+  "sales.recent_sales": SALES_INVOICES,
+  "sales.tile.sales": SALES_INVOICES,
+  "sales.tile.returns": SALES_RETURNS,
+  "sales.tile.exchanges": SALES_RETURNS,
+  "sales.tile.credit": CREDIT_OUTSTANDING,
+  "sales.tile.refunds": SALES_RETURNS,
+  "warehouse.stock_units": STOCK,
+  "warehouse.stock_value": STOCK,
+  "warehouse.incoming_goods": PURCHASES,
+  "warehouse.stock_outward": warehouseReport("outward_report"),
+  "warehouse.low_stock": REORDER,
+  "warehouse.incoming_shipments": PURCHASES,
+  "crm.customers": salesReport("my_customers_report"),
+  "crm.receivables": CREDIT_OUTSTANDING,
+  "crm.top_customers": salesReport("my_customers_report"),
+  "crm.celebrations": salesReport("birthday_wishes"),
+  "finance.payables": SUPPLIER_PENDING,
+  "finance.receivables": CREDIT_OUTSTANDING,
+  "finance.purchase_value": PURCHASES,
+  "finance.recent_payments": warehouseReport("supplier_payment_report"),
+  "masters.products": warehouseReport("product_master_report"),
+  "masters.recent_products": warehouseReport("product_master_report"),
+  "masters.suppliers": warehouseReport("supplier_master_report"),
+  "hr.present_today": "/hrms/attendance-register",
+  "hr.attendance": "/hrms/attendance-register",
+  "hr.payroll": "/hrms/payroll-reports",
+};
+
+/** The page for a KPI card or "View all" link, by the id above. An id it does not know goes to the dashboard. */
+export const kpiTarget = (id) => KPI_TARGETS[id] || "/dashboard";
+
+/** Every id, for the test that checks each one opens a report that exists. */
+export const KPI_TARGET_IDS = Object.keys(KPI_TARGETS);

@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { HandCoins, Wallet, ShoppingBag, Receipt } from "lucide-react";
 import { Box, ButtonBase, Stack, Typography } from "@mui/material";
 import { formatCurrency } from "@/features/dashboard/utils/dashboardFormatters";
+import { kpiTarget } from "@/features/dashboard/utils/dashboardLinks";
 
 // Four separate widgets (not one bundled row) so DashboardGrid can drag/resize each KPI card
 // independently in the layout customizer, same split as the Overview tab's KPI row.
@@ -23,7 +24,7 @@ const cardSx = (hoverColor) => ({
 export function PayablesOutstandingCard({ summary = {}, loading, privacyMode }) {
   const navigate = useNavigate();
   return (
-    <ButtonBase onClick={() => navigate("/warehouse/direct-purchase?filter=unpaid")} sx={cardSx("error.main")}>
+    <ButtonBase onClick={() => navigate(kpiTarget("finance.payables"))} sx={cardSx("error.main")}>
       <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", color: "text.secondary" }}>
         <Typography sx={{ fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
           Payables Outstanding
@@ -43,7 +44,7 @@ export function PayablesOutstandingCard({ summary = {}, loading, privacyMode }) 
 export function ReceivablesOutstandingCard({ summary = {}, loading, privacyMode }) {
   const navigate = useNavigate();
   return (
-    <ButtonBase onClick={() => navigate("/sales/pos-sales?filter=credit")} sx={cardSx("primary.main")}>
+    <ButtonBase onClick={() => navigate(kpiTarget("finance.receivables"))} sx={cardSx("primary.main")}>
       <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", color: "text.secondary" }}>
         <Typography sx={{ fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
           Receivables Outstanding
@@ -63,7 +64,7 @@ export function ReceivablesOutstandingCard({ summary = {}, loading, privacyMode 
 export function PurchaseValueCard({ summary = {}, loading, privacyMode }) {
   const navigate = useNavigate();
   return (
-    <ButtonBase onClick={() => navigate("/warehouse/direct-purchase")} sx={cardSx("#d8b4fe")}>
+    <ButtonBase onClick={() => navigate(kpiTarget("finance.purchase_value"))} sx={cardSx("#d8b4fe")}>
       <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", color: "text.secondary" }}>
         <Typography sx={{ fontSize: TYPE.small, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
           Purchase Value (Period)

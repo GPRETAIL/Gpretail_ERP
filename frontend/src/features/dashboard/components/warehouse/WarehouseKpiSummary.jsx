@@ -5,6 +5,7 @@ import { Package, TrendingUp, ArrowDownRight, ArrowUpRight } from "lucide-react"
 import { Box, Stack, Typography } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import { formatCurrency } from "@/features/dashboard/utils/dashboardFormatters";
+import { kpiTarget } from "@/features/dashboard/utils/dashboardLinks";
 
 // Four separate widgets (not one bundled row) so DashboardGrid can drag/resize each KPI card
 // independently in the layout customizer, same split as the Overview tab's KPI row.
@@ -19,7 +20,7 @@ const cardSx = (hoverColor) => ({
 export function TotalStockUnitsCard({ summary = {}, loading, privacyMode }) {
   const navigate = useNavigate();
   return (
-    <Box onClick={() => navigate("/warehouse/stock-item")} sx={cardSx((theme) => alpha(theme.palette.primary.main, 0.5))}>
+    <Box onClick={() => navigate(kpiTarget("warehouse.stock_units"))} sx={cardSx((theme) => alpha(theme.palette.primary.main, 0.5))}>
       <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", color: "text.secondary" }}>
         <Typography sx={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
           Total Stock Units
@@ -42,7 +43,7 @@ export function TotalStockUnitsCard({ summary = {}, loading, privacyMode }) {
 export function TotalStockValueCard({ summary = {}, loading, privacyMode }) {
   const navigate = useNavigate();
   return (
-    <Box onClick={() => navigate("/warehouse/reports?report=stock_report")} sx={cardSx((theme) => alpha(theme.palette.success.main, 0.5))}>
+    <Box onClick={() => navigate(kpiTarget("warehouse.stock_value"))} sx={cardSx((theme) => alpha(theme.palette.success.main, 0.5))}>
       <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", color: "text.secondary" }}>
         <Typography sx={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
           Total Stock Value
@@ -65,7 +66,7 @@ export function TotalStockValueCard({ summary = {}, loading, privacyMode }) {
 export function IncomingGoodsCard({ summary = {}, loading, privacyMode }) {
   const navigate = useNavigate();
   return (
-    <Box onClick={() => navigate("/warehouse/direct-purchase")} sx={cardSx((theme) => alpha(theme.palette.info.main, 0.5))}>
+    <Box onClick={() => navigate(kpiTarget("warehouse.incoming_goods"))} sx={cardSx((theme) => alpha(theme.palette.info.main, 0.5))}>
       <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", color: "text.secondary" }}>
         <Typography sx={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
           Incoming Goods
@@ -90,7 +91,7 @@ export function IncomingGoodsCard({ summary = {}, loading, privacyMode }) {
 export function StockOutwardCard({ summary = {}, loading, privacyMode }) {
   const navigate = useNavigate();
   return (
-    <Box onClick={() => navigate("/warehouse/stock-outward")} sx={cardSx(alpha("#9333ea", 0.5))}>
+    <Box onClick={() => navigate(kpiTarget("warehouse.stock_outward"))} sx={cardSx(alpha("#9333ea", 0.5))}>
       <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", color: "text.secondary" }}>
         <Typography sx={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
           Stock Outward
