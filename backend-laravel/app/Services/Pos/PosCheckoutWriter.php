@@ -9,6 +9,7 @@ use App\Models\Stock;
 use App\Models\StockBatch;
 use App\Services\Inventory\StockRules;
 use App\Services\Sales\Salespeople;
+use App\Support\Sales\LineTax;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -67,7 +68,7 @@ class PosCheckoutWriter
             $discount = (float) ($item['discount'] ?? 0);
             $taxRate = (float) ($item['tax'] ?? 0);
             $lineSub = max(0, round($qty * $price - $discount, 2));
-            $lineTax = round($lineSub * $taxRate / 100, 2);
+            $lineTax = LineTax::split($lineSub, $taxRate, ! empty($item['taxInclusive']))['tax'];
             $stock = $stocks->get($item['productId'].':'.(($item['variantId'] ?? null) ?: 0));
             $before = (float) ($stock->quantity ?? 0);
             $after = $before - $qty;
@@ -88,7 +89,7 @@ class PosCheckoutWriter
                 'pos_sale_id' => $sale->id, 'product_id' => $item['productId'], 'variant_id' => $item['variantId'] ?? null,
                 'barcode_id' => $item['barcodeId'] ?? null, 'quantity' => $qty, 'unit_mrp' => $item['mrp'] ?? $price,
                 'selling_price' => $price, 'discount' => $discount, 'tax_rate' => $taxRate, 'tax_amount' => $lineTax,
-                'subtotal' => $lineSub + $lineTax, 'tax_name' => $item['taxName'] ?? null, 'tax_type' => $item['taxType'] ?? null,
+                'subtotal' => ! empty($item['taxInclusive']) ? $lineSub : $lineSub + $lineTax, 'tax_name' => $item['taxName'] ?? null, 'tax_type' => $item['taxType'] ?? null,
                 'cost_price' => $item['cost'] ?? null, 'sales_man_id' => isset($salespeople[(int) ($item['salesManId'] ?? 0)]) ? (int) $item['salesManId'] : null,
                 'sales_man_name' => ($item['salesManName'] ?? null) ?: null,
                 'short_qty' => $allowNegative ? StockRules::shortQty($qty, $after) : 0,

@@ -39,6 +39,7 @@ use App\Services\Tenancy\PagePermissions;
 use App\Support\BusinessDay;
 use App\Support\GroupAggregationService;
 use App\Support\PaginationService;
+use App\Support\Sales\LineTax;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -413,9 +414,13 @@ class PosSaleController extends Controller
             'price' => $item['price'] ?? null,
             'mrp' => $item['mrp'] ?? null,
             'discount' => $item['discountAmt'] ?? 0,
+            'tax' => $item['tax'] ?? 0,
+            'taxName' => $item['taxName'] ?? null,
+            'taxType' => $item['taxType'] ?? null,
         ])->all();
 
         $request->merge([
+            'taxInclusive' => true,
             'items' => $items,
             'customerId' => $request->input('customerId'),
             'customer' => $request->input('customer'),
@@ -617,6 +622,9 @@ class PosSaleController extends Controller
                         'message' => "Discount of {$basket['max_percent']}% is above this cashier's {$limit}% limit and had no approval."];
                 }
 
+                // POS Old prices include the tax; every other screen adds it on top (see LineTax).
+                $taxInclusive = $request->boolean('taxInclusive');
+                $itemsData = array_map(fn ($item) => [...$item, 'taxInclusive' => $taxInclusive], $itemsData);
                 $subtotal = 0;
                 $taxTotal = 0;
                 $discountTotal = 0;
@@ -630,9 +638,9 @@ class PosSaleController extends Controller
                     // Discount first, then tax: tax is on the price after the discount, and every line is rounded to the
                     // paisa, so the bill is the sum of its lines as the POS screen shows it.
                     $lineSub = max(0, round(($qty * $price) - $disc, 2));
-                    $lineTax = round(($lineSub * $taxRate) / 100, 2);
+                    ['tax' => $lineTax, 'net' => $lineNet] = LineTax::split($lineSub, $taxRate, $taxInclusive);
 
-                    $subtotal += $lineSub;
+                    $subtotal += $lineNet;
                     $taxTotal += $lineTax;
                     $discountTotal += $disc;
                     $totalQty += $qty;

@@ -1305,6 +1305,10 @@ const LegacyPos = () => {
         mrp: l.mrp,
         qty: l.qty,
         price: l.price,
+        // POS Old prices include the tax: the server takes the tax out of the line, so the bill total stays what the customer pays.
+        tax: l.tax,
+        taxName: l.taxName || null,
+        taxType: l.taxType || null,
         discountPerc: l.discPerc,
         discountAmt: l.discAmt,
       })),
