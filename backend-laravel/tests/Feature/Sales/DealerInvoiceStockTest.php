@@ -51,11 +51,11 @@ class DealerInvoiceStockTest extends TestCase
     public function test_an_invoice_deducts_stock_posts_a_credit_sale_and_cancelling_restores_both(): void
     {
         $invoice = $this->postJson('/api/dealer-invoices', $this->payload(2))->assertCreated()
-            ->assertJsonPath('data.amount', 200) // 2 x 100 + 5% tax (10) - 10 discount
+            ->assertJsonPath('data.amount', 199.5) // (2 x 100 - 10 discount) + 5% tax on 190 (9.50)
             ->assertJsonPath('data.items.0.product_name', 'TEMP Performance Item 1')->json('data');
         $this->assertNotEmpty($invoice['bill_no']);
         $this->assertSame(998.0, $this->stock(), 'an invoice deducts stock');
-        $this->assertSame(200.0, $this->voucher('dealer_invoice', $invoice['id'])['Dealer One'] ?? null, 'the customer owes the invoice total');
+        $this->assertSame(199.5, $this->voucher('dealer_invoice', $invoice['id'])['Dealer One'] ?? null, 'the customer owes the invoice total');
 
         $this->getJson('/api/dealer-invoices')->assertOk()->assertJsonPath('data.0.bill_no', $invoice['bill_no'])->assertJsonPath('data.0.total_qty', 2);
 
@@ -79,7 +79,7 @@ class DealerInvoiceStockTest extends TestCase
         $this->assertMatchesRegularExpression('/^DR\d{6}-\d{4}$/', (string) $return['return_no']); // shown short, like POS bills
         $this->assertSame(1003.0, $this->stock(), 'a return adds stock back');
         $lines = $this->voucher('dealer_return', $return['id']);
-        $this->assertSame(-305.0, $lines['Dealer One'] ?? null, 'the customer is credited the return total: 3 x 100 + 5% tax - 10');
+        $this->assertSame(-304.5, $lines['Dealer One'] ?? null, 'the customer is credited the return total: (3 x 100 - 10) + 5% tax on 290 (14.50)');
         $this->assertGreaterThan(0, array_sum(array_filter($lines, fn ($amount) => $amount > 0)));
         $this->assertSame(0, DB::table('dealer_invoices')->count(), 'a return is no longer saved as an invoice');
         $this->getJson('/api/dealer-invoice-returns')->assertOk()->assertJsonPath('data.0.return_no', $return['return_no']);

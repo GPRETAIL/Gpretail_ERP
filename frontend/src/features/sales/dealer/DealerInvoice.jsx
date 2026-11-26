@@ -423,10 +423,11 @@ const DealerInvoice = () => {
         const addlDiscount = Math.max(0, toNum(line.addlDiscount, 0));
         const discountPerc = Math.max(0, toNum(line.discountPerc, 0));
         const subtotal = qty * price;
-        const taxAmount = (subtotal * tax) / 100;
         const percentDiscountAmount = round2((subtotal * discountPerc) / 100);
-        const totalLineDiscount = round2(discount + addlDiscount + percentDiscountAmount);
-        const total = subtotal + taxAmount - totalLineDiscount;
+        // Discount first, then tax: GST is charged on the price less the discount, to the paisa as the server does.
+        const totalLineDiscount = Math.min(round2(discount + addlDiscount + percentDiscountAmount), round2(subtotal));
+        const taxAmount = round2(((round2(subtotal) - totalLineDiscount) * tax) / 100);
+        const total = round2(round2(subtotal) - totalLineDiscount + taxAmount);
         const gross = Math.max(0, toNum(line.cost, 0)) * qty;
         return {
           ...line,

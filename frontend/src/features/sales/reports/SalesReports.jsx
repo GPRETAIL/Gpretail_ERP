@@ -662,12 +662,21 @@ const buildB2bInvoiceRows = async () => (await getB2bInvoices()).map((row) => ({
   payment_status: row?.payment_status || "-",
 }));
 
-/** One row per invoice line. Tax is charged on qty x price, so the tax % is worked out from the line's own amounts. */
+const GST_SLABS = [0, 0.25, 1, 1.5, 3, 5, 7.5, 12, 18, 28];
+const isSlab = (rate) => GST_SLABS.some((slab) => Math.abs(slab - rate) < 0.06);
+
+/**
+ * One row per invoice line. The tax % is worked out from the line's own amounts. Invoices now charge tax on the price
+ * less the discount; older ones charged it on qty x price. The rate that lands on a real GST slab tells them apart.
+ */
 const buildB2bItemRows = async () => (await getB2bInvoices()).flatMap((invoice, invoiceIndex) =>
   (Array.isArray(invoice?.items) ? invoice.items : []).map((item, itemIndex) => {
     const qty = Math.max(0, toNumber(item?.quantity));
-    const taxable = round2(qty * toNumber(item?.price));
+    const gross = round2(qty * toNumber(item?.price));
+    const net = Math.max(0, round2(gross - toNumber(item?.discount)));
     const taxAmount = round2(item?.tax_amount);
+    const rateOn = (base) => (base > 0 ? (taxAmount / base) * 100 : 0);
+    const taxable = !isSlab(rateOn(net)) && isSlab(rateOn(gross)) ? gross : net;
     return {
       id: `${invoice.id ?? invoiceIndex}-${itemIndex}`,
       bill_no: invoice?.bill_no || invoice?.invoice_no || "-",

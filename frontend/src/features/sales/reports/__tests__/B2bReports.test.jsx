@@ -63,6 +63,20 @@ it("Tax Report (Column wise) has one row per invoice line with the tax % worked 
   expect(rows[1]).toMatchObject({ product_name: "Vest", hsn: "6109", qty: 2, subtotal: 1000, tax_amount: 50, total: 1050 });
 });
 
+it("Tax Report takes the taxable value after the discount for new invoices and still reads old ones", async () => {
+  api.get.mockResolvedValue({ data: { data: [{
+    id: 9, bill_no: "D261120-0009", status: "ACTIVE", customer_name: "Acme Traders",
+    items: [
+      // New rule: 1000 less 100 discount = 900 taxable, 18% = 162.
+      { quantity: 1, price: 1000, discount: 100, tax_amount: 162, total: 1062, product_name: "Shirt", hsn_code: "6109" },
+      // Old rule: 18% was charged on the full 1000 (180) and the discount came off after.
+      { quantity: 1, price: 1000, discount: 100, tax_amount: 180, total: 1080, product_name: "Shirt", hsn_code: "6109" },
+    ],
+  }] } });
+  const rows = await open("Sales Tax Report (Column wise)");
+  expect(rows.map((row) => [row.subtotal, row.tax_perc])).toEqual([[900, 18], [1000, 18]]);
+});
+
 it("Tax Report (Row wise) totals each tax rate across invoices, highest rate first", async () => {
   const rows = await open("Sales Tax Report (Row wise)");
   expect(rows).toHaveLength(2);

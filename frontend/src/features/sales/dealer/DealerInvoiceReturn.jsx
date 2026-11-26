@@ -285,10 +285,11 @@ const DealerInvoiceReturn = () => {
         const addlDiscount = Math.max(0, toNum(line.addlDiscount, 0));
         const discountPerc = Math.max(0, toNum(line.discountPerc, 0));
         const subtotal = qty * price;
-        const taxAmount = round2((subtotal * tax) / 100);
         const percentDiscountAmount = round2((subtotal * discountPerc) / 100);
-        const totalLineDiscount = round2(discount + addlDiscount + percentDiscountAmount);
-        const total = round2(subtotal + taxAmount - totalLineDiscount);
+        // Discount first, then tax, as the invoice and the server do.
+        const totalLineDiscount = Math.min(round2(discount + addlDiscount + percentDiscountAmount), round2(subtotal));
+        const taxAmount = round2(((round2(subtotal) - totalLineDiscount) * tax) / 100);
+        const total = round2(round2(subtotal) - totalLineDiscount + taxAmount);
         return {
           ...line,
           mrp,

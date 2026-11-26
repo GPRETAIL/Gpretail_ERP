@@ -332,12 +332,15 @@ class DealerInvoiceController extends Controller
             }
             $variantId = $barcode->variant_id ?? $item['variantId'] ?? $item['variant_id'] ?? null;
 
+            // Discount first, then tax: GST is charged on what the dealer is actually billed for (price less the discount).
             $subtotal = round($qty * $price, 2);
-            $taxAmount = round($subtotal * $taxRate / 100, 2);
+            $discount = min(round($discount, 2), $subtotal);
+            $taxable = round($subtotal - $discount, 2);
+            $taxAmount = round($taxable * $taxRate / 100, 2);
             $lines[] = [
                 'product_id' => $product->id, 'variant_id' => $variantId ? (int) $variantId : null, 'barcode_id' => $barcode?->id,
-                'qty' => $qty, 'price' => $price, 'discount' => round($discount, 2), 'tax_amount' => $taxAmount,
-                'total' => round($subtotal + $taxAmount - $discount, 2), 'cost' => (float) ($product->cost_price ?? 0), 'subtotal' => $subtotal,
+                'qty' => $qty, 'price' => $price, 'discount' => $discount, 'tax_amount' => $taxAmount,
+                'total' => round($taxable + $taxAmount, 2), 'cost' => (float) ($product->cost_price ?? 0), 'subtotal' => $subtotal,
             ];
         }
 
