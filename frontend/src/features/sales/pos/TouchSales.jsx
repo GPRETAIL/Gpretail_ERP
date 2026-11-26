@@ -48,6 +48,8 @@ import {
 } from "@/features/sales/customisation/utils/salesReceiptCustomisation";
 import { Box, Stack, Typography, IconButton, Button, Checkbox, Table, TableHead, TableBody, TableRow, TableCell, alpha } from "@mui/material";
 
+import productTaxRate from "@/features/sales/pos/utils/productTaxRate";
+
 // A touch sale is stored as a POS sale (the backend delegates both create and bulk import to
 // PosSaleService), so the import columns are deliberately identical to POS Sale's.
 const TOUCH_SALE_IMPORT_CONFIG = {
@@ -159,7 +161,7 @@ const TouchSales = () => {
       products.forEach((p) => {
         const key = normalize(p.name);
         if (!key) return;
-        productTaxMap.set(key, toNum(p?.salesTax?.tax_percentage, 0));
+        productTaxMap.set(key, productTaxRate(p));
       });
 
       // Every label of a variant reports the variant's whole stock: one tile per variant.

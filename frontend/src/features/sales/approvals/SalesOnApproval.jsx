@@ -15,6 +15,7 @@ import { createGroupFetchers } from "@/shared/utils/serverGrouping";
 import { Box, Stack, Typography, TextField, MenuItem, IconButton, Button, Checkbox, Radio, Table, TableHead, TableBody, TableRow, TableCell, alpha } from "@mui/material";
 import InfoHint from "@/shared/components/InfoHint";
 import { lineAmounts } from "@/features/sales/pos/utils/posSalesUtils";
+import productTaxRate from "@/features/sales/pos/utils/productTaxRate";
 
 // Matches config('pagination.resources.sales_approvals.groupable_columns') on the backend.
 const { onFetchGroupSummaries: fetchApprovalGroupSummaries, onFetchGroupRows: fetchApprovalGroupRows } =
@@ -305,7 +306,7 @@ const SalesOnApproval = () => {
       products.forEach((p) => {
         const key = normalize(p.name);
         if (!key) return;
-        productTaxMap.set(key, toNum(p?.salesTax?.tax_percentage, 0));
+        productTaxMap.set(key, productTaxRate(p));
         productSellingModeMap.set(key, String(p?.selling_mode || "Piece").trim() || "Piece");
       });
 

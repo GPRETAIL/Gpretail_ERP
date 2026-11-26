@@ -25,6 +25,7 @@ import AsyncSearchSelect from "@/shared/components/AsyncSearchSelect";
 import Breadcrumbs from "@/shared/components/Breadcrumbs";
 import { Box, Stack, Typography, TextField, MenuItem, IconButton, Button, Checkbox, Table, TableHead, TableBody, TableRow, TableCell, alpha } from "@mui/material";
 import { muiFieldSx } from "@/shared/theme/formControlSizes";
+import productTaxRate from "@/features/sales/pos/utils/productTaxRate";
 
 // Matches config('pagination.resources.dealer_invoices.groupable_columns') on the backend.
 const { onFetchGroupSummaries: fetchDealerInvoiceGroupSummaries, onFetchGroupRows: fetchDealerInvoiceGroupRows } =
@@ -286,7 +287,7 @@ const DealerInvoice = () => {
       products.forEach((p) => {
         const key = normalize(p.name);
         if (!key) return;
-        productTaxMap.set(key, toNum(p?.salesTax?.tax_percentage, 0));
+        productTaxMap.set(key, productTaxRate(p));
       });
 
       const stock = (barcodesRes.data?.data || [])

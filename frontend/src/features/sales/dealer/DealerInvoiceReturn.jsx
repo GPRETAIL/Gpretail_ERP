@@ -15,6 +15,8 @@ import { createGroupFetchers } from "@/shared/utils/serverGrouping";
 import { Box, Stack, Typography, TextField, MenuItem, IconButton, Button, Checkbox, Table, TableHead, TableBody, TableRow, TableCell, alpha } from "@mui/material";
 import { muiFieldSx } from "@/shared/theme/formControlSizes";
 
+import productTaxRate from "@/features/sales/pos/utils/productTaxRate";
+
 // dealer-invoice-returns reuses DealerInvoiceController::groupedSummary() (same underlying
 // dealer_invoices table -- returnsIndex() just calls index() directly), so this matches
 // config('pagination.resources.dealer_invoices.groupable_columns') on the backend.
@@ -163,7 +165,7 @@ const DealerInvoiceReturn = () => {
       products.forEach((p) => {
         const key = normalize(p.name);
         if (!key) return;
-        productTaxMap.set(key, toNum(p?.salesTax?.tax_percentage, 0));
+        productTaxMap.set(key, productTaxRate(p));
       });
 
       const stock = (barcodesRes.data?.data || [])
