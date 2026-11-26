@@ -105,7 +105,7 @@ class CaptureSyncOutbox
             return;
         }
 
-        $payload = $request->except(['password', 'password_confirmation', '_syncIds']);
+        $payload = $request->except(['password', 'password_confirmation', 'einvoicePassword', 'gstAccessKey', '_syncIds']);
         if ($ids = app(SyncIds::class)->recorded()) {
             $payload['_syncIds'] = $ids;
         }

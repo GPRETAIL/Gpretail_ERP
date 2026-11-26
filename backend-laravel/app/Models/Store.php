@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\EncryptedSecret;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -81,6 +82,8 @@ class Store extends Model
             'activation_required' => 'boolean', 'activated_at' => 'datetime',
             'platform_active_till' => 'datetime', 'platform_subscription' => 'array',
             'is_active' => 'boolean',
+            'einvoice_password' => EncryptedSecret::class,
+            'gst_access_key' => EncryptedSecret::class,
             'as_supplier' => 'boolean',
             'as_customer' => 'boolean',
             'internal_vendor_margin' => 'decimal:2',
