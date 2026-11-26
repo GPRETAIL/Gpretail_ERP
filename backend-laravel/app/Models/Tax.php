@@ -50,6 +50,27 @@ class Tax extends Model
         ];
     }
 
+    /**
+     * The tax rate (in percent) for an item sold at this unit price. A Ranged GST tax takes its rate from the price band the
+     * price falls in (a band with no upper price covers everything above its start); any other tax is one flat rate.
+     */
+    public function rateForPrice(float $price): float
+    {
+        if (strtoupper((string) $this->type) !== 'RGST') {
+            return (float) $this->rate;
+        }
+
+        $band = collect($this->extra_fields['rangedtable'] ?? [])
+            ->filter(fn ($row) => is_array($row)
+                && ((float) ($row['taxPercentage'] ?? 0) > 0 || (float) ($row['to'] ?? 0) > 0)
+                && $price >= (float) ($row['from'] ?? 0)
+                && ((float) ($row['to'] ?? 0) <= 0 || $price <= (float) $row['to']))
+            ->sortByDesc(fn ($row) => (float) ($row['from'] ?? 0))
+            ->first();
+
+        return $band ? (float) ($band['taxPercentage'] ?? 0) : (float) $this->rate;
+    }
+
     /** @return HasMany<TaxSlab, $this> */
     public function slabs(): HasMany
     {

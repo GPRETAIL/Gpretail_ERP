@@ -1,6 +1,6 @@
 import { TYPE } from "@/shared/theme/typeScale";
 import BillingDateBanner from "@/features/sales/pos/components/BillingDateBanner";
-import { browserPrintHtml } from "./utils/posSalesUtils";
+import { browserPrintHtml, lineAmounts } from "./utils/posSalesUtils";
 import PageHeader from "@/shared/components/PageHeader";
 import useCounterAssignmentPrompt from "./hooks/useCounterAssignmentPrompt";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -100,9 +100,7 @@ const getAppliedReturnItemTotal = (item) => {
   const price = Math.max(0, toNum(item?.price ?? item?.rate, 0));
   const tax = Math.max(0, toNum(item?.tax ?? item?.taxPerc, 0));
   const discount = Math.max(0, toNum(item?.discount, 0));
-  const subtotal = round2(qty * price);
-  const taxAmount = round2((subtotal * tax) / 100);
-  return round2(Math.max(subtotal + taxAmount - discount, 0));
+  return lineAmounts({ qty, price, discount, tax }).total;
 };
 
 const TouchSales = () => {
@@ -288,9 +286,8 @@ const TouchSales = () => {
       const lineQty = Math.max(0, toNum(line.qty, 0));
       const linePrice = Math.max(0, toNum(line.price, 0));
       const lineTaxPerc = Math.max(0, toNum(line.tax, 0));
-      const lineSubtotal = lineQty * linePrice;
-      const lineTax = (lineSubtotal * lineTaxPerc) / 100;
-      const lineFinal = lineSubtotal + lineTax;
+      // Each line is rounded to the paisa, like the server, so the bill is the sum of its lines.
+      const { gross: lineSubtotal, taxAmount: lineTax, total: lineFinal } = lineAmounts({ qty: lineQty, price: linePrice, tax: lineTaxPerc });
       subtotal += lineSubtotal;
       taxAmount += lineTax;
       finalAmount += lineFinal;
@@ -983,9 +980,7 @@ const TouchSales = () => {
                         );
                       }
 
-                      const lineSubtotal = toNum(line.qty, 0) * toNum(line.price, 0);
-                      const lineTax = (lineSubtotal * toNum(line.tax, 0)) / 100;
-                      const lineFinal = lineSubtotal + lineTax;
+                      const { total: lineFinal } = lineAmounts({ qty: line.qty, price: line.price, tax: line.tax });
                       return (
                         <TableRow key={line.lineId} sx={{ borderTop: 1, borderColor: "divider" }}>
                           <TableCell sx={{ px: 1, py: 1 }}>

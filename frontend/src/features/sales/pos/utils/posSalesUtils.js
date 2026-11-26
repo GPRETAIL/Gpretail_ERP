@@ -53,6 +53,18 @@ export const toNum = (value, fallback = 0) => {
 };
 export const round2 = (value) => Math.round((toNum(value, 0) + Number.EPSILON) * 100) / 100;
 
+/**
+ * One bill line the way the server saves it: the discount comes off the price first (never more than the price), then tax is
+ * worked out on what is left, each step rounded to the paisa. `tax` is the rate in percent.
+ */
+export const lineAmounts = ({ qty, price, discount = 0, tax = 0 }) => {
+  const gross = round2(Math.max(0, toNum(qty, 0)) * Math.max(0, toNum(price, 0)));
+  const off = Math.min(round2(Math.max(0, toNum(discount, 0))), gross);
+  const taxable = round2(gross - off);
+  const taxAmount = round2((taxable * Math.max(0, toNum(tax, 0))) / 100);
+  return { gross, discount: off, taxable, taxAmount, total: round2(taxable + taxAmount) };
+};
+
 export const clampReceiptCopies = (value) => {
   const n = Number.parseInt(value, 10);
   if (!Number.isFinite(n)) return 1;
@@ -231,9 +243,7 @@ export const getAppliedReturnItemTotal = (item) => {
   const price = Math.max(0, toNum(item?.price ?? item?.rate, 0));
   const tax = Math.max(0, toNum(item?.tax ?? item?.taxPerc, 0));
   const discount = Math.max(0, toNum(item?.discount, 0));
-  const subtotal = round2(qty * price);
-  const taxAmount = round2((subtotal * tax) / 100);
-  return round2(Math.max(subtotal + taxAmount - discount, 0));
+  return lineAmounts({ qty, price, discount, tax }).total;
 };
 
 export const POS_TABLE_COLS = {

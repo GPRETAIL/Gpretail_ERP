@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Api\V1\Sales;
 
-use App\Support\BusinessDay;
 use App\Exceptions\InsufficientStockException;
 use App\Exceptions\PosReturnCreditUnavailableException;
 use App\Exceptions\PosReturnNotReturnableException;
@@ -37,6 +36,7 @@ use App\Services\Sales\CashRegisterService;
 use App\Services\Sales\GiftCreditService;
 use App\Services\Sales\Salespeople;
 use App\Services\Tenancy\PagePermissions;
+use App\Support\BusinessDay;
 use App\Support\GroupAggregationService;
 use App\Support\PaginationService;
 use Illuminate\Http\Exceptions\HttpResponseException;
@@ -134,7 +134,7 @@ class PosSaleController extends Controller
                     'mrp' => (float) $barcodeRow->mrp,
                     'discount_perc' => (float) $barcodeRow->discount_perc,
                     'final_price' => (float) $barcodeRow->final_price,
-                    'tax_rate' => $product->tax ? (float) $product->tax->rate : 0.00,
+                    'tax_rate' => $product->tax ? $product->tax->rateForPrice((float) ($barcodeRow->final_price ?: $barcodeRow->selling_price)) : 0.00,
                     'stock_qty' => $stockQty,
                     'product' => $product,
                 ],
@@ -165,7 +165,7 @@ class PosSaleController extends Controller
                 'sku' => $product->sku,
                 'selling_price' => (float) $product->selling_price,
                 'mrp' => (float) $product->mrp,
-                'tax_rate' => $product->tax ? (float) $product->tax->rate : 0.00,
+                'tax_rate' => $product->tax ? $product->tax->rateForPrice((float) $product->selling_price) : 0.00,
                 'stock_qty' => (float) ($product->stocks->sum('quantity') ?? 0),
                 'product' => $product,
             ],
@@ -241,7 +241,7 @@ class PosSaleController extends Controller
                 'mrp' => (float) ($s->product->mrp ?? 0),
                 'price' => (float) ($s->product->selling_price ?? 0),
                 'cost' => (float) ($s->product->cost_price ?? 0),
-                'tax' => (float) ($s->product?->tax->rate ?? 0),
+                'tax' => (float) ($s->product?->tax?->rateForPrice((float) ($s->product->selling_price ?? 0)) ?? 0),
                 'taxName' => $s->product?->tax?->name,
                 'taxType' => $s->product?->tax?->type,
                 'brandId' => $s->product?->brand_id,
@@ -627,8 +627,10 @@ class PosSaleController extends Controller
                     $disc = (float) ($item['discount'] ?? 0);
                     $taxRate = (float) ($item['tax'] ?? 0);
 
-                    $lineSub = ($qty * $price) - $disc;
-                    $lineTax = ($lineSub * $taxRate) / 100;
+                    // Discount first, then tax: tax is on the price after the discount, and every line is rounded to the
+                    // paisa, so the bill is the sum of its lines as the POS screen shows it.
+                    $lineSub = max(0, round(($qty * $price) - $disc, 2));
+                    $lineTax = round(($lineSub * $taxRate) / 100, 2);
 
                     $subtotal += $lineSub;
                     $taxTotal += $lineTax;
@@ -636,7 +638,9 @@ class PosSaleController extends Controller
                     $totalQty += $qty;
                 }
 
-                $grandTotal = $subtotal + $taxTotal;
+                $subtotal = round($subtotal, 2);
+                $taxTotal = round($taxTotal, 2);
+                $grandTotal = round($subtotal + $taxTotal, 2);
                 $netPayable = max(0, $grandTotal - $creditAmount);
 
                 $cashAmount = (float) $request->input('cashAmount', 0);

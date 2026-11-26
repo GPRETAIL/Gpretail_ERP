@@ -43,6 +43,7 @@ class PosReturnWriter
         // Recompute each item's returnable ceiling server-side - never trust the client's maxQty for a return
         // against a real sale.
         $saleLines = collect();
+        $returnedSoFar = collect();
         if (! $standalone) {
             // A product can sit on several lines of one bill; return against their combined totals.
             $saleLines = PosSaleItem::where('pos_sale_id', $sourcePosSaleId)->get()->groupBy('product_id')
@@ -62,6 +63,11 @@ class PosReturnWriter
                     ->whereHas('posReturn', fn ($q) => $q->where('pos_sale_id', $sourcePosSaleId))
                     ->sum('quantity');
                 $remaining = max(0, $originalQty - $alreadyReturned);
+                $before = PosReturnItem::where('product_id', $item['productId'])->whereHas('posReturn', fn ($q) => $q->where('pos_sale_id', $sourcePosSaleId));
+                $returnedSoFar->put($item['productId'], [
+                    'quantity' => $alreadyReturned, 'discount' => (float) (clone $before)->sum('discount'),
+                    'tax_amount' => (float) (clone $before)->sum('tax_amount'), 'paid' => (float) (clone $before)->sum('subtotal'),
+                ]);
 
                 if ($qty > $remaining + 0.0001) {
                     throw new PosReturnNotReturnableException("Cannot return {$qty} of this item: only {$remaining} remains returnable from this bill.");
@@ -71,7 +77,7 @@ class PosReturnWriter
 
         // Refund what the customer actually paid: a bill line's discount and tax are shared out by quantity, so
         // returning 1 of 3 refunds a third of the discounted, taxed line.
-        $refundLines = array_map(function (array $item) use ($saleLines) {
+        $refundLines = array_map(function (array $item) use ($saleLines, $returnedSoFar) {
             $qty = (float) ($item['qty'] ?? 1);
             $sold = $saleLines->get($item['productId']);
             if ($sold && $sold['quantity'] > 0) {
@@ -81,6 +87,14 @@ class PosReturnWriter
                 $paid = $sold['paid'] > 0
                     ? round($sold['paid'] * $share, 2)
                     : round($qty * $sold['price'] - $discount + $taxAmount, 2);
+                // The last pieces of a line refund whatever is left of it, so returning a bill piece by piece never
+                // pays back more (or less) than the customer paid, whatever the rounding of each third came to.
+                $before = $returnedSoFar->get($item['productId']);
+                if ($before && $sold['paid'] > 0 && $qty + $before['quantity'] >= $sold['quantity'] - 0.0001) {
+                    $discount = round(max(0, $sold['discount'] - $before['discount']), 2);
+                    $taxAmount = round(max(0, $sold['tax_amount'] - $before['tax_amount']), 2);
+                    $paid = round(max(0, $sold['paid'] - $before['paid']), 2);
+                }
 
                 return [$item, $qty, $sold['price'], $sold['tax_rate'], $discount, $taxAmount, $paid];
             }

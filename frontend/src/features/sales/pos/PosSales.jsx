@@ -122,6 +122,7 @@ import {
   blankQuickCustomer,
   formatEditableDecimal,
   quickCustomerFieldOrder,
+  lineAmounts,
 } from "./utils/posSalesUtils";
 import {
   TextInput,
@@ -596,11 +597,9 @@ const PosSales = () => {
         const qty = Math.max(0, toNum(line.qty, 0));
         const price = Math.max(0, toNum(line.price, 0));
         const tax = Math.max(0, toNum(line.tax, 0));
-        const subtotal = round2(qty * price);
-        const taxAmount = round2((subtotal * tax) / 100);
-        const lineAmount = round2(subtotal + taxAmount);
-        const discount = Math.min(Math.max(0, toNum(line.discount, 0)), lineAmount);
-        const total = round2(Math.max(lineAmount - discount, 0));
+        // Discount first, then tax on what is left, each rounded to the paisa: the same sum the server saves.
+        const { gross: subtotal, discount, taxAmount, total } = lineAmounts({ qty, price, discount: line.discount, tax });
+        const lineAmount = subtotal; // The price before discount and tax: what the discount pop-up works on.
         const gross = Math.max(0, toNum(line.cost, 0)) * qty;
         return { ...line, subtotal, taxAmount, lineAmount, total, gross, discount };
       }),
@@ -757,7 +756,7 @@ const PosSales = () => {
   const summary = useMemo(() => {
     const subTotal = cartWithTotals.reduce((sum, line) => sum + line.subtotal, 0) + posAddnlSummary.cost;
     const taxAmount = cartWithTotals.reduce((sum, line) => sum + line.taxAmount, 0) + posAddnlSummary.tax;
-    const billsAmount = subTotal + taxAmount;
+    const billsAmount = cartWithTotals.reduce((sum, line) => sum + line.total, 0) + posAddnlSummary.amount;
     const saleAmount = cartWithTotals.reduce((sum, line) => sum + line.total, 0) + posAddnlSummary.amount;
     const availableReturnAmount = Math.max(0, Math.abs(toNum(appliedReturn?.amount, 0)));
     const returnAppliedAmount = round2(Math.min(saleAmount, availableReturnAmount));
@@ -1314,9 +1313,7 @@ const PosSales = () => {
       prev.map((line) => {
         if (!discountDialogSelectedSet.has(line.lineId)) return line;
         const draft = discountRowDrafts[line.lineId] || {};
-        const subtotal = round2(toNum(line.price, 0) * toNum(line.qty, 0));
-        const taxAmount = round2((subtotal * Math.max(0, toNum(line.tax, 0))) / 100);
-        const lineAmount = round2(subtotal + taxAmount);
+        const lineAmount = round2(toNum(line.price, 0) * toNum(line.qty, 0));
         const nextDiscount = Math.min(
           lineAmount,
           Math.max(0, toNum(draft.valueInput, line.discount))

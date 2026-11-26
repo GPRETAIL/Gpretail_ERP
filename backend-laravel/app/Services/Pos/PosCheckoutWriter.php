@@ -66,8 +66,8 @@ class PosCheckoutWriter
             $price = (float) $item['price'];
             $discount = (float) ($item['discount'] ?? 0);
             $taxRate = (float) ($item['tax'] ?? 0);
-            $lineSub = $qty * $price - $discount;
-            $lineTax = $lineSub * $taxRate / 100;
+            $lineSub = max(0, round($qty * $price - $discount, 2));
+            $lineTax = round($lineSub * $taxRate / 100, 2);
             $stock = $stocks->get($item['productId'].':'.(($item['variantId'] ?? null) ?: 0));
             $before = (float) ($stock->quantity ?? 0);
             $after = $before - $qty;

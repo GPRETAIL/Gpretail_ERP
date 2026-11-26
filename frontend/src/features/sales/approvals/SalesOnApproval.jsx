@@ -14,6 +14,7 @@ import Breadcrumbs from "@/shared/components/Breadcrumbs";
 import { createGroupFetchers } from "@/shared/utils/serverGrouping";
 import { Box, Stack, Typography, TextField, MenuItem, IconButton, Button, Checkbox, Radio, Table, TableHead, TableBody, TableRow, TableCell, alpha } from "@mui/material";
 import InfoHint from "@/shared/components/InfoHint";
+import { lineAmounts } from "@/features/sales/pos/utils/posSalesUtils";
 
 // Matches config('pagination.resources.sales_approvals.groupable_columns') on the backend.
 const { onFetchGroupSummaries: fetchApprovalGroupSummaries, onFetchGroupRows: fetchApprovalGroupRows } =
@@ -525,10 +526,8 @@ const SalesOnApproval = () => {
         const qty = Math.max(0, toNum(line.qty, 0));
         const price = Math.max(0, toNum(line.price, 0));
         const tax = Math.max(0, toNum(line.tax, 0));
-        const discount = Math.max(0, toNum(line.discount, 0));
-        const subtotal = qty * price;
-        const taxAmount = (subtotal * tax) / 100;
-        const total = subtotal + taxAmount - discount;
+        // Discount first, then tax on what is left, each rounded to the paisa: the same sum the server saves.
+        const { gross: subtotal, discount, taxAmount, total } = lineAmounts({ qty, price, discount: line.discount, tax });
         const gross = Math.max(0, toNum(line.cost, 0)) * qty;
         return { ...line, subtotal, taxAmount, total, gross, discount };
       }),
@@ -957,9 +956,7 @@ const SalesOnApproval = () => {
     setCart((prev) =>
       prev.map((line) => {
         if (!discountDialogSelectedSet.has(line.lineId)) return line;
-        const subtotal = toNum(line.price, 0) * toNum(line.qty, 0);
-        const taxAmount = (subtotal * Math.max(0, toNum(line.tax, 0))) / 100;
-        const lineAmount = Math.max(0, subtotal + taxAmount);
+        const lineAmount = Math.max(0, toNum(line.price, 0) * toNum(line.qty, 0)); // The price before tax: the discount comes off it first.
         return {
           ...line,
           discount: (lineAmount * discountPercentValue) / 100,
