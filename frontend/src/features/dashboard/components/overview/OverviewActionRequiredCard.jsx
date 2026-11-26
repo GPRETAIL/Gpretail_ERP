@@ -7,6 +7,7 @@ import { Box, ButtonBase, Stack, Typography } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import api from "@/shared/api/apiClient";
 import { severityTileSx } from "@/features/dashboard/utils/dashboardFormatters";
+import { overviewTarget } from "@/features/dashboard/utils/dashboardLinks";
 
 // Types whose underlying condition represents something already gone wrong (a variance found, a
 // limit already breached, a run that already failed) rather than something merely approaching a
@@ -29,7 +30,7 @@ export default function OverviewActionRequiredCard({ items = [], loading, onItem
   const navigate = useNavigate();
 
   const handleClick = async (item) => {
-    navigate(item.link || "/notifications");
+    navigate(overviewTarget(item.link));
     onItemHandled?.(item.id);
     try {
       if (!item.read_at) await api.post(`/notifications/${item.id}/read`);

@@ -5,6 +5,7 @@ import { AlertOctagon } from "lucide-react";
 import { Box, ButtonBase, Stack, Typography } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import { severityTileSx } from "@/features/dashboard/utils/dashboardFormatters";
+import { actionTarget } from "@/features/dashboard/utils/dashboardLinks";
 
 export default function CrmActionRequiredBanner({ actionRequired = [], loading }) {
   const navigate = useNavigate();
@@ -41,7 +42,7 @@ export default function CrmActionRequiredBanner({ actionRequired = [], loading }
         {actionRequired.map((item) => (
           <ButtonBase
             key={item.key}
-            onClick={() => navigate(`${item.route}?${item.filter_param}`)}
+            onClick={() => navigate(actionTarget("crm", item))}
             sx={{
               display: "flex", flexDirection: "column", alignItems: "flex-start", justifyContent: "space-between",
               borderRadius: "8.75px", border: "1px solid", p: 1.5, textAlign: "left",
